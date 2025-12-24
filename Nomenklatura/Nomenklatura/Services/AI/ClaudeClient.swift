@@ -12,7 +12,8 @@ import Foundation
 final class ClaudeClient: Sendable {
     static let shared = ClaudeClient()
 
-    private let baseURL = "https://api.anthropic.com/v1/messages"
+    // Use proxy URL in production, direct API for local development
+    private let baseURL = Secrets.proxyURL
     private let model = "claude-sonnet-4-5-20250929"  // Claude Sonnet 4.5 - best balance of intelligence, speed, and cost
     private let maxTokens = 2048  // Reduced for faster responses - scenarios don't need 4k tokens
 
@@ -68,8 +69,14 @@ final class ClaudeClient: Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue(Secrets.anthropicAPIKey, forHTTPHeaderField: "x-api-key")
-        request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+
+        // Only add API key header for direct API access (local development)
+        // Proxy handles the API key server-side
+        if Secrets.useDirectAPI {
+            request.addValue(Secrets.anthropicAPIKey, forHTTPHeaderField: "x-api-key")
+            request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        }
+
         request.timeoutInterval = 45  // Reduced from 60s - fail faster if there are issues
 
         let body = ClaudeRequest(
