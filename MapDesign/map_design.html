@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomenklatura - 1890s Style Map Design</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #2a2a2a;
+            font-family: Georgia, serif;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #d4c4a8;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        #controls button {
+            background: #8b4513;
+            color: #d4c4a8;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        #controls button:hover {
+            background: #a0522d;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <strong>Map Design Controls</strong><br><br>
+        <button onclick="saveMapImage()">Save as PNG</button>
+        <button onclick="toggleLabels()">Toggle Labels</button>
+        <button onclick="toggleTerrain()">Toggle Terrain</button>
+        <br><br>
+        <small>Click nations to select</small>
+    </div>
+
+    <script>
+// ============================================
+// NOMENKLATURA - 1890s PROPAGANDA MAP DESIGN
+// ============================================
+
+let mapWidth = 800;
+let mapHeight = 1000;
+let showLabels = true;
+let showTerrain = true;
+let selectedNation = null;
+
+// Color palette - aged/vintage feel
+const colors = {
+    parchment: '#d4c4a8',
+    parchmentDark: '#c4b498',
+    parchmentLight: '#e4d4b8',
+    ocean: '#a8c4d4',
+    oceanDeep: '#7ba3b8',
+    ink: '#3d2b1f',
+    inkLight: '#5d4b3f',
+    homeland: '#8b3a3a',
+    homelandDark: '#6b2a2a',
+    ally: '#b85c5c',
+    satellite: '#c87d8d',
+    rival: '#d4824a',
+    hostile: '#4a6b8a',
+    neutral: '#7a7a6a',
+    unknown: '#3a4a4a',
+    gold: '#c9a227',
+    mountain: '#6b5b4b',
+    forest: '#5a6b4a',
+    river: '#6a9ab8'
+};
+
+// Nation data with organic shapes defined as point arrays
+const nations = {
+    volkeria: {
+        name: "VOLKERIA",
+        subtitle: "People's Socialist Republic",
+        color: colors.homeland,
+        borderColor: colors.gold,
+        // Points define the border shape (relative to center, will be scaled)
+        points: [],
+        center: { x: 0.48, y: 0.48 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    valdoria: {
+        name: "VALDORIA",
+        subtitle: "Socialist Republic",
+        color: colors.ally,
+        borderColor: colors.homelandDark,
+        points: [],
+        center: { x: 0.72, y: 0.32 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    tarnova: {
+        name: "TARNOVA",
+        subtitle: "People's Republic",
+        color: colors.satellite,
+        borderColor: colors.homelandDark,
+        points: [],
+        center: { x: 0.52, y: 0.72 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    zimograd: {
+        name: "ZIMOGRAD",
+        subtitle: "Workers Republic",
+        color: colors.rival,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.28, y: 0.28 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    korvath: {
+        name: "KORVATH",
+        subtitle: "Kingdom",
+        color: colors.hostile,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.22, y: 0.58 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    brechtland: {
+        name: "BRECHTLAND",
+        subtitle: "Federal Republic",
+        color: colors.hostile,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.7, y: 0.62 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    marzovia: {
+        name: "MARZOVIA",
+        subtitle: "Military Junta",
+        color: colors.hostile,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.12, y: 0.38 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    commonwealth: {
+        name: "THE COMMONWEALTH",
+        subtitle: "Island Dominion",
+        color: colors.hostile,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.08, y: 0.65 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    federated: {
+        name: "FEDERATED STATES",
+        subtitle: "Neutral Republic",
+        color: colors.neutral,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.5, y: 0.88 },
+        labelOffset: { x: 0, y: 0 }
+    },
+    unknown: {
+        name: "TERRA INCOGNITA",
+        subtitle: "Unknown Territories",
+        color: colors.unknown,
+        borderColor: colors.ink,
+        points: [],
+        center: { x: 0.92, y: 0.45 },
+        labelOffset: { x: 0, y: 0 }
+    }
+};
+
+// Mountain ranges
+const mountains = [
+    { points: [[0.35, 0.35], [0.45, 0.30], [0.55, 0.33], [0.62, 0.38]], name: "Ural Range" },
+    { points: [[0.25, 0.50], [0.30, 0.45], [0.35, 0.48]], name: "Western Peaks" },
+    { points: [[0.60, 0.55], [0.68, 0.50], [0.75, 0.52]], name: "Eastern Hills" }
+];
+
+// Rivers
+const rivers = [
+    { points: [[0.40, 0.20], [0.42, 0.35], [0.45, 0.50], [0.48, 0.65], [0.50, 0.80]], name: "Great Volker River" },
+    { points: [[0.55, 0.40], [0.60, 0.45], [0.65, 0.55]], name: "Eastern Flow" },
+    { points: [[0.30, 0.55], [0.35, 0.58], [0.42, 0.60]], name: "Western Tributary" }
+];
+
+function setup() {
+    createCanvas(mapWidth, mapHeight);
+    generateNationShapes();
+    noLoop(); // Static image, redraw on interaction
+}
+
+function draw() {
+    // Draw aged parchment background
+    drawParchmentBackground();
+
+    // Draw ocean areas
+    drawOcean();
+
+    // Draw terrain features
+    if (showTerrain) {
+        drawMountains();
+        drawRivers();
+    }
+
+    // Draw nations
+    drawNations();
+
+    // Draw decorative elements
+    drawCartouche();
+    drawCompassRose();
+    drawScaleBar();
+    drawBorderDecoration();
+
+    // Draw labels last (on top)
+    if (showLabels) {
+        drawNationLabels();
+    }
+}
+
+function generateNationShapes() {
+    // Generate organic shapes for each nation
+    // Volkeria - large central nation with complex border
+    nations.volkeria.points = generateOrganicShape(0.48, 0.48, 0.22, 0.25, 12, 0.15);
+
+    // Valdoria - northeastern ally
+    nations.valdoria.points = generateOrganicShape(0.72, 0.32, 0.12, 0.12, 8, 0.12);
+
+    // Tarnova - southern satellite
+    nations.tarnova.points = generateOrganicShape(0.52, 0.72, 0.14, 0.10, 8, 0.1);
+
+    // Zimograd - northwestern rival
+    nations.zimograd.points = generateOrganicShape(0.28, 0.28, 0.13, 0.14, 9, 0.12);
+
+    // Korvath - western hostile
+    nations.korvath.points = generateOrganicShape(0.22, 0.58, 0.10, 0.12, 8, 0.1);
+
+    // Brechtland - eastern hostile
+    nations.brechtland.points = generateOrganicShape(0.70, 0.62, 0.11, 0.11, 8, 0.1);
+
+    // Marzovia - far western hostile
+    nations.marzovia.points = generateOrganicShape(0.12, 0.38, 0.08, 0.10, 7, 0.1);
+
+    // Commonwealth - island nation
+    nations.commonwealth.points = generateOrganicShape(0.08, 0.65, 0.05, 0.06, 6, 0.15);
+
+    // Federated States - southern neutral
+    nations.federated.points = generateOrganicShape(0.50, 0.88, 0.18, 0.07, 8, 0.08);
+
+    // Unknown territories - eastern edge with jagged border
+    nations.unknown.points = generateEasternTerritory();
+}
+
+function generateOrganicShape(cx, cy, radiusX, radiusY, points, variance) {
+    let shape = [];
+    for (let i = 0; i < points; i++) {
+        let angle = (i / points) * TWO_PI - HALF_PI;
+        let r = 1 + random(-variance, variance);
+        let x = cx + cos(angle) * radiusX * r;
+        let y = cy + sin(angle) * radiusY * r;
+        shape.push([x, y]);
+    }
+    return shape;
+}
+
+function generateEasternTerritory() {
+    // Jagged eastern border suggesting unexplored territory
+    return [
+        [0.85, 0.15],
+        [0.98, 0.18],
+        [0.95, 0.30],
+        [0.98, 0.40],
+        [0.93, 0.50],
+        [0.98, 0.60],
+        [0.94, 0.70],
+        [0.98, 0.80],
+        [0.85, 0.82],
+        [0.85, 0.15]
+    ];
+}
+
+function drawParchmentBackground() {
+    // Base color
+    background(colors.parchment);
+
+    // Add texture/noise
+    loadPixels();
+    for (let i = 0; i < pixels.length; i += 4) {
+        let noise = random(-15, 15);
+        pixels[i] = constrain(pixels[i] + noise, 0, 255);
+        pixels[i + 1] = constrain(pixels[i + 1] + noise, 0, 255);
+        pixels[i + 2] = constrain(pixels[i + 2] + noise, 0, 255);
+    }
+    updatePixels();
+
+    // Add some aging effects - stains and wear
+    noStroke();
+    for (let i = 0; i < 20; i++) {
+        fill(139, 119, 101, random(5, 20));
+        ellipse(random(width), random(height), random(50, 200), random(50, 200));
+    }
+
+    // Fold lines
+    stroke(colors.inkLight);
+    strokeWeight(0.5);
+    drawingContext.setLineDash([10, 10]);
+    line(width/2, 0, width/2, height);
+    line(0, height/2, width, height/2);
+    drawingContext.setLineDash([]);
+}
+
+function drawOcean() {
+    // Western ocean
+    fill(colors.ocean);
+    noStroke();
+    beginShape();
+    vertex(0, 0);
+    // Wavy coastline
+    for (let y = 0; y <= height; y += 20) {
+        let x = width * 0.05 + sin(y * 0.02) * 15 + random(-5, 5);
+        vertex(x, y);
+    }
+    vertex(0, height);
+    endShape(CLOSE);
+
+    // Add wave patterns
+    stroke(colors.oceanDeep);
+    strokeWeight(0.5);
+    noFill();
+    for (let i = 0; i < 8; i++) {
+        beginShape();
+        for (let y = 50 + i * 80; y < height - 50; y += 5) {
+            let x = 10 + i * 8 + sin(y * 0.05) * 5;
+            vertex(x, y);
+        }
+        endShape();
+    }
+}
+
+function drawNations() {
+    for (let key in nations) {
+        let nation = nations[key];
+        if (nation.points.length === 0) continue;
+
+        // Draw shadow
+        fill(0, 0, 0, 30);
+        noStroke();
+        beginShape();
+        for (let pt of nation.points) {
+            vertex(pt[0] * width + 4, pt[1] * height + 4);
+        }
+        endShape(CLOSE);
+
+        // Draw nation fill
+        fill(nation.color);
+        stroke(nation.borderColor);
+        strokeWeight(key === 'volkeria' ? 3 : 1.5);
+        beginShape();
+        for (let pt of nation.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+
+        // Add hatch pattern for texture (vintage map style)
+        if (key !== 'unknown') {
+            drawHatchPattern(nation);
+        }
+    }
+}
+
+function drawHatchPattern(nation) {
+    // Light diagonal lines for texture
+    let bounds = getBounds(nation.points);
+    stroke(255, 255, 255, 20);
+    strokeWeight(0.5);
+
+    push();
+    // Clip to nation shape would be ideal, but we'll approximate
+    for (let x = bounds.minX * width; x < bounds.maxX * width; x += 8) {
+        for (let y = bounds.minY * height; y < bounds.maxY * height; y += 8) {
+            if (pointInPolygon(x, y, nation.points)) {
+                line(x, y, x + 4, y + 4);
+            }
+        }
+    }
+    pop();
+}
+
+function getBounds(points) {
+    let minX = 1, maxX = 0, minY = 1, maxY = 0;
+    for (let pt of points) {
+        minX = min(minX, pt[0]);
+        maxX = max(maxX, pt[0]);
+        minY = min(minY, pt[1]);
+        maxY = max(maxY, pt[1]);
+    }
+    return { minX, maxX, minY, maxY };
+}
+
+function pointInPolygon(x, y, points) {
+    let inside = false;
+    let j = points.length - 1;
+    for (let i = 0; i < points.length; i++) {
+        let xi = points[i][0] * width, yi = points[i][1] * height;
+        let xj = points[j][0] * width, yj = points[j][1] * height;
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+        }
+        j = i;
+    }
+    return inside;
+}
+
+function drawMountains() {
+    for (let range of mountains) {
+        stroke(colors.mountain);
+        strokeWeight(1);
+        fill(colors.mountain);
+
+        for (let i = 0; i < range.points.length - 1; i++) {
+            let x1 = range.points[i][0] * width;
+            let y1 = range.points[i][1] * height;
+            let x2 = range.points[i + 1][0] * width;
+            let y2 = range.points[i + 1][1] * height;
+
+            // Draw mountain symbols along the range
+            let steps = dist(x1, y1, x2, y2) / 15;
+            for (let j = 0; j < steps; j++) {
+                let t = j / steps;
+                let x = lerp(x1, x2, t) + random(-5, 5);
+                let y = lerp(y1, y2, t) + random(-5, 5);
+                drawMountainSymbol(x, y, random(8, 15));
+            }
+        }
+    }
+}
+
+function drawMountainSymbol(x, y, size) {
+    // Classic map mountain symbol
+    noStroke();
+    fill(colors.mountain);
+    triangle(x, y - size, x - size/2, y + size/3, x + size/2, y + size/3);
+
+    // Snow cap
+    fill(255, 255, 255, 150);
+    triangle(x, y - size, x - size/4, y - size/2, x + size/4, y - size/2);
+
+    // Shading
+    fill(0, 0, 0, 30);
+    triangle(x, y - size, x + size/2, y + size/3, x, y + size/3);
+}
+
+function drawRivers() {
+    stroke(colors.river);
+    strokeWeight(2);
+    noFill();
+
+    for (let river of rivers) {
+        beginShape();
+        curveVertex(river.points[0][0] * width, river.points[0][1] * height);
+        for (let pt of river.points) {
+            curveVertex(pt[0] * width, pt[1] * height);
+        }
+        let last = river.points[river.points.length - 1];
+        curveVertex(last[0] * width, last[1] * height);
+        endShape();
+    }
+}
+
+function drawNationLabels() {
+    for (let key in nations) {
+        let nation = nations[key];
+        let x = nation.center.x * width + nation.labelOffset.x;
+        let y = nation.center.y * height + nation.labelOffset.y;
+
+        // Main label
+        fill(colors.ink);
+        noStroke();
+        textAlign(CENTER, CENTER);
+        textStyle(BOLD);
+        textSize(key === 'volkeria' ? 16 : (key === 'unknown' ? 14 : 11));
+
+        // Text shadow
+        fill(255, 255, 255, 100);
+        text(nation.name, x + 1, y + 1);
+
+        fill(key === 'unknown' ? colors.parchment : colors.ink);
+        text(nation.name, x, y);
+
+        // Subtitle
+        if (nation.subtitle && key !== 'unknown') {
+            textStyle(ITALIC);
+            textSize(8);
+            fill(colors.inkLight);
+            text(nation.subtitle, x, y + 14);
+        }
+    }
+}
+
+function drawCartouche() {
+    // Decorative title box
+    let cx = width / 2;
+    let cy = 60;
+    let w = 280;
+    let h = 80;
+
+    // Ornate border
+    stroke(colors.ink);
+    strokeWeight(2);
+    fill(colors.parchmentLight);
+    rectMode(CENTER);
+    rect(cx, cy, w, h, 5);
+
+    // Inner border
+    strokeWeight(1);
+    noFill();
+    rect(cx, cy, w - 10, h - 10, 3);
+
+    // Corner decorations
+    let corners = [
+        [cx - w/2 + 15, cy - h/2 + 15],
+        [cx + w/2 - 15, cy - h/2 + 15],
+        [cx - w/2 + 15, cy + h/2 - 15],
+        [cx + w/2 - 15, cy + h/2 - 15]
+    ];
+    for (let corner of corners) {
+        fill(colors.gold);
+        noStroke();
+        ellipse(corner[0], corner[1], 8, 8);
+    }
+
+    // Title text
+    fill(colors.ink);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(20);
+    text("THE CONTINENT", cx, cy - 12);
+
+    textStyle(ITALIC);
+    textSize(11);
+    text("A Strategic Survey of Nations", cx, cy + 8);
+
+    textSize(9);
+    textStyle(NORMAL);
+    text("Anno Domini 1952", cx, cy + 24);
+}
+
+function drawCompassRose() {
+    let cx = 70;
+    let cy = height - 100;
+    let size = 40;
+
+    push();
+    translate(cx, cy);
+
+    // Outer circle
+    stroke(colors.ink);
+    strokeWeight(1);
+    noFill();
+    ellipse(0, 0, size * 2, size * 2);
+
+    // Cardinal directions
+    fill(colors.ink);
+    noStroke();
+
+    // North arrow (prominent)
+    beginShape();
+    vertex(0, -size);
+    vertex(-8, 0);
+    vertex(0, -size * 0.3);
+    vertex(8, 0);
+    endShape(CLOSE);
+
+    // South
+    fill(colors.inkLight);
+    beginShape();
+    vertex(0, size);
+    vertex(-6, 0);
+    vertex(0, size * 0.3);
+    vertex(6, 0);
+    endShape(CLOSE);
+
+    // East
+    beginShape();
+    vertex(size, 0);
+    vertex(0, -6);
+    vertex(size * 0.3, 0);
+    vertex(0, 6);
+    endShape(CLOSE);
+
+    // West
+    beginShape();
+    vertex(-size, 0);
+    vertex(0, -6);
+    vertex(-size * 0.3, 0);
+    vertex(0, 6);
+    endShape(CLOSE);
+
+    // Labels
+    fill(colors.ink);
+    textSize(12);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text("N", 0, -size - 12);
+    textSize(9);
+    text("S", 0, size + 10);
+    text("E", size + 10, 0);
+    text("W", -size - 10, 0);
+
+    pop();
+}
+
+function drawScaleBar() {
+    let x = width - 120;
+    let y = height - 50;
+    let barWidth = 80;
+
+    stroke(colors.ink);
+    strokeWeight(1);
+    fill(colors.ink);
+
+    // Scale bar
+    rect(x, y, barWidth, 6);
+
+    // Alternating pattern
+    fill(colors.parchment);
+    rect(x + barWidth/4, y, barWidth/4, 6);
+    rect(x + barWidth * 3/4, y, barWidth/4, 6);
+
+    // End marks
+    line(x, y - 3, x, y + 9);
+    line(x + barWidth, y - 3, x + barWidth, y + 9);
+    line(x + barWidth/2, y - 2, x + barWidth/2, y + 8);
+
+    // Label
+    fill(colors.ink);
+    noStroke();
+    textSize(9);
+    textAlign(CENTER);
+    textStyle(NORMAL);
+    text("500 km", x + barWidth/2, y + 20);
+}
+
+function drawBorderDecoration() {
+    stroke(colors.ink);
+    strokeWeight(2);
+    noFill();
+
+    // Outer border
+    rect(15, 15, width - 30, height - 30);
+
+    // Inner border
+    strokeWeight(1);
+    rect(20, 20, width - 40, height - 40);
+
+    // Corner flourishes
+    let flourishSize = 30;
+    let corners = [
+        [25, 25, 0],
+        [width - 25, 25, HALF_PI],
+        [width - 25, height - 25, PI],
+        [25, height - 25, -HALF_PI]
+    ];
+
+    for (let corner of corners) {
+        push();
+        translate(corner[0], corner[1]);
+        rotate(corner[2]);
+        noFill();
+        stroke(colors.ink);
+        strokeWeight(1);
+        // L-shaped flourish
+        beginShape();
+        vertex(0, flourishSize);
+        vertex(0, 0);
+        vertex(flourishSize, 0);
+        endShape();
+        // Small decorative curl
+        arc(flourishSize/3, flourishSize/3, flourishSize/2, flourishSize/2, 0, HALF_PI);
+        pop();
+    }
+}
+
+// Interaction functions
+function mousePressed() {
+    // Check if a nation was clicked
+    for (let key in nations) {
+        if (pointInPolygon(mouseX, mouseY, nations[key].points)) {
+            selectedNation = key;
+            console.log("Selected:", nations[key].name);
+            redraw();
+            return;
+        }
+    }
+    selectedNation = null;
+    redraw();
+}
+
+function toggleLabels() {
+    showLabels = !showLabels;
+    redraw();
+}
+
+function toggleTerrain() {
+    showTerrain = !showTerrain;
+    redraw();
+}
+
+function saveMapImage() {
+    saveCanvas('nomenklatura_map', 'png');
+}
+
+// Regenerate shapes on window resize
+function windowResized() {
+    // Keep fixed size for consistent export
+}
+    </script>
+</body>
+</html>

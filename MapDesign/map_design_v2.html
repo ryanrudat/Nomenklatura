@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomenklatura - Vintage Propaganda Map v2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: 'IM Fell English', Georgia, serif;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(30, 25, 20, 0.95);
+            color: #d4c4a8;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #8b4513;
+            font-size: 13px;
+            z-index: 100;
+            max-width: 200px;
+        }
+        #controls h3 {
+            margin: 0 0 15px 0;
+            font-family: 'Cinzel', serif;
+            color: #c9a227;
+            border-bottom: 1px solid #5a4a3a;
+            padding-bottom: 8px;
+        }
+        #controls button {
+            background: linear-gradient(180deg, #6b4423 0%, #4a2f15 100%);
+            color: #d4c4a8;
+            border: 1px solid #8b4513;
+            padding: 10px 15px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            font-family: 'IM Fell English', serif;
+            font-size: 12px;
+        }
+        #controls button:hover {
+            background: linear-gradient(180deg, #8b5533 0%, #5a3f25 100%);
+        }
+        #controls label {
+            display: block;
+            margin: 10px 0 5px;
+            font-size: 11px;
+            color: #a89878;
+        }
+        #controls input[type="range"] {
+            width: 100%;
+        }
+        .section {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #3a3025;
+        }
+        #info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(30, 25, 20, 0.9);
+            color: #a89878;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 11px;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>MAP DESIGN</h3>
+        <button onclick="saveMapImage()">Export PNG</button>
+        <button onclick="regenerateMap()">Regenerate Shapes</button>
+
+        <div class="section">
+            <label>Show Elements:</label>
+            <button onclick="toggleElement('labels')">Labels</button>
+            <button onclick="toggleElement('terrain')">Terrain</button>
+            <button onclick="toggleElement('decorations')">Decorations</button>
+            <button onclick="toggleElement('grid')">Grid Lines</button>
+        </div>
+
+        <div class="section">
+            <label>Aging Effect:</label>
+            <input type="range" id="agingSlider" min="0" max="100" value="50" onchange="updateAging()">
+
+            <label>Border Detail:</label>
+            <input type="range" id="borderSlider" min="1" max="3" value="2" onchange="redraw()">
+        </div>
+
+        <div class="section">
+            <label>Style Preset:</label>
+            <button onclick="setStyle('vintage')">1890s Vintage</button>
+            <button onclick="setStyle('propaganda')">Soviet Propaganda</button>
+            <button onclick="setStyle('military')">Military Survey</button>
+        </div>
+    </div>
+
+    <div id="info">
+        <strong>The Continent</strong> - Political map following the War of Succession.
+        <br><em>The Confederation</em> (formerly three independent states) unified after the conflict.
+        <br>Click on nations to see details.
+    </div>
+
+    <script>
+// ============================================
+// NOMENKLATURA - VINTAGE PROPAGANDA MAP v2
+// Research-based authentic 1890s/Cold War design
+// ============================================
+
+let mapWidth = 1400;
+let mapHeight = 1600;
+
+// Toggle states
+let showLabels = true;
+let showTerrain = true;
+let showDecorations = true;
+let showGrid = true;
+let agingAmount = 50;
+let currentStyle = 'vintage';
+
+// Seed for reproducible randomness
+let mapSeed = 12345;
+
+// Color palettes for different styles
+const palettes = {
+    vintage: {
+        parchment: [212, 196, 168],
+        parchmentDark: [196, 180, 152],
+        parchmentLight: [228, 212, 184],
+        ocean: [142, 166, 182],
+        oceanDeep: [112, 140, 158],
+        ink: [45, 35, 25],
+        inkLight: [75, 60, 45],
+        homeland: [139, 58, 58],
+        homelandDark: [107, 42, 42],
+        ally: [184, 92, 92],
+        satellite: [180, 110, 130],
+        rival: [180, 120, 60],
+        hostile: [74, 90, 120],
+        neutral: [110, 110, 95],
+        unknown: [55, 70, 70],
+        gold: [180, 150, 50],
+        mountain: [90, 75, 60],
+        forest: [70, 90, 60],
+        river: [90, 130, 160]
+    },
+    propaganda: {
+        parchment: [240, 235, 220],
+        parchmentDark: [220, 210, 190],
+        parchmentLight: [250, 245, 235],
+        ocean: [180, 200, 210],
+        oceanDeep: [150, 175, 190],
+        ink: [30, 20, 15],
+        inkLight: [60, 45, 35],
+        homeland: [180, 30, 30],      // Bold Soviet red
+        homelandDark: [140, 20, 20],
+        ally: [200, 60, 60],
+        satellite: [200, 80, 100],
+        rival: [200, 140, 40],
+        hostile: [50, 80, 130],
+        neutral: [130, 130, 120],
+        unknown: [50, 60, 60],
+        gold: [220, 180, 40],         // Soviet gold
+        mountain: [80, 65, 50],
+        forest: [60, 80, 50],
+        river: [80, 120, 150]
+    },
+    military: {
+        parchment: [245, 240, 230],
+        parchmentDark: [230, 225, 210],
+        parchmentLight: [255, 252, 245],
+        ocean: [200, 215, 225],
+        oceanDeep: [180, 195, 210],
+        ink: [20, 25, 30],
+        inkLight: [50, 55, 60],
+        homeland: [100, 60, 60],
+        homelandDark: [80, 45, 45],
+        ally: [130, 80, 80],
+        satellite: [140, 95, 110],
+        rival: [140, 100, 50],
+        hostile: [60, 75, 100],
+        neutral: [100, 100, 95],
+        unknown: [70, 80, 80],
+        gold: [160, 140, 60],
+        mountain: [70, 60, 50],
+        forest: [55, 75, 50],
+        river: [70, 110, 140]
+    }
+};
+
+let colors = palettes.vintage;
+
+// Geographic data
+const geography = {
+    // Coastline points defining the continent's edge
+    coastline: [],
+    // Major peninsulas and bays
+    features: [],
+    // Islands
+    islands: []
+};
+
+// Nation boundaries - SIMPLIFIED for proper interlocking without gaps
+// Adjacent nations share EXACT border coordinates
+// Nations extend to top edge (y=0) and Volkeria pushed east
+const nations = {
+    volkeria: {
+        name: "VOLKERIA",
+        fullName: "People's Socialist Republic of Volkeria",
+        type: 'homeland',
+        center: { x: 0.58, y: 0.35 },
+        points: [
+            // Northwest corner (shared with Zimograd)
+            [0.30, 0.18],
+            // North border with Zimograd/Valdoria
+            [0.40, 0.12], [0.50, 0.08], [0.60, 0.08], [0.70, 0.12],
+            // Northeast corner (shared with Valdoria/Brechtland)
+            [0.78, 0.18],
+            // East border with Brechtland
+            [0.82, 0.28], [0.80, 0.38], [0.76, 0.48],
+            // Southeast corner (shared with Tarnova)
+            [0.70, 0.55],
+            // South border with Tarnova/Westerland
+            [0.60, 0.58], [0.50, 0.55],
+            // Southwest corner (shared with Westerland/Korvath)
+            [0.40, 0.48],
+            // West border with Korvath
+            [0.34, 0.38], [0.30, 0.28]
+        ],
+        capital: { name: "Volkhrad", x: 0.58, y: 0.32 }
+    },
+    zimograd: {
+        name: "ZIMOGRAD",
+        fullName: "Workers' Republic of Zimograd",
+        type: 'rival',
+        center: { x: 0.32, y: 0.06 },
+        points: [
+            // North edge (top of map)
+            [0.12, 0], [0.25, 0], [0.40, 0], [0.50, 0],
+            // East border with Valdoria
+            [0.50, 0.08],
+            // South border with Volkeria (shared exactly)
+            [0.40, 0.12], [0.30, 0.18],
+            // West border with Korvath
+            [0.24, 0.12], [0.18, 0.06],
+            // West coast
+            [0.12, 0]
+        ],
+        capital: { name: "Zimovsk", x: 0.32, y: 0.05 }
+    },
+    valdoria: {
+        name: "VALDORIA",
+        fullName: "Socialist Republic of Valdoria",
+        type: 'ally',
+        center: { x: 0.65, y: 0.06 },
+        points: [
+            // North edge (top of map)
+            [0.50, 0], [0.60, 0], [0.70, 0], [0.80, 0],
+            // East border with Brechtland
+            [0.80, 0.08], [0.82, 0.12], [0.78, 0.18],
+            // South border with Volkeria (shared exactly)
+            [0.70, 0.12], [0.60, 0.08], [0.50, 0.08],
+            // West border with Zimograd
+            [0.50, 0]
+        ],
+        capital: { name: "Valstadt", x: 0.65, y: 0.05 }
+    },
+    korvath: {
+        name: "KORVATH",
+        fullName: "Kingdom of Korvath",
+        type: 'hostile',
+        center: { x: 0.20, y: 0.30 },
+        points: [
+            // North edge (top of map)
+            [0.12, 0],
+            // North border with Zimograd (shared exactly)
+            [0.18, 0.06], [0.24, 0.12], [0.30, 0.18],
+            // East border with Volkeria (shared exactly)
+            [0.30, 0.28], [0.34, 0.38], [0.40, 0.48],
+            // South border with Westerland/Marzovia
+            [0.35, 0.52], [0.26, 0.48],
+            // West coast
+            [0.12, 0.45], [0.12, 0.35], [0.12, 0.25], [0.12, 0.12], [0.12, 0]
+        ],
+        capital: { name: "Korvburg", x: 0.20, y: 0.28 }
+    },
+    brechtland: {
+        name: "BRECHTLAND",
+        fullName: "Federal Republic of Brechtland",
+        type: 'hostile',
+        center: { x: 0.88, y: 0.35 },
+        points: [
+            // North edge (top of map)
+            [0.80, 0], [0.92, 0],
+            // East border with Unknown
+            [0.92, 0.12], [0.92, 0.28], [0.92, 0.45], [0.92, 0.55],
+            // South border with E.Valdoria/Tarnova
+            [0.85, 0.55], [0.80, 0.52],
+            // West border with Volkeria (shared exactly)
+            [0.76, 0.48], [0.80, 0.38], [0.82, 0.28],
+            // Northwest with Valdoria (shared exactly)
+            [0.78, 0.18], [0.82, 0.12], [0.80, 0.08], [0.80, 0]
+        ],
+        capital: { name: "Brechtheim", x: 0.88, y: 0.32 }
+    },
+    westerland: {
+        name: "WESTERLAND",
+        fullName: "Free State of Westerland",
+        type: 'satellite',
+        center: { x: 0.42, y: 0.58 },
+        points: [
+            // North border with Volkeria/Korvath (shared exactly)
+            [0.40, 0.48], [0.50, 0.55],
+            // East border with Tarnova
+            [0.50, 0.62], [0.46, 0.68],
+            // South border with S.Korvath
+            [0.38, 0.70], [0.32, 0.68],
+            // West border with Marzovia (shared exactly)
+            [0.28, 0.62], [0.28, 0.55],
+            // Northwest with Korvath (shared exactly)
+            [0.35, 0.52]
+        ],
+        capital: { name: "Westport", x: 0.42, y: 0.60 }
+    },
+    marzovia: {
+        name: "MARZOVIA",
+        fullName: "Republic of Marzovia",
+        type: 'hostile',
+        center: { x: 0.20, y: 0.58 },
+        points: [
+            // North border with Korvath (shared exactly)
+            [0.12, 0.45], [0.26, 0.48], [0.35, 0.52],
+            // East border with Westerland (shared exactly)
+            [0.28, 0.55], [0.28, 0.62], [0.32, 0.68],
+            // South border with S.Korvath
+            [0.26, 0.72], [0.18, 0.70],
+            // West coast
+            [0.12, 0.68], [0.12, 0.60], [0.12, 0.52], [0.12, 0.45]
+        ],
+        capital: { name: "Marzburg", x: 0.20, y: 0.58 }
+    },
+    tarnova: {
+        name: "TARNOVA",
+        fullName: "People's Republic of Tarnova",
+        type: 'satellite',
+        center: { x: 0.60, y: 0.70 },
+        points: [
+            // North border with Volkeria (shared exactly)
+            [0.50, 0.55], [0.60, 0.58], [0.70, 0.55],
+            // Northeast with Brechtland/E.Valdoria (shared exactly)
+            [0.76, 0.48], [0.80, 0.52], [0.78, 0.62],
+            // East border with E.Valdoria
+            [0.74, 0.72], [0.70, 0.80],
+            // South border with Confederation
+            [0.62, 0.85], [0.52, 0.85], [0.46, 0.82],
+            // Southwest border with S.Korvath
+            [0.44, 0.78], [0.42, 0.72],
+            // West border with Westerland (shared exactly)
+            [0.46, 0.68], [0.50, 0.62]
+        ],
+        capital: { name: "Tarnograd", x: 0.60, y: 0.70 }
+    },
+    southkorvath: {
+        name: "S. KORVATH",
+        fullName: "Southern Korvath Protectorate",
+        type: 'hostile',
+        center: { x: 0.30, y: 0.82 },
+        points: [
+            // North border with Marzovia/Westerland (shared exactly)
+            [0.18, 0.70], [0.26, 0.72], [0.32, 0.68], [0.38, 0.70],
+            // East border with Tarnova (shared exactly)
+            [0.42, 0.72], [0.44, 0.78], [0.46, 0.82],
+            // Southeast with Confederation (shared exactly)
+            [0.44, 0.88], [0.40, 0.92],
+            // South coast
+            [0.32, 0.95], [0.24, 0.95], [0.16, 0.92],
+            // West coast
+            [0.12, 0.85], [0.12, 0.78], [0.12, 0.70], [0.18, 0.70]
+        ],
+        capital: { name: "Sudholm", x: 0.30, y: 0.84 }
+    },
+    eastvald: {
+        name: "E. VALDORIA",
+        fullName: "Eastern Valdorian March",
+        type: 'ally',
+        center: { x: 0.84, y: 0.72 },
+        points: [
+            // Northwest border with Brechtland (shared exactly)
+            [0.80, 0.52], [0.85, 0.55],
+            // East border with Unknown
+            [0.92, 0.55], [0.92, 0.65], [0.92, 0.75], [0.92, 0.85], [0.92, 0.95],
+            // South coast
+            [0.82, 0.95], [0.72, 0.95], [0.66, 0.92],
+            // West border with Confederation/Tarnova (shared exactly)
+            [0.70, 0.85], [0.70, 0.80], [0.74, 0.72], [0.78, 0.62]
+        ],
+        capital: { name: "Ostmark", x: 0.84, y: 0.74 }
+    },
+    federated: {
+        name: "THE CONFEDERATION",
+        fullName: "Confederated States of the South",
+        type: 'neutral',
+        center: { x: 0.56, y: 0.90 },
+        points: [
+            // Northwest with S.Korvath (shared exactly)
+            [0.40, 0.92], [0.44, 0.88], [0.46, 0.82],
+            // North with Tarnova (shared exactly)
+            [0.52, 0.85], [0.62, 0.85], [0.70, 0.80],
+            // Northeast with E.Valdoria (shared exactly)
+            [0.70, 0.85], [0.66, 0.92],
+            // South coast
+            [0.60, 0.95], [0.52, 0.95], [0.44, 0.95], [0.40, 0.92]
+        ],
+        capital: { name: "Unionsburg", x: 0.56, y: 0.90 },
+        internalStates: [
+            { name: "Westmark", points: [[0.40, 0.92], [0.44, 0.88], [0.46, 0.82], [0.50, 0.85], [0.48, 0.95], [0.44, 0.95]] },
+            { name: "Midland", points: [[0.50, 0.85], [0.58, 0.85], [0.58, 0.95], [0.52, 0.95], [0.48, 0.95]] },
+            { name: "Eastmark", points: [[0.58, 0.85], [0.62, 0.85], [0.70, 0.80], [0.70, 0.85], [0.66, 0.92], [0.60, 0.95], [0.58, 0.95]] }
+        ]
+    },
+    unknown: {
+        name: "TERRA\nINCOGNITA",
+        fullName: "Unknown Eastern Wastes",
+        type: 'unknown',
+        center: { x: 0.96, y: 0.50 },
+        points: [
+            // North edge (top of map)
+            [0.92, 0],
+            // West border with Brechtland/E.Valdoria (shared exactly)
+            [0.92, 0.12], [0.92, 0.28], [0.92, 0.45],
+            [0.92, 0.55], [0.92, 0.65], [0.92, 0.75], [0.92, 0.85], [0.92, 0.95],
+            // South edge
+            [0.98, 0.95],
+            // East edge
+            [0.98, 0.50], [0.98, 0],
+            // North edge
+            [0.92, 0]
+        ],
+        capital: null
+    }
+};
+
+// Commonwealth islands - archipelago in the WESTERN ocean
+// Detailed island shapes inspired by British Isles
+const commonwealthIslands = [
+    {
+        name: "Greater Albion",
+        // Main island - detailed coastline like Britain
+        points: [
+            [0.03, 0.30], [0.05, 0.28], [0.07, 0.26], [0.09, 0.28],
+            [0.10, 0.32], [0.09, 0.36], [0.10, 0.40], [0.08, 0.44],
+            [0.06, 0.46], [0.04, 0.44], [0.02, 0.40], [0.03, 0.36], [0.02, 0.32]
+        ],
+        hasCapital: true,
+        capital: { name: "Portsmith", x: 0.06, y: 0.36 }
+    },
+    {
+        name: "Lesser Albion",
+        // Second island - like Ireland
+        points: [
+            [0.02, 0.50], [0.04, 0.48], [0.06, 0.49], [0.07, 0.52],
+            [0.06, 0.56], [0.04, 0.58], [0.02, 0.56], [0.01, 0.53]
+        ]
+    },
+    {
+        name: "North Isle",
+        // Northern island
+        points: [
+            [0.05, 0.16], [0.07, 0.14], [0.09, 0.15], [0.10, 0.18],
+            [0.08, 0.22], [0.06, 0.21], [0.04, 0.19]
+        ]
+    },
+    {
+        name: "Trader's Isle",
+        // Small island between main islands
+        points: [[0.02, 0.44], [0.04, 0.43], [0.04, 0.46], [0.02, 0.47]]
+    },
+    {
+        name: "South Watch",
+        // Southern outpost
+        points: [
+            [0.04, 0.64], [0.06, 0.62], [0.08, 0.64], [0.08, 0.68],
+            [0.06, 0.72], [0.03, 0.70], [0.02, 0.66]
+        ]
+    },
+    {
+        name: "The Rocks",
+        // Tiny island group
+        points: [[0.09, 0.58], [0.10, 0.57], [0.11, 0.59], [0.10, 0.61], [0.08, 0.60]]
+    }
+];
+
+
+// Mountain ranges - positioned within Volkeria and surrounding nations
+const mountainRanges = [
+    {
+        name: "The Iron Spine",
+        points: [[0.35, 0.25], [0.45, 0.22], [0.55, 0.25], [0.65, 0.30], [0.72, 0.38]],
+        intensity: 1.0
+    },
+    {
+        name: "Western Highlands",
+        points: [[0.20, 0.28], [0.24, 0.35], [0.26, 0.42]],
+        intensity: 0.7
+    },
+    {
+        name: "Eastern Ridges",
+        points: [[0.75, 0.35], [0.80, 0.42], [0.85, 0.50]],
+        intensity: 0.6
+    },
+    {
+        name: "Tarnovan Hills",
+        points: [[0.45, 0.68], [0.55, 0.75], [0.62, 0.72]],
+        intensity: 0.5
+    }
+];
+
+// Rivers - flow from mountains to sea
+const rivers = [
+    {
+        name: "Great Volker",
+        points: [[0.50, 0.25], [0.52, 0.38], [0.52, 0.50], [0.52, 0.62], [0.52, 0.72], [0.50, 0.88]],
+        width: 3
+    },
+    {
+        name: "Valdorian Flow",
+        points: [[0.72, 0.20], [0.70, 0.30], [0.68, 0.42], [0.65, 0.52]],
+        width: 2
+    },
+    {
+        name: "Western Tributary",
+        points: [[0.22, 0.35], [0.28, 0.40], [0.35, 0.45], [0.45, 0.42]],
+        width: 2
+    },
+    {
+        name: "Southern Flow",
+        points: [[0.60, 0.65], [0.58, 0.75], [0.55, 0.85]],
+        width: 1.5
+    }
+];
+
+// Forests - distributed across nations
+const forests = [
+    { center: { x: 0.40, y: 0.35 }, radius: 0.08, density: 0.7 },
+    { center: { x: 0.60, y: 0.40 }, radius: 0.07, density: 0.6 },
+    { center: { x: 0.70, y: 0.50 }, radius: 0.05, density: 0.5 },
+    { center: { x: 0.30, y: 0.55 }, radius: 0.05, density: 0.6 },
+    { center: { x: 0.50, y: 0.58 }, radius: 0.06, density: 0.7 },
+    { center: { x: 0.78, y: 0.70 }, radius: 0.05, density: 0.5 },
+    { center: { x: 0.35, y: 0.75 }, radius: 0.04, density: 0.5 }
+];
+
+function setup() {
+    createCanvas(mapWidth, mapHeight);
+    randomSeed(mapSeed);
+    noiseSeed(mapSeed);
+    generateGeography();
+    noLoop();
+}
+
+function draw() {
+    randomSeed(mapSeed);
+    noiseSeed(mapSeed);
+    colors = palettes[currentStyle];
+
+    // Layer 1: Base parchment
+    drawParchmentBase();
+
+    // Layer 2: Aging effects
+    if (agingAmount > 0) {
+        drawAgingEffects();
+    }
+
+    // Layer 3: Grid lines (if enabled)
+    if (showGrid) {
+        drawGridLines();
+    }
+
+    // Layer 4: Ocean and coastline
+    drawOcean();
+
+    // Layer 5: Nation territories
+    drawNations();
+
+    // Layer 6: Terrain features
+    if (showTerrain) {
+        drawMountainRanges();
+        drawForests();
+        drawRivers();
+    }
+
+    // Layer 7: Borders (on top of terrain)
+    drawNationBorders();
+
+    // Layer 8: Labels
+    if (showLabels) {
+        drawLabels();
+    }
+
+    // Layer 9: Decorative elements
+    if (showDecorations) {
+        drawCartouche();
+        drawCompassRose();
+        drawScaleBar();
+        drawMapBorder();
+        drawLegend();
+    }
+}
+
+function generateGeography() {
+    // Generate organic coastline - now further west for islands
+    generateCoastline();
+
+    // Nation boundaries are now manually defined - no generation needed
+    // Just add slight organic variation to the borders
+    for (let key in nations) {
+        addBorderVariation(nations[key]);
+    }
+}
+
+function generateCoastline() {
+    // Coastline matching nation boundaries - L-shaped ocean on west and south
+    // Starts at y=0 (top of map)
+    geography.coastline = [];
+
+    let coastPoints = [
+        // Northwest corner (top of map)
+        { x: 0.12, y: 0 },
+        // West coast - Korvath
+        { x: 0.12, y: 0.12 }, { x: 0.12, y: 0.25 }, { x: 0.12, y: 0.35 }, { x: 0.12, y: 0.45 },
+        // West coast - Marzovia
+        { x: 0.12, y: 0.52 }, { x: 0.12, y: 0.60 }, { x: 0.12, y: 0.68 },
+        // West coast - S.Korvath
+        { x: 0.12, y: 0.70 }, { x: 0.12, y: 0.78 }, { x: 0.12, y: 0.85 },
+        // Southwest corner
+        { x: 0.16, y: 0.92 },
+        // South coast - S.Korvath/Confederation
+        { x: 0.24, y: 0.95 }, { x: 0.32, y: 0.95 }, { x: 0.40, y: 0.92 },
+        { x: 0.44, y: 0.95 }, { x: 0.52, y: 0.95 }, { x: 0.60, y: 0.95 },
+        // South coast - E.Valdoria
+        { x: 0.66, y: 0.92 }, { x: 0.72, y: 0.95 }, { x: 0.82, y: 0.95 },
+        // Southeast to edge
+        { x: 0.92, y: 0.95 },
+    ];
+
+    for (let pt of coastPoints) {
+        geography.coastline.push({ x: pt.x, y: pt.y });
+    }
+}
+
+function addBorderVariation(nation) {
+    // Skip - we want clean shared borders
+    // Variation would cause gaps between nations
+}
+
+function drawParchmentBase() {
+    // Gradient background
+    for (let y = 0; y < height; y++) {
+        let inter = map(y, 0, height, 0, 1);
+        let c = lerpColor(
+            color(colors.parchmentLight[0], colors.parchmentLight[1], colors.parchmentLight[2]),
+            color(colors.parchmentDark[0], colors.parchmentDark[1], colors.parchmentDark[2]),
+            inter * 0.3
+        );
+        stroke(c);
+        line(0, y, width, y);
+    }
+}
+
+function drawAgingEffects() {
+    // Paper texture noise
+    loadPixels();
+    let intensity = agingAmount / 100;
+    for (let i = 0; i < pixels.length; i += 4) {
+        let n = (random() - 0.5) * 20 * intensity;
+        pixels[i] = constrain(pixels[i] + n, 0, 255);
+        pixels[i + 1] = constrain(pixels[i + 1] + n, 0, 255);
+        pixels[i + 2] = constrain(pixels[i + 2] + n, 0, 255);
+    }
+    updatePixels();
+
+    // Age spots and stains
+    noStroke();
+    let numStains = floor(15 * intensity);
+    for (let i = 0; i < numStains; i++) {
+        fill(120, 100, 80, random(5, 15) * intensity);
+        let x = random(width);
+        let y = random(height);
+        ellipse(x, y, random(30, 150), random(30, 150));
+    }
+
+    // Fold lines (subtle)
+    if (intensity > 0.3) {
+        stroke(colors.inkLight[0], colors.inkLight[1], colors.inkLight[2], 30 * intensity);
+        strokeWeight(1);
+        drawingContext.setLineDash([15, 15]);
+        line(width * 0.5, 0, width * 0.5, height);
+        line(0, height * 0.5, width, height * 0.5);
+        drawingContext.setLineDash([]);
+    }
+
+    // Edge darkening (vignette)
+    for (let i = 0; i < 30; i++) {
+        let alpha = map(i, 0, 30, 15, 0) * intensity;
+        noFill();
+        stroke(80, 60, 40, alpha);
+        strokeWeight(3);
+        rect(i * 2, i * 2, width - i * 4, height - i * 4);
+    }
+}
+
+function drawGridLines() {
+    stroke(colors.inkLight[0], colors.inkLight[1], colors.inkLight[2], 40);
+    strokeWeight(0.5);
+
+    // Latitude lines
+    for (let i = 1; i < 10; i++) {
+        let y = (i / 10) * height;
+        line(30, y, width - 30, y);
+    }
+
+    // Longitude lines
+    for (let i = 1; i < 10; i++) {
+        let x = (i / 10) * width;
+        line(x, 30, x, height - 30);
+    }
+}
+
+function drawOcean() {
+    // Ocean fill - covers west and south edges
+    fill(colors.ocean[0], colors.ocean[1], colors.ocean[2]);
+    noStroke();
+
+    // Draw ocean as L-shape covering west and south
+    beginShape();
+    // Start at top-left corner
+    vertex(0, 0);
+    // Go down the left edge
+    vertex(0, height);
+    // Go across the bottom
+    vertex(width, height);
+    // Go up the right edge to where land starts
+    vertex(width, height * 0.98);
+    // Follow the coastline backwards
+    for (let i = geography.coastline.length - 1; i >= 0; i--) {
+        let pt = geography.coastline[i];
+        vertex(pt.x * width, pt.y * height);
+    }
+    // Close back to top
+    vertex(0.08 * width, 0);
+    vertex(0, 0);
+    endShape(CLOSE);
+
+    // Wave lines on west side
+    stroke(colors.oceanDeep[0], colors.oceanDeep[1], colors.oceanDeep[2], 80);
+    strokeWeight(0.75);
+    noFill();
+
+    for (let i = 0; i < 4; i++) {
+        beginShape();
+        for (let y = 100; y < height * 0.75; y += 8) {
+            let baseX = 12 + i * 10;
+            let waveX = baseX + sin(y * 0.025 + i) * 3;
+            vertex(waveX, y);
+        }
+        endShape();
+    }
+
+    // Wave lines on south side
+    for (let i = 0; i < 4; i++) {
+        beginShape();
+        for (let x = 50; x < width - 100; x += 8) {
+            let baseY = height - 15 - i * 10;
+            let waveY = baseY + sin(x * 0.02 + i) * 3;
+            vertex(x, waveY);
+        }
+        endShape();
+    }
+
+    // Coastline shadow/outline
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2], 50);
+    strokeWeight(2);
+    noFill();
+    beginShape();
+    for (let pt of geography.coastline) {
+        curveVertex(pt.x * width + 1, pt.y * height + 1);
+    }
+    endShape();
+}
+
+function drawNations() {
+    for (let key in nations) {
+        let nation = nations[key];
+        if (nation.points.length === 0) continue;
+
+        let col = colors[nation.type];
+
+        // Shadow
+        fill(0, 0, 0, 25);
+        noStroke();
+        beginShape();
+        for (let pt of nation.points) {
+            vertex(pt[0] * width + 3, pt[1] * height + 3);
+        }
+        endShape(CLOSE);
+
+        // Fill - using vertex for exact boundaries (no gaps)
+        fill(col[0], col[1], col[2]);
+        beginShape();
+        for (let pt of nation.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+
+        // Draw internal state divisions for confederations
+        if (nation.internalStates) {
+            drawConfederationStates(nation);
+        }
+    }
+
+    // Draw Commonwealth Islands (in the ocean)
+    drawCommonwealthIslands();
+}
+
+function drawConfederationStates(nation) {
+    // Draw internal state boundaries with dashed lines
+    // These represent the former independent states that joined after the War of Succession
+
+    let col = colors[nation.type];
+
+    // Draw each internal state with slightly different shading
+    for (let i = 0; i < nation.internalStates.length; i++) {
+        let state = nation.internalStates[i];
+
+        // Alternate slightly lighter/darker shading
+        let shade = (i % 2 === 0) ? 10 : -10;
+        fill(col[0] + shade, col[1] + shade, col[2] + shade);
+        noStroke();
+
+        beginShape();
+        for (let pt of state.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+    }
+
+    // Draw internal borders as dashed lines
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2], 120);
+    strokeWeight(1);
+    drawingContext.setLineDash([4, 3]);
+
+    for (let state of nation.internalStates) {
+        noFill();
+        beginShape();
+        for (let pt of state.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+    }
+
+    drawingContext.setLineDash([]);
+
+    // Add small state name labels
+    fill(colors.ink[0], colors.ink[1], colors.ink[2], 180);
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textSize(6);
+    textStyle(ITALIC);
+
+    for (let state of nation.internalStates) {
+        // Calculate center of state
+        let cx = 0, cy = 0;
+        for (let pt of state.points) {
+            cx += pt[0];
+            cy += pt[1];
+        }
+        cx = (cx / state.points.length) * width;
+        cy = (cy / state.points.length) * height;
+
+        text(state.name, cx, cy);
+    }
+}
+
+function drawCommonwealthIslands() {
+    let col = colors.hostile;
+
+    for (let island of commonwealthIslands) {
+        // Shadow
+        fill(0, 0, 0, 30);
+        noStroke();
+        beginShape();
+        for (let pt of island.points) {
+            vertex(pt[0] * width + 2, pt[1] * height + 2);
+        }
+        endShape(CLOSE);
+
+        // Fill
+        fill(col[0], col[1], col[2]);
+        beginShape();
+        for (let pt of island.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+
+        // Border
+        stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+        strokeWeight(1.5);
+        noFill();
+        beginShape();
+        for (let pt of island.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+    }
+
+    // Label for the island group - positioned in the western ocean
+    noStroke();
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(10);
+
+    // Text shadow for readability on ocean
+    fill(colors.ocean[0] - 40, colors.ocean[1] - 40, colors.ocean[2] - 40);
+    text("THE", 0.055 * width + 1, 0.10 * height + 1);
+    text("COMMONWEALTH", 0.055 * width + 1, 0.12 * height + 1);
+
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    text("THE", 0.055 * width, 0.10 * height);
+    text("COMMONWEALTH", 0.055 * width, 0.12 * height);
+
+    // Capital marker on Greater Albion
+    let capitalIsland = commonwealthIslands.find(i => i.hasCapital);
+    if (capitalIsland && capitalIsland.capital) {
+        // Star marker for capital
+        fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+        drawStar(capitalIsland.capital.x * width, capitalIsland.capital.y * height, 4, 2, 5);
+
+        // Capital name
+        textSize(7);
+        textStyle(ITALIC);
+        fill(255, 255, 255, 200);
+        text(capitalIsland.capital.name, capitalIsland.capital.x * width + 1, capitalIsland.capital.y * height + 11);
+        fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+        text(capitalIsland.capital.name, capitalIsland.capital.x * width, capitalIsland.capital.y * height + 10);
+    }
+
+    // Small labels for other islands
+    textSize(5);
+    textStyle(ITALIC);
+    fill(colors.ink[0], colors.ink[1], colors.ink[2], 180);
+    for (let island of commonwealthIslands) {
+        if (!island.hasCapital) {
+            // Calculate island center
+            let cx = 0, cy = 0;
+            for (let pt of island.points) {
+                cx += pt[0];
+                cy += pt[1];
+            }
+            cx = (cx / island.points.length) * width;
+            cy = (cy / island.points.length) * height;
+            text(island.name, cx, cy);
+        }
+    }
+}
+
+function drawNationBorders() {
+    let borderWeight = int(document.getElementById('borderSlider').value);
+
+    for (let key in nations) {
+        let nation = nations[key];
+        if (nation.points.length === 0) continue;
+
+        let borderCol = nation.type === 'homeland' ? colors.gold : colors.ink;
+
+        stroke(borderCol[0], borderCol[1], borderCol[2]);
+        strokeWeight(nation.type === 'homeland' ? borderWeight + 1 : borderWeight);
+        noFill();
+
+        // Draw borders with vertex for exact matching
+        beginShape();
+        for (let pt of nation.points) {
+            vertex(pt[0] * width, pt[1] * height);
+        }
+        endShape(CLOSE);
+    }
+}
+
+function drawMountainRanges() {
+    for (let range of mountainRanges) {
+        for (let i = 0; i < range.points.length - 1; i++) {
+            let p1 = range.points[i];
+            let p2 = range.points[i + 1];
+
+            let dist = sqrt(pow(p2[0] - p1[0], 2) + pow(p2[1] - p1[1], 2));
+            let steps = floor(dist * width / 12);
+
+            for (let j = 0; j < steps; j++) {
+                let t = j / steps;
+                let x = lerp(p1[0], p2[0], t) * width;
+                let y = lerp(p1[1], p2[1], t) * height;
+
+                // Vary size based on position in range
+                let size = (8 + noise(x * 0.01, y * 0.01) * 8) * range.intensity;
+
+                // Add slight random offset
+                x += (noise(j * 0.5) - 0.5) * 6;
+                y += (noise(j * 0.5 + 100) - 0.5) * 6;
+
+                drawMountainSymbol(x, y, size);
+            }
+        }
+    }
+}
+
+function drawMountainSymbol(x, y, size) {
+    let col = colors.mountain;
+
+    // Mountain body
+    noStroke();
+    fill(col[0], col[1], col[2]);
+    triangle(x, y - size, x - size * 0.6, y + size * 0.4, x + size * 0.6, y + size * 0.4);
+
+    // Snow cap
+    fill(255, 255, 255, 180);
+    triangle(x, y - size, x - size * 0.25, y - size * 0.5, x + size * 0.25, y - size * 0.5);
+
+    // Shadow side (hatching style)
+    stroke(col[0] - 30, col[1] - 30, col[2] - 30, 150);
+    strokeWeight(0.5);
+    for (let i = 0; i < 3; i++) {
+        let startY = y - size + size * 0.4 + i * size * 0.2;
+        let endY = startY + size * 0.15;
+        line(x + i * 2, startY, x + size * 0.3 + i * 2, endY);
+    }
+}
+
+function drawForests() {
+    for (let forest of forests) {
+        let numTrees = floor(forest.radius * width * forest.density * 0.8);
+
+        for (let i = 0; i < numTrees; i++) {
+            let angle = random(TWO_PI);
+            let r = random(forest.radius * 0.2, forest.radius);
+            let x = (forest.center.x + cos(angle) * r) * width;
+            let y = (forest.center.y + sin(angle) * r) * height;
+
+            // Check if inside a nation (skip ocean)
+            let inNation = false;
+            for (let key in nations) {
+                if (pointInPolygon(x, y, nations[key].points)) {
+                    inNation = true;
+                    break;
+                }
+            }
+
+            if (inNation) {
+                drawTreeSymbol(x, y, 4 + random(3));
+            }
+        }
+    }
+}
+
+function drawTreeSymbol(x, y, size) {
+    let col = colors.forest;
+    noStroke();
+
+    // Simple tree symbol (dot with small trunk)
+    fill(col[0], col[1], col[2], 180);
+    ellipse(x, y - size * 0.3, size, size * 1.2);
+
+    // Trunk
+    fill(col[0] - 20, col[1] - 20, col[2] - 20);
+    rect(x - size * 0.15, y, size * 0.3, size * 0.4);
+}
+
+function drawRivers() {
+    for (let river of rivers) {
+        // River body
+        stroke(colors.river[0], colors.river[1], colors.river[2]);
+        strokeWeight(river.width);
+        noFill();
+
+        beginShape();
+        // Add curve vertices for smooth flow
+        let first = river.points[0];
+        curveVertex(first[0] * width, first[1] * height);
+
+        for (let pt of river.points) {
+            curveVertex(pt[0] * width, pt[1] * height);
+        }
+
+        let last = river.points[river.points.length - 1];
+        curveVertex(last[0] * width, last[1] * height);
+        endShape();
+    }
+}
+
+function drawLabels() {
+    for (let key in nations) {
+        let nation = nations[key];
+        let x = nation.center.x * width;
+        let y = nation.center.y * height;
+
+        // Nation name
+        textAlign(CENTER, CENTER);
+        textStyle(BOLD);
+
+        let fontSize = key === 'volkeria' ? 18 :
+                       key === 'unknown' ? 14 :
+                       key === 'commonwealth' ? 9 : 12;
+
+        textSize(fontSize);
+
+        // Text shadow/outline for readability
+        fill(255, 255, 255, 150);
+        for (let ox = -1; ox <= 1; ox++) {
+            for (let oy = -1; oy <= 1; oy++) {
+                text(nation.name, x + ox, y + oy);
+            }
+        }
+
+        // Main text
+        fill(nation.type === 'unknown' ?
+             color(colors.parchment[0], colors.parchment[1], colors.parchment[2]) :
+             color(colors.ink[0], colors.ink[1], colors.ink[2]));
+        text(nation.name, x, y);
+
+        // Capital city (small dot and name)
+        if (nation.capital && showTerrain) {
+            let cx = nation.capital.x * width;
+            let cy = nation.capital.y * height;
+
+            // City symbol
+            fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+            noStroke();
+            if (nation.type === 'homeland') {
+                // Star for capital
+                drawStar(cx, cy - 15, 4, 2, 5);
+            } else {
+                ellipse(cx, cy - 12, 4, 4);
+            }
+
+            // City name
+            textSize(8);
+            textStyle(ITALIC);
+            fill(colors.inkLight[0], colors.inkLight[1], colors.inkLight[2]);
+            text(nation.capital.name, cx, cy - 3);
+        }
+    }
+}
+
+function drawStar(x, y, radius1, radius2, npoints) {
+    let angle = TWO_PI / npoints;
+    let halfAngle = angle / 2.0;
+    beginShape();
+    for (let a = -HALF_PI; a < TWO_PI - HALF_PI; a += angle) {
+        let sx = x + cos(a) * radius1;
+        let sy = y + sin(a) * radius1;
+        vertex(sx, sy);
+        sx = x + cos(a + halfAngle) * radius2;
+        sy = y + sin(a + halfAngle) * radius2;
+        vertex(sx, sy);
+    }
+    endShape(CLOSE);
+}
+
+function drawCartouche() {
+    let cx = width / 2;
+    let cy = 75;
+    let w = 380;
+    let h = 115;
+
+    // Ornate background
+    fill(colors.parchmentLight[0], colors.parchmentLight[1], colors.parchmentLight[2]);
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+    strokeWeight(2);
+    rectMode(CENTER);
+
+    // Main rectangle with decorative corners
+    rect(cx, cy, w, h, 8);
+
+    // Inner border
+    strokeWeight(1);
+    noFill();
+    rect(cx, cy, w - 12, h - 12, 5);
+
+    // Corner decorations
+    let cornerSize = 12;
+    fill(colors.gold[0], colors.gold[1], colors.gold[2]);
+    noStroke();
+    ellipse(cx - w/2 + 18, cy - h/2 + 18, cornerSize, cornerSize);
+    ellipse(cx + w/2 - 18, cy - h/2 + 18, cornerSize, cornerSize);
+    ellipse(cx - w/2 + 18, cy + h/2 - 18, cornerSize, cornerSize);
+    ellipse(cx + w/2 - 18, cy + h/2 - 18, cornerSize, cornerSize);
+
+    // Decorative scrollwork hints
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+    strokeWeight(1);
+    noFill();
+    arc(cx - w/2 - 5, cy, 30, 40, -HALF_PI, HALF_PI);
+    arc(cx + w/2 + 5, cy, 30, 40, HALF_PI, HALF_PI + PI);
+
+    // Title text
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    noStroke();
+    textAlign(CENTER, CENTER);
+
+    textStyle(BOLD);
+    textSize(26);
+    text("THE CONTINENT", cx, cy - 20);
+
+    textStyle(ITALIC);
+    textSize(11);
+    text("A Strategic Survey of Nations and Territories", cx, cy + 2);
+
+    textStyle(NORMAL);
+    textSize(9);
+    fill(colors.inkLight[0], colors.inkLight[1], colors.inkLight[2]);
+    text("Post-War of Succession Edition • Bureau of State Security • Anno 1952", cx, cy + 20);
+
+    textSize(7);
+    text("Note: The Confederation formed from three states following the War of Succession", cx, cy + 35);
+}
+
+function drawCompassRose() {
+    let cx = 80;
+    let cy = height - 120;
+    let size = 50;
+
+    push();
+    translate(cx, cy);
+
+    // Outer decorative circle
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+    strokeWeight(2);
+    noFill();
+    ellipse(0, 0, size * 2.2, size * 2.2);
+    strokeWeight(1);
+    ellipse(0, 0, size * 2, size * 2);
+
+    // Degree marks
+    for (let i = 0; i < 32; i++) {
+        let angle = (i / 32) * TWO_PI - HALF_PI;
+        let inner = i % 8 === 0 ? size * 0.85 : (i % 4 === 0 ? size * 0.9 : size * 0.95);
+        let outer = size;
+        line(cos(angle) * inner, sin(angle) * inner,
+             cos(angle) * outer, sin(angle) * outer);
+    }
+
+    // Cardinal points (larger)
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    noStroke();
+
+    // North (prominent, with fleur-de-lis style)
+    beginShape();
+    vertex(0, -size);
+    vertex(-10, -size * 0.3);
+    vertex(-3, -size * 0.3);
+    vertex(-3, 0);
+    vertex(3, 0);
+    vertex(3, -size * 0.3);
+    vertex(10, -size * 0.3);
+    endShape(CLOSE);
+
+    // South
+    fill(colors.inkLight[0], colors.inkLight[1], colors.inkLight[2]);
+    beginShape();
+    vertex(0, size);
+    vertex(-8, size * 0.3);
+    vertex(0, size * 0.5);
+    vertex(8, size * 0.3);
+    endShape(CLOSE);
+
+    // East
+    beginShape();
+    vertex(size, 0);
+    vertex(size * 0.3, -8);
+    vertex(size * 0.5, 0);
+    vertex(size * 0.3, 8);
+    endShape(CLOSE);
+
+    // West
+    beginShape();
+    vertex(-size, 0);
+    vertex(-size * 0.3, -8);
+    vertex(-size * 0.5, 0);
+    vertex(-size * 0.3, 8);
+    endShape(CLOSE);
+
+    // Intercardinal points (smaller)
+    let iSize = size * 0.6;
+    fill(colors.ink[0], colors.ink[1], colors.ink[2], 150);
+    for (let i = 0; i < 4; i++) {
+        let angle = (i * 2 + 1) * QUARTER_PI - HALF_PI;
+        push();
+        rotate(angle + HALF_PI);
+        triangle(0, -iSize, -4, 0, 4, 0);
+        pop();
+    }
+
+    // Center decoration
+    fill(colors.gold[0], colors.gold[1], colors.gold[2]);
+    ellipse(0, 0, 12, 12);
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    ellipse(0, 0, 6, 6);
+
+    // Labels
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    textSize(14);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text("N", 0, -size - 18);
+
+    textSize(10);
+    text("S", 0, size + 15);
+    text("E", size + 14, 0);
+    text("W", -size - 14, 0);
+
+    pop();
+}
+
+function drawScaleBar() {
+    let x = width - 150;
+    let y = height - 60;
+    let barWidth = 100;
+    let barHeight = 8;
+
+    // Label
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    noStroke();
+    textSize(9);
+    textAlign(CENTER);
+    textStyle(NORMAL);
+    text("SCALE IN KILOMETERS", x + barWidth/2, y - 15);
+
+    // Bar segments
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+    strokeWeight(1);
+
+    for (let i = 0; i < 4; i++) {
+        if (i % 2 === 0) {
+            fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+        } else {
+            fill(colors.parchment[0], colors.parchment[1], colors.parchment[2]);
+        }
+        rect(x + i * barWidth/4, y, barWidth/4, barHeight);
+    }
+
+    // End marks
+    strokeWeight(1);
+    line(x, y - 3, x, y + barHeight + 3);
+    line(x + barWidth/2, y - 2, x + barWidth/2, y + barHeight + 2);
+    line(x + barWidth, y - 3, x + barWidth, y + barHeight + 3);
+
+    // Distance labels
+    textSize(8);
+    text("0", x, y + barHeight + 12);
+    text("250", x + barWidth/2, y + barHeight + 12);
+    text("500", x + barWidth, y + barHeight + 12);
+}
+
+function drawLegend() {
+    let x = width - 145;
+    let y = 150;
+    let boxSize = 12;
+    let spacing = 20;
+
+    // Background
+    fill(colors.parchmentLight[0], colors.parchmentLight[1], colors.parchmentLight[2], 230);
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+    strokeWeight(1);
+    rect(x - 15, y - 25, 140, 195, 5);
+
+    // Title
+    fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+    noStroke();
+    textSize(10);
+    textStyle(BOLD);
+    textAlign(LEFT);
+    text("LEGEND", x, y - 8);
+
+    // Legend items
+    textStyle(NORMAL);
+    textSize(8);
+
+    let items = [
+        { color: colors.homeland, label: "Socialist Homeland" },
+        { color: colors.ally, label: "Allied State" },
+        { color: colors.satellite, label: "Satellite State" },
+        { color: colors.rival, label: "Socialist Rival" },
+        { color: colors.hostile, label: "Hostile Power" },
+        { color: colors.neutral, label: "Neutral State" },
+        { color: colors.unknown, label: "Unknown Territory" }
+    ];
+
+    for (let i = 0; i < items.length; i++) {
+        let iy = y + 10 + i * spacing;
+        fill(items[i].color[0], items[i].color[1], items[i].color[2]);
+        stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+        strokeWeight(1);
+        rect(x, iy, boxSize, boxSize);
+
+        fill(colors.ink[0], colors.ink[1], colors.ink[2]);
+        noStroke();
+        text(items[i].label, x + boxSize + 8, iy + boxSize - 2);
+    }
+}
+
+function drawMapBorder() {
+    // Outer border
+    stroke(colors.ink[0], colors.ink[1], colors.ink[2]);
+    strokeWeight(3);
+    noFill();
+    rect(20, 20, width - 40, height - 40);
+
+    // Inner border
+    strokeWeight(1);
+    rect(25, 25, width - 50, height - 50);
+
+    // Corner flourishes
+    strokeWeight(1.5);
+    let size = 40;
+
+    // Top-left
+    line(25, 25 + size, 25, 25);
+    line(25, 25, 25 + size, 25);
+    arc(25 + size/2, 25 + size/2, size * 0.6, size * 0.6, PI, PI + HALF_PI);
+
+    // Top-right
+    line(width - 25, 25 + size, width - 25, 25);
+    line(width - 25, 25, width - 25 - size, 25);
+    arc(width - 25 - size/2, 25 + size/2, size * 0.6, size * 0.6, -HALF_PI, 0);
+
+    // Bottom-left
+    line(25, height - 25 - size, 25, height - 25);
+    line(25, height - 25, 25 + size, height - 25);
+    arc(25 + size/2, height - 25 - size/2, size * 0.6, size * 0.6, HALF_PI, PI);
+
+    // Bottom-right
+    line(width - 25, height - 25 - size, width - 25, height - 25);
+    line(width - 25, height - 25, width - 25 - size, height - 25);
+    arc(width - 25 - size/2, height - 25 - size/2, size * 0.6, size * 0.6, 0, HALF_PI);
+}
+
+// Utility functions
+function pointInPolygon(x, y, points) {
+    if (!points || points.length === 0) return false;
+    let inside = false;
+    let j = points.length - 1;
+    for (let i = 0; i < points.length; i++) {
+        let xi = points[i][0] * width, yi = points[i][1] * height;
+        let xj = points[j][0] * width, yj = points[j][1] * height;
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+        }
+        j = i;
+    }
+    return inside;
+}
+
+// Control functions
+function toggleElement(element) {
+    switch(element) {
+        case 'labels': showLabels = !showLabels; break;
+        case 'terrain': showTerrain = !showTerrain; break;
+        case 'decorations': showDecorations = !showDecorations; break;
+        case 'grid': showGrid = !showGrid; break;
+    }
+    redraw();
+}
+
+function updateAging() {
+    agingAmount = int(document.getElementById('agingSlider').value);
+    redraw();
+}
+
+function setStyle(style) {
+    currentStyle = style;
+    redraw();
+}
+
+function regenerateMap() {
+    mapSeed = floor(random(100000));
+    randomSeed(mapSeed);
+    noiseSeed(mapSeed);
+    generateGeography();
+    redraw();
+}
+
+function saveMapImage() {
+    saveCanvas('nomenklatura_continent_map', 'png');
+}
+
+function mousePressed() {
+    for (let key in nations) {
+        if (pointInPolygon(mouseX, mouseY, nations[key].points)) {
+            console.log("Clicked:", nations[key].fullName);
+            document.getElementById('info').innerHTML =
+                `<strong>${nations[key].name}</strong><br>${nations[key].fullName}` +
+                (nations[key].capital ? `<br>Capital: ${nations[key].capital.name}` : '');
+            return;
+        }
+    }
+}
+    </script>
+</body>
+</html>
