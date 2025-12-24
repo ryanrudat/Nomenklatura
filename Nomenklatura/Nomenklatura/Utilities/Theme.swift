@@ -158,6 +158,32 @@ class ThemeManager: ObservableObject {
     }
 }
 
+// MARK: - World Map Colors (Military Briefing Aesthetic)
+
+extension Color {
+    // Map - Political Alignments
+    static let mapPSRA = Color(hex: "8B0000")              // Deep red homeland
+    static let mapPSRAGold = Color(hex: "FFD700")          // Gold accents/border
+    static let mapSocialistAlly = Color(hex: "CD5C5C")     // Indian red for USSR, Germany
+    static let mapCapitalist = Color(hex: "4169E1")        // Royal blue for UK, Canada, France, Cuba
+    static let mapFascist = Color(hex: "5D3A1A")           // Brown for Italy, Spain
+    static let mapPacificHostile = Color(hex: "8B4513")    // Saddle brown for Japan
+    static let mapNeutral = Color(hex: "696969")           // Dim gray for Mexico, China
+    static let mapOccupied = Color(hex: "800000")          // Maroon for occupied territories
+
+    // Map - Geography
+    static let mapOcean = Color(hex: "1C3D5A")             // Dark navy blue
+    static let mapOceanLight = Color(hex: "4A6B8A")        // Lighter ocean for contrast
+    static let mapLand = Color(hex: "D4C4A8")              // Default land color
+    static let mapGrid = Color(hex: "4A4A4A")              // Subtle grid lines
+    static let mapBorder = Color(hex: "2F2F2F")            // Dark border between nations
+
+    // Map - UI Elements
+    static let mapLegendBg = Color(hex: "F5F0E1")          // Legend background
+    static let mapStampRed = Color(hex: "8B0000")          // Classification stamps
+    static let mapCompass = Color(hex: "B8860B")           // Compass rose gold
+}
+
 // MARK: - Shared Colors (Campaign-Independent)
 
 extension Color {

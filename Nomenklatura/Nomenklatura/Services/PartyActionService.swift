@@ -497,11 +497,11 @@ final class PartyActionService {
 
             if let target = targetCadre {
                 if effects.initiatesPromotion {
-                    desc += " \(target.name ?? "The cadre") has been promoted."
+                    desc += " \(target.name) has been promoted."
                 } else if effects.initiatesDemotion {
-                    desc += " \(target.name ?? "The cadre") has been demoted."
+                    desc += " \(target.name) has been demoted."
                 } else if effects.initiatesExpulsion {
-                    desc += " \(target.name ?? "The cadre") has been expelled from the Party."
+                    desc += " \(target.name) has been expelled from the Party."
                 }
             }
 

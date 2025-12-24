@@ -150,7 +150,6 @@ final class CharacterFateService {
         previousPosition: Int?,
         previousTrack: String?
     ) -> String {
-        let positionDesc = previousPosition.map { "Position \($0)" } ?? "unknown position"
         let perpetratorDesc = perpetrator.map { "on orders of \($0.name)" } ?? ""
 
         switch cause {

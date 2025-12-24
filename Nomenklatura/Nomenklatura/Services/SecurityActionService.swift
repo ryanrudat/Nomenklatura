@@ -682,7 +682,8 @@ final class SecurityActionService {
         // Check for security-related goals
         // Using .rootOutTraitors as the existing goal for security NPCs who investigate
         let hasInvestigateGoal = goals.contains { $0.goalType == .rootOutTraitors || $0.goalType == .purgeEnemies }
-        let hasProtectGoal = goals.contains { $0.goalType == .protectPosition }
+        // Note: hasProtectGoal reserved for future defensive actions
+        _ = goals.contains { $0.goalType == .protectPosition }
 
         // Find potential targets based on goals
         if hasInvestigateGoal {

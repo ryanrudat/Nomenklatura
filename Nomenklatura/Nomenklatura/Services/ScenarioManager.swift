@@ -295,18 +295,19 @@ class ScenarioManager {
         scenarioLogger.info("🚀 Starting pre-generation for turn \(nextTurn) (current: \(game.turnNumber))")
         let pregenStartTime = Date()
 
-        // Create silent background task
+        // Extract all needed data from Game on MainActor BEFORE starting detached task
+        // This prevents SwiftData faulting issues when game object is captured across task boundaries
+        let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
+        let cacheKey = "pregenerate_turn_\(nextTurn)"
+        let useAI = Secrets.isAIEnabled
+
+        // Pre-generate fallback scenario on MainActor before detaching
+        // This avoids accessing Game inside the detached task
+        let fallbackScenario = self.getFallbackScenario(for: game)
+
+        // Create silent background task - game is NOT captured, only extracted values
         preGenerateTask = Task.detached { [weak self] in
             guard let self = self else { return }
-
-            // Build prompt for next turn's context
-            // Note: We can't predict dynamic events, so we pre-generate scenarios only
-            let (prompt, cacheKey, useAI) = await MainActor.run {
-                // Simulate next turn's context for prompt building
-                let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
-                let cacheKey = "pregenerate_turn_\(nextTurn)"
-                return (prompt, cacheKey, Secrets.isAIEnabled)
-            }
 
             var scenario: Scenario?
             var wasAIGenerated = false
@@ -329,10 +330,10 @@ class ScenarioManager {
                     #if DEBUG
                     print("[ScenarioManager] Pre-generation AI fallback: \(reason)")
                     #endif
-                    scenario = await MainActor.run { self.getFallbackScenario(for: game) }
+                    scenario = fallbackScenario
                 }
             } else {
-                scenario = await MainActor.run { self.getFallbackScenario(for: game) }
+                scenario = fallbackScenario
             }
 
             // Cache the pre-generated content
