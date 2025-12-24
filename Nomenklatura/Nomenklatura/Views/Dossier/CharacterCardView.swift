@@ -26,64 +26,147 @@ struct CharacterCardView: View {
         return idToAsset[character.templateId]
     }
 
+    /// Left accent bar color based on relationship type
+    private var accentColor: Color {
+        if character.isPatron {
+            return Color(hex: "C4A962") // Gold for patron
+        } else if character.isRival {
+            return Color(hex: "B91C1C") // Red for rival
+        } else if character.disposition >= 60 {
+            return Color(hex: "28A745") // Green for ally
+        } else {
+            return Color(hex: "757575") // Gray for neutral
+        }
+    }
+
+    /// Position display string (e.g., "Position VI" or "Rank 6")
+    private var positionDisplay: String? {
+        guard let index = character.positionIndex, index > 0 else { return nil }
+        let romanNumerals = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
+        if index < romanNumerals.count {
+            return "Position \(romanNumerals[index])"
+        }
+        return "Position \(index)"
+    }
+
+    /// Faction display name
+    private var factionDisplay: String? {
+        guard let factionId = character.factionId else { return nil }
+        // Map faction IDs to display names
+        let factionNames: [String: String] = [
+            "old_guard": "OLD GUARD",
+            "reformists": "REFORMIST",
+            "princelings": "PRINCELING",
+            "youth_league": "YOUTH LEAGUE",
+            "regional": "REGIONAL"
+        ]
+        return factionNames[factionId] ?? factionId.uppercased()
+    }
+
+    /// Faction badge color
+    private var factionColor: Color {
+        guard let factionId = character.factionId else { return theme.inkLight }
+        let factionColors: [String: Color] = [
+            "old_guard": Color(hex: "8B0000"),      // Deep red
+            "reformists": Color(hex: "2E7D32"),     // Green
+            "princelings": Color(hex: "C4A962"),    // Gold
+            "youth_league": Color(hex: "1565C0"),   // Blue
+            "regional": Color(hex: "6D4C41")        // Brown
+        ]
+        return factionColors[factionId] ?? theme.inkGray
+    }
+
     var body: some View {
         Button {
             showingDetail = true
         } label: {
-            HStack(spacing: 12) {
-                // Character portrait with fallback to initials
-                CharacterPortrait(
-                    name: character.name,
-                    imageName: portraitImageName,
-                    size: 50,
-                    showFrame: true
-                )
+            HStack(spacing: 0) {
+                // Left accent bar (relationship indicator)
+                Rectangle()
+                    .fill(accentColor)
+                    .frame(width: 4)
 
-                // Character info
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(character.name)
-                        .font(theme.labelFont)
-                        .fontWeight(.bold)
-                        .foregroundColor(theme.inkBlack)
+                HStack(spacing: 12) {
+                    // Character portrait with fallback to initials
+                    CharacterPortrait(
+                        name: character.name,
+                        imageName: portraitImageName,
+                        size: 50,
+                        showFrame: true
+                    )
 
-                    if let title = character.title {
-                        Text(title)
-                            .font(theme.tagFont)
-                            .foregroundColor(theme.inkGray)
-                    }
+                    // Character info
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(character.name)
+                            .font(theme.labelFont)
+                            .fontWeight(.bold)
+                            .foregroundColor(theme.inkBlack)
 
-                    // Tags (Living Character System: only show traits if personality revealed)
-                    HStack(spacing: 5) {
-                        ForEach(character.stanceTags, id: \.self) { stance in
-                            StanceTagView(stance: stance)
-                        }
-
-                        // Only show personality traits if revealed
-                        if character.isFullyRevealed {
-                            ForEach(character.traitTags.prefix(2), id: \.self) { trait in
-                                TraitTagView(trait: trait)
+                        // Title with position
+                        HStack(spacing: 4) {
+                            if let title = character.title {
+                                Text(title)
+                                    .font(theme.tagFont)
+                                    .foregroundColor(theme.inkGray)
                             }
-                        } else if character.wasDiscoveredDynamically {
-                            // Show mystery indicator for discovered characters
-                            Text("?")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(theme.inkLight)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(theme.borderTan.opacity(0.5))
+                            if let position = positionDisplay {
+                                Text("-")
+                                    .font(theme.tagFont)
+                                    .foregroundColor(theme.inkLight)
+                                Text(position)
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundColor(theme.inkGray)
+                            }
                         }
+
+                        // Tags (Living Character System: only show traits if personality revealed)
+                        HStack(spacing: 5) {
+                            ForEach(character.stanceTags, id: \.self) { stance in
+                                StanceTagView(stance: stance, isProminent: stance == .patron || stance == .rival)
+                            }
+
+                            // Only show personality traits if revealed
+                            if character.isFullyRevealed {
+                                ForEach(character.traitTags.prefix(2), id: \.self) { trait in
+                                    TraitTagView(trait: trait)
+                                }
+                            } else if character.wasDiscoveredDynamically {
+                                // Show mystery indicator for discovered characters
+                                Text("?")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(theme.inkLight)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(theme.borderTan.opacity(0.5))
+                            }
+                        }
+                        .padding(.top, 2)
                     }
-                    .padding(.top, 2)
+
+                    Spacer()
+
+                    // Right side: Faction badge and chevron
+                    VStack(alignment: .trailing, spacing: 6) {
+                        // Faction badge
+                        if let faction = factionDisplay {
+                            Text(faction)
+                                .font(.system(size: 7, weight: .bold))
+                                .tracking(0.5)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(factionColor)
+                                .cornerRadius(2)
+                        }
+
+                        // Chevron to indicate tappable
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(theme.inkLight)
+                    }
                 }
-
-                Spacer()
-
-                // Chevron to indicate tappable
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundColor(theme.inkLight)
+                .padding(12)
             }
-            .padding(12)
             .background(theme.parchmentDark)
             .overlay(
                 Rectangle()

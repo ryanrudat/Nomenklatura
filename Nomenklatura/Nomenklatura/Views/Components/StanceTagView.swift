@@ -9,6 +9,7 @@ import SwiftUI
 
 struct StanceTagView: View {
     let stance: StanceTag
+    var isProminent: Bool = false
     @Environment(\.theme) var theme
 
     private var backgroundColor: Color {
@@ -31,12 +32,16 @@ struct StanceTagView: View {
 
     var body: some View {
         Text(stance.rawValue)
-            .font(theme.tagFont)
+            .font(isProminent ? .system(size: 10, weight: .bold) : theme.tagFont)
             .foregroundColor(textColor)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
+            .padding(.horizontal, isProminent ? 7 : 5)
+            .padding(.vertical, isProminent ? 3 : 2)
             .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: isProminent ? 4 : 3)
+                    .stroke(isProminent ? textColor.opacity(0.5) : .clear, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: isProminent ? 4 : 3))
     }
 }
 
