@@ -987,7 +987,7 @@ class CampaignLoader {
             speechPattern: "Speaks quietly—makes others lean in to hear. Long pauses that force people to fill the silence with confessions. 'Interesting. Tell me more about that.' Eyes that never blink when they should. 'Your file says one thing. You are telling me another.' Occasionally shows fatherly warmth—somehow more terrifying. 'Come now, we are friends here, aren't we?' His smile doesn't match his eyes.",
             factionId: "old_guard",
             isPatron: true,
-            isRival: true,
+            isRival: false,
             startingDisposition: 55
         ))
 

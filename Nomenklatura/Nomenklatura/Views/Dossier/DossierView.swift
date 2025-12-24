@@ -23,6 +23,7 @@ struct DossierView: View {
     var onCongressTap: (() -> Void)? = nil
     @State private var selectedTab: DossierTab = .profile
     @State private var characterFilter: CharacterFilter = .all
+    @State private var searchText: String = ""
     @Environment(\.theme) var theme
 
     // MARK: - Memoized Character Filters (Performance Optimization)
@@ -37,17 +38,41 @@ struct DossierView: View {
     }
 
     private var filteredCharacters: [GameCharacter] {
-        let active = activeCharacters
+        var result = activeCharacters
+
+        // Apply category filter
         switch characterFilter {
         case .all:
-            return active
+            break // No filter
         case .keyFigures:
-            return active.filter { $0.isPatron || $0.isRival || $0.disposition >= 70 || $0.disposition <= 30 }
+            result = result.filter { $0.isPatron || $0.isRival || $0.disposition >= 70 || $0.disposition <= 30 }
         case .allies:
-            return active.filter { $0.disposition >= 60 && !$0.isRival }
+            result = result.filter { $0.disposition >= 60 && !$0.isRival }
         case .others:
-            return active.filter { !$0.isPatron && !$0.isRival && $0.disposition > 30 && $0.disposition < 60 }
+            result = result.filter { !$0.isPatron && !$0.isRival && $0.disposition > 30 && $0.disposition < 60 }
         }
+
+        // Apply search filter
+        if !searchText.isEmpty {
+            let lowercasedSearch = searchText.lowercased()
+            result = result.filter { character in
+                character.name.lowercased().contains(lowercasedSearch) ||
+                (character.title?.lowercased().contains(lowercasedSearch) ?? false)
+            }
+        }
+
+        // Sort by hierarchy (position index descending - highest positions first)
+        result = result.sorted { char1, char2 in
+            let pos1 = char1.positionIndex ?? 0
+            let pos2 = char2.positionIndex ?? 0
+            if pos1 != pos2 {
+                return pos1 > pos2  // Higher position first
+            }
+            // Secondary sort by name if same position
+            return char1.name < char2.name
+        }
+
+        return result
     }
 
     var body: some View {
@@ -123,6 +148,39 @@ struct DossierView: View {
 
         if !active.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
+                // Search bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(theme.inkLight)
+                        .font(.system(size: 14))
+
+                    TextField("Search figures...", text: $searchText)
+                        .font(theme.bodyFontSmall)
+                        .foregroundColor(theme.inkBlack)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(theme.inkLight)
+                                .font(.system(size: 14))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(theme.parchmentDark)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(theme.borderTan, lineWidth: 1)
+                )
+                .cornerRadius(6)
+                .padding(.bottom, 8)
+
                 // Header with filter bar (Living Character System)
                 HStack {
                     Image(systemName: "person.2.fill")
@@ -1517,7 +1575,7 @@ struct MenuOptionRow: View {
     // Add sample characters
     let wallace = GameCharacter(templateId: "wallace", name: "Director Wallace", title: "Head of State Security", role: .patron)
     wallace.isPatron = true
-    wallace.isRival = true
+    wallace.isRival = false
     wallace.game = game
 
     let peterson = GameCharacter(templateId: "peterson", name: "Comrade Peterson", title: "Secretary of Ideology", role: .ally)

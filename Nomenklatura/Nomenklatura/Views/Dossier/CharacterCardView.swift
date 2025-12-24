@@ -3324,7 +3324,7 @@ struct DossierBackground: View {
 #Preview {
     let character = GameCharacter(templateId: "wallace", name: "Director Wallace", title: "Head of State Security", role: .patron)
     character.isPatron = true
-    character.isRival = true
+    character.isRival = false
     character.personalityParanoid = 80
     character.personalityRuthless = 90
 
