@@ -394,7 +394,7 @@ struct CharacterDetailView: View {
 
     private var characterHeaderCard: some View {
         HStack(alignment: .top, spacing: 16) {
-            // Portrait with message icon
+            // Portrait with status icon
             ZStack(alignment: .bottomTrailing) {
                 // Portrait
                 CharacterPortrait(
@@ -406,22 +406,50 @@ struct CharacterDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(hex: "E0E0E0"), lineWidth: 1)
+                        .stroke(character.isAlive ? Color(hex: "E0E0E0") : Color(hex: "8B0000").opacity(0.5), lineWidth: character.isAlive ? 1 : 2)
                 )
-                .grayscale(0.8)
+                .grayscale(character.isAlive ? 0.8 : 1.0)
                 .contrast(1.1)
+                .opacity(character.isAlive ? 1.0 : 0.7)
+                .overlay(
+                    // "DECEASED" stamp overlay for dead characters
+                    Group {
+                        if !character.isAlive {
+                            ZStack {
+                                // Red X or cross
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 50, weight: .bold))
+                                    .foregroundColor(Color(hex: "8B0000").opacity(0.4))
+                            }
+                        }
+                    }
+                )
 
-                // Message/chat icon
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: "4A4A4A"))
-                        .frame(width: 28, height: 28)
+                // Message/chat icon (only for living characters)
+                if character.isAlive {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "4A4A4A"))
+                            .frame(width: 28, height: 28)
 
-                    Image(systemName: "message.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white)
+                        Image(systemName: "message.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white)
+                    }
+                    .offset(x: 6, y: 6)
+                } else {
+                    // Deceased indicator
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "8B0000"))
+                            .frame(width: 28, height: 28)
+
+                        Image(systemName: "cross.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white)
+                    }
+                    .offset(x: 6, y: 6)
                 }
-                .offset(x: 6, y: 6)
             }
 
             // Character info
@@ -430,22 +458,48 @@ struct CharacterDetailView: View {
                 Text(character.name.uppercased())
                     .font(.system(size: 20, weight: .black))
                     .tracking(0.5)
-                    .foregroundColor(theme.inkBlack)
+                    .foregroundColor(character.isAlive ? theme.inkBlack : theme.inkGray)
 
-                // Current Assignment label
-                Text("CURRENT ASSIGNMENT")
-                    .font(.system(size: 9, weight: .medium))
-                    .tracking(1)
-                    .foregroundColor(theme.inkGray)
-
-                // Title
-                if let title = character.title {
-                    Text(title)
-                        .font(.system(size: 14))
-                        .foregroundColor(theme.inkBlack)
+                // Deceased status banner
+                if !character.isAlive {
+                    HStack(spacing: 6) {
+                        Image(systemName: character.currentStatus == .executed ? "xmark.seal.fill" : "person.fill.xmark")
+                            .font(.system(size: 10))
+                        Text(character.currentStatus.displayText.uppercased())
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(1)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(character.currentStatus == .executed ? Color(hex: "8B0000") : Color(hex: "4A4A4A"))
+                    .cornerRadius(4)
+                } else {
+                    // Current Assignment label (only for living)
+                    Text("CURRENT ASSIGNMENT")
+                        .font(.system(size: 9, weight: .medium))
+                        .tracking(1)
+                        .foregroundColor(theme.inkGray)
                 }
 
-                // Faction badge
+                // Title or former title
+                if let title = character.title {
+                    Text(character.isAlive ? title : "Former: \(title)")
+                        .font(.system(size: 14))
+                        .foregroundColor(character.isAlive ? theme.inkBlack : theme.inkLight)
+                        .italic(!character.isAlive)
+                }
+
+                // Status details for deceased
+                if !character.isAlive, let statusDetails = character.statusDetails {
+                    Text(statusDetails)
+                        .font(.system(size: 11, design: .serif))
+                        .italic()
+                        .foregroundColor(theme.inkGray)
+                        .lineLimit(2)
+                }
+
+                // Faction badge (show for both living and deceased)
                 if let factionId = character.factionId {
                     HStack(spacing: 6) {
                         Image(systemName: "shield.fill")
@@ -454,7 +508,7 @@ struct CharacterDetailView: View {
                         Text("FACTION: \(factionDisplayName(factionId))")
                             .font(.system(size: 11, weight: .medium))
                             .tracking(0.5)
-                            .foregroundColor(theme.inkBlack)
+                            .foregroundColor(character.isAlive ? theme.inkBlack : theme.inkLight)
                     }
                     .padding(.top, 4)
                 }
@@ -719,19 +773,135 @@ struct CharacterDetailView: View {
     }
 
     private var serviceRecordText: AttributedString {
-        var text = AttributedString("Subject has shown exemplary service records during the '\(character.introducedTurn > 10 ? "56" : "48") uprising. ")
+        // Generate unique service record based on character attributes
+        let serviceText = generateUniqueServiceRecord()
+        var text = AttributedString(serviceText)
 
-        // Add redacted portion
-        var redacted = AttributedString("REDACTED")
+        // Add redacted portion at a contextually appropriate place
+        var redacted = AttributedString(" ████████ ")
         redacted.backgroundColor = theme.inkBlack
         redacted.foregroundColor = theme.inkBlack
 
         text.append(redacted)
 
-        let rest = AttributedString(" previous affiliations with the western trade union have been purged from public records. Currently overseeing internal security protocols for Sector \(character.introducedTurn % 6 + 1).")
+        let rest = AttributedString(generateServiceRecordSuffix())
         text.append(rest)
 
         return text
+    }
+
+    /// Generate a unique service record based on character attributes
+    private func generateUniqueServiceRecord() -> String {
+        let firstName = character.name.components(separatedBy: " ").first ?? "Subject"
+        let era = character.introducedTurn > 10 ? "'52" : "'48"
+        let faction = character.factionId ?? "independent"
+
+        // Background based on faction
+        let factionBackground: String
+        switch faction {
+        case "reformists":
+            factionBackground = "Subject rose through academic channels before joining the Party apparatus. Previous work in theoretical economics at the People's Institute."
+        case "old_guard":
+            factionBackground = "Subject is a veteran of the Revolution, having served in the original Committees of Public Safety during the Civil War period."
+        case "youth_league":
+            factionBackground = "Subject emerged from the Young Pioneers program, noted for ideological fervor and organizational skills during campus activities."
+        case "princelings":
+            factionBackground = "Subject comes from a family with established Party connections. Parents held positions during the founding of the PSRA."
+        case "regional":
+            factionBackground = "Subject has deep roots in provincial administration, having served in multiple capacities across the western territories."
+        default:
+            factionBackground = "Subject's origins prior to Party membership remain partially unclear. Some records were lost during the consolidation period."
+        }
+
+        // Personality-influenced details
+        var personalityNotes: [String] = []
+
+        if character.personalityAmbitious >= 70 {
+            personalityNotes.append("Noted for exceptional drive in pursuing advancement within Party structures.")
+        }
+        if character.personalityRuthless >= 65 {
+            personalityNotes.append("Has demonstrated willingness to take necessary measures during difficult assignments.")
+        }
+        if character.personalityLoyal >= 75 {
+            personalityNotes.append("Consistently rated as highly reliable in matters of Party discipline.")
+        }
+        if character.personalityCompetent >= 80 {
+            personalityNotes.append("Technical performance reviews indicate above-average capability in assigned duties.")
+        }
+        if character.personalityCorrupt >= 50 {
+            personalityNotes.append("Some irregularities in resource allocation have been noted but not formally investigated.")
+        }
+        if character.personalityParanoid >= 60 {
+            personalityNotes.append("Subject maintains extensive personal security measures and limited social contacts.")
+        }
+
+        let personalityText = personalityNotes.isEmpty
+            ? "Standard psychological profile for Party cadre."
+            : personalityNotes.prefix(2).joined(separator: " ")
+
+        // Historical event participation
+        let eventParticipation: String
+        switch (character.introducedTurn % 5) {
+        case 0:
+            eventParticipation = "Participated in the \(era) industrial reorganization campaign."
+        case 1:
+            eventParticipation = "Served on the inspection committee during the \(era) purification drive."
+        case 2:
+            eventParticipation = "Assigned to agricultural coordination efforts following the \(era) collectivization."
+        case 3:
+            eventParticipation = "Active in cultural rehabilitation programs during the post-war reconstruction."
+        default:
+            eventParticipation = "Contributed to security operations in the border regions during heightened tensions."
+        }
+
+        // Handle deceased characters specially
+        if !character.isAlive {
+            let deathContext: String
+            switch character.currentStatus {
+            case .executed:
+                deathContext = "\n\n[FILE CLOSED - SUBJECT EXECUTED. Records sealed by order of the Security Directorate.]"
+            case .purged:
+                deathContext = "\n\n[FILE CLOSED - SUBJECT REMOVED FROM SERVICE. Current whereabouts: Reeducation Facility.]"
+            case .exiled:
+                deathContext = "\n\n[FILE CLOSED - SUBJECT EXPELLED FROM PARTY. Last known location: External territories.]"
+            case .dead:
+                deathContext = "\n\n[FILE CLOSED - SUBJECT DECEASED. Cause of death pending official determination.]"
+            default:
+                deathContext = "\n\n[FILE CLOSED - STATUS: INACTIVE]"
+            }
+            return "\(factionBackground) \(eventParticipation) \(personalityText)\(deathContext)"
+        }
+
+        return "\(factionBackground) \(eventParticipation) \(personalityText)"
+    }
+
+    /// Generate the suffix for the service record (after redaction)
+    private func generateServiceRecordSuffix() -> String {
+        let sector = (character.introducedTurn % 8) + 1
+        let currentRole: String
+
+        if let title = character.title {
+            if title.contains("Minister") {
+                currentRole = "Currently directing ministerial operations with full security clearance."
+            } else if title.contains("Secretary") {
+                currentRole = "Presently assigned to secretarial duties within the central apparatus."
+            } else if title.contains("Director") {
+                currentRole = "Overseeing directorate functions with expanded operational authority."
+            } else if title.contains("Deputy") {
+                currentRole = "Serving in deputy capacity with supervisory responsibilities."
+            } else {
+                currentRole = "Maintaining assigned duties in Sector \(sector) operations."
+            }
+        } else {
+            currentRole = "Current assignment: classified operations, Sector \(sector)."
+        }
+
+        // For deceased characters
+        if !character.isAlive {
+            return "Final assignment terminated. All active duties rescinded."
+        }
+
+        return currentRole
     }
 
     private var surveillanceNotesSection: some View {
@@ -770,7 +940,85 @@ struct CharacterDetailView: View {
     }
 
     private var surveillanceNote: String {
-        "\"Subject was observed visiting \u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588} Jazz Club on three separate occasions. Suspected drop point for \u{2588}\u{2588}\u{2588}\u{2588}.\""
+        generateUniqueSurveillanceNote()
+    }
+
+    /// Generate a unique surveillance note based on character attributes and state
+    private func generateUniqueSurveillanceNote() -> String {
+        let redactedShort = "████"
+        let redactedMed = "██████"
+        let redactedLong = "████████"
+
+        // For deceased characters, show final surveillance entry
+        if !character.isAlive {
+            switch character.currentStatus {
+            case .executed:
+                return "\"Final entry: Subject taken into custody on \(redactedShort) at 0300 hours. Sentence carried out per Directive \(redactedShort). File transferred to Archives.\""
+            case .purged:
+                return "\"Subject removed from position following investigation. Last seen being escorted to \(redactedMed) Rehabilitation Center. Surveillance discontinued.\""
+            case .exiled:
+                return "\"Subject departed via \(redactedMed) checkpoint. Border guards confirmed exit. No further monitoring authorized.\""
+            case .dead:
+                return "\"Subject found unresponsive at \(redactedMed). Circumstances under review. Medical examiner's report: \(redactedLong).\""
+            default:
+                return "\"Surveillance terminated. Subject no longer active in Party affairs. File marked for archive.\""
+            }
+        }
+
+        // Living characters get personality-based surveillance notes
+        let observationTemplates: [(condition: Bool, note: String)] = [
+            // Ambitious characters
+            (character.personalityAmbitious >= 75,
+             "\"Subject observed cultivating relationships with senior officials outside normal duty hours. Pattern suggests deliberate networking strategy.\""),
+
+            // Corrupt characters
+            (character.personalityCorrupt >= 60,
+             "\"Irregularities noted in subject's household expenditures versus official salary. Source of additional funds: \(redactedLong).\""),
+
+            // Paranoid characters
+            (character.personalityParanoid >= 70,
+             "\"Subject employs counter-surveillance techniques. Changes routes regularly. Maintains dead drops at \(redactedMed) locations.\""),
+
+            // Ruthless characters
+            (character.personalityRuthless >= 70,
+             "\"Subject's former associate \(redactedMed) reported to reeducation following their private meeting. Connection suspected but unproven.\""),
+
+            // Loyal characters
+            (character.personalityLoyal >= 80,
+             "\"Subject maintains regular attendance at Party functions. No deviationist literature found in residence. Ideological reliability: HIGH.\""),
+
+            // Competent characters
+            (character.personalityCompetent >= 85,
+             "\"Subject's work output exceeds quota by significant margin. Some colleagues have filed complaints about 'unrealistic standards.'\""),
+
+            // Low loyalty (potential threat)
+            (character.personalityLoyal < 40,
+             "\"Subject observed in extended conversation with \(redactedMed) at cultural event. Context of discussion unknown. Recommend continued monitoring.\"")
+        ]
+
+        // Find first matching condition
+        if let match = observationTemplates.first(where: { $0.condition }) {
+            return match.note
+        }
+
+        // Default observations based on faction
+        let factionNote: String
+        switch character.factionId {
+        case "reformists":
+            factionNote = "\"Subject attended lecture series on 'Economic Modernization' at People's University. Associates include known reform advocates.\""
+        case "old_guard":
+            factionNote = "\"Subject participates in veterans' committee meetings. Maintains connections with retired security personnel from \(redactedMed) era.\""
+        case "youth_league":
+            factionNote = "\"Subject active in ideological instruction programs. Noted for enthusiasm in recruitment drives among university students.\""
+        case "princelings":
+            factionNote = "\"Subject's family connections facilitate access to restricted social circles. Attended private gathering at \(redactedMed) residence.\""
+        case "regional":
+            factionNote = "\"Subject maintains extensive correspondence with provincial contacts. Travel patterns suggest continued regional influence network.\""
+        default:
+            factionNote = "\"Subject was observed visiting \(redactedMed) establishment on three separate occasions. Purpose of visits: \(redactedShort).\""
+        }
+
+        return factionNote
     }
 
     // MARK: - Key Relations Section

@@ -456,22 +456,380 @@ class DynamicEventTriggerService {
     private func generateCallback(originalEvent: GameEvent, followUpHook: String, game: Game) -> DynamicEvent? {
         let callbackFlag = "callback_\(originalEvent.id.uuidString.prefix(8))"
 
+        // Generate an immersive follow-up based on the hook and original decision
+        let (title, expandedText, responses) = expandFollowUpHook(
+            hook: followUpHook,
+            originalEvent: originalEvent,
+            game: game,
+            callbackFlag: callbackFlag
+        )
+
         return DynamicEvent(
             eventType: .consequenceCallback,
             priority: .elevated,
-            title: "Echoes of the Past",
-            briefText: followUpHook,
+            title: title,
+            briefText: expandedText,
             turnGenerated: game.turnNumber,
             isUrgent: false,
-            responseOptions: [
-                EventResponse(id: "acknowledge", text: "Deal with it", shortText: "Deal With It", effects: [:], setsFlag: callbackFlag)
-            ],
+            responseOptions: responses,
             linkedDecisionId: originalEvent.details["decisionId"],
             linkedTurnNumber: originalEvent.turnNumber,
             callbackFlag: callbackFlag,
             iconName: "arrow.uturn.backward.circle.fill",
             accentColor: "inkGray"
         )
+    }
+
+    /// Expand a follow-up hook into a full immersive event with meaningful choices
+    private func expandFollowUpHook(
+        hook: String,
+        originalEvent: GameEvent,
+        game: Game,
+        callbackFlag: String
+    ) -> (String, String, [EventResponse]) {
+        let hookLower = hook.lowercased()
+        let originalTitle = originalEvent.details["title"] ?? "a previous matter"
+        let turnsSince = game.turnNumber - originalEvent.turnNumber
+
+        // Categorize the hook and generate appropriate response
+        if hookLower.contains("remember") || hookLower.contains("forget") || hookLower.contains("student") {
+            return generateStudentRememberCallback(hook: hook, turnsSince: turnsSince, callbackFlag: callbackFlag)
+        } else if hookLower.contains("request") || hookLower.contains("ask") || hookLower.contains("expect") {
+            return generateRequestFulfillmentCallback(hook: hook, originalEvent: originalEvent, game: game, callbackFlag: callbackFlag)
+        } else if hookLower.contains("promis") || hookLower.contains("commit") || hookLower.contains("agree") {
+            return generatePromiseCallback(hook: hook, originalEvent: originalEvent, game: game, callbackFlag: callbackFlag)
+        } else if hookLower.contains("favor") || hookLower.contains("debt") || hookLower.contains("owe") {
+            return generateFavorCallback(hook: hook, turnsSince: turnsSince, callbackFlag: callbackFlag)
+        } else if hookLower.contains("watch") || hookLower.contains("eye") || hookLower.contains("observe") {
+            return generateWatchingCallback(hook: hook, turnsSince: turnsSince, callbackFlag: callbackFlag)
+        } else if hookLower.contains("enemy") || hookLower.contains("rival") || hookLower.contains("opponent") {
+            return generateEnemyCallback(hook: hook, game: game, callbackFlag: callbackFlag)
+        } else if hookLower.contains("wait") || hookLower.contains("time") || hookLower.contains("patient") {
+            return generateTimingCallback(hook: hook, turnsSince: turnsSince, callbackFlag: callbackFlag)
+        } else {
+            // Default: Create a contextual follow-up based on the original decision
+            return generateGenericCallback(hook: hook, originalEvent: originalEvent, turnsSince: turnsSince, callbackFlag: callbackFlag)
+        }
+    }
+
+    private func generateStudentRememberCallback(hook: String, turnsSince: Int, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "Echoes of Suppression"
+        let text = """
+        A report crosses your desk. The students you dealt with \(turnsSince) months ago have not forgotten.
+
+        Those who were arrested have completed their 'reeducation.' Some have returned to their studies—silent, compliant. But intelligence reports suggest others have gone underground, forming cells that spread seditious literature.
+
+        Your name appears in their samizdat pamphlets. Not prominently—not yet. But the seeds of resentment have been planted.
+
+        The security services await your instructions.
+        """
+
+        let responses = [
+            EventResponse(
+                id: "monitor",
+                text: "Increase surveillance on suspected cells",
+                shortText: "Monitor",
+                effects: ["stability": 5, "network": -5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "rehabilitate",
+                text: "Offer amnesty to those who inform",
+                shortText: "Offer Amnesty",
+                effects: ["popularSupport": 5, "reputationCunning": 5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "ignore",
+                text: "Students pose no real threat. Focus elsewhere.",
+                shortText: "Ignore",
+                effects: [:],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generateRequestFulfillmentCallback(hook: String, originalEvent: GameEvent, game: Game, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "Request Fulfilled"
+        let originalDecision = originalEvent.details["optionChosen"] ?? "your request"
+
+        let text = """
+        Your earlier request has finally worked its way through the bureaucracy.
+
+        The matter regarding \(originalDecision) has been processed. The relevant departments have allocated resources, forms have been filed in triplicate, and the wheels of the state apparatus have turned—slowly, as always, but inexorably.
+
+        A courier arrives with documentation confirming the outcome. However, nothing in the Party comes without strings attached.
+
+        The officials who expedited this matter may expect... reciprocity.
+        """
+
+        let responses = [
+            EventResponse(
+                id: "acknowledge_favor",
+                text: "Note who helped. Favors must be repaid.",
+                shortText: "Remember Debt",
+                effects: ["network": 5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "claim_credit",
+                text: "Ensure others know this was your initiative",
+                shortText: "Claim Credit",
+                effects: ["standing": 5, "reputationCompetent": 3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "move_on",
+                text: "File it away. There's always more work.",
+                shortText: "Move On",
+                effects: [:],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generatePromiseCallback(hook: String, originalEvent: GameEvent, game: Game, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "A Promise Comes Due"
+
+        let text = """
+        They have not forgotten your words.
+
+        When you made your commitment, it seemed expedient—perhaps even sincere. Now, months later, those who heard your promise have returned to collect.
+
+        \"You said you would help us,\" the delegation's leader states flatly. \"We believed you. Our people believed you. Now we ask: will you honor your word?\"
+
+        The cost of fulfillment has grown since you made the promise. But the cost of breaking it may be higher still.
+        """
+
+        let responses = [
+            EventResponse(
+                id: "honor_promise",
+                text: "A man's word is his bond. Fulfill the commitment.",
+                shortText: "Honor Promise",
+                effects: ["reputationLoyal": 10, "treasury": -10, "popularSupport": 5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "delay",
+                text: "Circumstances have changed. Request patience.",
+                shortText: "Delay",
+                effects: ["reputationCunning": 5, "popularSupport": -3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "break_promise",
+                text: "Promises made under duress are not binding.",
+                shortText: "Break Promise",
+                effects: ["reputationLoyal": -15, "standing": 5],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generateFavorCallback(hook: String, turnsSince: Int, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "Debts and Favors"
+
+        let text = """
+        The favor you called upon \(turnsSince) months ago has not been forgotten.
+
+        A familiar face appears at your office door—one you recognize from that earlier arrangement. They do not smile. In the economy of power, every transaction must eventually balance.
+
+        \"I helped you once,\" they say simply. \"Now I require assistance with a... delicate matter.\"
+
+        The request, when explained, is not unreasonable. But neither is it entirely comfortable.
+        """
+
+        let responses = [
+            EventResponse(
+                id: "repay",
+                text: "Debts must be honored. Help them.",
+                shortText: "Repay Favor",
+                effects: ["network": 8, "standing": -3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "negotiate",
+                text: "Discuss terms. Perhaps a smaller repayment.",
+                shortText: "Negotiate",
+                effects: ["reputationCunning": 5, "network": 3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "refuse",
+                text: "Circumstances change. Refuse politely.",
+                shortText: "Refuse",
+                effects: ["network": -10, "standing": 5],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generateWatchingCallback(hook: String, turnsSince: Int, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "Eyes Upon You"
+
+        let text = """
+        You sense it now—the attention you attracted with your earlier actions has not faded.
+
+        In the corridors of the Central Committee, conversations pause when you approach. In meetings, certain eyes follow you more closely than before. Whether this scrutiny is born of admiration, suspicion, or simply calculation, you cannot yet determine.
+
+        But you have learned enough to know: in this world, being watched is never neutral. Every observer is also a potential witness—or accuser.
+
+        How will you respond to this heightened visibility?
+        """
+
+        let responses = [
+            EventResponse(
+                id: "embrace",
+                text: "Use the attention. Visibility can be power.",
+                shortText: "Embrace It",
+                effects: ["standing": 8, "rivalThreat": 5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "deflect",
+                text: "Redirect attention elsewhere. Cultivate obscurity.",
+                shortText: "Deflect",
+                effects: ["reputationCunning": 8, "standing": -3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "investigate",
+                text: "Identify who's watching and why.",
+                shortText: "Investigate",
+                effects: ["network": 5],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generateEnemyCallback(hook: String, game: Game, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let rivalName = game.characters.first(where: { $0.isRival })?.name ?? "your rival"
+        let title = "Old Wounds"
+
+        let text = """
+        The enmity you created has festered.
+
+        Word reaches you through back channels: \(rivalName) has not forgotten your earlier slight. They have been patient—too patient, perhaps, for someone of their temperament. This suggests they are waiting for something. An opportunity, a moment of weakness, an opening.
+
+        Your informants report increased activity among their faction. Documents are being gathered. Meetings are being held. The machinery of political warfare is being assembled.
+
+        The question is not whether they will strike, but when—and whether you will be ready.
+        """
+
+        let responses = [
+            EventResponse(
+                id: "preempt",
+                text: "Strike first. Begin gathering evidence against them.",
+                shortText: "Preemptive Strike",
+                effects: ["rivalThreat": -10, "reputationRuthless": 8],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "fortify",
+                text: "Shore up defenses. Strengthen alliances.",
+                shortText: "Fortify",
+                effects: ["network": 10, "patronFavor": 5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "reconcile",
+                text: "Attempt reconciliation. Some enemies can become allies.",
+                shortText: "Reconcile",
+                effects: ["rivalThreat": -5, "reputationCunning": 5, "standing": -3],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generateTimingCallback(hook: String, turnsSince: Int, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "The Time Has Come"
+
+        let text = """
+        You have waited \(turnsSince) months. Now, the moment you anticipated has arrived.
+
+        The conditions you foresaw have materialized. The pieces have moved into position. What seemed like patience to others was, in truth, preparation—and now that preparation bears fruit.
+
+        But timing is everything. Act too soon and you waste the opportunity. Wait too long and the window closes. The question is: has the moment truly arrived, or is this merely its shadow?
+        """
+
+        let responses = [
+            EventResponse(
+                id: "act_now",
+                text: "The time is now. Execute the plan.",
+                shortText: "Act Now",
+                effects: ["standing": 10, "reputationCompetent": 8],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "wait_more",
+                text: "Not yet. Continue waiting for the perfect moment.",
+                shortText: "Wait",
+                effects: ["reputationCunning": 5],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "reassess",
+                text: "Circumstances have changed. Abandon the plan.",
+                shortText: "Abandon",
+                effects: ["standing": -5],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
+    }
+
+    private func generateGenericCallback(hook: String, originalEvent: GameEvent, turnsSince: Int, callbackFlag: String) -> (String, String, [EventResponse]) {
+        let title = "Consequences"
+        let originalTitle = originalEvent.details["title"] ?? "your decision"
+
+        let text = """
+        \(hook)
+
+        It has been \(turnsSince) months since you made your choice regarding \(originalTitle). The ripples of that decision have spread through the apparatus of state, touching lives and departments you never anticipated.
+
+        Now those ripples return as waves. The outcome—predictable in hindsight, perhaps—demands your attention once more. History, it seems, does not release its grip so easily.
+
+        What will you do with this inheritance from your past self?
+        """
+
+        let responses = [
+            EventResponse(
+                id: "address",
+                text: "Address the consequences directly",
+                shortText: "Address",
+                effects: ["standing": 5, "reputationCompetent": 3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "delegate",
+                text: "Delegate this to subordinates",
+                shortText: "Delegate",
+                effects: ["network": 3],
+                setsFlag: callbackFlag
+            ),
+            EventResponse(
+                id: "acknowledge",
+                text: "Acknowledge and move forward",
+                shortText: "Acknowledge",
+                effects: [:],
+                setsFlag: callbackFlag
+            )
+        ]
+
+        return (title, text, responses)
     }
 
     // MARK: - Urgent Interruptions

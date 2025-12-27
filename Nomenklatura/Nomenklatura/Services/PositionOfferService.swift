@@ -233,11 +233,31 @@ class PositionOfferService {
             return false
         }
 
-        // Cooldown between offers (every 4 turns minimum)
+        // Early game protection - no offers in first 5 turns
+        // Per proper Party procedure, new cadres must demonstrate their worth first
+        if game.turnNumber < 5 {
+            return false
+        }
+
+        // Cooldown between offers (every 5 turns minimum)
+        // The Party does not rush cadre assignments
         if let lastOfferTurn = game.variables["last_offer_turn"],
            let turn = Int(lastOfferTurn),
-           game.turnNumber - turn < 4 {
+           game.turnNumber - turn < 5 {
             return false
+        }
+
+        // Must have served minimum time in current position (3 turns)
+        // Party procedure requires demonstrated service before advancement
+        if game.turnsInCurrentPosition < 3 {
+            return false
+        }
+
+        // Check for previous declined offers (Party remembers)
+        let recentDeclines = game.flags.filter { $0.hasPrefix("declined_offer_") }.count
+        if recentDeclines >= 2 {
+            // Too many declines - Party is less likely to offer again
+            return Int.random(in: 1...100) <= 10
         }
 
         // Random chance based on standing and favor
@@ -290,13 +310,46 @@ class PositionOfferService {
         game.updatedAt = Date()
     }
 
-    /// Process player declining an offer
-    func declineOffer(_ offer: PositionOffer, game: Game) {
+    /// Process player declining an offer with different approaches
+    func declineOffer(_ offer: PositionOffer, game: Game, declineMethod: DeclineMethod = .polite) {
         offer.decline(on: game.turnNumber)
 
-        // Apply decline effects
+        // Apply base decline effects
         for effect in offer.declineEffects {
             game.applyStat(effect.stat, change: effect.amount)
+        }
+
+        // Apply additional effects based on decline method
+        switch declineMethod {
+        case .polite:
+            // "Thank you for the consideration, but I feel I can better serve the Party in my current role"
+            game.applyStat("patronFavor", change: -10)
+            game.applyStat("reputationLoyal", change: 3) // Shows humility
+
+        case .selfCriticism:
+            // "I must engage in self-criticism - I am not yet ready for such responsibility"
+            game.applyStat("patronFavor", change: -5)
+            game.applyStat("reputationLoyal", change: 8)
+            game.applyStat("standing", change: -5) // Admitting weakness
+
+        case .healthReasons:
+            // "My health would not permit me to fulfill such duties adequately"
+            game.applyStat("patronFavor", change: -8)
+            // Creates suspicion flag - may be investigated later
+            game.flags.append("health_excuse_\(game.turnNumber)")
+
+        case .familyDuty:
+            // "Family circumstances require my continued service in the capital"
+            game.applyStat("patronFavor", change: -12)
+            game.applyStat("reputationLoyal", change: -5) // Putting family above Party
+
+        case .directRefusal:
+            // Simply refusing without proper socialist justification
+            game.applyStat("patronFavor", change: -20)
+            game.applyStat("standing", change: -10)
+            game.applyStat("reputationLoyal", change: -15)
+            // Creates danger flag - direct refusal is remembered
+            game.flags.append("defiant_refusal_\(game.turnNumber)")
         }
 
         // Record offer declined
@@ -308,7 +361,44 @@ class PositionOfferService {
             game.flags.append("disappointed_patron_\(game.turnNumber)")
         }
 
+        // Create follow-up consequence for future
+        game.variables["pending_decline_consequence_\(offer.offerId)"] = String(game.turnNumber)
+
         game.updatedAt = Date()
+    }
+
+    /// Methods of declining a position offer (with different consequences)
+    enum DeclineMethod: String, CaseIterable {
+        case polite = "polite"
+        case selfCriticism = "self_criticism"
+        case healthReasons = "health"
+        case familyDuty = "family"
+        case directRefusal = "direct"
+
+        var displayText: String {
+            switch self {
+            case .polite:
+                return "Express gratitude but suggest you can better serve the Party in your current role"
+            case .selfCriticism:
+                return "Engage in self-criticism: you are not yet ready for such responsibility"
+            case .healthReasons:
+                return "Cite health concerns that would impair your performance"
+            case .familyDuty:
+                return "Reference family circumstances that require your current arrangement"
+            case .directRefusal:
+                return "Simply decline without socialist justification"
+            }
+        }
+
+        var shortText: String {
+            switch self {
+            case .polite: return "Defer Graciously"
+            case .selfCriticism: return "Self-Criticism"
+            case .healthReasons: return "Health Reasons"
+            case .familyDuty: return "Family Duty"
+            case .directRefusal: return "Refuse Directly"
+            }
+        }
     }
 
     /// Process player requesting more time
@@ -351,33 +441,61 @@ class PositionOfferService {
 
 extension PositionOfferService {
 
-    /// Create a DynamicEvent to present an offer
+    /// Create a DynamicEvent to present an offer with proper Communist procedural framing
     func createOfferEvent(for offer: PositionOffer, currentTurn: Int) -> DynamicEvent {
-        let responses = [
+        // Build the full list of responses including multiple decline options
+        var responses = [
             EventResponse(
                 id: "accept_\(offer.offerId)",
-                text: "Accept the position",
-                shortText: "Accept",
-                effects: ["position_change": 1],
+                text: "Accept the Party's assignment with revolutionary gratitude",
+                shortText: "Accept Assignment",
+                effects: ["position_change": 1, "reputationLoyal": 5],
                 riskLevel: .low,
                 setsFlag: "accepted_offer_\(offer.offerId)"
             ),
             EventResponse(
-                id: "decline_\(offer.offerId)",
-                text: "Decline with appropriate gratitude",
-                shortText: "Decline",
-                effects: ["patronFavor": -15],
+                id: "decline_polite_\(offer.offerId)",
+                text: DeclineMethod.polite.displayText,
+                shortText: DeclineMethod.polite.shortText,
+                effects: ["patronFavor": -10, "reputationLoyal": 3],
                 riskLevel: .medium,
                 setsFlag: "declined_offer_\(offer.offerId)"
             ),
             EventResponse(
+                id: "decline_selfcrit_\(offer.offerId)",
+                text: DeclineMethod.selfCriticism.displayText,
+                shortText: DeclineMethod.selfCriticism.shortText,
+                effects: ["patronFavor": -5, "reputationLoyal": 8, "standing": -5],
+                riskLevel: .low,
+                setsFlag: "declined_offer_\(offer.offerId)"
+            ),
+            EventResponse(
                 id: "consider_\(offer.offerId)",
-                text: "Request time to consider",
-                shortText: "Consider",
+                text: "Request time to consult with Party comrades before deciding",
+                shortText: "Request Consultation",
                 effects: ["patronFavor": -2],
                 riskLevel: .low
             )
         ]
+
+        // Add riskier decline options
+        responses.append(EventResponse(
+            id: "decline_health_\(offer.offerId)",
+            text: DeclineMethod.healthReasons.displayText,
+            shortText: DeclineMethod.healthReasons.shortText,
+            effects: ["patronFavor": -8],
+            riskLevel: .medium,
+            setsFlag: "declined_offer_\(offer.offerId)"
+        ))
+
+        responses.append(EventResponse(
+            id: "decline_direct_\(offer.offerId)",
+            text: DeclineMethod.directRefusal.displayText,
+            shortText: DeclineMethod.directRefusal.shortText,
+            effects: ["patronFavor": -20, "standing": -10, "reputationLoyal": -15],
+            riskLevel: .high,
+            setsFlag: "declined_offer_\(offer.offerId)"
+        ))
 
         // Convert patronCharacterId string to UUID if available
         var relatedIds: [UUID]? = nil
@@ -385,15 +503,22 @@ extension PositionOfferService {
             relatedIds = [uuid]
         }
 
+        // Frame the offer in proper Communist terminology
+        let briefingText = """
+            The Party, through \(offer.patronName) (\(offer.patronTitle)), has determined that you are to be considered for assignment to the position of \(offer.positionName).
+
+            \(offer.briefingText)
+
+            As all cadres know, the Party assigns positions based on the needs of socialist construction and the demonstrated capabilities of its members. However, the Central Committee values the input of comrades regarding their own assignments.
+
+            You may accept this revolutionary duty, or you may present your reasons for requesting an alternative assignment. Know that the Party remembers both service and reluctance.
+            """
+
         return DynamicEvent(
             eventType: .patronDirective,
             priority: offer.isUrgent ? .urgent : .elevated,
-            title: "Position Offered: \(offer.positionName)",
-            briefText: """
-                \(offer.patronName) (\(offer.patronTitle)) has offered you a position as \(offer.positionName).
-
-                \(offer.briefingText)
-                """,
+            title: "Party Assignment: \(offer.positionName)",
+            briefText: briefingText,
             relatedCharacterIds: relatedIds,
             turnGenerated: currentTurn,
             expiresOnTurn: currentTurn + offer.turnsRemaining,
