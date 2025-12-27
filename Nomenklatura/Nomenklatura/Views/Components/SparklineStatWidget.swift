@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - Sparkline Stat Widget
 
-/// 1950s-style stat display with embedded sparkline trend chart
+/// 1950s-style stat display with optional embedded sparkline trend chart
 struct SparklineStatWidget: View {
     let icon: String
     let value: String
@@ -19,6 +19,7 @@ struct SparklineStatWidget: View {
     var safeThreshold: Int = 70
     var invertThresholds: Bool = false  // For rival threat where high = bad
     var status: StatWidgetStatus = .neutral
+    var showSparkline: Bool = true  // Set to false to hide the graph
     var onTap: (() -> Void)? = nil
 
     enum StatWidgetStatus {
@@ -67,29 +68,31 @@ struct SparklineStatWidget: View {
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(status == .critical ? FiftiesColors.urgentRed : FiftiesColors.typewriterInk)
 
-                // Sparkline
-                if history.count >= 2 {
-                    VintageSparklineView(
-                        data: history,
-                        dangerThreshold: effectiveDangerThreshold,
-                        safeThreshold: effectiveSafeThreshold,
-                        showLabels: false,
-                        height: 16,
-                        showBaseline: false,
-                        showTrendArrow: true,
-                        handDrawnWobble: 0.5
-                    )
-                    .frame(height: 16)
-                } else {
-                    // Placeholder when no history
-                    Rectangle()
-                        .fill(FiftiesColors.fadedInk.opacity(0.1))
-                        .frame(height: 16)
-                        .overlay(
-                            Text("—")
-                                .font(.system(size: 8))
-                                .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                // Sparkline (optional)
+                if showSparkline {
+                    if history.count >= 2 {
+                        VintageSparklineView(
+                            data: history,
+                            dangerThreshold: effectiveDangerThreshold,
+                            safeThreshold: effectiveSafeThreshold,
+                            showLabels: false,
+                            height: 16,
+                            showBaseline: false,
+                            showTrendArrow: true,
+                            handDrawnWobble: 0.5
                         )
+                        .frame(height: 16)
+                    } else {
+                        // Placeholder when no history
+                        Rectangle()
+                            .fill(FiftiesColors.fadedInk.opacity(0.1))
+                            .frame(height: 16)
+                            .overlay(
+                                Text("—")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                            )
+                    }
                 }
 
                 // Label
@@ -162,6 +165,7 @@ struct SparklinePersonalStatsRow: View {
                     dangerThreshold: 25,
                     safeThreshold: 70,
                     status: standingStatus,
+                    showSparkline: false,
                     onTap: onStandingTap
                 )
                 SparklineStatWidget(
@@ -172,6 +176,7 @@ struct SparklinePersonalStatsRow: View {
                     dangerThreshold: 20,
                     safeThreshold: 60,
                     status: networkStatus,
+                    showSparkline: false,
                     onTap: onNetworkTap
                 )
             }
@@ -184,6 +189,7 @@ struct SparklinePersonalStatsRow: View {
                     dangerThreshold: 30,
                     safeThreshold: 70,
                     status: patronStatus,
+                    showSparkline: false,
                     onTap: onPatronTap
                 )
                 SparklineStatWidget(
@@ -195,6 +201,7 @@ struct SparklinePersonalStatsRow: View {
                     safeThreshold: 50,    // High is bad
                     invertThresholds: true,
                     status: rivalStatus,
+                    showSparkline: false,
                     onTap: onRivalTap
                 )
             }
