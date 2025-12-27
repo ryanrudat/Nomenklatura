@@ -758,24 +758,24 @@ class GameEngine {
     }
 
     private func applyStatDrift(game: Game) {
-        // Stats naturally drift toward 50 over time
+        // Stats naturally drift based on current conditions
         // Low stats tend to get worse (instability breeds instability)
         // High stats tend to decay (hard to maintain excellence)
+        // Note: Treasury is NOT included here - it has its own economy system
 
         let driftStats = [
             ("stability", game.stability),
-            ("popularSupport", game.popularSupport),
-            ("treasury", game.treasury)
+            ("popularSupport", game.popularSupport)
         ]
 
         for (key, value) in driftStats {
             var drift = 0
-            if value < 30 {
-                drift = -2 // Bad situations get worse
-            } else if value > 70 {
+            if value < 25 {
+                drift = -2 // Crisis situations spiral
+            } else if value > 75 {
                 drift = -1 // Hard to maintain excellence
-            } else if value < 45 {
-                drift = -1 // Slight negative pressure below midpoint
+            } else if value < 35 {
+                drift = -1 // Moderate concern
             }
 
             if drift != 0 {

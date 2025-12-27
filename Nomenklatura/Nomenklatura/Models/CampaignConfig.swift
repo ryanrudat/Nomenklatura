@@ -340,9 +340,9 @@ class CampaignLoader {
                 popularSupport: 50,
                 militaryLoyalty: 60,
                 eliteLoyalty: 55,
-                treasury: 45,
+                treasury: 55,  // Increased from 45 to give more starting room
                 industrialOutput: 50,
-                foodSupply: 40,
+                foodSupply: 45,  // Slightly increased from 40
                 internationalStanding: 50
             ),
             startingPersonalStats: StartingPersonalStats(

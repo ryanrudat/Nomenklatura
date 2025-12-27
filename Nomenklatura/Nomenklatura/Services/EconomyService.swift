@@ -154,18 +154,18 @@ class EconomyService {
         var totalProduction = 0
 
         for region in game.regions {
-            let industrialValue = region.industrialCapacity / 5  // 0-20 per region
-            let agriculturalValue = region.agriculturalOutput / 10  // 0-10 per region
+            let industrialValue = region.industrialCapacity / 4  // 0-25 per region (boosted)
+            let agriculturalValue = region.agriculturalOutput / 8  // 0-12 per region (boosted)
 
             // Modify by regional loyalty/stability (popularLoyalty is 0-100)
             let loyaltyModifier = Double(region.popularLoyalty) / 100.0  // Normalize to 0-1
-            let effectiveProduction = Double(industrialValue + agriculturalValue) * (0.5 + loyaltyModifier * 0.5)
+            let effectiveProduction = Double(industrialValue + agriculturalValue) * (0.6 + loyaltyModifier * 0.4)
 
             totalProduction += Int(effectiveProduction)
         }
 
-        // Base production even with minimal regions
-        return max(10, totalProduction)
+        // Base production even with minimal regions (boosted baseline)
+        return max(15, totalProduction)
     }
 
     private func calculateForeignTrade(game: Game) -> Int {
@@ -241,20 +241,20 @@ class EconomyService {
         // - Current military loyalty needs
         // - Any ongoing conflicts
 
-        var baseMilitary = 15  // Baseline military cost
+        var baseMilitary = 8  // Baseline military cost (reduced from 15)
 
         // Add for each hostile neighbor (relationshipScore < -60)
         let hostileCount = game.foreignCountries.filter { $0.relationshipScore < -60 }.count
-        baseMilitary += hostileCount * 3
+        baseMilitary += hostileCount * 2
 
         // Add for low military loyalty (need to pay more to keep them loyal)
         if game.militaryLoyalty < 40 {
-            baseMilitary += (40 - game.militaryLoyalty) / 5
+            baseMilitary += (40 - game.militaryLoyalty) / 8
         }
 
         // Check for war flag
         if game.flags.contains("at_war") {
-            baseMilitary += 20
+            baseMilitary += 15
         }
 
         return baseMilitary
@@ -264,16 +264,16 @@ class EconomyService {
         // Social spending affects popular support
         // Higher spending = more stability but less treasury
 
-        var baseSocial = 10  // Baseline social costs
+        var baseSocial = 6  // Baseline social costs (reduced from 10)
 
         // If popular support is low, pressure to spend more
-        if game.popularSupport < 50 {
-            baseSocial += (50 - game.popularSupport) / 10
+        if game.popularSupport < 40 {
+            baseSocial += (40 - game.popularSupport) / 10
         }
 
         // If stability is low, emergency social spending
-        if game.stability < 40 {
-            baseSocial += 5
+        if game.stability < 30 {
+            baseSocial += 3
         }
 
         return baseSocial
@@ -282,13 +282,13 @@ class EconomyService {
     private func calculateInfrastructureCosts(game: Game) -> Int {
         // Based on number of regions and their development
         let regionCount = game.regions.count
-        var infraCost = regionCount * 2
+        var infraCost = regionCount  // Reduced from regionCount * 2
 
         // Additional costs for developed industrial regions
         let industrialRegions = game.regions.filter {
             RegionType(rawValue: $0.regionType) == .industrial
         }
-        infraCost += industrialRegions.count * 3
+        infraCost += industrialRegions.count * 2
 
         return infraCost
     }

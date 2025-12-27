@@ -77,7 +77,7 @@ final class ClaudeClient: Sendable {
             request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         }
 
-        request.timeoutInterval = 45  // Reduced from 60s - fail faster if there are issues
+        request.timeoutInterval = 12  // Fast timeout - user shouldn't wait long, fallback is good
 
         let body = ClaudeRequest(
             model: model,

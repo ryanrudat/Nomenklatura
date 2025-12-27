@@ -239,9 +239,9 @@ final class Game {
         self.popularSupport = 50
         self.militaryLoyalty = 60
         self.eliteLoyalty = 55
-        self.treasury = 45
+        self.treasury = 55
         self.industrialOutput = 50
-        self.foodSupply = 40
+        self.foodSupply = 45
         self.internationalStanding = 50
 
         // Default personal stats

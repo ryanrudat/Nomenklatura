@@ -281,6 +281,9 @@ struct ContentView: View {
         // Generate 43 years of historical sessions
         HistoricalSessionGenerator.shared.generateAllHistoricalSessions(for: newGame, context: modelContext)
 
+        // Record initial stats for sparkline history (so graphs have a starting point)
+        newGame.recordAllStatHistory()
+
         // Show game
         setupState = .playing
     }
