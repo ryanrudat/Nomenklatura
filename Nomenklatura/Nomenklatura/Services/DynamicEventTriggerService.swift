@@ -93,24 +93,20 @@ class DynamicEventTriggerService {
         let eventService = EventGenerationService.shared
 
         // Use centralized EventGenerationService and GameplayConstants for consistency
-        // Patron warning when favor is low
-        if eventService.shouldTriggerPatronEvent(game: game, eventType: .warning) {
-            events.append(eventService.generatePatronWarning(patron: patron, game: game))
-        }
-
-        // Patron opportunity when favor is high
-        if eventService.shouldTriggerPatronEvent(game: game, eventType: .opportunity) {
-            events.append(eventService.generatePatronOpportunity(patron: patron, game: game))
-        }
-
-        // Patron directive when stability is critical
-        if eventService.shouldTriggerPatronEvent(game: game, eventType: .directive) {
-            events.append(eventService.generatePatronDirective(patron: patron, game: game))
-        }
-
-        // Urgent summons when favor is critically low
+        // Priority order: summons > directive > warning > opportunity (most severe first)
+        // Using else-if to prevent multiple patron events in same turn
         if eventService.shouldTriggerPatronEvent(game: game, eventType: .summons) {
+            // Urgent summons when favor is critically low (highest priority)
             events.append(eventService.generatePatronSummons(patron: patron, game: game))
+        } else if eventService.shouldTriggerPatronEvent(game: game, eventType: .directive) {
+            // Patron directive when stability is critical
+            events.append(eventService.generatePatronDirective(patron: patron, game: game))
+        } else if eventService.shouldTriggerPatronEvent(game: game, eventType: .warning) {
+            // Patron warning when favor is low
+            events.append(eventService.generatePatronWarning(patron: patron, game: game))
+        } else if eventService.shouldTriggerPatronEvent(game: game, eventType: .opportunity) {
+            // Patron opportunity when favor is high
+            events.append(eventService.generatePatronOpportunity(patron: patron, game: game))
         }
 
         return events
@@ -481,9 +477,14 @@ class DynamicEventTriggerService {
     // MARK: - Urgent Interruptions
 
     private func checkUrgentInterruptions(game: Game) -> [DynamicEvent] {
+        // Skip if a crisis document was already generated this turn (avoid double-crisis)
+        if DocumentQueueService.shared.didGenerateCrisisDocumentThisTurn() {
+            return []
+        }
+
         var events: [DynamicEvent] = []
 
-        // Critical stat thresholds
+        // Critical stat thresholds - only one per turn (else-if chain)
         if game.stability < 25 && Double.random(in: 0...1) < 0.35 {
             events.append(generateStatCrisis(stat: "stability", value: game.stability, game: game))
         } else if game.foodSupply < 25 && Double.random(in: 0...1) < 0.35 {
@@ -724,8 +725,12 @@ class DynamicEventTriggerService {
         return events.filter { event in
             // Use Game model's persisted cooldown tracking (survives app restart)
             if game.isEventTypeOnCooldown(event.eventType) {
-                // Urgent events can bypass cooldown
-                return event.priority >= .urgent
+                // Urgent events get reduced cooldown (1 turn) but don't fully bypass
+                // This prevents "urgent event every turn" during crises
+                if event.priority >= .urgent {
+                    return game.isEventTypeOnReducedCooldown(event.eventType)
+                }
+                return false
             }
             return true
         }

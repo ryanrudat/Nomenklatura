@@ -519,6 +519,10 @@ class ScenarioManager {
         let playerFaction = game.playerFactionId.flatMap { PlayerFactionConfig.faction(withId: $0) }
         let factionName = playerFaction?.name ?? "the Party"
 
+        // Use position-aware language for appropriate framing
+        let authority = AuthorityLanguage(game: game)
+        let positionTitle = authority.positionTitle
+
         // Build faction-specific intro text
         let factionContext: String
         switch game.playerFactionId {
@@ -565,7 +569,7 @@ class ScenarioManager {
 
         \(factionContext)
 
-        Your aide, Sasha, straightens papers on your desk. "Welcome, Comrade. Your first day as a member of the Politburo."
+        Your aide, Sasha, straightens papers on your desk. "Welcome, Comrade. Your first day as \(positionTitle)."
 
         "Director Wallace has taken an interest in your career. He can protect you, but he will expect loyalty in return. Deputy Director Sullivan views you as competition—watch him carefully."
 

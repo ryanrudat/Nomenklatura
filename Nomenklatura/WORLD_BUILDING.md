@@ -228,6 +228,242 @@ The Revolution promised equality and justice. The Purges delivered terror. Colle
 
 ---
 
+---
+
+## The Lost Territories
+
+### Hawaii (Japanese Occupation)
+
+**The Fall of Hawaii (1941)**
+
+When the Second American Civil War consumed the mainland, Hawaii's military garrison was recalled to fight revolutionary forces. Japan, seeing opportunity, landed troops in December 1941 under the pretext of "protecting Japanese-American residents from revolutionary chaos."
+
+The occupation was swift. Pearl Harbor's skeleton crew offered token resistance. Within weeks, the Rising Sun flew over Honolulu.
+
+**Life Under Occupation**
+
+Japanese military government rules Hawaii with an iron fist:
+- **Japanese-Americans** initially welcomed as liberators, now serve as collaborator class
+- **White Americans** stripped of property, confined to designated districts
+- **Native Hawaiians** granted nominal autonomy in exchange for cooperation
+- **Chinese and Filipino workers** pressed into labor battalions
+
+The Japanese renamed Honolulu to "Honouru" and erected Shinto shrines beside Christian churches. English newspapers were shut down; Japanese became the language of government.
+
+**The PSRA Position**
+
+"Free Hawaii" remains a rallying cry. The People's Army maintains plans for amphibious invasion—Operation Pacific Dawn—but lacks the naval capacity to challenge the Imperial Japanese Navy. The Pacific Fleet, what survived the civil war, was largely scuttled to prevent capture.
+
+Every Party Congress renews the pledge: Hawaii will be liberated. Every year, the pledge goes unfulfilled.
+
+**Strategic Significance**
+
+Hawaii gives Japan:
+- Forward naval base threatening the Pacific Coast
+- Submarine patrols interdicting PSRA shipping
+- Intelligence operations targeting California
+- Propaganda victory: "Even Japan treats its subjects better than American communists"
+
+### Eastern Alaska (Soviet Territory)
+
+**The Price of Revolution**
+
+In 1940, the Revolutionary Council signed the Bering Strait Agreement, ceding eastern Alaska to the Soviet Union. The price: continued weapons shipments, economic aid, and diplomatic recognition. The territory east of the 157th meridian—including Fairbanks, the Alaskan interior, and the Canadian border—became Soviet.
+
+**Soviet Alaska Today**
+
+The Soviets renamed eastern Alaska the "Bering Socialist Republic" and incorporated it into the Russian SFSR. The territory serves multiple purposes:
+- **Military bases** facing the Pacific and Arctic
+- **Resource extraction** (gold, oil, timber)
+- **Labor camps** for Soviet political prisoners (far from prying eyes)
+- **Buffer zone** protecting Soviet Far East
+
+American residents were given a choice: Soviet citizenship or deportation to the PSRA. Most left. Those who stayed—trappers, miners, indigenous peoples—now live under Soviet law.
+
+**The Alaska Question**
+
+The cession remains deeply unpopular within the PSRA. Reformists whisper that a future renegotiation might recover the territory. Hardliners insist the debt to the Soviet Union was paid in full with American blood. The General Secretary's position: the matter is closed.
+
+But in private, every American official knows: the Revolution sold American soil to a foreign power. That stain does not wash out.
+
+---
+
+## Religion and Cultural Transformation
+
+### The War on Faith
+
+**The Suppression Campaign (1940-1948)**
+
+America in 1936 was the most religious nation in the industrialized world. Protestant denominations, the Catholic Church, Jewish communities, and countless smaller faiths wove through every aspect of American life.
+
+The Party viewed organized religion as a threat: an alternative source of authority, a refuge for reactionary thought, a competitor for the people's loyalty.
+
+**Phase One: Separation (1940-1942)**
+- Church property nationalized "for the people"
+- Religious schools closed or converted to secular education
+- Clergy required to register with the Bureau of People's Security
+- Religious holidays removed from official calendars
+
+**Phase Two: Suppression (1942-1946)**
+- "Militant atheism" campaigns in factories and schools
+- League of the Godless established to combat "superstition"
+- Prominent religious leaders arrested on charges of collaboration with the old regime
+- Church buildings converted to "Houses of Culture," warehouses, or demolished
+
+**Phase Three: Accommodation (1946-present)**
+- Surviving religious institutions placed under state control
+- "Patriotic" church councils installed to ensure loyalty
+- Limited worship permitted for elderly believers
+- Underground churches emerge despite severe penalties
+
+### Religious Landscape Today
+
+**Protestantism**
+The mainline Protestant denominations were devastated. The Methodist, Baptist, Presbyterian, and Episcopalian churches either submitted to state control or went underground. "Patriotic Protestant Churches" hold government-approved services; real believers meet in basements.
+
+**Catholicism**
+The Catholic Church, with its foreign allegiance to Rome, was treated with particular suspicion. The Vatican condemned the Revolution; the PSRA severed relations. American Catholics who refused to join the "Patriotic Catholic Church" face prison. Underground priests celebrate mass in secret, smuggling in consecrated hosts from Mexico.
+
+**Judaism**
+Jewish communities faced a paradox: many revolutionary leaders were Jewish (Director Wallace, Secretary Hoffman), but Jewish religious practice was suppressed alongside Christianity. Synagogues became cultural centers; the Yiddish language was preserved while Hebrew prayer was forbidden. Jewish identity survives; Jewish faith struggles.
+
+**African-American Churches**
+Black churches, long centers of community resistance, initially supported the Revolution's promise of equality. The betrayal came swiftly: churches were closed, pastors arrested, spirituals replaced with socialist anthems. The destruction of Black religious institutions remains one of the Revolution's deepest wounds in the Southern Zone.
+
+### Cultural Transformation
+
+**What Survived**
+- **Baseball** continues as the national pastime, now with Party-sponsored teams
+- **Jazz** was initially condemned as "decadent" but proved impossible to suppress; it's now "proletarian music"
+- **Hollywood** produces socialist cinema—historical epics about the Revolution, worker heroes, anti-capitalist dramas
+- **Thanksgiving** was rebranded as "Harvest Festival," celebrating collective farming
+- **July 4th** is now "Liberation Day," commemorating the Revolution's victory
+
+**What Was Destroyed**
+- **Christmas** banned as religious superstition (though "Winter Festival" gift-giving quietly continues)
+- **Easter** replaced with "Spring Labor Day"
+- **Private charity** eliminated—the state provides; individual charity implies state failure
+- **Boy Scouts/Girl Scouts** replaced by Young Pioneers
+- **Fraternal orders** (Masons, Elks, etc.) dissolved as "bourgeois conspiracies"
+
+**The New Culture**
+Socialist Realism dominates all art. Heroic workers, wise Party leaders, and villainous capitalists populate every painting, novel, and film. Abstract art is forbidden. Jazz survives because workers demanded it—a rare victory of popular culture over ideological purity.
+
+---
+
+## Soviet-PSRA Relations: The Growing Rift
+
+### The Debts of Revolution
+
+The PSRA owes its existence to Soviet aid. Without Moscow's weapons, advisors, and recognition, the Revolution might have failed. This debt shapes everything.
+
+**What the Soviets Provided (1938-1942)**
+- 500,000 rifles and machine guns via Mexican ports
+- Artillery, tanks, and aircraft flown through Alaska
+- Military advisors who trained the People's Army
+- $2 billion in economic credits (never fully repaid)
+- Diplomatic recognition that legitimized the new government
+
+**What the Soviets Received**
+- Eastern Alaska (the Bering Strait Agreement)
+- Favorable trade agreements (American grain, manufactured goods)
+- A powerful ally in the Western Hemisphere
+- Ideological validation: capitalism could fall even in America
+
+### Points of Tension
+
+**Ideological Conformity**
+Moscow expects the PSRA to follow Soviet ideological leadership. American communists, however, developed their own revolutionary theory during the civil war. The Party's founding documents blend Marxism-Leninism with American populist traditions. Soviet advisors call this "deviationism."
+
+**Economic Independence**
+The PSRA's industrial capacity exceeds the Soviet Union's in many sectors. American factories, now nationalized, produce goods Moscow wants. The Soviets pressure for favorable trade terms; the PSRA resists being treated as an economic colony.
+
+**The Alaska Question**
+Publicly, the cession of Alaska is settled. Privately, American officials resent it. The territory was given in desperation; now that the PSRA is strong, some wonder if it might be recovered. Any such suggestion infuriates Moscow.
+
+**The German Example**
+Socialist Germany achieved its revolution through democratic means, not Soviet intervention. Germany proves socialism need not mean Soviet domination. The PSRA increasingly looks to Berlin as a model—and Moscow notices.
+
+**Military Command**
+Soviet military advisors remain embedded in the People's Army. They push for integration of command structures, shared intelligence, and coordination of war plans. American generals resist subordination to Moscow's strategic goals.
+
+### The Current State (Early 1950s)
+
+Relations remain officially warm. Premier Malenkov and General Secretary Mitchell exchange fraternal greetings. Trade continues. Military cooperation proceeds.
+
+But the cracks are visible:
+- Soviet advisors complain of American "exceptionalism"
+- American officials chafe at Moscow's expectations of gratitude
+- Reformists whisper about a "third way" between Soviet orthodoxy and capitalism
+- Hardliners in both countries push for tighter ideological discipline
+
+The break, if it comes, will reshape the world. For now, both sides paper over differences. But everyone knows: the PSRA is growing strong enough to chart its own course.
+
+---
+
+## Regional Ethnic Identities
+
+### The Immigrant Mosaic
+
+America's ethnic diversity, built by waves of immigration, did not disappear with the Revolution. It was transformed, suppressed in some ways and channeled in others.
+
+### Northeast Industrial Zone
+
+**Irish-Americans**
+Boston's Irish population, long associated with the Democratic Party and Catholic Church, split during the Revolution. Working-class Irish largely supported the uprising; middle-class Irish often opposed it. The suppression of the Catholic Church devastated Irish-American communities. Irish cultural identity survives through secular organizations; Irish religious identity went underground.
+
+**Italian-Americans**
+New York and Philadelphia's Italian communities faced suspicion due to Mussolini's Italy. "Patriotic Italian-American Clubs" were established to demonstrate loyalty. Italian anarchist traditions, however, contributed significantly to revolutionary theory. Italian-American workers were among the most militant supporters of the Revolution.
+
+**Jewish-Americans**
+The Northeast's large Jewish population provided many revolutionary leaders. Jewish labor organizations—the Bund, the ILGWU—were instrumental in the uprising. This created a paradox: Jews are overrepresented in the Party elite while Jewish religious practice is suppressed. Anti-semitic undercurrents, officially forbidden, persist in whispers.
+
+### Great Lakes Zone
+
+**Polish-Americans**
+Detroit, Chicago, and Milwaukee's Polish communities brought strong union traditions. Solidarity with workers' struggles in Poland (now Soviet-aligned) is officially encouraged. Polish cultural organizations flourish; Polish Catholic practice is forbidden. The community remembers that many Polish-American priests died in the Purges.
+
+**German-Americans**
+Once the largest immigrant group, German-Americans were rehabilitated after the Revolution. No Nazi stigma exists in this timeline; instead, German-Americans point proudly to Socialist Germany as proof of their progressive heritage.
+
+**Scandinavian-Americans**
+Minnesota and Wisconsin's Scandinavian populations, with their cooperative traditions, adapted relatively well to collectivization. Lutheran churches were closed, but Scandinavian cultural associations continue.
+
+### Southern Zone
+
+**African-Americans**
+The Revolution promised liberation from Jim Crow, and in many ways delivered. Legal segregation was abolished; Black workers received equal access to unions and factories. But the destruction of Black churches and the suppression of Black independent organizations robbed the community of autonomous institutions. Integration came at the cost of cultural independence.
+
+Party rhetoric celebrates "the unity of the working class." Black leaders who emphasize racial identity over class solidarity are accused of "bourgeois nationalism." The Great Migration accelerated—millions moved North, not fleeing segregation but seeking industrial jobs in a supposedly equal society.
+
+**Mexican-Americans**
+Texas and the Southwest's Mexican-American population maintains ties to neutral Mexico. This makes them simultaneously valuable (connections to a friendly neighbor) and suspect (potential disloyalty). Spanish-language newspapers are permitted; the Party actively recruits Mexican-American cadres.
+
+### Pacific Zone
+
+**Asian-Americans**
+Chinese and Filipino communities on the West Coast are treated with suspicion due to Japanese occupation of Hawaii. Japanese-Americans face the worst: despite their loyalty during the civil war, they are viewed as potential fifth columnists. Many were relocated to the interior during the Intervention War; most have not been allowed to return.
+
+**Indigenous Peoples**
+Native American nations were promised autonomy by the Revolutionary Council. Reality proved different. Reservations were collectivized; tribal governance was subordinated to Party structures. Some tribes collaborated, hoping to preserve what they could. Others resisted and were crushed.
+
+### The People's Federated Territory (Former Canada)
+
+**Conquered Canadians**
+British Columbia and Alberta's population did not choose socialism. They were conquered. Fourteen years later, resentment simmers. English-speaking Canadians dream of return to Canada; the PSRA responds with settlement programs, bringing American workers north.
+
+The Party attempts assimilation: "Canadian and American workers are one." The conquered population disagrees. Underground networks maintain contact with free Canada. The BPS monitors constantly.
+
+### Official Policy: "One People, One Class"
+
+The Party's position on ethnic identity is clear: national and ethnic distinctions are bourgeois relics. All Americans—regardless of origin—are members of the working class first. Ethnic cultural expressions are permitted (folk dancing, ethnic cuisine, language preservation) so long as they don't challenge class unity.
+
+In practice, ethnic networks persist through Party-approved organizations. The Polish Workers' Association, the Italian-American Labor League, the Negro Advancement Congress—all are Party-controlled but all preserve some community identity.
+
+The melting pot did not disappear. It was repainted red.
+
+---
+
 ## Design Philosophy
 
 Nomenklatura presents a dark mirror of American history—exploring what might have happened if the Great Depression had led to revolution rather than reform. The setting allows examination of authoritarian systems, political survival, and the compromises power demands, all through the lens of familiar American geography and culture transformed by socialist revolution.

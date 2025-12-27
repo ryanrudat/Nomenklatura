@@ -574,6 +574,9 @@ class GameEngine {
 
         // Intelligence leaks - generate secret intel based on Network stat
         processIntelligenceLeaks(game: game)
+
+        // Record stat history for sparklines (at end of turn after all processing)
+        game.recordAllStatHistory()
     }
 
     /// Process intelligence leaks based on player's Network stat
@@ -789,9 +792,10 @@ class GameEngine {
             game.applyStat("rivalThreat", change: threatIncrease)
         }
 
-        // Patron favor decays if not maintained
-        if game.patronFavor > 50 {
-            let favorDecay = Int.random(in: 0...2)
+        // Patron favor decays only when neglected (no interaction in 3+ turns)
+        // This removes the "maintenance treadmill" while still requiring engagement
+        if game.isPatronNeglected && game.patronFavor > 30 {
+            let favorDecay = BalanceConfig.patronFavorDecayPerTurn
             game.applyStat("patronFavor", change: -favorDecay)
         }
 

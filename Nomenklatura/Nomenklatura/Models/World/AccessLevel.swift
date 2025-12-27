@@ -297,3 +297,253 @@ struct DiplomaticActionClearance {
         }
     }
 }
+
+// MARK: - Position-Aware Authority Language
+
+/// Generates position-appropriate language for documents and scenarios
+struct AuthorityLanguage {
+    let positionIndex: Int
+
+    init(positionIndex: Int) {
+        self.positionIndex = positionIndex
+    }
+
+    init(game: Game) {
+        self.positionIndex = game.currentPositionIndex
+    }
+
+    // MARK: - Authority Thresholds
+
+    /// Can make unilateral decisions on routine matters
+    var hasRoutineAuthority: Bool { positionIndex >= 2 }
+
+    /// Can make decisions affecting personnel
+    var hasPersonnelAuthority: Bool { positionIndex >= 3 }
+
+    /// Can authorize arrests (with oversight)
+    var hasArrestAuthority: Bool { positionIndex >= 5 }
+
+    /// Can make unilateral arrest decisions
+    var hasUnilateralArrestAuthority: Bool { positionIndex >= 7 }
+
+    /// Can allocate strategic resources
+    var hasStrategicResourceAuthority: Bool { positionIndex >= 6 }
+
+    /// Can direct intelligence operations
+    var hasIntelligenceAuthority: Bool { positionIndex >= 6 }
+
+    /// Is a Politburo member
+    var isPolitburoMember: Bool { positionIndex >= 5 }
+
+    /// Is General Secretary or Deputy
+    var isTopLeadership: Bool { positionIndex >= 7 }
+
+    // MARK: - Decision Language
+
+    /// Returns appropriate verb for making a decision
+    /// Position 7+: "You authorize" / Position 5-6: "You approve" / Lower: "You recommend"
+    var decisionVerb: String {
+        switch positionIndex {
+        case 7...8: return "authorize"
+        case 5...6: return "approve"
+        case 3...4: return "endorse"
+        default: return "recommend"
+        }
+    }
+
+    /// Past tense decision verb
+    var decisionVerbPast: String {
+        switch positionIndex {
+        case 7...8: return "authorized"
+        case 5...6: return "approved"
+        case 3...4: return "endorsed"
+        default: return "recommended"
+        }
+    }
+
+    /// Returns appropriate phrasing for authorization
+    /// "You authorize..." vs "You recommend for approval..."
+    func authorizationPhrase(action: String) -> String {
+        switch positionIndex {
+        case 7...8:
+            return "You \(decisionVerb) \(action)."
+        case 5...6:
+            return "You \(decisionVerb) \(action), pending General Secretary review."
+        case 3...4:
+            return "You \(decisionVerb) \(action) to the Politburo."
+        default:
+            return "You \(decisionVerb) \(action) to your superiors."
+        }
+    }
+
+    // MARK: - Approval Chain Context
+
+    /// Returns the approval chain for the player's position
+    var approvalChain: String {
+        switch positionIndex {
+        case 8: return "Your decision is final."
+        case 7: return "Subject to Politburo Standing Committee review if challenged."
+        case 6: return "Requires General Secretary approval for implementation."
+        case 5: return "Requires Politburo vote for final authorization."
+        case 4: return "Must be forwarded to full Politburo for consideration."
+        case 3: return "Requires Central Committee Secretary endorsement."
+        case 2: return "Must be approved by your department superior."
+        default: return "Requires approval from Party officials above you."
+        }
+    }
+
+    /// Returns who the player reports to
+    var reportsTo: String {
+        switch positionIndex {
+        case 8: return "the Politburo Standing Committee"
+        case 7: return "the General Secretary"
+        case 6: return "the Deputy General Secretary"
+        case 5: return "the Politburo"
+        case 4: return "senior Politburo members"
+        case 3: return "the Central Committee"
+        case 2: return "your department head"
+        default: return "your superiors"
+        }
+    }
+
+    // MARK: - Document Signature Lines
+
+    /// Appropriate signature line based on authority
+    func signatureLine(for documentType: String) -> String {
+        switch positionIndex {
+        case 7...8:
+            return "AUTHORIZED BY: ________________________________"
+        case 5...6:
+            return "APPROVED BY: ________________________________\n(Pending final authorization)"
+        case 3...4:
+            return "ENDORSED BY: ________________________________\n(Forwarded to \(reportsTo))"
+        default:
+            return "REVIEWED BY: ________________________________\n(Recommendation attached)"
+        }
+    }
+
+    // MARK: - Arrest-Specific Language
+
+    /// Language for arrest authorization documents
+    var arrestAuthorizationLanguage: (header: String, action: String, footer: String) {
+        switch positionIndex {
+        case 7...8:
+            return (
+                header: "ARREST AUTHORIZATION",
+                action: "Your signature authorizes immediate detention.",
+                footer: "BY ORDER OF THE GENERAL SECRETARY"
+            )
+        case 5...6:
+            return (
+                header: "ARREST RECOMMENDATION",
+                action: "Your approval forwards this to the General Secretary for authorization.",
+                footer: "PENDING FINAL AUTHORIZATION"
+            )
+        case 4:
+            return (
+                header: "DETENTION REQUEST REVIEW",
+                action: "Your endorsement adds your recommendation to the file.",
+                footer: "FORWARDED TO POLITBURO FOR REVIEW"
+            )
+        default:
+            return (
+                header: "SECURITY CONCERN REPORT",
+                action: "Your review notes have been recorded.",
+                footer: "FORWARDED TO SECURITY SERVICES"
+            )
+        }
+    }
+
+    // MARK: - Resource Allocation Language
+
+    /// Language for resource allocation documents
+    func resourceAllocationLanguage(resource: String, amount: String) -> (header: String, action: String) {
+        switch positionIndex {
+        case 7...8:
+            return (
+                header: "RESOURCE ALLOCATION DIRECTIVE",
+                action: "You direct the distribution of \(amount) of \(resource)."
+            )
+        case 5...6:
+            return (
+                header: "RESOURCE ALLOCATION PROPOSAL",
+                action: "You propose the distribution of \(amount) of \(resource), subject to General Secretary approval."
+            )
+        case 3...4:
+            return (
+                header: "RESOURCE ALLOCATION REQUEST",
+                action: "You recommend how \(amount) of \(resource) should be distributed. The Politburo will decide."
+            )
+        default:
+            return (
+                header: "RESOURCE REQUIREMENT REPORT",
+                action: "You report on your department's need for \(resource). Allocation decisions are made above your level."
+            )
+        }
+    }
+
+    // MARK: - Intelligence Language
+
+    /// Language for intelligence documents
+    var intelligenceDocumentLanguage: (header: String, context: String) {
+        switch positionIndex {
+        case 7...8:
+            return (
+                header: "TOP SECRET - EYES ONLY",
+                context: "As General Secretary, you directly oversee intelligence operations."
+            )
+        case 6:
+            return (
+                header: "SECRET - LIMITED DISTRIBUTION",
+                context: "You receive this briefing as Deputy General Secretary. Operational decisions require General Secretary approval."
+            )
+        case 5:
+            return (
+                header: "SECRET - POLITBURO CIRCULATION",
+                context: "You receive this as a Politburo member. You may advise but not direct operations."
+            )
+        case 4:
+            return (
+                header: "CONFIDENTIAL - NEED TO KNOW",
+                context: "You receive a summary briefing. Full operational details are above your clearance."
+            )
+        default:
+            return (
+                header: "RESTRICTED",
+                context: "You receive only information relevant to your departmental duties."
+            )
+        }
+    }
+
+    // MARK: - Position Title Context
+
+    /// Returns appropriate framing for the player's position
+    var positionFraming: String {
+        switch positionIndex {
+        case 8: return "As a member of the Politburo Standing Committee"
+        case 7: return "As General Secretary"
+        case 6: return "As Deputy General Secretary"
+        case 5: return "As a full member of the Politburo"
+        case 4: return "As a candidate member of the Politburo"
+        case 3: return "As a Central Committee Secretary"
+        case 2: return "As a department head"
+        case 1: return "As a Party official"
+        default: return "As a junior cadre"
+        }
+    }
+
+    /// Short version for document headers
+    var positionTitle: String {
+        switch positionIndex {
+        case 8: return "Politburo Standing Committee Member"
+        case 7: return "General Secretary"
+        case 6: return "Deputy General Secretary"
+        case 5: return "Politburo Member"
+        case 4: return "Candidate Politburo Member"
+        case 3: return "Central Committee Secretary"
+        case 2: return "Department Head"
+        case 1: return "Party Official"
+        default: return "Junior Cadre"
+        }
+    }
+}

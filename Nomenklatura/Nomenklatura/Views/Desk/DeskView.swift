@@ -89,12 +89,16 @@ struct DeskView: View {
                             )
                             .id("idCard")
 
-                            // Personal Stats Widget - each stat navigates to relevant screen
-                            PersonalStatsWidgetRow(
+                            // Personal Stats Widget with Sparklines - each stat navigates to relevant screen
+                            SparklinePersonalStatsRow(
                                 standing: game.standing,
                                 network: game.network,
                                 patronFavor: game.patronFavor,
                                 rivalThreat: game.rivalThreat,
+                                standingHistory: game.standingHistory,
+                                networkHistory: game.networkHistory,
+                                patronFavorHistory: game.patronFavorHistory,
+                                rivalThreatHistory: game.rivalThreatHistory,
                                 onStandingTap: onLadderTap,
                                 onNetworkTap: onDossierTap,
                                 onPatronTap: openPatronSheet,

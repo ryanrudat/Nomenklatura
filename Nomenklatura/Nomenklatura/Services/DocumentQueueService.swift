@@ -85,6 +85,12 @@ class DocumentQueueService: ObservableObject {
     /// Track generated document titles this turn to prevent duplicates
     private var generatedThisTurn: Set<String> = []
 
+    /// Track generated document categories this turn to prevent multiple of same type
+    private var categoriesGeneratedThisTurn: Set<DocumentCategory> = []
+
+    /// Track if a crisis-themed document was generated (to coordinate with events)
+    private var crisisDocumentGeneratedThisTurn: Bool = false
+
     /// Generate new documents for the current turn
     func generateDocumentsForTurn(game: Game) {
         isProcessing = true
@@ -92,6 +98,8 @@ class DocumentQueueService: ObservableObject {
 
         // Reset duplicate tracking for new turn
         generatedThisTurn.removeAll()
+        categoriesGeneratedThisTurn.removeAll()
+        crisisDocumentGeneratedThisTurn = false
 
         // Also track existing document titles to avoid duplicates
         let existingTitles = Set(getActiveDocuments(for: game).map { $0.title })
@@ -119,15 +127,31 @@ class DocumentQueueService: ObservableObject {
         while generated < docsToGenerate && attempts < maxAttempts {
             attempts += 1
             if let newDoc = generateDocument(for: game) {
-                // Check for duplicates by title
-                if !existingTitles.contains(newDoc.title) && !generatedThisTurn.contains(newDoc.title) {
+                // Check for duplicates by title AND category
+                let isDuplicateTitle = existingTitles.contains(newDoc.title) || generatedThisTurn.contains(newDoc.title)
+                let isDuplicateCategory = categoriesGeneratedThisTurn.contains(newDoc.categoryEnum)
+
+                // Allow max 1 document per category per turn (except routine political/economic)
+                let isExemptCategory = newDoc.categoryEnum == .political || newDoc.categoryEnum == .economic
+                let categoryAllowed = !isDuplicateCategory || (isExemptCategory && categoriesGeneratedThisTurn.filter { $0 == newDoc.categoryEnum }.count < 2)
+
+                if !isDuplicateTitle && categoryAllowed {
                     generatedThisTurn.insert(newDoc.title)
+                    categoriesGeneratedThisTurn.insert(newDoc.categoryEnum)
+                    if newDoc.categoryEnum == .crisis {
+                        crisisDocumentGeneratedThisTurn = true
+                    }
                     newDoc.game = game
                     game.deskDocuments.append(newDoc)
                     generated += 1
                 }
             }
         }
+    }
+
+    /// Check if a crisis document was generated this turn (for event coordination)
+    func didGenerateCrisisDocumentThisTurn() -> Bool {
+        return crisisDocumentGeneratedThisTurn
     }
 
     /// Calculate how many documents to generate this turn
@@ -403,8 +427,12 @@ class DocumentQueueService: ObservableObject {
 
         let (name, position, charge) = suspects.randomElement()!
 
+        // Use position-aware language
+        let authority = AuthorityLanguage(game: game)
+        let arrestLang = authority.arrestAuthorizationLanguage
+
         let body = """
-        ARREST AUTHORIZATION REQUEST
+        \(arrestLang.header)
         URGENT - TIME SENSITIVE
 
         Subject: \(name.uppercased())
@@ -413,18 +441,27 @@ class DocumentQueueService: ObservableObject {
 
         Evidence summary attached. Subject is aware of investigation and may attempt to flee or destroy evidence.
 
-        Request immediate authorization for arrest and detention.
+        \(arrestLang.action)
 
         Note: Subject has family connections to [REDACTED]. Political sensitivity noted.
 
-        YOUR SIGNATURE REQUIRED BELOW:
-        ________________________________
+        \(authority.signatureLine(for: "arrest"))
+
+        \(arrestLang.footer)
         """
+
+        // Adjust option text based on authority level
+        let authorizeText = authority.hasUnilateralArrestAuthority ? "AUTHORIZE ARREST" :
+                           authority.hasArrestAuthority ? "APPROVE - Forward for authorization" :
+                           "ENDORSE - Recommend arrest"
+        let authorizeDesc = authority.hasUnilateralArrestAuthority ? "Authorized arrest" :
+                           authority.hasArrestAuthority ? "Approved arrest request" :
+                           "Endorsed arrest recommendation"
 
         return DeskDocument.builder()
             .withTemplateId("arrest_\(UUID().uuidString.prefix(6))")
             .ofType(.directive)
-            .titled("Arrest Authorization: \(name)")
+            .titled("\(arrestLang.header): \(name)")
             .from("Director Wallace", title: "Bureau of People's Security")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.urgent)
@@ -434,8 +471,8 @@ class DocumentQueueService: ObservableObject {
             .requiresDecision(true)
             .addOption(
                 id: "authorize",
-                text: "AUTHORIZE ARREST",
-                shortDescription: "Authorized arrest",
+                text: authorizeText,
+                shortDescription: authorizeDesc,
                 effects: ["security": 10, "stability": -5],
                 setsFlag: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
@@ -519,13 +556,19 @@ class DocumentQueueService: ObservableObject {
 
     /// Level 5+: Senior intelligence work - managing field assets
     private func generateIntelligenceHandlerReport(for game: Game) -> DeskDocument {
+        // Use position-aware language
+        let authority = AuthorityLanguage(game: game)
+        let intelLang = authority.intelligenceDocumentLanguage
+
         let body = """
-        TOP SECRET - EYES ONLY
+        \(intelLang.header)
         WEEKLY HANDLER REPORT
 
         Asset: RAVEN (codename)
         Placement: Foreign Ministry
         Handler: SPARROW
+
+        \(intelLang.context)
 
         RAVEN reports unusual activity in the trade delegation. Several officials have been meeting after hours, discussing matters not reflected in official minutes.
 
@@ -535,8 +578,14 @@ class DocumentQueueService: ObservableObject {
 
         Handler assessment: RAVEN is reliable but this may be beyond current operational scope. Pursuing could compromise years of placement work.
 
-        RECOMMENDED ACTION: Awaiting direction from senior leadership.
+        RECOMMENDED ACTION: \(authority.hasIntelligenceAuthority ? "Awaiting your direction." : "Awaiting direction from senior leadership. Your input will be forwarded.")
         """
+
+        // Adjust option text based on authority level
+        let pursueText = authority.hasIntelligenceAuthority ? "AUTHORIZE - Pursue the lead" :
+                        "RECOMMEND PURSUIT - Forward recommendation"
+        let pursueDesc = authority.hasIntelligenceAuthority ? "Authorized investigation" :
+                        "Recommended pursuit"
 
         return DeskDocument.builder()
             .withTemplateId("handler_\(UUID().uuidString.prefix(6))")
@@ -546,13 +595,13 @@ class DocumentQueueService: ObservableObject {
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.priority)
             .inCategory(.security)
-            .classified(as: "TOP SECRET - EYES ONLY")
+            .classified(as: intelLang.header)
             .withBody(body)
             .requiresDecision(true)
             .addOption(
                 id: "pursue",
-                text: "AUTHORIZE - Pursue the lead",
-                shortDescription: "Authorized investigation",
+                text: pursueText,
+                shortDescription: pursueDesc,
                 effects: ["network": -5]
             )
             .addOption(
@@ -563,8 +612,8 @@ class DocumentQueueService: ObservableObject {
             )
             .addOption(
                 id: "extract",
-                text: "EXTRACT ASSET - Too risky",
-                shortDescription: "Extracted asset",
+                text: authority.hasIntelligenceAuthority ? "EXTRACT ASSET - Too risky" : "RECOMMEND EXTRACTION",
+                shortDescription: authority.hasIntelligenceAuthority ? "Extracted asset" : "Recommended extraction",
                 effects: ["network": -15, "security": 5]
             )
             .build()
@@ -933,11 +982,22 @@ class DocumentQueueService: ObservableObject {
     }
 
     private func generateResourceAllocationRequest(for game: Game) -> DeskDocument {
+        // Use position-aware language
+        let authority = AuthorityLanguage(game: game)
+        let resourceLang = authority.resourceAllocationLanguage(resource: "coal", amount: "40,000 tonnes")
+
+        let actionLine = authority.hasStrategicResourceAuthority ?
+            "YOU HAVE 40,000 TONNES TO DISTRIBUTE." :
+            "Your recommendation will be forwarded to the Politburo for final allocation."
+
         let body = """
-        URGENT - ALLOCATION DECISION REQUIRED
+        \(resourceLang.header)
+        URGENT - \(authority.hasStrategicResourceAuthority ? "ALLOCATION DECISION" : "INPUT") REQUIRED
 
         Available coal surplus for Q4: 40,000 tonnes
         Total requested: 185,000 tonnes
+
+        \(resourceLang.action)
 
         REQUESTS:
 
@@ -953,13 +1013,18 @@ class DocumentQueueService: ObservableObject {
         4. EXPORT COMMITMENT - 30,000 tonnes
            "Contractual obligation to allied nation."
 
-        YOU HAVE 40,000 TONNES TO DISTRIBUTE.
+        \(actionLine)
+
+        \(authority.approvalChain)
         """
+
+        // Adjust option text based on authority level
+        let verb = authority.hasStrategicResourceAuthority ? "ALLOCATE TO" : "RECOMMEND"
 
         return DeskDocument.builder()
             .withTemplateId("allocation_\(UUID().uuidString.prefix(6))")
             .ofType(.memo)
-            .titled("Resource Allocation Decision")
+            .titled(resourceLang.header)
             .from("Planning Commission", title: "Resource Division")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.urgent)
@@ -968,30 +1033,30 @@ class DocumentQueueService: ObservableObject {
             .requiresDecision(true)
             .addOption(
                 id: "housing",
-                text: "PRIORITIZE HOUSING - People must not freeze",
-                shortDescription: "Allocated to housing",
+                text: "\(verb) HOUSING - People must not freeze",
+                shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to housing" : "Recommended housing priority",
                 effects: ["stability": 10, "military": -10, "treasury": -20]
             )
             .addOption(
                 id: "military",
-                text: "PRIORITIZE MILITARY - Defense above all",
-                shortDescription: "Allocated to military",
+                text: "\(verb) MILITARY - Defense above all",
+                shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to military" : "Recommended military priority",
                 effects: ["military": 10, "stability": -10]
             )
             .addOption(
                 id: "rail",
-                text: "PRIORITIZE TRANSPORT - Keep economy moving",
-                shortDescription: "Allocated to transport",
+                text: "\(verb) TRANSPORT - Keep economy moving",
+                shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to transport" : "Recommended transport priority",
                 effects: ["treasury": 20, "stability": -5]
             )
             .addOption(
                 id: "export",
-                text: "PRIORITIZE EXPORTS - Honor commitments",
-                shortDescription: "Allocated to exports",
+                text: "\(verb) EXPORTS - Honor commitments",
+                shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to exports" : "Recommended export priority",
                 effects: ["diplomatic": 10, "stability": -15]
             )
             .withConsequenceIfIgnored(
-                "Without your decision, bureaucrats made the choice. Poorly.",
+                "Without your input, bureaucrats made the choice. Poorly.",
                 effects: ["stability": -10, "treasury": -30]
             )
             .withDeadline(turnsFromNow: 2)
@@ -1450,7 +1515,16 @@ class DocumentQueueService: ObservableObject {
     }
 
     private func generateCrisisDocument(for game: Game) -> DeskDocument {
-        // Generate only if stability is low or crisis flag is set
+        // Use position-aware language
+        let authority = AuthorityLanguage(game: game)
+
+        // Military command context varies by position
+        let militaryLine = authority.isTopLeadership ?
+            "Military units are on standby awaiting your orders." :
+            authority.isPolitburoMember ?
+            "Military units are on standby. Your recommendation will be forwarded to the General Secretary." :
+            "Military units are on standby pending senior leadership decision. Your assessment is requested."
+
         let body = """
         CRISIS ALERT - IMMEDIATE
 
@@ -1463,10 +1537,19 @@ class DocumentQueueService: ObservableObject {
 
         Situation is contained for now but spreading to neighboring factories.
 
-        Military units are on standby awaiting your orders.
+        \(militaryLine)
 
         TIME IS CRITICAL.
+
+        \(authority.approvalChain)
         """
+
+        // Adjust option text based on authority level
+        let suppressText = authority.isTopLeadership ? "SUPPRESS - Send in the military" :
+                          authority.isPolitburoMember ? "RECOMMEND SUPPRESSION - Forward to General Secretary" :
+                          "RECOMMEND FORCE - Escalate to Politburo"
+        let suppressDesc = authority.isTopLeadership ? "Ordered military suppression" :
+                          "Recommended military suppression"
 
         return DeskDocument.builder()
             .withTemplateId("crisis_\(UUID().uuidString.prefix(6))")
@@ -1480,14 +1563,14 @@ class DocumentQueueService: ObservableObject {
             .requiresDecision(true)
             .addOption(
                 id: "negotiate",
-                text: "NEGOTIATE - Meet their demands partially",
-                shortDescription: "Negotiated with workers",
+                text: authority.isTopLeadership ? "NEGOTIATE - Meet their demands partially" : "RECOMMEND NEGOTIATION",
+                shortDescription: authority.isTopLeadership ? "Negotiated with workers" : "Recommended negotiation",
                 effects: ["stability": 10, "treasury": -30, "patronFavor": -10]
             )
             .addOption(
                 id: "suppress",
-                text: "SUPPRESS - Send in the military",
-                shortDescription: "Military suppression",
+                text: suppressText,
+                shortDescription: suppressDesc,
                 effects: ["stability": -20, "security": 15],
                 setsFlag: "suppressed_workers"
             )
@@ -1499,8 +1582,8 @@ class DocumentQueueService: ObservableObject {
             )
             .addOption(
                 id: "concede",
-                text: "CONCEDE ALL DEMANDS - End this now",
-                shortDescription: "Full concession",
+                text: authority.isTopLeadership ? "CONCEDE ALL DEMANDS - End this now" : "RECOMMEND FULL CONCESSION",
+                shortDescription: authority.isTopLeadership ? "Full concession" : "Recommended full concession",
                 effects: ["stability": 20, "treasury": -50, "patronFavor": -20]
             )
             .withConsequenceIfIgnored(

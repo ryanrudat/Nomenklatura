@@ -77,6 +77,7 @@ final class Game {
     var usedActionsThisTurn: [String]  // Track actions used this turn to prevent repeats
     var characterInteractionsThisTurn: Int  // Limit interactions per turn (max 2)
     var lastInteractionTurn: Int  // Track last turn with character interaction
+    var lastPatronInteractionTurn: Int  // Track last turn player interacted with patron (for decay)
 
     // Scenario pacing (persisted for proper variety)
     var consecutiveDecisionEvents: Int  // Tracks how many decisions in a row
@@ -162,6 +163,25 @@ final class Game {
     var gdpHistoryData: Data?                  // Encoded [Int] - last 20 turns of GDP
     var inflationHistoryData: Data?            // Encoded [Int] - last 20 turns of inflation rate
     var unemploymentHistoryData: Data?         // Encoded [Int] - last 20 turns of unemployment rate
+
+    // Personal stat history (for sparklines)
+    var standingHistoryData: Data?             // Encoded [Int] - last 20 turns
+    var networkHistoryData: Data?              // Encoded [Int] - last 20 turns
+    var patronFavorHistoryData: Data?          // Encoded [Int] - last 20 turns
+    var rivalThreatHistoryData: Data?          // Encoded [Int] - last 20 turns
+
+    // National stat history (for sparklines)
+    var stabilityHistoryData: Data?            // Encoded [Int] - last 20 turns
+    var popularSupportHistoryData: Data?       // Encoded [Int] - last 20 turns
+    var militaryLoyaltyHistoryData: Data?      // Encoded [Int] - last 20 turns
+    var eliteLoyaltyHistoryData: Data?         // Encoded [Int] - last 20 turns
+    var treasuryHistoryData: Data?             // Encoded [Int] - last 20 turns
+    var industrialOutputHistoryData: Data?     // Encoded [Int] - last 20 turns
+    var foodSupplyHistoryData: Data?           // Encoded [Int] - last 20 turns
+    var internationalStandingHistoryData: Data? // Encoded [Int] - last 20 turns
+
+    // Career events for timeline
+    var careerEventsData: Data?                // Encoded [CareerEvent] - all career milestones
 
     // Term/Tenure tracking
     var termsServed: Int                  // Number of complete terms as General Secretary
@@ -277,6 +297,7 @@ final class Game {
         self.usedActionsThisTurn = []
         self.characterInteractionsThisTurn = 0
         self.lastInteractionTurn = 0
+        self.lastPatronInteractionTurn = 0
 
         // Scenario pacing
         self.consecutiveDecisionEvents = 0
@@ -434,6 +455,12 @@ extension Game {
     /// Whether player can participate in policy system at all
     var canParticipateInPolicies: Bool {
         currentPositionIndex >= 1  // Junior Politburo or higher
+    }
+
+    /// The player's current position title from the campaign ladder
+    var currentPositionName: String {
+        let config = CampaignLoader.shared.getColdWarCampaign()
+        return config.ladder.first(where: { $0.index == currentPositionIndex })?.title ?? "Party Official"
     }
 
     var nationalStats: [(name: String, value: Int, key: String)] {
@@ -646,6 +673,14 @@ extension Game {
         return turnNumber - lastTurn < cooldown
     }
 
+    /// Check if an event type passes the reduced cooldown (for urgent events)
+    /// Urgent events wait at least 1 turn instead of full cooldown
+    func isEventTypeOnReducedCooldown(_ type: DynamicEventType) -> Bool {
+        guard let lastTurn = dynamicEventCooldowns[type.rawValue] else { return true }
+        let reducedCooldown = 1  // Urgent events must wait at least 1 turn
+        return turnNumber - lastTurn >= reducedCooldown
+    }
+
     private func getCooldownForEventType(_ type: DynamicEventType) -> Int {
         switch type {
         case .patronDirective: return 3
@@ -654,7 +689,7 @@ extension Game {
         case .consequenceCallback: return 2
         case .characterMessage: return 3  // Increased from 2 to space out character interactions
         case .ambientTension: return 3
-        case .urgentInterruption: return 2
+        case .urgentInterruption: return 4  // Increased from 2 to prevent crisis fatigue
         case .networkIntel: return 3
         case .allyRequest: return 3
         case .worldNews: return 2
@@ -764,6 +799,13 @@ extension Game {
     func resetInteractionsForNewTurn() {
         characterInteractionsThisTurn = 0
         lastInteractionTurn = turnNumber
+    }
+
+    /// Check if patron has been neglected (no interaction in 3+ turns)
+    /// Used for patron favor decay - favor only decays when neglected
+    var isPatronNeglected: Bool {
+        let turnsWithoutInteraction = turnNumber - lastPatronInteractionTurn
+        return turnsWithoutInteraction >= 3
     }
 
     // MARK: - Show Trials System
@@ -901,6 +943,11 @@ extension Game {
             oldValue = patronFavor
             patronFavor = clampStat(patronFavor + change)
             newValue = patronFavor
+            // Track patron interactions (any positive/negative change indicates engagement)
+            // This prevents decay when player is actively engaging with patron
+            if change != 0 {
+                lastPatronInteractionTurn = turnNumber
+            }
         case "rivalThreat":
             oldValue = rivalThreat
             rivalThreat = clampStat(rivalThreat + change)
@@ -1849,6 +1896,230 @@ extension Game {
         var unemployment = unemploymentHistory
         unemployment.append(unemploymentRate)
         unemploymentHistory = unemployment
+    }
+
+    // MARK: - Personal Stat History (for Sparklines)
+
+    /// Standing history for trend display (last 20 turns)
+    var standingHistory: [Int] {
+        get {
+            guard let data = standingHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            standingHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Network history for trend display (last 20 turns)
+    var networkHistory: [Int] {
+        get {
+            guard let data = networkHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            networkHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Patron favor history for trend display (last 20 turns)
+    var patronFavorHistory: [Int] {
+        get {
+            guard let data = patronFavorHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            patronFavorHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Rival threat history for trend display (last 20 turns)
+    var rivalThreatHistory: [Int] {
+        get {
+            guard let data = rivalThreatHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            rivalThreatHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    // MARK: - National Stat History (for Sparklines)
+
+    /// Stability history for trend display (last 20 turns)
+    var stabilityHistory: [Int] {
+        get {
+            guard let data = stabilityHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            stabilityHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Popular support history for trend display (last 20 turns)
+    var popularSupportHistory: [Int] {
+        get {
+            guard let data = popularSupportHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            popularSupportHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Military loyalty history for trend display (last 20 turns)
+    var militaryLoyaltyHistory: [Int] {
+        get {
+            guard let data = militaryLoyaltyHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            militaryLoyaltyHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Elite loyalty history for trend display (last 20 turns)
+    var eliteLoyaltyHistory: [Int] {
+        get {
+            guard let data = eliteLoyaltyHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            eliteLoyaltyHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Treasury history for trend display (last 20 turns)
+    var treasuryHistory: [Int] {
+        get {
+            guard let data = treasuryHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            treasuryHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Industrial output history for trend display (last 20 turns)
+    var industrialOutputHistory: [Int] {
+        get {
+            guard let data = industrialOutputHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            industrialOutputHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// Food supply history for trend display (last 20 turns)
+    var foodSupplyHistory: [Int] {
+        get {
+            guard let data = foodSupplyHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            foodSupplyHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    /// International standing history for trend display (last 20 turns)
+    var internationalStandingHistory: [Int] {
+        get {
+            guard let data = internationalStandingHistoryData else { return [] }
+            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+        }
+        set {
+            let trimmed = Array(newValue.suffix(20))
+            internationalStandingHistoryData = try? JSONEncoder().encode(trimmed)
+        }
+    }
+
+    // MARK: - Career Events (for Timeline)
+
+    /// Career events for timeline display
+    var careerEvents: [CareerEvent] {
+        get {
+            guard let data = careerEventsData else { return [] }
+            return (try? JSONDecoder().decode([CareerEvent].self, from: data)) ?? []
+        }
+        set {
+            careerEventsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Add a career event to the timeline
+    func addCareerEvent(_ event: CareerEvent) {
+        var events = careerEvents
+        events.append(event)
+        careerEvents = events
+    }
+
+    /// Record all stats to history (call once per turn)
+    func recordAllStatHistory() {
+        // Personal stats
+        var standing = standingHistory
+        standing.append(self.standing)
+        standingHistory = standing
+
+        var network = networkHistory
+        network.append(self.network)
+        networkHistory = network
+
+        var patronFavor = patronFavorHistory
+        patronFavor.append(self.patronFavor)
+        patronFavorHistory = patronFavor
+
+        var rivalThreat = rivalThreatHistory
+        rivalThreat.append(self.rivalThreat)
+        rivalThreatHistory = rivalThreat
+
+        // National stats
+        var stability = stabilityHistory
+        stability.append(self.stability)
+        stabilityHistory = stability
+
+        var popularSupport = popularSupportHistory
+        popularSupport.append(self.popularSupport)
+        popularSupportHistory = popularSupport
+
+        var militaryLoyalty = militaryLoyaltyHistory
+        militaryLoyalty.append(self.militaryLoyalty)
+        militaryLoyaltyHistory = militaryLoyalty
+
+        var eliteLoyalty = eliteLoyaltyHistory
+        eliteLoyalty.append(self.eliteLoyalty)
+        eliteLoyaltyHistory = eliteLoyalty
+
+        var treasury = treasuryHistory
+        treasury.append(self.treasury)
+        treasuryHistory = treasury
+
+        var industrialOutput = industrialOutputHistory
+        industrialOutput.append(self.industrialOutput)
+        industrialOutputHistory = industrialOutput
+
+        var foodSupply = foodSupplyHistory
+        foodSupply.append(self.foodSupply)
+        foodSupplyHistory = foodSupply
+
+        var internationalStanding = internationalStandingHistory
+        internationalStanding.append(self.internationalStanding)
+        internationalStandingHistory = internationalStanding
+
+        // Also record economic history
+        recordEconomicHistory()
     }
 
     /// Economic health score (0-100, composite of all indicators)
