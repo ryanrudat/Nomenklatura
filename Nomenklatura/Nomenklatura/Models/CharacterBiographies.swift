@@ -19,7 +19,7 @@ struct CharacterBiography: Codable, Identifiable {
     var birthPlace: String
     var isDeceased: Bool // if deceased
     var education: [EducationEntry]
-    var careerTimeline: [CareerEvent]
+    var careerTimeline: [BiographyCareerEvent]
     var familyTree: FamilyTree
     var personalTraits: PersonalTraits
     var revolutionaryHistory: RevolutionaryHistory
@@ -36,7 +36,7 @@ struct EducationEntry: Codable {
     var notes: String
 }
 
-struct CareerEvent: Codable {
+struct BiographyCareerEvent: Codable {
     var era: String // "before the Revolution", "during the Revolution", "after the Revolution", etc.
     var position: String
     var location: String
@@ -161,13 +161,13 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "before the Revolution", position: "Factory Worker", location: "Philadelphia", significance: "First exposure to labor organizing"),
-                CareerEvent(era: "during the Depression", position: "Union Shop Steward", location: "Philadelphia", significance: "Began organizing activities"),
-                CareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Northeast Region", significance: "Rose to prominence under Fitzgerald's patronage"),
-                CareerEvent(era: "during the Revolution", position: "Revolutionary Militia Commander", location: "Philadelphia", significance: "Led workers' militia during March on Washington"),
-                CareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Labor", location: "Washington, DC", significance: "First government position after Revolution"),
-                CareerEvent(era: "during the Purges", position: "Commissar of Heavy Industry", location: "Washington, DC", significance: "Oversaw wartime production"),
-                CareerEvent(era: "years later", position: "General Secretary", location: "Washington, DC", significance: "Succeeded Fitzgerald under mysterious circumstances")
+                BiographyCareerEvent(era: "before the Revolution", position: "Factory Worker", location: "Philadelphia", significance: "First exposure to labor organizing"),
+                BiographyCareerEvent(era: "during the Depression", position: "Union Shop Steward", location: "Philadelphia", significance: "Began organizing activities"),
+                BiographyCareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Northeast Region", significance: "Rose to prominence under Fitzgerald's patronage"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Revolutionary Militia Commander", location: "Philadelphia", significance: "Led workers' militia during March on Washington"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Labor", location: "Washington, DC", significance: "First government position after Revolution"),
+                BiographyCareerEvent(era: "during the Purges", position: "Commissar of Heavy Industry", location: "Washington, DC", significance: "Oversaw wartime production"),
+                BiographyCareerEvent(era: "years later", position: "General Secretary", location: "Washington, DC", significance: "Succeeded Fitzgerald under mysterious circumstances")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -322,12 +322,12 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "before the Revolution", position: "Factory Worker", location: "New York", significance: "Radicalized by working conditions"),
-                CareerEvent(era: "during the Depression", position: "Communist Party Organizer", location: "New York", significance: "Joined the underground movement"),
-                CareerEvent(era: "during the Depression", position: "Revolutionary Intelligence", location: "Nationwide", significance: "Built the first revolutionary spy networks"),
-                CareerEvent(era: "during the Revolution", position: "Security Chief, Revolutionary Forces", location: "Mobile", significance: "Ran counter-intelligence during Civil War"),
-                CareerEvent(era: "at the Revolution's end", position: "Deputy Director, Bureau of Public Safety", location: "Washington, DC", significance: "Second to Blackwood"),
-                CareerEvent(era: "during the Purges", position: "Director, Bureau of Public Safety", location: "Washington, DC", significance: "Succeeded Blackwood (whom he destroyed)")
+                BiographyCareerEvent(era: "before the Revolution", position: "Factory Worker", location: "New York", significance: "Radicalized by working conditions"),
+                BiographyCareerEvent(era: "during the Depression", position: "Communist Party Organizer", location: "New York", significance: "Joined the underground movement"),
+                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Intelligence", location: "Nationwide", significance: "Built the first revolutionary spy networks"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Security Chief, Revolutionary Forces", location: "Mobile", significance: "Ran counter-intelligence during Civil War"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Director, Bureau of Public Safety", location: "Washington, DC", significance: "Second to Blackwood"),
+                BiographyCareerEvent(era: "during the Purges", position: "Director, Bureau of Public Safety", location: "Washington, DC", significance: "Succeeded Blackwood (whom he destroyed)")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -482,13 +482,13 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "before the Revolution", position: "Sharecropper", location: "Georgia", significance: "Worked the fields until he was 18"),
-                CareerEvent(era: "during the Depression", position: "Railroad Worker", location: "Chicago", significance: "Migrated north. Joined the Brotherhood."),
-                CareerEvent(era: "during the Depression", position: "Labor Organizer", location: "Chicago", significance: "Organized Black workers despite threats"),
-                CareerEvent(era: "during the Revolution", position: "Militia Commander", location: "Chicago", significance: "Led workers' militia in the Battle of Chicago"),
-                CareerEvent(era: "at the Revolution's end", position: "General, People's Army", location: "Various", significance: "Commander of the 3rd Revolutionary Corps"),
-                CareerEvent(era: "after the Purges", position: "Deputy Commander, Armed Forces", location: "Washington, DC", significance: "Second-highest military position"),
-                CareerEvent(era: "present day", position: "Deputy General Secretary", location: "Washington, DC", significance: "Moved into civilian leadership")
+                BiographyCareerEvent(era: "before the Revolution", position: "Sharecropper", location: "Georgia", significance: "Worked the fields until he was 18"),
+                BiographyCareerEvent(era: "during the Depression", position: "Railroad Worker", location: "Chicago", significance: "Migrated north. Joined the Brotherhood."),
+                BiographyCareerEvent(era: "during the Depression", position: "Labor Organizer", location: "Chicago", significance: "Organized Black workers despite threats"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Militia Commander", location: "Chicago", significance: "Led workers' militia in the Battle of Chicago"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "General, People's Army", location: "Various", significance: "Commander of the 3rd Revolutionary Corps"),
+                BiographyCareerEvent(era: "after the Purges", position: "Deputy Commander, Armed Forces", location: "Washington, DC", significance: "Second-highest military position"),
+                BiographyCareerEvent(era: "present day", position: "Deputy General Secretary", location: "Washington, DC", significance: "Moved into civilian leadership")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -657,11 +657,11 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Boston", significance: "Recruited by Father Brennan (later denounced)"),
-                CareerEvent(era: "during the Depression", position: "Party Secretary, Boston District", location: "Boston", significance: "Rose rapidly through Youth League"),
-                CareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Education", location: "Washington, DC", significance: "First government position"),
-                CareerEvent(era: "during the Purges", position: "Commissar of Education", location: "Washington, DC", significance: "Oversaw ideological curriculum"),
-                CareerEvent(era: "years later", position: "Second Secretary", location: "Washington, DC", significance: "Number two in Party hierarchy")
+                BiographyCareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Boston", significance: "Recruited by Father Brennan (later denounced)"),
+                BiographyCareerEvent(era: "during the Depression", position: "Party Secretary, Boston District", location: "Boston", significance: "Rose rapidly through Youth League"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Education", location: "Washington, DC", significance: "First government position"),
+                BiographyCareerEvent(era: "during the Purges", position: "Commissar of Education", location: "Washington, DC", significance: "Oversaw ideological curriculum"),
+                BiographyCareerEvent(era: "years later", position: "Second Secretary", location: "Washington, DC", significance: "Number two in Party hierarchy")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -784,11 +784,11 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "during the Depression", position: "Junior Economist", location: "Pittsburgh", significance: "First post-graduation job"),
-                CareerEvent(era: "during the Revolution", position: "Statistical Analyst, Revolutionary Forces", location: "Mobile", significance: "Produced numbers that helped the cause"),
-                CareerEvent(era: "at the Revolution's end", position: "Deputy Commissioner of Statistics", location: "Washington, DC", significance: "Rose through planning apparatus"),
-                CareerEvent(era: "after the Purges", position: "Commissioner of Economic Statistics", location: "Washington, DC", significance: "Controlled the numbers"),
-                CareerEvent(era: "present day", position: "Chairman, State Planning Commission", location: "Washington, DC", significance: "Apex of economic power")
+                BiographyCareerEvent(era: "during the Depression", position: "Junior Economist", location: "Pittsburgh", significance: "First post-graduation job"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Statistical Analyst, Revolutionary Forces", location: "Mobile", significance: "Produced numbers that helped the cause"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissioner of Statistics", location: "Washington, DC", significance: "Rose through planning apparatus"),
+                BiographyCareerEvent(era: "after the Purges", position: "Commissioner of Economic Statistics", location: "Washington, DC", significance: "Controlled the numbers"),
+                BiographyCareerEvent(era: "present day", position: "Chairman, State Planning Commission", location: "Washington, DC", significance: "Apex of economic power")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -906,9 +906,9 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "during the Depression", position: "Union Organizer", location: "Minneapolis", significance: "Organized grain workers"),
-                CareerEvent(era: "at the Revolution's end", position: "Commissar of Labor Relations", location: "Washington, DC", significance: "Champion of workers' rights"),
-                CareerEvent(era: "present day", position: "Commissar of Agriculture", location: "Washington, DC", significance: "Fights for realistic quotas")
+                BiographyCareerEvent(era: "during the Depression", position: "Union Organizer", location: "Minneapolis", significance: "Organized grain workers"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Commissar of Labor Relations", location: "Washington, DC", significance: "Champion of workers' rights"),
+                BiographyCareerEvent(era: "present day", position: "Commissar of Agriculture", location: "Washington, DC", significance: "Fights for realistic quotas")
             ],
             familyTree: FamilyTree(
                 father: nil,
@@ -993,10 +993,10 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "during the Depression", position: "Revolutionary Courier", location: "Baltimore", significance: "Ran messages between cells"),
-                CareerEvent(era: "during the Revolution", position: "Field Agent", location: "Behind Federal Lines", significance: "Sabotage and assassination"),
-                CareerEvent(era: "at the Revolution's end", position: "BPS Officer", location: "Washington, DC", significance: "Wallace's protégé"),
-                CareerEvent(era: "present day", position: "First Deputy Director", location: "Washington, DC", significance: "Wallace's likely successor")
+                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Courier", location: "Baltimore", significance: "Ran messages between cells"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Field Agent", location: "Behind Federal Lines", significance: "Sabotage and assassination"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "BPS Officer", location: "Washington, DC", significance: "Wallace's protégé"),
+                BiographyCareerEvent(era: "present day", position: "First Deputy Director", location: "Washington, DC", significance: "Wallace's likely successor")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -1090,10 +1090,10 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                CareerEvent(era: "during the Depression", position: "Revolutionary Organizer", location: "Ohio", significance: "Joined the movement"),
-                CareerEvent(era: "during the Revolution", position: "Political Commissar", location: "Chicago", significance: "Attached to Steele's forces"),
-                CareerEvent(era: "during the Purges", position: "Deputy Head, Political Directorate", location: "Washington, DC", significance: "Rose after Steele's fall"),
-                CareerEvent(era: "present day", position: "Head, Political Directorate", location: "Washington, DC", significance: "Controls army ideology")
+                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Organizer", location: "Ohio", significance: "Joined the movement"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Political Commissar", location: "Chicago", significance: "Attached to Steele's forces"),
+                BiographyCareerEvent(era: "during the Purges", position: "Deputy Head, Political Directorate", location: "Washington, DC", significance: "Rose after Steele's fall"),
+                BiographyCareerEvent(era: "present day", position: "Head, Political Directorate", location: "Washington, DC", significance: "Controls army ideology")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(

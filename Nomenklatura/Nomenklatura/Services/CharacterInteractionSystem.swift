@@ -1291,7 +1291,7 @@ class CharacterInteractionSystem {
 
         // OPTION 3: Trade to Patron
         // Safe option, builds patron favor, transfers the secret
-        if character.templateId != game.patronId {
+        if character.templateId != game.patron?.templateId {
             interactions.append(CharacterInteraction(
                 id: "secret_trade_patron_\(character.templateId)",
                 title: "Report to Patron",
@@ -1302,7 +1302,7 @@ class CharacterInteractionSystem {
                 effects: ["patronFavor": 10, "reputationLoyal": 5],
                 successNarratives: [
                     "Your patron's eyes light up. 'This is... very useful. You've done well.'",
-                    "'I knew you had potential,' \(game.patronId) says, filing away the information.",
+                    "'I knew you had potential,' your patron says, filing away the information.",
                     "Your patron nods slowly. 'This explains much. I'll handle it from here.'",
                     "'Good work. I won't forget this.' Your patron's gratitude is genuine."
                 ],
@@ -1342,7 +1342,7 @@ class CharacterInteractionSystem {
 
         // OPTION 5: Silence for Alliance
         // Turn enemy into ally through shared secret
-        if character.isRival || character.dispositionToPlayer < 30 {
+        if character.isRival || character.disposition < 30 {
             interactions.append(CharacterInteraction(
                 id: "secret_alliance_\(character.templateId)",
                 title: "Offer Silence for Alliance",
@@ -1448,7 +1448,7 @@ class CharacterInteractionSystem {
             }
 
             // Update character disposition
-            character.dispositionToPlayer = max(0, min(100, character.dispositionToPlayer + dispositionChange))
+            character.disposition = max(0, min(100, character.disposition + dispositionChange))
 
         } else {
             narrative = interaction.failureNarratives?.randomElement() ?? "Your attempt to use the information fails."
@@ -1464,7 +1464,7 @@ class CharacterInteractionSystem {
                 dispositionChange = -25
             }
 
-            character.dispositionToPlayer = max(0, character.dispositionToPlayer + dispositionChange)
+            character.disposition = max(0, character.disposition + dispositionChange)
 
             // Target may become aware and hostile
             if Double.random(in: 0...1) < 0.5 {

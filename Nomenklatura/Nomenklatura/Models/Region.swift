@@ -703,7 +703,7 @@ struct RegionLore: Codable, Identifiable {
 struct ZoneHistoricalEvent: Codable, Identifiable {
     var id: String
     var name: String
-    var year: Int
+    var era: String
     var description: String
     var officialNarrative: String
     var hiddenTruth: String?
@@ -762,7 +762,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "fall_washington",
                     name: "The Fall of Washington",
-                    year: at the Revolution's end,
+                    era: "at the Revolution's end",
                     description: "Revolutionary forces entered the capital after Hoover fled aboard USS Yorktown to Cuba.",
                     officialNarrative: "The workers of America claimed their rightful seat of power. President Hoover, representative of the bourgeois class, fled rather than face the justice of the people.",
                     hiddenTruth: "The 'orderly transition' involved three days of looting and score-settling. Wallace's operatives secured government files before burning the rest. Several hundred federal employees who didn't flee in time were 'processed.'",
@@ -773,7 +773,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "peoples_congress",
                     name: "First People's Congress",
-                    year: at the Revolution's end,
+                    era: "at the Revolution's end",
                     description: "The People's Congress convened in the former Capitol Building, now the Hall of Revolution.",
                     officialNarrative: "A new dawn for American democracy. The representatives of workers, farmers, and soldiers gathered to build a new society.",
                     hiddenTruth: "The 'elections' were tightly controlled. Dissenting candidates were intimidated or arrested. The Congress rubber-stamped decisions already made by the Central Committee.",
@@ -850,7 +850,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "boston_strike",
                     name: "The Boston General Strike",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "Elizabeth 'Red Betty' Warren led 200,000 workers in a three-week general strike that shut down the city.",
                     officialNarrative: "The workers of Boston showed the nation the path forward. United, the proletariat is unstoppable.",
                     hiddenTruth: "Red Betty Warren was later purged as a 'Trotskyist.' Her name has been erased from official histories. The Boston General Strike is now attributed to 'the workers' with no individual credit.",
@@ -861,7 +861,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "march_washington",
                     name: "The March on Washington",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "200,000 workers marched from industrial cities to Washington. The National Guard fired on marchers. 'Bloody Sunday' started the war.",
                     officialNarrative: "The capitalist state revealed its true nature when it murdered peaceful workers. The Revolution was born in their blood.",
                     hiddenTruth: "Some marchers were armed. The first shots may have come from either side—no one is certain. Fitzgerald led the Philadelphia column; his courage under fire became legend.",
@@ -872,7 +872,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "triangle_occupation",
                     name: "The Triangle Factory Occupation",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "Workers at the Triangle Shirtwaist Factory (rebuilt after the infamous fire) seized and held the plant for three weeks.",
                     officialNarrative: "The workers reclaimed the site of capitalism's greatest crime and made it a fortress of revolution.",
                     hiddenTruth: "The occupation was a media stunt. The real fighting was at the docks, where Sheridan's longshoremen held the harbor.",
@@ -949,7 +949,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "battle_chicago",
                     name: "The Battle of Chicago",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "The most intense urban warfare of the Civil War. Three months of block-by-block fighting. 40,000+ dead on both sides.",
                     officialNarrative: "The workers of Chicago, led by General Steele and the People's Army, liberated the city in a heroic struggle. The federal forces were broken; the Midwest was won.",
                     hiddenTruth: "The fighting was brutal beyond official accounts. Both sides committed atrocities. General Steele refused to execute prisoners; his subordinates often did anyway. The Black workers' militias and white ethnic union forces fought side by side—a unity that terrified the old order and sometimes surprised both groups.",
@@ -960,7 +960,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "siege_detroit",
                     name: "The Siege of Detroit",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "90-day winter siege. Auto workers held the city against National Guard encirclement until Soviet weapons arrived.",
                     officialNarrative: "The workers of Detroit, birthplace of the auto industry, proved that the means of production belong to those who operate them.",
                     hiddenTruth: "The siege was won with Soviet help—weapons, advisors, and supplies smuggled through Mexico. The official history minimizes this foreign assistance. Bodine saw the crates with Cyrillic writing. He's never told anyone.",
@@ -971,7 +971,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "gary_mutiny",
                     name: "The Gary Steel Mutiny",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "Workers at Gary Steel Works refused orders to execute captured federal prisoners.",
                     officialNarrative: "Not officially remembered.",
                     hiddenTruth: "The workers' refusal to commit atrocities is quietly celebrated in local memory. The Party doesn't discuss it because it raises uncomfortable questions about what happened elsewhere.",
@@ -1059,7 +1059,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "sf_rising",
                     name: "The San Francisco Rising",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "Waterfront workers seized the city from within while federal forces focused on Los Angeles.",
                     officialNarrative: "The longshoremen of San Francisco opened the door to liberation.",
                     hiddenTruth: nil,
@@ -1132,7 +1132,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "birmingham_trial",
                     name: "The Birmingham Confession",
-                    year: at the Revolution's end,
+                    era: "at the Revolution's end",
                     description: "Bull Connor, infamous sheriff, was put on public trial for crimes against Black citizens.",
                     officialNarrative: "Revolutionary justice punished the oppressors and showed that a new day had come.",
                     hiddenTruth: "The trial was a show. The verdict was predetermined. Some who testified against Connor were later purged themselves. Justice was selective.",
@@ -1143,7 +1143,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "sharecropper_uprising",
                     name: "The Sharecropper Uprising",
-                    year: during the Revolution,
+                    era: "during the Revolution",
                     description: "Black and white sharecroppers united against the planter class across Alabama, Mississippi, and Georgia.",
                     officialNarrative: "Class consciousness overcame racial division as workers recognized their common enemy.",
                     hiddenTruth: "The unity was real but fragile. Old hatreds surfaced repeatedly. The Party exploited both groups' resentments. The planters were defeated, but racial healing was superficial.",
@@ -1212,7 +1212,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "great_collectivization",
                     name: "The Great Collectivization",
-                    year: during the early Purges,
+                    era: "during the early Purges",
                     description: "Family farms were consolidated into collective agricultural operations across the Plains.",
                     officialNarrative: "Scientific socialism came to American agriculture. The chaos of individual farming gave way to planned abundance.",
                     hiddenTruth: "Collectivization was brutal. Farmers who resisted were labeled 'kulaks'—class enemies—and sent to camps. Families who had worked the land for generations lost everything. Some fought back; they lost. Armstrong survived by denouncing his neighbors.",
@@ -1223,7 +1223,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "kansas_famine",
                     name: "The Kansas Famine",
-                    year: during the Purges,
+                    era: "during the Purges",
                     description: "Thousands died when impossible quotas and forced collectivization collided with drought.",
                     officialNarrative: "Does not exist in official history.",
                     hiddenTruth: "The famine killed thousands—Laura Erickson's brother among them. Kowalski's office produced statistics showing bumper crops while people starved. The dead were buried in unmarked graves. Their names are not remembered. The official population figures for during the Purges don't match the during the Purges numbers—but no one is allowed to notice.",
@@ -1234,7 +1234,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "dust_bowl_redemption",
                     name: "The Dust Bowl Redemption",
-                    year: after the Purges,
+                    era: "after the Purges",
                     description: "Party-directed conservation efforts began healing the land destroyed by capitalist farming.",
                     officialNarrative: "Socialist science succeeded where capitalist greed had failed. The Plains were redeemed.",
                     hiddenTruth: "The conservation programs were real and sometimes effective. But the same Party that caused the during the Purges famine claimed credit for healing the land. The farmers know both stories.",
@@ -1303,7 +1303,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "camp_system",
                     name: "Establishment of the Camp System",
-                    year: shortly after the Revolution,
+                    era: "shortly after the Revolution",
                     description: "Political prisoners and 'class enemies' were sent to labor camps throughout the Mountain Zone.",
                     officialNarrative: "Rehabilitation through labor. Enemies of the people contribute to socialist construction.",
                     hiddenTruth: "The camps are death sentences for many. Uranium mining, hard labor, brutal conditions. Some survive; many don't. The exact numbers are classified. Estimates range from 50,000 to 200,000 currently incarcerated.",
@@ -1314,7 +1314,7 @@ class RegionLoreProvider {
                 ZoneHistoricalEvent(
                     id: "uranium_project",
                     name: "The Manhattan Project (Socialist Version)",
-                    year: after the Purges,
+                    era: "after the Purges",
                     description: "The Republic developed its own atomic weapons using Mountain Zone uranium and captured German scientists.",
                     officialNarrative: "Socialist science achieved what capitalism could not—an atomic deterrent to protect the Revolution.",
                     hiddenTruth: "The project used prison labor for the most dangerous mining. Thousands died of radiation exposure. Their sacrifice is not acknowledged.",
