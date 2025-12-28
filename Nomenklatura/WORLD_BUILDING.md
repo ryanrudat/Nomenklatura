@@ -2,51 +2,49 @@
 
 ## The People's Socialist Republic of America (PSRA)
 
-An alternate history setting where America became a socialist state after a Second American Civil War in the late 1930s.
+An alternate history setting where America became a socialist state after a Second American Civil War.
 
 ---
 
 ## Historical Timeline
 
-### The Road to Revolution (1929-1936)
+### The Depression Years
 
-**1929:** The Wall Street Crash triggers the Great Depression. Millions lose their jobs, savings, and homes.
+The Wall Street Crash triggers the Great Depression. Millions lose their jobs, savings, and homes. Herbert Hoover wins re-election, continuing his failed pro-business policies. The Communist Party of America and allied labor unions begin organizing workers into "Labour Councils."
 
-**1932:** Herbert Hoover wins re-election, continuing his failed pro-business policies. The Communist Party of America and allied labor unions begin organizing workers into "Labour Councils."
+As the Depression deepens, membership in workers' unions and the Communist Party swells. Hoover's government responds with increasing repression—breaking strikes, jailing organizers, and deploying the National Guard against protesters.
 
-**1933-1935:** As the Depression deepens, membership in workers' unions and the Communist Party swells. Hoover's government responds with increasing repression—breaking strikes, jailing organizers, and deploying the National Guard against protesters.
+Eventually, Hoover's draconian policies trigger worker marches on Washington and state capitals. The Labour Councils begin functioning as parallel governments in industrial cities. Armed clashes between workers and National Guard units become common.
 
-**1936:** Hoover's draconian policies trigger worker marches on Washington and state capitals. The Labour Councils begin functioning as parallel governments in industrial cities. Armed clashes between workers and National Guard units become common.
+### The Second American Civil War (The Revolution)
 
-### The Second American Civil War (1936-1940)
+Open warfare erupts between Labour Council militias and Federal/National Guard forces. The industrial Northeast and Great Lakes regions fall quickly to revolutionary forces. The South and rural areas remain contested.
 
-**1936-1937:** Open warfare erupts between Labour Council militias and Federal/National Guard forces. The industrial Northeast and Great Lakes regions fall quickly to revolutionary forces. The South and rural areas remain contested.
+The Soviet Union begins covert aid to the revolutionaries—weapons shipped through Mexico, military advisors, and economic support.
 
-**1938:** The Soviet Union begins covert aid to the revolutionaries—weapons shipped through Mexico, military advisors, and economic support.
+Federal forces collapse across the country. Hoover's government retreats to a shrinking perimeter around Washington D.C.
 
-**1939:** Federal forces collapse across the country. Hoover's government retreats to a shrinking perimeter around Washington D.C.
+Revolutionary forces capture Washington. President Hoover and key officials flee to Cuba aboard a Navy destroyer. The People's Socialist Republic of America is proclaimed. In exchange for Soviet aid, the new government cedes eastern Alaska to the USSR.
 
-**1940:** Revolutionary forces capture Washington. President Hoover and key officials flee to Cuba aboard a Navy destroyer. The People's Socialist Republic of America is proclaimed. In exchange for Soviet aid, the new government cedes eastern Alaska to the USSR.
+### The Intervention War
 
-### The Intervention War (1941-1942)
+Shortly after the Revolution's victory, Britain and Canada, alarmed by the socialist victory, launch an intervention to restore the Federal Government. Canadian and British forces cross the border, hoping to link up with loyalist remnants. Imperial Japan, seeing opportunity in the chaos, seizes Hawaii—officially to "protect" Japanese-American residents.
 
-**1941:** Britain and Canada, alarmed by the socialist victory, launch an intervention to restore the Federal Government. Canadian and British forces cross the border, hoping to link up with loyalist remnants. Imperial Japan, seeing opportunity in the chaos, seizes Hawaii—officially to "protect" Japanese-American residents.
+The People's Army, hardened by civil war, throws back the British-Canadian invasion. A counteroffensive pushes into Canada itself. British Columbia and Alberta fall to revolutionary forces, becoming the "People's Federated Territory."
 
-**1941-1942:** The People's Army, hardened by civil war, throws back the British-Canadian invasion. A counteroffensive pushes into Canada itself. British Columbia and Alberta fall to revolutionary forces, becoming the "People's Federated Territory."
+Britain, overextended and facing colonial unrest, accepts an armistice. The PSRA's borders are established—including the seized Canadian territories.
 
-**1942:** Britain, overextended and facing colonial unrest, accepts an armistice. The PSRA's borders are established—including the seized Canadian territories.
+### The Consolidation
 
-### The Consolidation (1942-1950)
+**The Purge Years:** The Consolidation Purges eliminate suspected collaborators, former Federal officials, and "class enemies." Hundreds of thousands are arrested, imprisoned, or executed.
 
-**1942-1944:** The Consolidation Purges eliminate suspected collaborators, former Federal officials, and "class enemies." Hundreds of thousands are arrested, imprisoned, or executed.
+**The Collectivization:** Campaigns transform American agriculture. Independent farmers are forced onto collective farms. Those who resist—labeled "kulaks"—are sent to labor camps in the Mountain Zone.
 
-**1942-1945:** Collectivization campaigns transform American agriculture. Independent farmers are forced onto collective farms. Those who resist—labeled "kulaks"—are sent to labor camps in the Mountain Zone.
+**Reconstruction:** The PSRA consolidates its power, rebuilds the economy along socialist lines, and establishes the institutions of the new state.
 
-**1945-1950:** The PSRA consolidates its power, rebuilds the economy along socialist lines, and establishes the institutions of the new state.
+### The Present Day
 
-### The Present Day (Early 1950s)
-
-The game takes place approximately 10-15 years after the Revolution. The PSRA has survived its founding crises but faces ongoing challenges:
+The game takes place over a decade after the Revolution. The PSRA has survived its founding crises but faces ongoing challenges:
 
 - The government-in-exile in Cuba continues to plot restoration
 - Japan occupies Hawaii—American territory with American citizens
@@ -120,7 +118,7 @@ The region whose history of slavery and segregation presented unique challenges 
 ### Zone 5: Plains Zone
 **Texas to the Dakotas**
 
-The agricultural heartland. Vast collective farms have replaced family homesteads. The collectivization campaigns of 1942-1945 left deep scars—farmers who resisted were sent to labor camps. The Plains now produce surplus grain for export.
+The agricultural heartland. Vast collective farms have replaced family homesteads. The collectivization campaigns left deep scars—farmers who resisted were sent to labor camps. The Plains now produce surplus grain for export.
 
 ### Zone 6: Mountain Zone
 **Rocky Mountain states**
@@ -137,7 +135,7 @@ Mining, resource extraction, and internal exile. The Mountain Zone serves as the
 The world's first socialist state and revolutionary ally. The USSR provided crucial aid during the civil war and received part of Alaska in return. Relations are complicated by Moscow's expectations of ideological conformity and the PSRA's growing desire for independence.
 
 **Germany (German Socialist Republic)**
-In this timeline, the Nazis never rose to power. Social Democrats and Communists united in 1932, and Germany became a socialist republic through democratic transition. Germany is an ally to both the USSR and PSRA, proving that socialism need not mean Soviet domination.
+In this timeline, the Nazis never rose to power. Social Democrats and Communists united during the Depression, and Germany became a socialist republic through democratic transition. Germany is an ally to both the USSR and PSRA, proving that socialism need not mean Soviet domination.
 
 ### Capitalist Adversaries
 
@@ -219,8 +217,8 @@ The Revolution promised equality and justice. The Purges delivered terror. Colle
 | The Party | Communist Party of America |
 | Politburo | Supreme decision-making body |
 | BPS | Bureau of People's Security (secret police) |
-| The Revolution | Second American Civil War (1936-1940) |
-| The Intervention | British-Canadian invasion (1941-1942) |
+| The Revolution | Second American Civil War |
+| The Intervention | British-Canadian invasion (shortly after the Revolution) |
 | People's Federated Territory | Seized BC + Alberta |
 | Government-in-Exile | Old Federal Government in Cuba |
 | Nomenklatura | System of Party-controlled appointments |
@@ -234,9 +232,9 @@ The Revolution promised equality and justice. The Purges delivered terror. Colle
 
 ### Hawaii (Japanese Occupation)
 
-**The Fall of Hawaii (1941)**
+**The Fall of Hawaii**
 
-When the Second American Civil War consumed the mainland, Hawaii's military garrison was recalled to fight revolutionary forces. Japan, seeing opportunity, landed troops in December 1941 under the pretext of "protecting Japanese-American residents from revolutionary chaos."
+When the Second American Civil War consumed the mainland, Hawaii's military garrison was recalled to fight revolutionary forces. Japan, seeing opportunity, landed troops under the pretext of "protecting Japanese-American residents from revolutionary chaos."
 
 The occupation was swift. Pearl Harbor's skeleton crew offered token resistance. Within weeks, the Rising Sun flew over Honolulu.
 
@@ -268,7 +266,7 @@ Hawaii gives Japan:
 
 **The Price of Revolution**
 
-In 1940, the Revolutionary Council signed the Bering Strait Agreement, ceding eastern Alaska to the Soviet Union. The price: continued weapons shipments, economic aid, and diplomatic recognition. The territory east of the 157th meridian—including Fairbanks, the Alaskan interior, and the Canadian border—became Soviet.
+At the Revolution's conclusion, the Revolutionary Council signed the Bering Strait Agreement, ceding eastern Alaska to the Soviet Union. The price: continued weapons shipments, economic aid, and diplomatic recognition. The territory east of the 157th meridian—including Fairbanks, the Alaskan interior, and the Canadian border—became Soviet.
 
 **Soviet Alaska Today**
 
@@ -292,25 +290,25 @@ But in private, every American official knows: the Revolution sold American soil
 
 ### The War on Faith
 
-**The Suppression Campaign (1940-1948)**
+**The Suppression Campaign**
 
-America in 1936 was the most religious nation in the industrialized world. Protestant denominations, the Catholic Church, Jewish communities, and countless smaller faiths wove through every aspect of American life.
+Before the Revolution, America was the most religious nation in the industrialized world. Protestant denominations, the Catholic Church, Jewish communities, and countless smaller faiths wove through every aspect of American life.
 
 The Party viewed organized religion as a threat: an alternative source of authority, a refuge for reactionary thought, a competitor for the people's loyalty.
 
-**Phase One: Separation (1940-1942)**
+**Phase One: Separation** (immediately after the Revolution)
 - Church property nationalized "for the people"
 - Religious schools closed or converted to secular education
 - Clergy required to register with the Bureau of People's Security
 - Religious holidays removed from official calendars
 
-**Phase Two: Suppression (1942-1946)**
+**Phase Two: Suppression** (during the Purge Years)
 - "Militant atheism" campaigns in factories and schools
 - League of the Godless established to combat "superstition"
 - Prominent religious leaders arrested on charges of collaboration with the old regime
 - Church buildings converted to "Houses of Culture," warehouses, or demolished
 
-**Phase Three: Accommodation (1946-present)**
+**Phase Three: Accommodation** (the present era)
 - Surviving religious institutions placed under state control
 - "Patriotic" church councils installed to ensure loyalty
 - Limited worship permitted for elderly believers
@@ -357,7 +355,7 @@ Socialist Realism dominates all art. Heroic workers, wise Party leaders, and vil
 
 The PSRA owes its existence to Soviet aid. Without Moscow's weapons, advisors, and recognition, the Revolution might have failed. This debt shapes everything.
 
-**What the Soviets Provided (1938-1942)**
+**What the Soviets Provided** (during and after the Revolution)
 - 500,000 rifles and machine guns via Mexican ports
 - Artillery, tanks, and aircraft flown through Alaska
 - Military advisors who trained the People's Army
@@ -387,7 +385,7 @@ Socialist Germany achieved its revolution through democratic means, not Soviet i
 **Military Command**
 Soviet military advisors remain embedded in the People's Army. They push for integration of command structures, shared intelligence, and coordination of war plans. American generals resist subordination to Moscow's strategic goals.
 
-### The Current State (Early 1950s)
+### The Current State
 
 Relations remain officially warm. Premier Malenkov and General Secretary Mitchell exchange fraternal greetings. Trade continues. Military cooperation proceeds.
 
@@ -398,6 +396,277 @@ But the cracks are visible:
 - Hardliners in both countries push for tighter ideological discipline
 
 The break, if it comes, will reshape the world. For now, both sides paper over differences. But everyone knows: the PSRA is growing strong enough to chart its own course.
+
+---
+
+## The Founders of the Revolution
+
+The men and women who built the People's Socialist Republic are now the stuff of legend—some celebrated, some airbrushed from history, some remembered only in whispers. Their fates reveal the Revolution's true nature: idealism consumed by pragmatism, heroism devoured by paranoia.
+
+### Chairman Robert Fitzgerald (deceased)
+**The Father of Socialist America**
+
+Robert Fitzgerald was a Detroit auto worker who became the first General Secretary of the PSRA. Born to Irish-Catholic immigrants in a cramped tenement, he lost his father to a factory accident at age twelve. By twenty, he was organizing wildcat strikes at Ford; by thirty, he led the largest union local in Michigan.
+
+When the Depression hit, Fitzgerald transformed from labor organizer to revolutionary leader. His gift was making Marxism sound like common sense. "We're not asking for the moon," he'd say at rallies. "We're asking for what our labor already earns." He personally led the Philadelphia column in the March on Washington and stood on the Capitol steps to proclaim the People's Republic.
+
+As the first General Secretary, Fitzgerald walked an impossible line. He protected many during the early Purges—"These are our people, not enemies"—but signed death warrants when political necessity demanded. He built the Youth League as a meritocratic counterweight to emerging elite families. He chose Harold Mitchell as his successor.
+
+Several years after the Revolution's victory, Fitzgerald collapsed at his desk. Official cause: heart attack. The medical records, sealed for decades, tell a different story. He was a middle-aged man in apparent good health.
+
+**Legacy:** Every official biography celebrates him. Every faction claims his mantle. And everyone wonders: who poisoned the Chairman?
+
+---
+
+### General Marcus Steele (executed during the Purges)
+**The Hero of Chicago**
+
+Marcus Steele was the Revolution's greatest military commander—and its most dangerous man. A former Army captain who resigned in disgust after being ordered to fire on striking miners in West Virginia, Steele brought professional military expertise to the revolutionary militias.
+
+The Battle of Chicago was his masterpiece. Outnumbered three to one, he turned the city's factories and tenements into death traps for Federal forces. Forty thousand died in those brutal months; when it was over, the Midwest belonged to the Revolution. "Steele doesn't win battles," one Federal general reportedly said. "He wins slaughterhouses."
+
+During the Intervention War, Steele commanded the counteroffensive that seized British Columbia and Alberta. His troops worshipped him. His officers feared him. And the Party—the civilian Party—grew increasingly nervous about a general more popular than any politician.
+
+During the Purge Years, Steele was arrested on fabricated charges of "military conspiracy with the government-in-exile." The Trial of the Thirty-Six saw 36 senior officers accused; 35 confessed under interrogation. Steele refused. "History will judge," he said as they led him to execution.
+
+**Legacy:** The Princelings—children of revolutionary families—still whisper his name. Carter served under him. Wallace oversaw his interrogation. The rift from that betrayal never healed.
+
+---
+
+### Elizabeth "Red Betty" Warren (elderly, location unknown)
+**The Voice They Couldn't Silence**
+
+Elizabeth Warren was the Revolution's firebrand—an orator whose voice could turn a crowd into an army. A former schoolteacher from Worcester, Massachusetts, she discovered her gift during the labor struggles before the Revolution. By the time of the uprising, she was the most famous woman in America.
+
+The Boston General Strike was her triumph. For three weeks, the city ceased to function. Workers controlled the streets, the docks, the factories. The Labour Council—with Warren as its public face—became a parallel government. Every other uprising copied her model.
+
+But Warren's independence made her dangerous. She criticized the early Purges. She questioned the Party's direction. During the Purge Years, she was accused of "Trotskyist deviation" and "factionalism." Arrested, she expected execution.
+
+Instead, she disappeared. The name Elizabeth Warren was erased from official histories. Her speeches became contraband—possessing them is a crime. Schoolchildren are not taught she existed.
+
+But somewhere in the Mountain Zone, in a mining town where no one asks questions, an old woman lives under a false name. She tends a garden. She speaks to no one of politics. And she waits.
+
+**Legacy:** Her speeches circulate as samizdat—underground literature. To speak her name is dangerous. To possess her writings is worse. Some characters know she's alive. Most believe she's dead. The truth is discoverable—for those brave enough to seek it.
+
+---
+
+### Commissar Thomas Briggs (died heroically after the Revolution)
+**Father of the Princelings**
+
+Thomas Briggs was a political commissar—a Party man who fought alongside soldiers to ensure ideological purity. At the Pittsburgh Massacre, when Federal troops opened fire on workers' families, Briggs organized the surviving men into a fighting force that held the revolutionary districts for six crucial weeks.
+
+Unlike Steele, Briggs understood that politics and guns must work together. He became the model political officer: brave enough for soldiers to respect, reliable enough for the Party to trust. His three children grew up in the compounds of the revolutionary elite.
+
+Briggs died a hero's death during a Canadian border skirmish, leading a counterattack against forces attempting to retake Vancouver. The bullet that killed him came from British soldiers—not Party executioners. This made his death useful.
+
+**Legacy:** His children married strategically: into the Carter family, the Fletcher family, the Crawford family. The Briggs bloodline runs through the Princeling elite like a golden thread. To claim descent from Thomas Briggs opens doors that merit cannot.
+
+---
+
+### Dr. Helen Novak (executed during the Purges)
+**The Revolution's Conscience**
+
+Helen Novak was a physician who organized revolutionary field hospitals during the Civil War. Trained at Johns Hopkins before the war, she could have fled to comfortable exile. Instead, she set up operating theaters in factory basements and taught nurses to save lives under artillery fire.
+
+Novak believed the Revolution would build something better—not just seize power but create justice. She wrote pamphlets on public health. She advocated for workers' safety. She treated wounded Federal prisoners over the objections of Party hardliners. "They're workers too," she said. "Just workers in the wrong uniform."
+
+This idealism made her a target. During the Intellectuals' Purge, she was arrested on charges of "Trotskyist conspiracy" and "sabotage of revolutionary medicine." Her trial lasted twenty minutes. The confession extracted under torture bore no resemblance to her beliefs.
+
+She was executed shortly after. She was pregnant. This fact appears in no official record.
+
+**Legacy:** Her medical manuals remain in use. Her name is never mentioned. She was briefly rehabilitated—declared innocent—then de-rehabilitated when the political winds shifted again. Her ghost haunts those who knew her.
+
+---
+
+## Named Battles of the Second American Civil War
+
+The official history speaks of "the Revolution" as a single glorious moment. The truth was four years of bitter fighting, city by city, factory by factory, sometimes room by room.
+
+### The March on Washington
+**The Shot Heard 'Round the World**
+
+Two hundred thousand workers from Philadelphia, Baltimore, Pittsburgh, and New York began marching on Washington, D.C. They demanded an end to Hoover's anti-union laws, relief for the unemployed, and recognition of the Labour Councils. They carried signs, not guns.
+
+Chairman Fitzgerald led the Philadelphia column personally. The marchers expected resistance. They did not expect massacre.
+
+As the columns converged on the National Mall, National Guard units opened fire. Official records claim 47 dead. Witnesses describe hundreds of bodies. The March on Washington became "Bloody Sunday"—the moment when peaceful protest became armed revolution.
+
+Within a week, Labour Councils across the Northeast declared open rebellion. The Second American Civil War had begun.
+
+---
+
+### The Boston General Strike
+**Red Betty's Revolution**
+
+When Red Betty Warren called for a general strike, no one knew if workers would respond. They did—by the hundreds of thousands. Factories fell silent. Ships sat idle at the docks. The streetcars stopped running.
+
+For three weeks, the Labour Council governed Boston. Workers' committees distributed food. Volunteer doctors staffed makeshift clinics. The police, many of them Irish-Americans with labor sympathies, looked the other way—or joined the picket lines.
+
+The Boston model became the template for revolutionary seizures of power. Organize first. Strike second. Govern third. By the time Federal forces attempted to retake the city, they faced an armed population that had already tasted self-rule.
+
+---
+
+### The Battle of Chicago
+**The Bloodbath That Won the West**
+
+Chicago was the war's decisive battle—and its bloodiest. General Steele commanded revolutionary forces defending a city of three million against a Federal army determined to split the revolutionary territories in half.
+
+The fighting lasted nearly three months. Federal artillery reduced entire neighborhoods to rubble. Revolutionary fighters held individual buildings for weeks. The Union Stockyards became a fortress; the steel mills of Gary threw up an impenetrable defensive line. An estimated 40,000 people died—soldiers, workers, civilians caught in the crossfire.
+
+When Federal forces finally withdrew, Chicago was a ruin—but a ruin in revolutionary hands. The Midwest had fallen. General Steele became a legend.
+
+For Raymond Carter, a young officer in Steele's command, Chicago was both making and trauma. He earned his reputation in the street fighting; he carries the scars still. He does not speak of what he was ordered to do with deserters.
+
+---
+
+### The Pittsburgh Massacre
+**The Day the Revolution Became Total**
+
+Not all turning points are victories. The Pittsburgh Massacre was a slaughter that transformed the Revolution from political uprising to total war.
+
+Federal troops surrounded a workers' district where women and children had gathered while men fought on the front lines. Someone fired a shot—no one knows who. In response, the troops opened fire on the crowd.
+
+Three hundred and twelve people died, including forty-seven children. Among the dead: Maria Briggs, wife of Commissar Thomas Briggs, and their youngest daughter.
+
+Briggs organized the surviving men into fighting units that held the revolutionary districts through the winter. But something hardened in the Revolution that day. Prisoners began to be shot rather than captured. Federal sympathizers were no longer detained but disappeared. The Pittsburgh Massacre proved that the enemy would show no mercy—so neither would the Revolution.
+
+---
+
+### The Siege of Detroit
+**Ninety Days That Shook the World**
+
+Detroit was supposed to fall quickly. The Federal army that surrounded the city outnumbered the defenders, controlled supply lines, and expected the harsh Michigan winter to break revolutionary resistance.
+
+They underestimated auto workers.
+
+The factories became fortresses. Women ran ammunition to the lines. Children served as messengers. Workers who had built the Model T now built improvised armored vehicles and homemade mortars. And somewhere in Mexico, ships bearing Soviet weapons steamed north.
+
+Chairman Fitzgerald arrived personally, smuggled through the lines. His presence electrified the defenders. With the spring thaw approaching and Soviet equipment finally arriving, Fitzgerald led the counteroffensive that shattered the siege.
+
+Detroit became proof that the Revolution could not be crushed by force alone.
+
+---
+
+### The Fall of Washington
+**The End and the Beginning**
+
+By the Revolution's final months, the Federal government controlled only a shrinking perimeter around Washington itself. Hoover refused to surrender, refused to negotiate, refused to acknowledge that his government had lost.
+
+Revolutionary forces—now called the People's Army—entered the capital. Street-by-street fighting lasted four days. The White House, symbol of the old republic, fell. Hoover and his cabinet fled aboard the destroyer USS Yorktown, heading for Cuba.
+
+Fitzgerald stood on the steps of the Capitol and proclaimed the People's Socialist Republic of America. Behind the cheering crowds, intelligence officer Arthur Wallace and his men secured Federal archives—files that would prove useful in the years to come.
+
+The Civil War was over. The harder work of governing had begun.
+
+---
+
+## The Consolidation Purges
+
+Every revolution turns on itself. The PSRA was no exception.
+
+### Official History
+The Consolidation Purges were a "necessary cleansing" of counter-revolutionary elements, Federal sympathizers, and class enemies who had infiltrated the revolutionary movement. The trials were fair. The confessions were voluntary. The executions were regrettable but necessary.
+
+Fifty thousand "enemies of the people" were removed from positions of influence. The Party was strengthened. The Revolution was saved.
+
+### The Deeper Truth
+Three hundred thousand people were arrested during the Consolidation. Eighty thousand died—executed, perished in camps, or killed under interrogation. Confessions were extracted through torture, sleep deprivation, and threats against family members. Many of the accused confessed to impossible crimes: meetings in cities they had never visited, conspiracies with people they had never met.
+
+The Purges began as a genuine attempt to root out Federal agents and collaborators. They became a weapon for settling scores, eliminating rivals, and terrorizing the population into obedience. By the Purges' end, no one was safe. Not revolutionary heroes. Not Party members. Not true believers.
+
+### Key Events of the Terror
+
+**The Trial of the Thirty-Six**
+
+Thirty-six senior military officers—including General Marcus Steele—were accused of conspiring with the government-in-exile to overthrow the PSRA. The evidence was fabricated. The confessions were coerced. Thirty-five of the accused confessed; Steele refused. "History will judge," he said.
+
+Thirty-four were executed. Two received labor camp sentences. The military was decapitated—and would never again threaten civilian Party control.
+
+Director Wallace oversaw the interrogations personally. Carter served under Steele. The Princelings have never forgiven the security services.
+
+**Director Samuel Blackwood (deceased)**
+
+The first Director of the Bureau of People's Security built the machinery of terror. A former criminal investigator with the Chicago police, Blackwood believed in efficiency: systematic arrests, standardized interrogation techniques, careful record-keeping.
+
+Eventually, the records contained too much. Blackwood knew who had denounced whom, which confessions were real and which fabricated, where the bodies were buried. He had become dangerous.
+
+Wallace orchestrated his downfall: accusations of "wrecking" and "anti-Party activities." Blackwood's own techniques were used against him. He confessed to everything and was executed. Wallace inherited his position—and his files.
+
+**The Midwest Conspiracy**
+
+A "plot" to establish an independent Midwest Soviet, allegedly organized by regional Party officials seeking to break from Washington. The conspiracy was entirely fabricated—manufactured by Wallace's operatives to eliminate powerful regional leaders.
+
+Two hundred Party officials in the Great Lakes Zone were arrested. Most were executed. The Zone's independent power base was crushed. Regional autonomy would never again threaten central control.
+
+**The Intellectuals' Purge**
+
+Universities were "cleansed" of "bourgeois influences." Twelve thousand academics were arrested, fired, or exiled. Dr. Helen Novak was swept up in this wave—her trial lasted twenty minutes. The charges were absurd; the outcome was predetermined.
+
+American science and education never fully recovered. An entire generation of scholars was lost.
+
+**The Religious Roundup**
+
+Thousands of clergy were arrested as "foreign agents" and "counter-revolutionary elements." Catholic priests were especially targeted due to their ties to Rome. Many died in Mountain Zone camps; others recanted and joined "Patriotic" churches controlled by the Party.
+
+Some were genuine resisters. Most were simply inconvenient.
+
+### The Machinery of Terror
+
+The Bureau of People's Security maintained files on millions of citizens. Its network of informants penetrated every workplace, apartment block, and family. Neighbors denounced neighbors; children were encouraged to report parents' "reactionary" statements.
+
+The threat of denunciation was often more powerful than arrest itself. People learned to speak carefully, to avoid old friends who might have become liabilities, to conform publicly while hiding their true thoughts.
+
+When the knock came at three in the morning, there was no resistance. To resist was to confirm guilt. Those "invited for a conversation" might return—or might vanish into the camp system.
+
+### The Legacy
+
+The Purges eventually ended, when even the Party leadership recognized that terror was destroying the country's ability to function. But the trauma remained. Trust became impossible. Political behavior was forever shaped by the knowledge that today's loyalty might not protect against tomorrow's accusation.
+
+Some of those purged were later "rehabilitated"—declared innocent after death. Their executioners, for the most part, were not punished. Wallace rose to power on the bodies of his victims. Mitchell signed death warrants that haunt him still. Patterson survived by denouncing her mentor—an innocent man whose children disappeared.
+
+Everyone who holds power in the PSRA has blood on their hands. The only question is how much.
+
+---
+
+## The Leadership Web: Who Knows Whom
+
+The current leadership of the PSRA did not emerge from nowhere. They rose together, survived together, and accumulated debts and grudges along the way. Understanding these relationships is essential to navigating the corridors of power.
+
+### The Mitchell Circle
+
+**Harold Mitchell and Arthur Wallace** have been entangled since the Purges. Wallace knows Mitchell's darkest secret—the death warrants Mitchell signed, the friends he sacrificed to survive. Mitchell cannot move against Wallace without risking exposure. Wallace cannot eliminate Mitchell without losing his protector at the highest level. They are bound together by mutual complicity.
+
+**Harold Mitchell and Eleanor Patterson** are patron and protégé. Mitchell elevated Patterson to the Second Secretaryship over several more experienced candidates. She owes him everything. Whether that gratitude will survive his inevitable decline remains to be seen.
+
+**Harold Mitchell and Raymond Carter** represent the eternal tension between Party and military. Carter commands the army's loyalty; Mitchell commands the Party's. Neither can rule without the other's acquiescence. They are allies of necessity, not affection.
+
+### The Security Apparatus
+
+**Wallace and Colonel Edwards** are master and apprentice. Edwards is Wallace's chosen successor—the man who will inherit the Bureau when Wallace finally falls. Their relationship is professional, respectful, and tinged with the knowledge that apprentices sometimes become executioners.
+
+**Wallace and Major Strickland** share methods but not temperament. Strickland's enthusiasm for interrogation disturbs even Wallace. There is such a thing as too much zeal.
+
+**Wallace and Director Kowalski** represent power and leverage. Wallace has evidence of Kowalski's embezzlement—falsified statistics, skimmed funds. He holds it in reserve, a weapon to be deployed when needed.
+
+### The Princelings
+
+The Princeling faction is held together by blood and marriage. **Raymond Carter** married into the Briggs family—his wife, daughter of Commissar Thomas Briggs, died years ago. He never remarried. **General Fletcher** grew up in the same compounds as Carter; they fought together under General Steele. **Crawford's sister** married one of Briggs's sons, linking the Reformists to the Princeling network.
+
+These connections transcend faction. When Princelings need something done, they call on family. When one is threatened, others rally. To attack one is to attack all.
+
+### The Great Betrayal
+
+**General Steele's execution** during the Purges created a rift that has never healed. Carter served under Steele, loved him like a father. Wallace oversaw the interrogation, fabricated the evidence. The Princelings know what Wallace did; Wallace knows they know.
+
+Carter and Wallace work together because the Party demands it. But their alliance is built on ice. Someday, one will destroy the other.
+
+### The Fitzgerald Question
+
+Everyone who rose under **Chairman Fitzgerald** owes their position to him—Mitchell, Patterson, Henderson, dozens of others. And everyone who rose under Fitzgerald has reason to wonder: who betrayed him? The medical records are sealed. The rumors persist.
+
+Some whisper Wallace arranged the poison. Others suspect Patterson, ambitious even then. A few believe Mitchell himself—the chosen successor who inherited too conveniently. The truth is buried with the Chairman.
+
+This uncertainty poisons relationships at the highest levels. If anyone could betray Fitzgerald, anyone could betray anyone.
 
 ---
 

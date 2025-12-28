@@ -221,7 +221,7 @@ class CodexDatabase {
                 term: "The Communist Party of America",
                 shortDescription: "The ruling political party of the PSRA",
                 fullDescription: """
-                The Communist Party of America is the sole legal political party in the nation. Founded in the crucible of the Second American Civil War (1936-1940), the Party serves as the "vanguard of the working class" and exercises complete control over all aspects of state and society.
+                The Communist Party of America is the sole legal political party in the nation. Founded in the crucible of the Second American Civil War (The Revolution), the Party serves as the "vanguard of the working class" and exercises complete control over all aspects of state and society.
 
                 The Party is organized along democratic centralist principles: decisions flow from the top down, while information and obedience flow from the bottom up. At its apex sits the General Secretary, who chairs the Politburo and effectively rules the People's Socialist Republic of America.
 
@@ -360,7 +360,7 @@ class CodexDatabase {
                 fullDescription: """
                 Socialist Realism is the only permitted artistic style in the Socialist Republic. Art must be "national in form, socialist in content"—depicting the heroic struggles of workers and peasants, the wise leadership of the Party, and the inevitable triumph of socialism.
 
-                The doctrine emerged from the cultural campaigns of the 1930s, which suppressed all forms of artistic experimentation as "bourgeois formalism." Approved works celebrate collective labor, military valor, and Party loyalty. Abstract art, jazz, and Western influences are condemned as decadent.
+                The doctrine emerged from the cultural campaigns of the the Depression era, which suppressed all forms of artistic experimentation as "bourgeois formalism." Approved works celebrate collective labor, military valor, and Party loyalty. Abstract art, jazz, and Western influences are condemned as decadent.
 
                 For artists, Socialist Realism is both constraint and protection. Those who master the approved style enjoy state patronage; those who deviate face censorship or worse. A few push boundaries carefully, encoding subtle critiques within acceptable forms.
 
@@ -374,11 +374,11 @@ class CodexDatabase {
             CodexEntry(
                 id: "revolution",
                 term: "The Second American Revolution",
-                shortDescription: "The founding event of the PSRA (1936-1940)",
+                shortDescription: "The founding event of the PSRA (The Revolution)",
                 fullDescription: """
                 The Second American Revolution transformed the United States from a failing capitalist democracy into a socialist republic. Following Herbert Hoover's disastrous response to the Great Depression, workers and union members rose against the old order, establishing the People's Socialist Republic of America from the ashes of the Federal Government.
 
-                The Civil War period (1936-1940) saw fierce fighting between the Labour Councils and Federal/National Guard forces. The Soviet Union provided crucial aid—weapons, advisors, and supplies—turning the tide in favor of the revolutionaries. In exchange, part of Alaska was ceded to the USSR.
+                The Civil War period (The Revolution) saw fierce fighting between the Labour Councils and Federal/National Guard forces. The Soviet Union provided crucial aid—weapons, advisors, and supplies—turning the tide in favor of the revolutionaries. In exchange, part of Alaska was ceded to the USSR.
 
                 Today, the Revolution is the founding myth of the PSRA. Every citizen knows its official history—though the actual events have been revised many times to reflect current political needs. Heroes become villains, and villains become non-persons, depending on the prevailing line.
 
@@ -391,9 +391,9 @@ class CodexDatabase {
             CodexEntry(
                 id: "purge",
                 term: "The Consolidation Purges",
-                shortDescription: "The terror of the early years (1942-1944)",
+                shortDescription: "The terror of the early years (The Purge Years)",
                 fullDescription: """
-                The Consolidation Purges (1942-1944) were a period of mass political repression following the Revolution's victory. Hundreds of thousands were arrested, imprisoned, or executed on charges of collaboration with the old regime, sabotage, and counter-revolutionary conspiracy.
+                The Consolidation Purges (The Purge Years) were a period of mass political repression following the Revolution's victory. Hundreds of thousands were arrested, imprisoned, or executed on charges of collaboration with the old regime, sabotage, and counter-revolutionary conspiracy.
 
                 The Purges began as a campaign against former Federal officials and capitalists but spiraled into generalized terror. Suspected collaborators confessed to impossible crimes in show trials. Military officers were shot as spies for the government-in-exile. Ordinary citizens disappeared for a careless word about the old days.
 
@@ -408,9 +408,9 @@ class CodexDatabase {
             CodexEntry(
                 id: "great_war",
                 term: "The Intervention War",
-                shortDescription: "The British-Canadian invasion (1941-1942)",
+                shortDescription: "The British-Canadian invasion (The Intervention War)",
                 fullDescription: """
-                The Intervention War (1941-1942) saw Britain and Canada attempt to crush the young socialist republic and restore the Federal Government. Their forces crossed from Canada, hoping to link up with loyalist remnants—but the People's Army, hardened by civil war, threw them back.
+                The Intervention War (The Intervention War) saw Britain and Canada attempt to crush the young socialist republic and restore the Federal Government. Their forces crossed from Canada, hoping to link up with loyalist remnants—but the People's Army, hardened by civil war, threw them back.
 
                 The counteroffensive pushed into Canada itself. British Columbia and Alberta fell to revolutionary forces, becoming the People's Federated Territory. The British Empire, overextended and facing unrest in its colonies, was forced to accept an armistice.
 
@@ -420,6 +420,298 @@ class CodexDatabase {
                 """,
                 category: .history,
                 relatedEntries: ["peoples_army", "military_loyalty", "canada", "united_kingdom"]
+            ),
+
+            // MARK: - FOUNDERS OF THE REVOLUTION
+
+            CodexEntry(
+                id: "fitzgerald",
+                term: "Chairman Robert Fitzgerald",
+                shortDescription: "First General Secretary (as General Secretary) - Father of Socialist America",
+                fullDescription: """
+                Robert Fitzgerald was a Detroit auto worker who became the first General Secretary of the PSRA. Born to Irish-Catholic immigrants in 1895, he lost his father to a factory accident at age twelve. By twenty, he was organizing wildcat strikes at Ford; by thirty, he led the largest union local in Michigan.
+
+                When the Depression hit, Fitzgerald transformed from labor organizer to revolutionary leader. His gift was making Marxism sound like common sense. "We're not asking for the moon," he'd say at rallies. "We're asking for what our labor already earns." He personally led the Philadelphia column in the March on Washington and stood on the Capitol steps to proclaim the People's Republic.
+
+                As General Secretary (as General Secretary), Fitzgerald walked an impossible line. He protected many during the early Purges—"These are our people, not enemies"—but signed death warrants when political necessity demanded. He built the Youth League as a meritocratic counterweight to emerging elite families. He chose Harold Mitchell as his successor.
+
+                On the morning of several years after the Revolution, Fitzgerald collapsed at his desk. Official cause: heart attack. He was fifty-three years old. Every official biography celebrates him. Every faction claims his mantle. And everyone wonders: what really happened?
+
+                "The Chairman lives in all of us who carry forward the Revolution."
+                """,
+                category: .history,
+                relatedEntries: ["revolution", "youth_league", "purge"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "steele",
+                term: "General Marcus Steele",
+                shortDescription: "Hero of Chicago (executed during the Purges) - The Revolution's greatest commander",
+                fullDescription: """
+                Marcus Steele was the Revolution's greatest military commander—and its most dangerous man. A former Army captain who resigned in disgust after being ordered to fire on striking miners in West Virginia, Steele brought professional military expertise to the revolutionary militias.
+
+                The Battle of Chicago (The Battle of Chicago) was his masterpiece. Outnumbered three to one, he turned the city's factories and tenements into death traps for Federal forces. Forty thousand died in those brutal months; when it was over, the Midwest belonged to the Revolution.
+
+                During the Intervention War, Steele commanded the counteroffensive that seized British Columbia and Alberta. His troops worshipped him. His officers feared him. And the Party—the civilian Party—grew increasingly nervous about a general more popular than any politician.
+
+                In during the Purges, Steele was arrested on charges of "military conspiracy with the government-in-exile." The Trial of the Thirty-Six saw 36 senior officers accused. Steele alone refused to confess. "History will judge," he said as they led him to execution.
+
+                His legacy haunts the Princelings—the children of revolutionary families who remember what was done to their hero.
+                """,
+                category: .history,
+                relatedEntries: ["battle_chicago", "trial_thirtysix", "peoples_army"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "briggs",
+                term: "Commissar Thomas Briggs",
+                shortDescription: "Father of the Princelings (deceased) - Model political officer",
+                fullDescription: """
+                Thomas Briggs was a political commissar—a Party man who fought alongside soldiers to ensure ideological purity. At the Pittsburgh Massacre (during the Revolution), when Federal troops opened fire on workers' families, Briggs organized the surviving men into a fighting force that held the revolutionary districts for six crucial weeks.
+
+                Unlike Steele, Briggs understood that politics and guns must work together. He became the model political officer: brave enough for soldiers to respect, reliable enough for the Party to trust. His three children grew up in the compounds of the revolutionary elite.
+
+                Briggs died a hero's death after the Purges, leading a counterattack against Canadian forces attempting to retake Vancouver. The bullet that killed him came from British soldiers—not Party executioners. This made his death useful.
+
+                His children married strategically: into the Carter family, the Fletcher family, the Crawford family. The Briggs bloodline runs through the Princeling elite like a golden thread. To claim descent from Thomas Briggs opens doors that merit cannot.
+
+                "He gave his life for the Revolution. His children honor that sacrifice."
+                """,
+                category: .history,
+                relatedEntries: ["pittsburgh_massacre", "princelings", "great_war"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "novak",
+                term: "Dr. Helen Novak",
+                shortDescription: "The Revolution's Conscience (executed during the Purges) - Purged idealist",
+                fullDescription: """
+                Helen Novak was a physician who organized revolutionary field hospitals during the Civil War. Trained at Johns Hopkins before the war, she could have fled to comfortable exile. Instead, she set up operating theaters in factory basements and taught nurses to save lives under artillery fire.
+
+                Novak believed the Revolution would build something better—not just seize power but create justice. She wrote pamphlets on public health. She advocated for workers' safety. She treated wounded Federal prisoners over the objections of Party hardliners. "They're workers too," she said. "Just workers in the wrong uniform."
+
+                This idealism made her a target. During the Purges, during the Intellectuals' Purge, she was arrested on charges of "Trotskyist conspiracy" and "sabotage of revolutionary medicine." Her trial lasted twenty minutes.
+
+                She was rehabilitated later—declared innocent—then de-rehabilitated when the political winds shifted again. Her medical manuals remain in use. Her name is never mentioned.
+
+                "Some names are best forgotten. For the good of the Revolution."
+                """,
+                category: .history,
+                relatedEntries: ["purge", "intellectuals_purge"],
+                unlockedByDefault: true
+            ),
+
+            // MARK: - NAMED BATTLES
+
+            CodexEntry(
+                id: "march_washington",
+                term: "The March on Washington",
+                shortDescription: "The March on Washington - The shot that started the Revolution",
+                fullDescription: """
+                On during the Revolution, 200,000 workers from Philadelphia, Baltimore, Pittsburgh, and New York began marching on Washington, D.C. They demanded an end to Hoover's anti-union laws, relief for the unemployed, and recognition of the Labour Councils. They carried signs, not guns.
+
+                Chairman Fitzgerald led the Philadelphia column personally. The marchers expected resistance. They did not expect massacre.
+
+                On April 14, as the columns converged on the National Mall, National Guard units opened fire. Official records claim 47 dead. The true number was far higher. The March on Washington became "Bloody Sunday"—the moment when peaceful protest became armed revolution.
+
+                Within a week, Labour Councils across the Northeast declared open rebellion. The Second American Civil War had begun.
+
+                Every April 14 is commemorated as Revolutionary Martyrs' Day.
+                """,
+                category: .history,
+                relatedEntries: ["revolution", "fitzgerald"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "battle_chicago",
+                term: "The Battle of Chicago",
+                shortDescription: "The Battle of Chicago - The bloodbath that won the Midwest",
+                fullDescription: """
+                Chicago was the war's decisive battle—and its bloodiest. General Steele commanded revolutionary forces defending a city of three million against a Federal army determined to split the revolutionary territories in half.
+
+                The fighting lasted eighty-three days. Federal artillery reduced entire neighborhoods to rubble. Revolutionary fighters held individual buildings for weeks. The Union Stockyards became a fortress; the steel mills of Gary threw up an impenetrable defensive line. An estimated 40,000 people died—soldiers, workers, civilians caught in the crossfire.
+
+                When Federal forces finally withdrew in late September, Chicago was a ruin—but a ruin in revolutionary hands. The Midwest had fallen. General Steele became a legend.
+
+                Raymond Carter, then a young officer, earned his reputation in the street fighting. He carries the scars still.
+
+                "Chicago bled. Chicago held. Chicago won."
+                """,
+                category: .history,
+                relatedEntries: ["steele", "revolution"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "pittsburgh_massacre",
+                term: "The Pittsburgh Massacre",
+                shortDescription: "The Pittsburgh Massacre - The day the Revolution became total",
+                fullDescription: """
+                Not all turning points are victories. The Pittsburgh Massacre was a slaughter that transformed the Revolution from political uprising to total war.
+
+                On October 14, Federal troops surrounded a workers' district where women and children had gathered while men fought on the front lines. Someone fired a shot—no one knows who. In response, the troops opened fire on the crowd.
+
+                Three hundred and twelve people died, including forty-seven children. Among the dead: Maria Briggs, wife of Commissar Thomas Briggs, and their youngest daughter.
+
+                Briggs organized the surviving men into fighting units that held the revolutionary districts through the winter. But something hardened in the Revolution that day. Prisoners began to be shot rather than captured. Federal sympathizers were no longer detained but disappeared.
+
+                The Pittsburgh Massacre proved that the enemy would show no mercy—so neither would the Revolution.
+                """,
+                category: .history,
+                relatedEntries: ["briggs", "revolution"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "siege_detroit",
+                term: "The Siege of Detroit",
+                shortDescription: "The Siege of Detroit - Ninety days that shook the world",
+                fullDescription: """
+                Detroit was supposed to fall quickly. The Federal army that surrounded the city in during the Revolution outnumbered the defenders, controlled supply lines, and expected the harsh Michigan winter to break revolutionary resistance.
+
+                They underestimated auto workers.
+
+                The factories became fortresses. Women ran ammunition to the lines. Children served as messengers. Workers who had built the Model T now built improvised armored vehicles and homemade mortars. And somewhere in Mexico, ships bearing Soviet weapons steamed north.
+
+                Chairman Fitzgerald arrived personally in during the Revolution, smuggled through the lines. His presence electrified the defenders. On in spring, with the spring thaw approaching and Soviet equipment finally arriving, Fitzgerald led the counteroffensive that shattered the siege.
+
+                Detroit became proof that the Revolution could not be crushed by force alone.
+                """,
+                category: .history,
+                relatedEntries: ["fitzgerald", "revolution", "soviet_union"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "fall_washington",
+                term: "The Fall of Washington",
+                shortDescription: "The Fall of Washington - The end and the beginning",
+                fullDescription: """
+                By at the Revolution's end, the Federal government controlled only a shrinking perimeter around Washington itself. Hoover refused to surrender, refused to negotiate, refused to acknowledge that his government had lost.
+
+                Revolutionary forces—now called the People's Army—entered the capital on March 14. Street-by-street fighting lasted four days. The White House, symbol of the old republic, fell on March 17. Hoover and his cabinet fled aboard the destroyer USS Yorktown, heading for Cuba.
+
+                On March 18, Fitzgerald stood on the steps of the Capitol and proclaimed the People's Socialist Republic of America. Behind the cheering crowds, intelligence officer Arthur Wallace and his men secured Federal archives—files that would prove useful in the years to come.
+
+                The Civil War was over. The harder work of governing had begun.
+
+                March 18 is celebrated as Liberation Day, the PSRA's founding holiday.
+                """,
+                category: .history,
+                relatedEntries: ["fitzgerald", "revolution", "cuba"],
+                unlockedByDefault: true
+            ),
+
+            // MARK: - PURGE EVENTS
+
+            CodexEntry(
+                id: "trial_thirtysix",
+                term: "The Trial of the Thirty-Six",
+                shortDescription: "during the Purges - Show trial that decapitated the military",
+                fullDescription: """
+                Thirty-six senior military officers—including General Marcus Steele—were accused of conspiring with the government-in-exile to overthrow the PSRA. The evidence was fabricated. The confessions were coerced. Thirty-five of the accused confessed; Steele refused. "History will judge," he said.
+
+                Thirty-four were executed. Two received labor camp sentences. The military was decapitated—and would never again threaten civilian Party control.
+
+                The Trial served multiple purposes: it eliminated popular military leaders who might challenge the Party, demonstrated that no one was safe from the Purges, and provided a narrative of constant danger from internal enemies.
+
+                Director Wallace oversaw the interrogations personally. Carter served under Steele. The rift between the Princelings and the security services has never healed.
+
+                "The traitors confessed their crimes. Justice was done."
+                """,
+                category: .history,
+                relatedEntries: ["steele", "purge", "state_protection"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "intellectuals_purge",
+                term: "The Intellectuals' Purge",
+                shortDescription: "during the Purges - The cleansing of American universities",
+                fullDescription: """
+                In during the Purges, universities were "cleansed" of "bourgeois influences." Twelve thousand academics were arrested, fired, or exiled. The charges ranged from "idealist deviation" to "Trotskyist conspiracy" to simple association with the wrong colleagues.
+
+                Dr. Helen Novak was swept up in this wave—her trial lasted twenty minutes. Her crime: treating wounded Federal prisoners with the same care as revolutionary soldiers.
+
+                American science and education never fully recovered. An entire generation of scholars was lost. Those who remained learned to say only what was safe, to cite only approved sources, to produce research that supported Party conclusions.
+
+                Some of the purged have since been rehabilitated. Others remain unpersons. The universities rebuilt, but the culture of fear persists. Original thought is dangerous. Conformity is survival.
+                """,
+                category: .history,
+                relatedEntries: ["novak", "purge"],
+                unlockedByDefault: true
+            ),
+
+            CodexEntry(
+                id: "blackwood",
+                term: "Director Samuel Blackwood",
+                shortDescription: "First BPS Director (deceased) - Architect of the Purges",
+                fullDescription: """
+                The first Director of the Bureau of People's Security built the machinery of terror. A former criminal investigator with the Chicago police, Blackwood believed in efficiency: systematic arrests, standardized interrogation techniques, careful record-keeping.
+
+                Under Blackwood, the BPS developed its network of informants, its interrogation protocols, its filing system that tracked millions of citizens. The Consolidation Purges were his masterwork—a comprehensive cleansing of suspected enemies.
+
+                But eventually, the records contained too much. Blackwood knew who had denounced whom, which confessions were real and which fabricated, where the bodies were buried. He had become dangerous.
+
+                His deputy, Arthur Wallace, orchestrated his downfall: accusations of "wrecking" and "anti-Party activities." Blackwood's own techniques were used against him. He confessed to everything and was executed in during the Purges.
+
+                Wallace inherited his position—and his files.
+
+                "The first servant of socialist justice."
+                """,
+                category: .history,
+                relatedEntries: ["purge", "state_protection"],
+                unlockedByDefault: true
+            ),
+
+            // MARK: - SECRET ENTRIES (Unlocked through gameplay)
+
+            CodexEntry(
+                id: "warren_secret",
+                term: "Elizabeth 'Red Betty' Warren",
+                shortDescription: "The Voice They Couldn't Silence (1898-?)",
+                fullDescription: """
+                Elizabeth Warren was the Revolution's firebrand—an orator whose voice could turn a crowd into an army. A former schoolteacher from Worcester, Massachusetts, she discovered her gift during the textile strikes before the Revolution. By the Revolution, she was the most famous woman in America.
+
+                The Boston General Strike (during the Revolution) was her triumph. For three weeks, the city ceased to function. Workers controlled the streets, the docks, the factories. The Labour Council—with Warren as its public face—became a parallel government.
+
+                But Warren's independence made her dangerous. She criticized the early Purges. She questioned the Party's direction. In during the Purges, she was accused of "Trotskyist deviation" and "factionalism."
+
+                The official record says she was executed. But there are whispers—rumors that she was exiled rather than killed. That somewhere in the Mountain Zone, in a mining town where no one asks questions, an old woman lives under a false name.
+
+                Her speeches circulate as samizdat—underground literature. To speak her name is dangerous. To possess her writings is a crime.
+
+                Is she alive? Some say yes. Most say it's better not to ask.
+                """,
+                category: .history,
+                relatedEntries: ["purge", "region_mountain"],
+                unlockedByDefault: false
+            ),
+
+            CodexEntry(
+                id: "fitzgerald_death",
+                term: "The Fitzgerald Question",
+                shortDescription: "What really happened on several years after the Revolution?",
+                fullDescription: """
+                On the morning of several years after the Revolution, Chairman Robert Fitzgerald collapsed at his desk. The official cause of death was a heart attack. He was fifty-three years old, in apparent good health.
+
+                The medical records were sealed for fifty years. Rumors persisted.
+
+                Everyone who rose under Fitzgerald owes their position to him—Mitchell, Patterson, Henderson, dozens of others. And everyone who rose under Fitzgerald has reason to wonder: who betrayed him?
+
+                Some whisper Wallace arranged the poison, eliminating a leader who might have reformed the system. Others suspect Patterson, ambitious even then, who advanced rapidly after his death. A few believe Mitchell himself—the chosen successor who inherited too conveniently.
+
+                The truth is buried with the Chairman. But the uncertainty poisons relationships at the highest levels. If anyone could betray Fitzgerald, anyone could betray anyone.
+
+                "The Chairman's heart gave out. The Party mourns. There is nothing more to say."
+                """,
+                category: .history,
+                relatedEntries: ["fitzgerald", "purge"],
+                unlockedByDefault: false
             ),
 
             // MARK: - REGIONS (Domestic Zones)
@@ -518,7 +810,7 @@ class CodexDatabase {
 
                 Twenty-five million people work this land. The independent farmer—that icon of old America—has been replaced by the collective farm worker, living in planned agricultural communities and meeting production quotas set in Washington. Some adapted; others resisted and were "relocated" to less pleasant assignments.
 
-                The collectivization campaigns of 1942-1945 left deep scars. Farmers who resisted saw their land seized, their families broken apart. The term "kulak"—borrowed from Soviet experience—was applied to any farmer deemed insufficiently enthusiastic about surrendering his property. Many were sent to labor camps in Alaska; many never returned.
+                The collectivization campaigns of the Collectivization left deep scars. Farmers who resisted saw their land seized, their families broken apart. The term "kulak"—borrowed from Soviet experience—was applied to any farmer deemed insufficiently enthusiastic about surrendering his property. Many were sent to labor camps in Alaska; many never returned.
 
                 Today, the Plains produce surplus grain that the PSRA exports to allied nations. The trauma of collectivization has faded into bitter memory, but the older generation remembers. They work the collective fields and say nothing.
                 """,
@@ -573,7 +865,7 @@ class CodexDatabase {
                 term: "Germany",
                 shortDescription: "Socialist republic - ally to both USSR and PSRA",
                 fullDescription: """
-                The German Socialist Republic proves that socialism can triumph through democratic means. In this timeline, the Nazis never rose to power—the Social Democrats and Communists united against them in 1932, transforming Germany into a socialist state without civil war.
+                The German Socialist Republic proves that socialism can triumph through democratic means. In this timeline, the Nazis never rose to power—the Social Democrats and Communists united against them during the Depression, transforming Germany into a socialist state without civil war.
 
                 Geography: Central Europe. Industrial heartland, rebuilt and thriving under socialist management.
 
@@ -596,7 +888,7 @@ class CodexDatabase {
                 term: "Cuba",
                 shortDescription: "Hosts the US Government-in-Exile - our mortal enemy",
                 fullDescription: """
-                The Republic of Cuba hosts what claims to be the legitimate United States government. When the Federal Government collapsed in 1940, President Hoover and key officials fled to Havana, where they established a government-in-exile that still plots our overthrow.
+                The Republic of Cuba hosts what claims to be the legitimate United States government. When the Federal Government collapsed at the Revolution's end, President Hoover and key officials fled to Havana, where they established a government-in-exile that still plots our overthrow.
 
                 Geography: Caribbean island, ninety miles from our shores. Strategic position commanding the Gulf of Mexico.
 
@@ -617,7 +909,7 @@ class CodexDatabase {
                 term: "Canada",
                 shortDescription: "Lost territory to PSRA - bitter revanchist enemy",
                 fullDescription: """
-                The Dominion of Canada is our neighbor to the north, now bitterly hostile. When Britain and Canada intervened in 1941 to help the Federal Government, our forces pushed back—and kept pushing. British Columbia and Alberta now fly our flag.
+                The Dominion of Canada is our neighbor to the north, now bitterly hostile. When Britain and Canada intervened shortly after the Revolution to help the Federal Government, our forces pushed back—and kept pushing. British Columbia and Alberta now fly our flag.
 
                 Geography: Northern North America. Vast territory, harsh climate, reduced by our conquest of its western provinces.
 
@@ -703,7 +995,7 @@ class CodexDatabase {
                 term: "Spain",
                 shortDescription: "Franco's fascist state - isolated",
                 fullDescription: """
-                The Spanish State is Franco's creation—victorious in civil war, isolated in peace. The Spanish Civil War of 1936-1939 ended in Nationalist victory, establishing a fascist state that survives through repression.
+                The Spanish State is Franco's creation—victorious in civil war, isolated in peace. The Spanish Civil War of the Spanish Civil War ended in Nationalist victory, establishing a fascist state that survives through repression.
 
                 Geography: Southwestern Europe. Strategic position controlling access to the Mediterranean.
 

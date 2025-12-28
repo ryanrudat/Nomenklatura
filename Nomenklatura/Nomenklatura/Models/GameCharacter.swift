@@ -41,6 +41,15 @@ final class GameCharacter {
 
     var speechPattern: String?
 
+    // Backstory and Lore System
+    var backstory: String?                   // Character's personal history
+    var secretsData: Data?                   // Encoded [CharacterSecret] - tiered secrets
+    var relationshipsData: Data?             // Encoded [CharacterRelationship] - pre-existing connections
+    var historicalConnectionsData: Data?     // Encoded [String] - links to historical events/founders
+    var ageCategory: String?                 // "elderly", "middle-aged", "young", "very young"
+    var originLocation: String?              // Where they came from
+    var familyBackground: String?            // Family details
+
     // Faction allegiance
     var factionId: String?
     var factionLoyalty: Int
@@ -88,6 +97,10 @@ final class GameCharacter {
     var denouncedByPlayer: Bool          // Has the player denounced them?
     var hasProtection: Bool              // Do they have high-level protection?
     var protectorId: String?             // UUID of their protector (if any)
+
+    // Secrets/Leverage System
+    var hasBeenLeveraged: Bool           // Has player used secrets against them?
+    var awarenessOfPlayer: Int           // 0-100: How aware are they of player's activities?
 
     var game: Game?
 
@@ -142,6 +155,10 @@ final class GameCharacter {
         self.denouncementCount = 0
         self.denouncedByPlayer = false
         self.hasProtection = false
+
+        // Secrets/Leverage defaults
+        self.hasBeenLeveraged = false
+        self.awarenessOfPlayer = 0
     }
 
     /// Convenience initializer for dynamically discovered characters
@@ -1221,6 +1238,183 @@ extension GameCharacter {
             context += "\n  True Party believer"
         } else if isDisillusioned {
             context += "\n  Disillusioned with the Party"
+        }
+
+        return context
+    }
+}
+
+// MARK: - Character Secrets
+
+/// A secret that a character holds - can be discoverable or narrative-only
+struct CharacterSecret: Codable, Identifiable {
+    var id: String = UUID().uuidString
+    var title: String                       // Brief label: "The Death Warrants"
+    var content: String                     // Full secret description
+    var tier: SecretTier                    // Discoverable vs narrative-only
+    var category: SecretCategory            // What kind of secret
+    var discoveredByPlayer: Bool = false    // Has player uncovered this?
+    var turnDiscovered: Int?                // When player discovered it
+    var canBeUsedAsLeverage: Bool           // Can this be used against the character?
+    var associatedCharacterIds: [String]    // Other characters involved
+    var historicalEventId: String?          // Link to historical event (e.g., "trial_thirtysix")
+
+    enum SecretTier: String, Codable {
+        case discoverable   // Player can find through investigation
+        case narrativeOnly  // Enriches AI dialogue but not discoverable
+    }
+
+    enum SecretCategory: String, Codable {
+        case crime              // They committed a crime
+        case betrayal           // They betrayed someone
+        case corruption         // Financial corruption
+        case forbidden          // Forbidden relationship/belief
+        case identity           // Hidden identity/past
+        case knowledge          // They know something dangerous
+        case weakness           // Personal vulnerability
+        case guilt              // Moral burden they carry
+        case connection         // Hidden alliance/relationship
+        case historical         // Connection to historical event
+    }
+}
+
+/// A pre-existing relationship between characters
+struct CharacterRelationship: Codable, Identifiable {
+    var id: String = UUID().uuidString
+    var targetCharacterId: String           // The other character in the relationship
+    var targetCharacterName: String         // For display purposes
+    var relationshipType: RelationshipType
+    var description: String                 // "Served under him at Chicago"
+    var sentiment: Int                      // -100 to 100 (negative = hostile)
+    var isKnownToPlayer: Bool = false       // Has player learned of this relationship?
+    var turnRevealed: Int?                  // When player learned about it
+    var historicalOrigin: String?           // "Battle of Chicago", "The Purges", etc.
+
+    enum RelationshipType: String, Codable {
+        case family             // Blood or marriage relation
+        case mentor             // One trained the other
+        case protege            // Being trained/sponsored
+        case warComrade         // Fought together
+        case rival              // Long-standing rivalry
+        case enemy              // Active hostility
+        case ally               // Political alliance
+        case debt               // Owes the other something
+        case grudge             // Holds resentment
+        case romantic           // Past or present romantic connection
+        case professional       // Work relationship
+        case conspiracy         // Shared in secret activity
+        case betrayed           // One betrayed the other
+    }
+}
+
+// MARK: - Backstory/Lore Computed Properties
+
+extension GameCharacter {
+
+    /// Character's secrets
+    var secrets: [CharacterSecret] {
+        get {
+            guard let data = secretsData else { return [] }
+            return (try? JSONDecoder().decode([CharacterSecret].self, from: data)) ?? []
+        }
+        set {
+            secretsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Character's pre-existing relationships
+    var characterRelationships: [CharacterRelationship] {
+        get {
+            guard let data = relationshipsData else { return [] }
+            return (try? JSONDecoder().decode([CharacterRelationship].self, from: data)) ?? []
+        }
+        set {
+            relationshipsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Historical events/figures this character is connected to
+    var historicalConnections: [String] {
+        get {
+            guard let data = historicalConnectionsData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            historicalConnectionsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Secrets that player has discovered
+    var discoveredSecrets: [CharacterSecret] {
+        secrets.filter { $0.discoveredByPlayer }
+    }
+
+    /// Secrets that can still be uncovered
+    var undiscoveredSecrets: [CharacterSecret] {
+        secrets.filter { !$0.discoveredByPlayer && $0.tier == .discoverable }
+    }
+
+    /// Does this character have leverage-able secrets?
+    var hasUsableSecrets: Bool {
+        discoveredSecrets.contains { $0.canBeUsedAsLeverage }
+    }
+
+    /// Relationships player knows about
+    var knownRelationships: [CharacterRelationship] {
+        characterRelationships.filter { $0.isKnownToPlayer }
+    }
+
+    /// Mark a secret as discovered
+    func discoverSecret(secretId: String, turn: Int) {
+        var allSecrets = secrets
+        if let index = allSecrets.firstIndex(where: { $0.id == secretId }) {
+            allSecrets[index].discoveredByPlayer = true
+            allSecrets[index].turnDiscovered = turn
+            secrets = allSecrets
+        }
+    }
+
+    /// Mark a relationship as known to player
+    func revealRelationship(relationshipId: String, turn: Int) {
+        var allRelationships = characterRelationships
+        if let index = allRelationships.firstIndex(where: { $0.id == relationshipId }) {
+            allRelationships[index].isKnownToPlayer = true
+            allRelationships[index].turnRevealed = turn
+            characterRelationships = allRelationships
+        }
+    }
+
+    /// Get relationship with a specific character
+    func relationshipWith(characterId: String) -> CharacterRelationship? {
+        characterRelationships.first { $0.targetCharacterId == characterId }
+    }
+
+    /// AI context including backstory and lore
+    var aiContextWithLore: String {
+        var context = aiContextWithBehavior
+
+        // Add backstory if available
+        if let backstory = backstory {
+            context += "\n  Background: \(backstory)"
+        }
+
+        // Add historical connections
+        let connections = historicalConnections
+        if !connections.isEmpty {
+            context += "\n  Historical connections: \(connections.joined(separator: ", "))"
+        }
+
+        // Add key relationships (for AI dialogue)
+        let keyRelationships = characterRelationships.prefix(3)
+        if !keyRelationships.isEmpty {
+            let relStrings = keyRelationships.map { "\($0.targetCharacterName) (\($0.relationshipType.rawValue))" }
+            context += "\n  Key relationships: \(relStrings.joined(separator: ", "))"
+        }
+
+        // Add narrative secrets (not discoverable ones - those are for gameplay)
+        let narrativeSecrets = secrets.filter { $0.tier == .narrativeOnly }
+        if let firstSecret = narrativeSecrets.first {
+            context += "\n  Carries burden of: \(firstSecret.title)"
         }
 
         return context

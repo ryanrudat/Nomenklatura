@@ -41,6 +41,11 @@ class CharacterInteractionSystem {
             interactions.append(contentsOf: getContactInteractions(character: character, game: game))
         }
 
+        // Secrets leverage interactions (if player has discovered usable secrets)
+        if character.hasUsableSecrets {
+            interactions.append(contentsOf: getSecretLeverageInteractions(for: character, game: game))
+        }
+
         // Filter by rank requirements
         return interactions.filter { interaction in
             if let minRank = interaction.minPositionIndex, game.currentPositionIndex < minRank {
@@ -1061,7 +1066,8 @@ class CharacterInteractionSystem {
             secretsRevealed = generateSecrets(
                 for: character,
                 investigationType: interaction.id,
-                evidenceGained: evidenceGained
+                evidenceGained: evidenceGained,
+                turnNumber: game.turnNumber
             )
 
         } else {
@@ -1099,9 +1105,57 @@ class CharacterInteractionSystem {
         )
     }
 
-    /// Generate secrets revealed by investigation
-    private func generateSecrets(for character: GameCharacter, investigationType: String, evidenceGained: Int) -> [String] {
-        var secrets: [String] = []
+    /// Generate secrets revealed by investigation - uses actual character secrets when available
+    private func generateSecrets(for character: GameCharacter, investigationType: String, evidenceGained: Int, turnNumber: Int) -> [String] {
+        var revealedSecretDescriptions: [String] = []
+
+        // First, try to discover actual character secrets from their template data
+        let undiscoveredSecrets = character.undiscoveredSecrets
+
+        if !undiscoveredSecrets.isEmpty {
+            // Determine how many secrets might be revealed based on investigation type
+            let discoveryChance: Double
+            let maxSecretsToReveal: Int
+
+            if investigationType.contains("full") {
+                discoveryChance = 0.7
+                maxSecretsToReveal = 2
+            } else if investigationType.contains("archives") {
+                discoveryChance = 0.5
+                maxSecretsToReveal = 1
+            } else if investigationType.contains("surveillance") || investigationType.contains("informant") {
+                discoveryChance = 0.4
+                maxSecretsToReveal = 1
+            } else {
+                discoveryChance = 0.25
+                maxSecretsToReveal = 1
+            }
+
+            // Try to discover secrets
+            var secretsRevealed = 0
+            for secret in undiscoveredSecrets.shuffled() {
+                if secretsRevealed >= maxSecretsToReveal { break }
+
+                // Adjust chance by evidence level
+                let adjustedChance = discoveryChance + Double(evidenceGained) / 100.0
+
+                if Double.random(in: 0...1) < adjustedChance {
+                    // Discover this secret
+                    character.discoverSecret(secretId: secret.id, turn: turnNumber)
+                    revealedSecretDescriptions.append(secret.title)
+                    secretsRevealed += 1
+                }
+            }
+
+            // If we revealed actual secrets, return those
+            if !revealedSecretDescriptions.isEmpty {
+                return revealedSecretDescriptions
+            }
+        }
+
+        // Fallback to generic secrets if character has no template secrets
+        // or if we failed to discover any
+        var genericSecrets: [String] = []
 
         // Base secrets based on investigation type
         if investigationType.contains("archives") {
@@ -1114,7 +1168,7 @@ class CharacterInteractionSystem {
                 "Early Party record shows 'ideological deviations'"
             ]
             if evidenceGained > 15 {
-                secrets.append(archiveSecrets.randomElement()!)
+                genericSecrets.append(archiveSecrets.randomElement()!)
             }
         }
 
@@ -1128,7 +1182,7 @@ class CharacterInteractionSystem {
                 "Shows signs of alcoholism affecting work"
             ]
             if evidenceGained > 10 {
-                secrets.append(currentSecrets.randomElement()!)
+                genericSecrets.append(currentSecrets.randomElement()!)
             }
         }
 
@@ -1141,21 +1195,21 @@ class CharacterInteractionSystem {
                 "Covered up industrial accident that killed workers",
                 "Maintains secret apartment for unknown purposes"
             ]
-            secrets.append(deepSecrets.randomElement()!)
+            genericSecrets.append(deepSecrets.randomElement()!)
             if evidenceGained > 30 {
-                secrets.append(deepSecrets.filter { !secrets.contains($0) }.randomElement() ?? "Additional irregularities found")
+                genericSecrets.append(deepSecrets.filter { !genericSecrets.contains($0) }.randomElement() ?? "Additional irregularities found")
             }
         }
 
         // Personality-based secrets
         if character.personalityCorrupt > 70 && evidenceGained > 15 {
-            secrets.append("Evidence of accepting bribes from subordinates")
+            genericSecrets.append("Evidence of accepting bribes from subordinates")
         }
         if character.personalityAmbitious > 70 && evidenceGained > 20 {
-            secrets.append("Has been cultivating allies to move against superiors")
+            genericSecrets.append("Has been cultivating allies to move against superiors")
         }
 
-        return secrets
+        return genericSecrets
     }
 
     /// Check if player is in Bureau of People's Security track
@@ -1164,6 +1218,299 @@ class CharacterInteractionSystem {
         // This would be set based on career choices
         // For now, approximate by checking if they have high network + certain position
         return game.network >= 60 && game.currentPositionIndex >= 3
+    }
+
+    // MARK: - Secrets Leverage System
+
+    /// Get available interactions for using discovered secrets against a character
+    func getSecretLeverageInteractions(for character: GameCharacter, game: Game) -> [CharacterInteraction] {
+        var interactions: [CharacterInteraction] = []
+
+        // Must have discovered leverage-able secrets
+        let usableSecrets = character.discoveredSecrets.filter { $0.canBeUsedAsLeverage }
+        guard !usableSecrets.isEmpty else { return interactions }
+
+        // Can't leverage dead/exiled/imprisoned characters
+        guard character.currentStatus == .active || character.currentStatus == .underInvestigation else {
+            return interactions
+        }
+
+        let playerPosition = game.currentPositionIndex
+        let targetRank = character.positionIndex ?? 0
+
+        // OPTION 1: Private Leverage (Blackmail)
+        // Lower risk, ongoing benefit, requires secrecy
+        interactions.append(CharacterInteraction(
+            id: "secret_leverage_\(character.templateId)",
+            title: "Private Leverage",
+            description: "Use your knowledge of \(character.name)'s secrets to gain their cooperation",
+            category: .intelligence,
+            riskLevel: targetRank > playerPosition ? .high : .medium,
+            costAP: 2,
+            effects: ["network": 5],
+            successNarratives: [
+                "'\(character.name), let us speak frankly. I know about \(usableSecrets.first?.title ?? "your past").' Their face goes pale.",
+                "You lay out the evidence. \(character.name) has no choice but to cooperate.",
+                "'I think we can help each other,' you say. \(character.name) understands the implication.",
+                "'How did you—' \(character.name) begins, then stops. 'What do you want?'"
+            ],
+            failureNarratives: [
+                "\(character.name) laughs coldly. 'You think you're the first to try this? I have protectors.'",
+                "'Go ahead and tell them,' \(character.name) says. 'See who they believe—you or me.'",
+                "\(character.name)'s connections run deeper than you thought. Your leverage is worthless."
+            ],
+            flavorText: "Knowledge is power. But power invites retaliation."
+        ))
+
+        // OPTION 2: Public Exposure
+        // High risk, destroys target, burns the secret
+        if playerPosition >= 2 {
+            interactions.append(CharacterInteraction(
+                id: "secret_expose_\(character.templateId)",
+                title: "Public Exposure",
+                description: "Reveal \(character.name)'s secrets in a Party meeting to destroy their reputation",
+                category: .hostile,
+                riskLevel: .high,
+                costAP: 2,
+                effects: ["standing": 5, "reputationCunning": 10],
+                successNarratives: [
+                    "You rise and address the committee. 'Comrades, I have evidence of \(usableSecrets.first?.title ?? "serious impropriety")...'",
+                    "The documents circulate. \(character.name) sits in stunned silence as their career crumbles.",
+                    "'These are LIES!' \(character.name) screams. But the evidence speaks for itself.",
+                    "The room erupts. \(character.name) is escorted out. You've made a powerful enemy—if they survive."
+                ],
+                failureNarratives: [
+                    "\(character.name)'s allies close ranks. Your accusations are turned back on you.",
+                    "'Fabricated evidence!' someone shouts. The tide turns against you.",
+                    "The committee is unmoved. Perhaps they already knew—and didn't care."
+                ],
+                flavorText: "A public denouncement cannot be taken back. Choose your moment carefully.",
+                minPositionIndex: 2
+            ))
+        }
+
+        // OPTION 3: Trade to Patron
+        // Safe option, builds patron favor, transfers the secret
+        if character.templateId != game.patronId {
+            interactions.append(CharacterInteraction(
+                id: "secret_trade_patron_\(character.templateId)",
+                title: "Report to Patron",
+                description: "Share \(character.name)'s secrets with your patron for their use",
+                category: .informing,
+                riskLevel: .low,
+                costAP: 1,
+                effects: ["patronFavor": 10, "reputationLoyal": 5],
+                successNarratives: [
+                    "Your patron's eyes light up. 'This is... very useful. You've done well.'",
+                    "'I knew you had potential,' \(game.patronId) says, filing away the information.",
+                    "Your patron nods slowly. 'This explains much. I'll handle it from here.'",
+                    "'Good work. I won't forget this.' Your patron's gratitude is genuine."
+                ],
+                failureNarratives: [
+                    "'I already knew,' your patron says dismissively. Your information is stale.",
+                    "'This is dangerous information,' your patron warns. 'Never speak of it again.'"
+                ],
+                flavorText: "Your patron will use this knowledge as they see fit. You relinquish control."
+            ))
+        }
+
+        // OPTION 4: Demand Favor
+        // Direct quid pro quo, high stakes
+        if playerPosition >= 3 {
+            interactions.append(CharacterInteraction(
+                id: "secret_demand_favor_\(character.templateId)",
+                title: "Demand Specific Favor",
+                description: "Use your leverage to demand a concrete favor from \(character.name)",
+                category: .intelligence,
+                riskLevel: .medium,
+                costAP: 2,
+                effects: ["network": 10, "wealth": 5],
+                successNarratives: [
+                    "\(character.name) has no choice. The favor is granted, though their eyes promise revenge.",
+                    "'Fine,' \(character.name) says through gritted teeth. 'But this is the last time.'",
+                    "The arrangement is made. \(character.name) will support your next initiative.",
+                    "'You'll regret this,' \(character.name) mutters—but complies."
+                ],
+                failureNarratives: [
+                    "\(character.name) calls your bluff. 'Do your worst. I'll take you down with me.'",
+                    "Your demand is too bold. \(character.name) finds a way to neutralize your leverage."
+                ],
+                flavorText: "A cornered animal is dangerous. Push too hard, and they may strike back.",
+                minPositionIndex: 3
+            ))
+        }
+
+        // OPTION 5: Silence for Alliance
+        // Turn enemy into ally through shared secret
+        if character.isRival || character.dispositionToPlayer < 30 {
+            interactions.append(CharacterInteraction(
+                id: "secret_alliance_\(character.templateId)",
+                title: "Offer Silence for Alliance",
+                description: "Promise to keep \(character.name)'s secrets in exchange for their support",
+                category: .diplomatic,
+                riskLevel: .medium,
+                costAP: 2,
+                effects: ["network": 8],
+                successNarratives: [
+                    "'We are bound together now,' you tell \(character.name). 'Your secrets are safe with me—as long as we remain allies.'",
+                    "\(character.name) considers the offer. 'An... arrangement, then. I accept.'",
+                    "'You're clever,' \(character.name) admits. 'Very well. We have an understanding.'",
+                    "The handshake seals it. Neither of you can destroy the other without risking everything."
+                ],
+                failureNarratives: [
+                    "'I don't make deals with blackmailers,' \(character.name) says coldly.",
+                    "\(character.name) would rather fall than be in your debt."
+                ],
+                flavorText: "Shared secrets can bind enemies together—or give them more reason to eliminate you."
+            ))
+        }
+
+        return interactions
+    }
+
+    /// Execute a secrets leverage action
+    func executeSecretLeverage(_ interaction: CharacterInteraction, target character: GameCharacter, game: Game) -> SecretLeverageResult {
+        let playerPosition = game.currentPositionIndex
+        let targetRank = character.positionIndex ?? 0
+        let hasProtection = character.hasProtection
+
+        // Base success chance
+        var successChance = 0.60
+
+        // Player advantages
+        if playerPosition >= targetRank {
+            successChance += 0.15
+        }
+        if game.network > 60 {
+            successChance += 0.10
+        }
+        if isPlayerInStateProtection(game: game) {
+            successChance += 0.15
+        }
+
+        // Target defenses
+        if hasProtection {
+            successChance -= 0.20
+        }
+        if character.personalityParanoid > 60 {
+            successChance -= 0.10 // Paranoid targets have countermeasures
+        }
+        if targetRank >= 5 {
+            successChance -= 0.15 // Senior officials are harder to leverage
+        }
+
+        // Interaction-specific modifiers
+        if interaction.id.contains("trade_patron") {
+            successChance += 0.20 // Patron trade is low risk
+        } else if interaction.id.contains("expose") {
+            successChance -= 0.10 // Public exposure is hardest
+        }
+
+        successChance = max(0.15, min(0.90, successChance))
+
+        let success = Double.random(in: 0...1) < successChance
+
+        var narrative: String
+        var dispositionChange = 0
+        var becameLeveraged = false
+        var secretBurned = false
+        var madeEnemy = false
+        var patronNotified = false
+
+        if success {
+            narrative = interaction.successNarratives?.randomElement() ?? "Your leverage proves effective."
+
+            if interaction.id.contains("leverage") {
+                // Private leverage - target becomes leveraged asset
+                becameLeveraged = true
+                dispositionChange = -20 // They hate you but must comply
+                character.hasBeenLeveraged = true
+            } else if interaction.id.contains("expose") {
+                // Public exposure - destroys target, burns secret
+                secretBurned = true
+                character.evidenceLevel = min(100, character.evidenceLevel + 40)
+                dispositionChange = -50
+                madeEnemy = true
+                // Mark secrets as used/burned
+                burnUsedSecrets(for: character)
+            } else if interaction.id.contains("trade_patron") {
+                // Patron trade - patron now knows
+                patronNotified = true
+                secretBurned = true // Can't use it again
+                burnUsedSecrets(for: character)
+            } else if interaction.id.contains("demand_favor") {
+                // Favor extracted
+                dispositionChange = -30
+            } else if interaction.id.contains("alliance") {
+                // Forced alliance
+                dispositionChange = 15 // Grudging respect
+                becameLeveraged = true
+            }
+
+            // Update character disposition
+            character.dispositionToPlayer = max(0, min(100, character.dispositionToPlayer + dispositionChange))
+
+        } else {
+            narrative = interaction.failureNarratives?.randomElement() ?? "Your attempt to use the information fails."
+
+            // Failed leverage has consequences
+            if interaction.id.contains("expose") {
+                // Failed public exposure is catastrophic
+                madeEnemy = true
+                dispositionChange = -40
+            } else {
+                // Other failures create enemies
+                madeEnemy = true
+                dispositionChange = -25
+            }
+
+            character.dispositionToPlayer = max(0, character.dispositionToPlayer + dispositionChange)
+
+            // Target may become aware and hostile
+            if Double.random(in: 0...1) < 0.5 {
+                character.awarenessOfPlayer = min(100, character.awarenessOfPlayer + 20)
+            }
+        }
+
+        return SecretLeverageResult(
+            success: success,
+            narrative: narrative,
+            targetName: character.name,
+            interactionType: interaction.id,
+            dispositionChange: dispositionChange,
+            becameLeveraged: becameLeveraged,
+            secretBurned: secretBurned,
+            madeEnemy: madeEnemy,
+            patronNotified: patronNotified
+        )
+    }
+
+    /// Mark secrets as used/burned after exposure or trade
+    private func burnUsedSecrets(for character: GameCharacter) {
+        var allSecrets = character.secrets
+        for i in 0..<allSecrets.count {
+            if allSecrets[i].discoveredByPlayer && allSecrets[i].canBeUsedAsLeverage {
+                // Mark as no longer usable (it's been exposed/traded)
+                allSecrets[i].canBeUsedAsLeverage = false
+            }
+        }
+        character.secrets = allSecrets
+    }
+
+    /// Check if player has any leverage on a character
+    func playerHasLeverageOn(_ character: GameCharacter) -> Bool {
+        return character.hasUsableSecrets
+    }
+
+    /// Get a summary of known secrets for UI display
+    func getKnownSecretsSummary(for character: GameCharacter) -> [String] {
+        return character.discoveredSecrets.map { secret in
+            if secret.canBeUsedAsLeverage {
+                return "• \(secret.title) [LEVERAGE]"
+            } else {
+                return "• \(secret.title)"
+            }
+        }
     }
 
     // MARK: - Denouncement System
@@ -2028,6 +2375,64 @@ struct CultivateResult {
         case 4: return "Close Ally"
         case 5: return "Asset"
         default: return "Unknown"
+        }
+    }
+}
+
+/// Result of using discovered secrets as leverage
+struct SecretLeverageResult {
+    let success: Bool
+    let narrative: String
+    let targetName: String
+    let interactionType: String
+    let dispositionChange: Int
+    let becameLeveraged: Bool
+    let secretBurned: Bool
+    let madeEnemy: Bool
+    let patronNotified: Bool
+
+    /// Summary text for UI display
+    var summaryText: String {
+        if success {
+            if becameLeveraged {
+                return "\(targetName) is now under your influence. They will cooperate—for now."
+            } else if secretBurned {
+                if patronNotified {
+                    return "Your patron now holds \(targetName)'s secret. Your loyalty is noted."
+                } else {
+                    return "\(targetName)'s secret is now public knowledge. Their career may not survive."
+                }
+            } else {
+                return "Your leverage proved effective against \(targetName)."
+            }
+        } else {
+            if madeEnemy {
+                return "Your attempt failed. \(targetName) is now your sworn enemy."
+            } else {
+                return "Your leverage attempt did not succeed."
+            }
+        }
+    }
+
+    /// Icon for UI
+    var outcomeIcon: String {
+        if success {
+            if becameLeveraged { return "link" }
+            if secretBurned { return "flame.fill" }
+            if patronNotified { return "person.badge.shield.checkmark" }
+            return "checkmark.seal"
+        } else {
+            return madeEnemy ? "exclamationmark.triangle.fill" : "xmark.circle"
+        }
+    }
+
+    /// Color hint for UI
+    var outcomeColor: String {
+        if success {
+            if secretBurned { return "orange" }
+            return "green"
+        } else {
+            return madeEnemy ? "red" : "gray"
         }
     }
 }
