@@ -792,7 +792,6 @@ struct CharacterDetailView: View {
 
     /// Generate a unique service record based on character attributes
     private func generateUniqueServiceRecord() -> String {
-        let firstName = character.name.components(separatedBy: " ").first ?? "Subject"
         let era = character.introducedTurn > 10 ? "'52" : "'48"
         let faction = character.factionId ?? "independent"
 
@@ -860,7 +859,7 @@ struct CharacterDetailView: View {
             switch character.currentStatus {
             case .executed:
                 deathContext = "\n\n[FILE CLOSED - SUBJECT EXECUTED. Records sealed by order of the Security Directorate.]"
-            case .purged:
+            case .imprisoned:
                 deathContext = "\n\n[FILE CLOSED - SUBJECT REMOVED FROM SERVICE. Current whereabouts: Reeducation Facility.]"
             case .exiled:
                 deathContext = "\n\n[FILE CLOSED - SUBJECT EXPELLED FROM PARTY. Last known location: External territories.]"
@@ -954,7 +953,7 @@ struct CharacterDetailView: View {
             switch character.currentStatus {
             case .executed:
                 return "\"Final entry: Subject taken into custody on \(redactedShort) at 0300 hours. Sentence carried out per Directive \(redactedShort). File transferred to Archives.\""
-            case .purged:
+            case .imprisoned:
                 return "\"Subject removed from position following investigation. Last seen being escorted to \(redactedMed) Rehabilitation Center. Surveillance discontinued.\""
             case .exiled:
                 return "\"Subject departed via \(redactedMed) checkpoint. Border guards confirmed exit. No further monitoring authorized.\""

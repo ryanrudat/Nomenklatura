@@ -488,7 +488,6 @@ class DynamicEventTriggerService {
         callbackFlag: String
     ) -> (String, String, [EventResponse]) {
         let hookLower = hook.lowercased()
-        let originalTitle = originalEvent.details["title"] ?? "a previous matter"
         let turnsSince = game.turnNumber - originalEvent.turnNumber
 
         // Categorize the hook and generate appropriate response
