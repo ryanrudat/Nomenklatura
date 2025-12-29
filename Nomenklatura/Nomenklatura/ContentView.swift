@@ -64,6 +64,12 @@ struct ContentView: View {
                         onReturnToMenu: {
                             setupState = .campaignSelect
                         },
+                        onRestartWithSameFaction: {
+                            // Capture current game's campaign and faction before restarting
+                            let campaignId = game.campaignId
+                            let factionId = game.playerFactionId ?? "youth_league"
+                            startNewGame(campaignId: campaignId, factionId: factionId)
+                        },
                         onDeleteAllData: {
                             deleteAllGameData()
                             setupState = .campaignSelect
@@ -82,11 +88,25 @@ struct ContentView: View {
         }
         .environment(\.theme, themeManager.currentTheme)
         .onAppear {
-            // Check if there's an active game
+            // TEMPORARY: Force delete all existing games to test faction selection flow
+            // Remove this block after confirming faction selection works
+            if !games.isEmpty {
+                for oldGame in games {
+                    modelContext.delete(oldGame)
+                }
+                try? modelContext.save()
+                setupState = .campaignSelect
+                return
+            }
+
+            // Check if there's an active game with proper faction
             if let game = activeGame {
                 // Repair any save state inconsistencies from older versions
                 let config = CampaignLoader.shared.getColdWarCampaign()
                 game.repairExpandedTrackIfNeeded(ladder: config.ladder)
+
+                // Set theme for the campaign
+                themeManager.setTheme(for: game.campaignId)
 
                 setupState = .playing
             }
@@ -323,6 +343,7 @@ struct GameView: View {
     @Bindable var game: Game
     @Binding var selectedTab: NavTab
     let onReturnToMenu: () -> Void
+    let onRestartWithSameFaction: () -> Void
     var onDeleteAllData: (() -> Void)?
     @Environment(\.theme) var theme
     @Environment(\.modelContext) private var modelContext
@@ -605,8 +626,8 @@ struct GameView: View {
             game.status = GameStatus.abandoned.rawValue
         }
 
-        // Return to menu to start fresh
-        onReturnToMenu()
+        // Restart with the same faction
+        onRestartWithSameFaction()
     }
 }
 
