@@ -777,12 +777,17 @@ struct CharacterDetailView: View {
         let serviceText = generateUniqueServiceRecord()
         var text = AttributedString(serviceText)
 
-        // Add redacted portion at a contextually appropriate place
-        var redacted = AttributedString(" ████████ ")
+        // Add a redacted transitional sentence that makes sense contextually
+        let transitionPrefix = AttributedString(" Prior assignment at ")
+        text.append(transitionPrefix)
+
+        var redacted = AttributedString("████████")
         redacted.backgroundColor = theme.inkBlack
         redacted.foregroundColor = theme.inkBlack
-
         text.append(redacted)
+
+        let transitionSuffix = AttributedString(" terminated following review. ")
+        text.append(transitionSuffix)
 
         let rest = AttributedString(generateServiceRecordSuffix())
         text.append(rest)

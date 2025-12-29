@@ -359,7 +359,7 @@ class CampaignLoader {
         CampaignConfig(
             id: "coldwar",
             name: "Nomenklatura",
-            era: "Cold War · 1950s-1960s",
+            era: "Cold War Era",
             description: "Navigate the treacherous politics of the Presidium. Survive purges, outmaneuver rivals, position yourself for succession.",
             nationName: "The People's Socialist Republic",
             leaderTitle: "General Secretary",
@@ -895,7 +895,7 @@ class CampaignLoader {
                     relationshipType: "ally",
                     description: "Mitchell uses Henderson's genuine idealism as cover for his own pragmatic decisions. Henderson believes in the Revolution; Mitchell believes in survival. They rose together under Fitzgerald.",
                     sentiment: 45,
-                    historicalOrigin: "Youth League (1930s)"
+                    historicalOrigin: "Youth League (before the Revolution)"
                 )
             ],
             historicalConnections: ["fitzgerald", "purge", "siege_detroit", "youth_league"]
@@ -917,7 +917,7 @@ class CampaignLoader {
             startingDisposition: 50,
             backstory: "Born to Black sharecroppers in rural Georgia. Escaped north during the Great Migration, found work in Chicago's meatpacking plants. Enlisted in the revolutionary militia at the start of the Revolution after watching Federal troops fire on strikers. Rose through the ranks during the Civil War, earning his reputation in the brutal street fighting of Chicago under General Steele's command. Wounded twice—once at Chicago, once at Pittsburgh. Married Elizabeth Briggs, daughter of Commissar Thomas Briggs, after the Revolution; she died years after the Purges of tuberculosis. He never remarried. Steele's execution during the Purges broke something in him—he served under the man, loved him like a father, and watched Wallace fabricate the evidence.",
             ageCategory: "middle-aged",
-            originLocation: "Rural Georgia (born); Chicago, Illinois (migrated 1920)",
+            originLocation: "Rural Georgia (born); Chicago, Illinois (migrated during the Great Migration)",
             familyBackground: "Son of sharecroppers. Escaped the Jim Crow South. Married into the Briggs family—one of the founding families of the Revolution. Widower, no surviving children.",
             secrets: [
                 CharacterSecretTemplate(
@@ -955,7 +955,7 @@ class CampaignLoader {
                     relationshipType: "enemy",
                     description: "Cold professionalism masking deep hatred. Carter knows Wallace destroyed General Steele. Wallace knows Carter knows. They work together because the Party demands it. The alliance is built on ice.",
                     sentiment: -40,
-                    historicalOrigin: "Trial of the Thirty-Six (1943)"
+                    historicalOrigin: "Trial of the Thirty-Six"
                 ),
                 CharacterRelationshipTemplate(
                     targetCharacterId: "fletcher",
@@ -1010,7 +1010,7 @@ class CampaignLoader {
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Harrigan Denunciation",
-                    content: "In 1943, Patterson denounced her mentor Professor William Harrigan to save herself. Harrigan was a true believer, guilty of nothing but teaching her to think. He was executed within a week. His wife and two children—ages 8 and 11—were taken by Wallace's men. Patterson knows they went to the camps. She does not know if they survived.",
+                    content: "During the Purges, Patterson denounced her mentor Professor William Harrigan to save herself. Harrigan was a true believer, guilty of nothing but teaching her to think. He was executed within a week. His wife and two children—ages 8 and 11—were taken by Wallace's men. Patterson knows they went to the camps. She does not know if they survived.",
                     tier: "discoverable",
                     category: "betrayal",
                     canBeUsedAsLeverage: true,
@@ -1051,7 +1051,7 @@ class CampaignLoader {
                     relationshipType: "rival",
                     description: "Hoffman believed he should have been Second Secretary. He lost to Patterson. The rivalry is professional but bitter. She watches him; he watches her. Neither forgets.",
                     sentiment: -25,
-                    historicalOrigin: "Second Secretary selection (1949)"
+                    historicalOrigin: "Second Secretary selection"
                 ),
                 CharacterRelationshipTemplate(
                     targetCharacterId: "kirillova",
@@ -1087,7 +1087,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 65,
-            backstory: "Born James Henderson in 1908 to a schoolteacher and a minister in rural Ohio. Converted to socialism reading pamphlets at the public library. Joined the Youth League during the Depression, rose under Fitzgerald's mentorship. Unlike most survivors, Henderson emerged from the Revolution with his idealism intact—he never had to choose between his beliefs and his survival. He was in a hospital with typhoid during the worst of the Purges, which saved him from complicity. Still believes the Revolution can deliver on its promises. Mitchell keeps him around as a useful symbol of what they once believed.",
+            backstory: "Born James Henderson to a schoolteacher and a minister in rural Ohio. Converted to socialism reading pamphlets at the public library. Joined the Youth League during the Depression, rose under Fitzgerald's mentorship. Unlike most survivors, Henderson emerged from the Revolution with his idealism intact—he never had to choose between his beliefs and his survival. He was in a hospital with typhoid during the worst of the Purges, which saved him from complicity. Still believes the Revolution can deliver on its promises. Mitchell keeps him around as a useful symbol of what they once believed.",
             ageCategory: "middle-aged",
             originLocation: "Rural Ohio",
             familyBackground: "Middle-class Protestant family. Father was a Methodist minister who preached social gospel. Mother taught school. Both died before the Revolution.",
@@ -1118,7 +1118,7 @@ class CampaignLoader {
                     relationshipType: "ally",
                     description: "Henderson sees Mitchell as Fitzgerald's true heir. Mitchell uses Henderson's genuine idealism as cover for pragmatic decisions. Henderson doesn't notice the manipulation—or chooses not to.",
                     sentiment: 60,
-                    historicalOrigin: "Youth League (1930s)"
+                    historicalOrigin: "Youth League (before the Revolution)"
                 )
             ],
             historicalConnections: ["fitzgerald", "youth_league", "march_washington"]
@@ -1169,7 +1169,7 @@ class CampaignLoader {
                     relationshipType: "rival",
                     description: "Hoffman believed he should have been Second Secretary. Patterson won. He has never forgiven her. The rivalry is professional but bitter, conducted through bureaucratic maneuvering.",
                     sentiment: -30,
-                    historicalOrigin: "Second Secretary selection (1949)"
+                    historicalOrigin: "Second Secretary selection"
                 )
             ],
             historicalConnections: ["youth_league"]
@@ -1293,7 +1293,7 @@ class CampaignLoader {
                 ),
                 CharacterSecretTemplate(
                     title: "The Rationalization Memorandum",
-                    content: "Crawford was a co-author of the secret 'Rationalization Memorandum' of 1949—a document proposing market reforms that could be interpreted as 'capitalist restoration.' The document was suppressed; its authors could face charges of revisionism.",
+                    content: "Crawford was a co-author of the secret 'Rationalization Memorandum'—a document proposing market reforms that could be interpreted as 'capitalist restoration.' The document was suppressed; its authors could face charges of revisionism.",
                     tier: "discoverable",
                     category: "crime",
                     canBeUsedAsLeverage: true,
@@ -1406,7 +1406,7 @@ class CampaignLoader {
             backstory: "Born in Pittsburgh to a family of steelworkers. Started in the mills at fourteen; became a foreman at twenty-five. Joined the Revolution because he saw what the old system did to workers—the accidents, the poverty, the hopelessness. Rose through ability and personality; workers trust him because he speaks their language. Drinks heavily but functions; it's how he deals with the gap between revolutionary promises and industrial reality.",
             ageCategory: "middle-aged",
             originLocation: "Pittsburgh, Pennsylvania",
-            familyBackground: "Multi-generation steelworker family. Wife died in the 1943 flu epidemic. One son works in the Ministry of Heavy Industry.",
+            familyBackground: "Multi-generation steelworker family. Wife died in the flu epidemic during the Purges. One son works in the Ministry of Heavy Industry.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Drinking",
@@ -1497,7 +1497,7 @@ class CampaignLoader {
                     relationshipType: "enemy",
                     description: "Carter knows Wallace destroyed General Steele. The hatred is mutual and permanent, masked by professional courtesy. One day, this will end in blood.",
                     sentiment: -50,
-                    historicalOrigin: "Trial of the Thirty-Six (1943)"
+                    historicalOrigin: "Trial of the Thirty-Six"
                 ),
                 CharacterRelationshipTemplate(
                     targetCharacterId: "edwards",
@@ -1573,7 +1573,7 @@ class CampaignLoader {
                     relationshipType: "mentor",
                     description: "Wallace is his teacher, his father figure, and his captor all at once. Edwards owes Wallace everything—and is bound to him by shared guilt.",
                     sentiment: 75,
-                    historicalOrigin: "Recruited 1939, shared operations ever since"
+                    historicalOrigin: "Recruited before the Revolution, shared operations ever since"
                 ),
                 CharacterRelationshipTemplate(
                     targetCharacterId: "strickland",
@@ -1668,7 +1668,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 50,
-            backstory: "Born Natasha Reynolds in 1922 in Philadelphia, daughter of a telephone company engineer and a schoolteacher. Showed aptitude for technical work from childhood—could build a radio from spare parts by age twelve. Recruited by the BPS's Technical Division at the Revolution's end, fresh from the revolutionary youth training program. Rose through Surveillance on pure competence: she designs the listening systems, analyzes the intercepts, spots the patterns others miss. One of the few women at her level in the security apparatus. Edwards respects her work; they may share something deeper, though neither acknowledges it. Privately disgusted by Strickland's methods—she believes surveillance should be clean, clinical, almost mathematical.",
+            backstory: "Born Natasha Reynolds in Philadelphia, daughter of a telephone company engineer and a schoolteacher. Showed aptitude for technical work from childhood—could build a radio from spare parts by age twelve. Recruited by the BPS's Technical Division at the Revolution's end, fresh from the revolutionary youth training program. Rose through Surveillance on pure competence: she designs the listening systems, analyzes the intercepts, spots the patterns others miss. One of the few women at her level in the security apparatus. Edwards respects her work; they may share something deeper, though neither acknowledges it. Privately disgusted by Strickland's methods—she believes surveillance should be clean, clinical, almost mathematical.",
             ageCategory: "young",
             originLocation: "Philadelphia, Pennsylvania",
             familyBackground: "Lower-middle-class technical family. Father still works for State Telephone; mother retired. Never married. Lives alone, spends evenings reading intercepted correspondence. The loneliness sometimes feels like drowning.",
@@ -1738,7 +1738,7 @@ class CampaignLoader {
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Soviet Affair",
-                    content: "During a 1948 summit in Moscow, Marshall had a brief affair with a Soviet diplomat, Natalia Ivanova. She was almost certainly an intelligence operative. He knew. He didn't care. If the BPS discovered this, his career would end—and possibly his life. Wallace knows. Wallace knows everything.",
+                    content: "During a summit in Moscow, Marshall had a brief affair with a Soviet diplomat, Natalia Ivanova. She was almost certainly an intelligence operative. He knew. He didn't care. If the BPS discovered this, his career would end—and possibly his life. Wallace knows. Wallace knows everything.",
                     tier: "discoverable",
                     category: "crime",
                     canBeUsedAsLeverage: true,
@@ -2034,7 +2034,7 @@ class CampaignLoader {
                     relationshipType: "ally",
                     description: "Fellow Moscow travelers. They trained together before the Revolution, shared the experience of seeing the Soviet Union from the inside. Graham knows about Chambers' divided loyalties. Chambers knows Graham has his own Soviet connections. Mutual blackmail keeps them close.",
                     sentiment: 55,
-                    historicalOrigin: "International Lenin School, 1934"
+                    historicalOrigin: "International Lenin School"
                 )
             ],
             historicalConnections: ["siege_detroit"]
@@ -2154,7 +2154,7 @@ class CampaignLoader {
             backstory: "Born in Boston to an academic family. Father was an economics professor at Harvard (pre-purge); mother a librarian. Showed mathematical brilliance from childhood—could solve differential equations at twelve. Studied at the Party Academy after the Revolution, one of the few genuine intellectual talents the system produced. Rose through the Planning Commission on pure competence. Kowalski is his political cover; Carpenter does the actual work. He knows the economic statistics are falsified. He knows the Plans are built on lies. He continues because someone has to try to make the system work—and if not him, who?",
             ageCategory: "young",
             originLocation: "Boston, Massachusetts",
-            familyBackground: "Academic family. Father died in the Intellectuals' Purge of 1944—officially 'heart failure,' actually beaten to death in detention. Mother survived by denying any connection to bourgeois academics. Carpenter carries his father's pocket watch; it's the only thing he has left. Married to a fellow economist; they discuss input-output tables over dinner. One son in the Youth League.",
+            familyBackground: "Academic family. Father died in the Intellectuals' Purge—officially 'heart failure,' actually beaten to death in detention. Mother survived by denying any connection to bourgeois academics. Carpenter carries his father's pocket watch; it's the only thing he has left. Married to a fellow economist; they discuss input-output tables over dinner. One son in the Youth League.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Hidden Reports",
@@ -2217,7 +2217,7 @@ class CampaignLoader {
             secrets: [
                 CharacterSecretTemplate(
                     title: "The First Falsification",
-                    content: "In 1943, Thompson's factory was failing its quota. Rather than face the consequences, he falsified the production reports. When inspectors came, he bribed them with factory supplies. He's been falsifying numbers ever since. Everyone does it. This is how the system works. But he remembers when he believed in honest work.",
+                    content: "During the Purges, Thompson's factory was failing its quota. Rather than face the consequences, he falsified the production reports. When inspectors came, he bribed them with factory supplies. He's been falsifying numbers ever since. Everyone does it. This is how the system works. But he remembers when he believed in honest work.",
                     tier: "discoverable",
                     category: "corruption",
                     canBeUsedAsLeverage: true,
@@ -2269,14 +2269,14 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 60,
-            backstory: "Born on a Kansas wheat farm. Survived the Dust Bowl and the Great Collectivization—both nearly killed her family. Earned a scholarship to the Party Academy on pure merit, one of the few farm girls to make it. Became an expert on agricultural planning because she knew what happened when the plans were wrong. The Kansas Famine of 1943 killed her younger brother; the official records say it never happened. She works within the system to prevent another famine, fighting for realistic quotas against ideological fantasies. Carpenter is her ally; together they try to inject reality into the Planning Commission's dreams.",
+            backstory: "Born on a Kansas wheat farm. Survived the Dust Bowl and the Great Collectivization—both nearly killed her family. Earned a scholarship to the Party Academy on pure merit, one of the few farm girls to make it. Became an expert on agricultural planning because she knew what happened when the plans were wrong. The Kansas Famine killed her younger brother; the official records say it never happened. She works within the system to prevent another famine, fighting for realistic quotas against ideological fantasies. Carpenter is her ally; together they try to inject reality into the Planning Commission's dreams.",
             ageCategory: "young",
             originLocation: "Kansas (Plains Zone)",
-            familyBackground: "Farm family, Swedish-American immigrants. Grandfather homesteaded the land in 1890. Parents still farm the collective; they pretend to believe in collectivization. Younger brother Thomas died in the 1943 famine—officially 'fever.' Never married; the work consumes her. Has a cat named Wheat.",
+            familyBackground: "Farm family, Swedish-American immigrants. Grandfather homesteaded the land in 1890. Parents still farm the collective; they pretend to believe in collectivization. Younger brother Thomas died in the Kansas Famine—officially 'fever.' Never married; the work consumes her. Has a cat named Wheat.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Kansas Famine",
-                    content: "Erickson knows the Kansas Famine of 1943 was caused by impossible quotas and forced collectivization. She knows thousands died, including her brother. The official history says it never happened. She keeps a private journal documenting the truth. If discovered, it would be treason.",
+                    content: "Erickson knows the Kansas Famine was caused by impossible quotas and forced collectivization. She knows thousands died, including her brother. The official history says it never happened. She keeps a private journal documenting the truth. If discovered, it would be treason.",
                     tier: "discoverable",
                     category: "political",
                     canBeUsedAsLeverage: true,
@@ -2332,7 +2332,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 50,
-            backstory: "Born James Fletcher in 1900 in Ohio, son of a railroad man and a schoolteacher. Joined the revolutionary movement during the Depression, drawn by ideology rather than hardship—his family was comfortable. During the Civil War, served as a political commissar attached to General Steele's forces. Was present at the Battle of Chicago, where he earned his reputation for holding wavering units together through sheer force of will. After the Revolution, rose through the Political Directorate. Survived the Purges by denouncing General Steele—his former commander, his friend—as a traitor. The betrayal haunts him, but he tells himself it was necessary. Married into the Briggs family; his wife is Commissar Briggs's niece.",
+            backstory: "Born James Fletcher in Ohio, son of a railroad man and a schoolteacher. Joined the revolutionary movement during the Depression, drawn by ideology rather than hardship—his family was comfortable. During the Civil War, served as a political commissar attached to General Steele's forces. Was present at the Battle of Chicago, where he earned his reputation for holding wavering units together through sheer force of will. After the Revolution, rose through the Political Directorate. Survived the Purges by denouncing General Steele—his former commander, his friend—as a traitor. The betrayal haunts him, but he tells himself it was necessary. Married into the Briggs family; his wife is Commissar Briggs's niece.",
             ageCategory: "middle-aged",
             originLocation: "Columbus, Ohio",
             familyBackground: "Middle-class family with no revolutionary credentials. Fletcher invented a working-class backstory early in his career; the lie has never been exposed. Married to Margaret Briggs; three children, all in Party positions. His eldest son serves in the Political Directorate under him.",
@@ -2363,7 +2363,7 @@ class CampaignLoader {
                     relationshipType: "warComrade",
                     description: "They fought together under Steele. Both survived by betraying him. Neither speaks of it, but the shared guilt binds them. Carter respects Fletcher's political skills; Fletcher respects Carter's military credibility.",
                     sentiment: 55,
-                    historicalOrigin: "Battle of Chicago, 1937"
+                    historicalOrigin: "Battle of Chicago"
                 ),
                 CharacterRelationshipTemplate(
                     targetCharacterId: "bellows",
@@ -2450,7 +2450,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 55,
-            backstory: "Born Marco Orlando in 1915 in New York's Italian immigrant community. Father ran a small grocery; mother took in laundry. Joined the revolutionary movement before the Revolution, drawn by its promise of equality for immigrants. During the Civil War, served as a translator and liaison officer—the army needed men who spoke multiple languages. After the Revolution, transitioned into political work, bridging military and Party cultures. Rose through quiet competence rather than brilliance. Neither Fletcher nor Bellows sees him as a threat, which is exactly how he likes it.",
+            backstory: "Born Marco Orlando in New York's Italian immigrant community. Father ran a small grocery; mother took in laundry. Joined the revolutionary movement before the Revolution, drawn by its promise of equality for immigrants. During the Civil War, served as a translator and liaison officer—the army needed men who spoke multiple languages. After the Revolution, transitioned into political work, bridging military and Party cultures. Rose through quiet competence rather than brilliance. Neither Fletcher nor Bellows sees him as a threat, which is exactly how he likes it.",
             ageCategory: "young",
             originLocation: "New York City (Little Italy)",
             familyBackground: "Italian-American immigrant family. Father's grocery was collectivized after the Revolution; he died shortly after. Mother still lives in the old apartment. Orlando sends her money. Married to a schoolteacher from the Bronx; three children. The family speaks Italian at home—a small act of cultural preservation.",
@@ -2501,7 +2501,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 60,
-            backstory: "Born David Spencer in 1925 in Washington, DC—a child of the Revolution, too young to remember the old world. Father was a mid-level Party official; mother a schoolteacher. Grew up on revolutionary stories and Youth League camps. Joined the army at eighteen, served during the Intervention War. Saw combat against Canadian forces in the Pacific Northwest. Returned idealistic rather than broken—rare in veterans. Bellows noticed him, saw the genuine faith, the ability to inspire troops. Rising fast through the Political Directorate. Still believes the Revolution was good, the system can be reformed, the future can be bright. His superiors find his optimism useful and slightly embarrassing.",
+            backstory: "Born David Spencer in Washington, DC—a child of the Revolution, too young to remember the old world. Father was a mid-level Party official; mother a schoolteacher. Grew up on revolutionary stories and Youth League camps. Joined the army at eighteen, served during the Intervention War. Saw combat against Canadian forces in the Pacific Northwest. Returned idealistic rather than broken—rare in veterans. Bellows noticed him, saw the genuine faith, the ability to inspire troops. Rising fast through the Political Directorate. Still believes the Revolution was good, the system can be reformed, the future can be bright. His superiors find his optimism useful and slightly embarrassing.",
             ageCategory: "very young",
             originLocation: "Washington, DC",
             familyBackground: "Party family, born after the Revolution. Father works in the Ministry of Culture; mother teaches at a Party school. Married to his childhood sweetheart; expecting their first child. The future seems bright. He has never known hunger, never known fear of the state. This innocence is both his strength and his blind spot.",
@@ -2564,7 +2564,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 55,
-            backstory: "Born in Boston's Irish-American community. Father was a longshoreman and union organizer; mother worked in a textile mill. Joined the revolutionary movement during the Depression, organized the Boston docks during the General Strike of 1936. Fought in the Civil War, led dock workers' militias in harbor defense. After the Revolution, returned to the Northeast as a Party official. Rose to Governor by knowing every factory, every union hall, every neighborhood in his zone. Prefers his regional power to the snake pit of Washington. The Northeast runs smoothly because Sheridan knows his people—and they know him.",
+            backstory: "Born in Boston's Irish-American community. Father was a longshoreman and union organizer; mother worked in a textile mill. Joined the revolutionary movement during the Depression, organized the Boston docks during the General Strike. Fought in the Civil War, led dock workers' militias in harbor defense. After the Revolution, returned to the Northeast as a Party official. Rose to Governor by knowing every factory, every union hall, every neighborhood in his zone. Prefers his regional power to the snake pit of Washington. The Northeast runs smoothly because Sheridan knows his people—and they know him.",
             ageCategory: "middle-aged",
             originLocation: "Boston, Massachusetts",
             familyBackground: "Irish-American working-class family. Father died in a dock accident during the Revolution. Mother still lives in South Boston, goes to Mass every Sunday—Sheridan pretends not to know. Married to a former textile worker; four children scattered across the zone in various positions. The family is his power base.",
@@ -2906,7 +2906,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 60,
-            backstory: "Born Jan Kowalczyk in 1923 in Pittsburgh's Polish community—no relation to Director Kowalski despite the similar names. Father was a steelworker who died at the Pittsburgh Massacre; mother raised six children on workers' compensation and community support. Jan enlisted at eighteen, fought in the Intervention War against Canadian forces. Saw enough combat to understand that soldiers need more than orders—they need reasons. Transferred to political work, rose through the ranks by being genuine. The troops like him; he actually listens. Spencer is his model of what a commissar should be. His future depends on staying authentic in a system that rewards cynicism.",
+            backstory: "Born Jan Kowalczyk in Pittsburgh's Polish community—no relation to Director Kowalski despite the similar names. Father was a steelworker who died at the Pittsburgh Massacre; mother raised six children on workers' compensation and community support. Jan enlisted at eighteen, fought in the Intervention War against Canadian forces. Saw enough combat to understand that soldiers need more than orders—they need reasons. Transferred to political work, rose through the ranks by being genuine. The troops like him; he actually listens. Spencer is his model of what a commissar should be. His future depends on staying authentic in a system that rewards cynicism.",
             ageCategory: "very young",
             originLocation: "Pittsburgh, Pennsylvania",
             familyBackground: "Polish-American working-class family, Pittsburgh Massacre martyrdom. Mother still lives in the old neighborhood. Five siblings scattered across the Republic—one brother is a zone party secretary, another works the docks, three sisters married to workers and soldiers. Strong family bonds. Married to his high school sweetheart; three young children. The family waits anxiously whenever he's deployed.",
@@ -2948,7 +2948,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 55,
-            backstory: "Born Robert Kennedy in 1919 in New York City—Irish-American family, father a Tammany Hall precinct captain who switched sides during the Revolution. Learned politics at his father's knee: who's up, who's down, who owes whom. Rose through the Youth League by being useful—remembering names, tracking favors, knowing everyone's secrets. Assigned as an Instructor of the Central Committee, traveling to zones to evaluate local cadres. His reports can make or break careers. Lives in trains and zone capital hotels, constantly moving, constantly watching. Patterson finds him useful; he hopes she remembers that when promotion time comes.",
+            backstory: "Born Robert Kennedy in New York City—Irish-American family, father a Tammany Hall precinct captain who switched sides during the Revolution. Learned politics at his father's knee: who's up, who's down, who owes whom. Rose through the Youth League by being useful—remembering names, tracking favors, knowing everyone's secrets. Assigned as an Instructor of the Central Committee, traveling to zones to evaluate local cadres. His reports can make or break careers. Lives in trains and zone capital hotels, constantly moving, constantly watching. Patterson finds him useful; he hopes she remembers that when promotion time comes.",
             ageCategory: "young",
             originLocation: "New York City",
             familyBackground: "Irish-American political family. Father was Tammany Hall, switched to the Revolution at the start of the Revolution—opportunism or genuine conversion, no one's sure. Mother ran the household like a ward office. Kennedy inherited his father's talent for political machinery. Married briefly; divorced after she couldn't handle his constant travel. No children. The Party is his family now.",

@@ -143,19 +143,19 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Philadelphia Public Schools",
-                    years: "1911-1919",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Left school at 14 to work in the factories"
                 ),
                 EducationEntry(
                     institution: "Workers' Night School",
-                    years: "1925-1928",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Self-educated in Marxist theory and economics"
                 ),
                 EducationEntry(
                     institution: "International Lenin School, Moscow",
-                    years: "1932-1933",
+                    years: "pre-Revolution",
                     degree: "Certificate in Revolutionary Leadership",
                     notes: "One year training with the Comintern; met future Soviet leaders"
                 )
@@ -173,7 +173,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "James Mitchell Sr.",
                     relation: "Father",
-                    status: "Deceased (1932)",
+                    status: "Deceased",
                     occupation: "Factory Foreman",
                     notes: "Died of tuberculosis. Union man who taught Harold the importance of solidarity.",
                     isSecret: false
@@ -181,7 +181,7 @@ class CharacterBiographyProvider {
                 mother: FamilyMember(
                     name: "Mary Mitchell (née O'Brien)",
                     relation: "Mother",
-                    status: "Deceased (1938)",
+                    status: "Deceased",
                     occupation: "Seamstress",
                     notes: "Irish immigrant. Died during the Civil War, caught in crossfire in Philadelphia.",
                     isSecret: false
@@ -189,7 +189,7 @@ class CharacterBiographyProvider {
                 spouse: FamilyMember(
                     name: "Eleanor Mitchell (née Kowalski)",
                     relation: "Wife",
-                    status: "Deceased (1943)",
+                    status: "Deceased",
                     occupation: "Party Organizer",
                     notes: "Committed suicide after learning Harold had signed death warrants for her cousins during the Purges. Official cause: 'illness.'",
                     isSecret: true
@@ -208,7 +208,7 @@ class CharacterBiographyProvider {
                     FamilyMember(
                         name: "Thomas Mitchell",
                         relation: "Brother",
-                        status: "Deceased (1937)",
+                        status: "Deceased",
                         occupation: "Steel Worker",
                         notes: "Killed at the Battle of Chicago. A genuine martyr.",
                         isSecret: false
@@ -228,7 +228,7 @@ class CharacterBiographyProvider {
                 joinedMovement: "during the Depression",
                 recruitedBy: "Chairman Robert Fitzgerald",
                 civilWarRole: "Philadelphia Workers' Militia Commander; secured the city during the March on Washington",
-                purgeExperience: "Signed death warrants for 47 people, including wife's cousins. Protected by Fitzgerald until 1948.",
+                purgeExperience: "Signed death warrants for 47 people, including wife's cousins. Protected by Fitzgerald until Fitzgerald died.",
                 keyMoments: [
                     HistoricalMoment(
                         era: "during the Revolution",
@@ -254,7 +254,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "mitchell_wife_suicide",
                     title: "Eleanor's Suicide",
-                    fullContent: "Eleanor Mitchell did not die of 'illness' in 1943. She hanged herself in their apartment after discovering that Harold had personally signed the death warrants for her cousins, the Kowalski family members accused in the Midwest Conspiracy. She left a note that Wallace confiscated. The note is in Wallace's private files. Harold found her body. He has never forgiven himself, but he has never stopped signing warrants either.",
+                    fullContent: "Eleanor Mitchell did not die of 'illness' during the Purges. She hanged herself in their apartment after discovering that Harold had personally signed the death warrants for her cousins, the Kowalski family members accused in the Midwest Conspiracy. She left a note that Wallace confiscated. The note is in Wallace's private files. Harold found her body. He has never forgiven himself, but he has never stopped signing warrants either.",
                     discoveryDifficulty: 8,
                     evidenceLocations: ["Wallace's private vault", "Dr. Petrov's medical records (sealed)", "The apartment building superintendent's memory"],
                     potentialConsequences: "If exposed, would shatter Mitchell's image as the 'Gray Man' who does what's necessary without emotion. His son would have confirmation of his suspicions. Political rivals could use it to paint him as unstable.",
@@ -264,7 +264,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "mitchell_fitzgerald",
                     title: "The Night Fitzgerald Died",
-                    fullContent: "Mitchell was with Fitzgerald the night of March 14, 1948. They were alone in Fitzgerald's study, drinking whiskey, discussing the future. Fitzgerald was ill—genuinely ill—but not dying. He was planning reforms that would have weakened the security apparatus. Wallace had asked Mitchell to 'make sure the Chairman gets his medicine.' Mitchell gave him the pills. Fitzgerald never woke up. Mitchell tells himself it was mercy. He knows it was murder.",
+                    fullContent: "Mitchell was with Fitzgerald the night of the night Fitzgerald died. They were alone in Fitzgerald's study, drinking whiskey, discussing the future. Fitzgerald was ill—genuinely ill—but not dying. He was planning reforms that would have weakened the security apparatus. Wallace had asked Mitchell to 'make sure the Chairman gets his medicine.' Mitchell gave him the pills. Fitzgerald never woke up. Mitchell tells himself it was mercy. He knows it was murder.",
                     discoveryDifficulty: 10,
                     evidenceLocations: ["Wallace's memory", "The pharmacist who filled the prescription (deceased)", "Mitchell's own conscience"],
                     potentialConsequences: "Absolute destruction. The murder of the Revolution's father would delegitimize the entire current government. Mitchell would be executed. Wallace would fall with him.",
@@ -275,13 +275,13 @@ class CharacterBiographyProvider {
             quotations: [
                 CharacterQuote(
                     quote: "The Revolution asked everything of us. We gave it. Some of us are still paying.",
-                    context: "Private conversation with Wallace, 1950",
+                    context: "Private conversation with Wallace, years after the Purges",
                     era: "present day",
                     isPublic: false
                 ),
                 CharacterQuote(
                     quote: "History will judge us by what we built, not by what we destroyed to build it.",
-                    context: "Address to the Party Congress, 1949",
+                    context: "Address to the Party Congress",
                     era: "in recent years",
                     isPublic: true
                 ),
@@ -310,13 +310,13 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Public School 97, Manhattan",
-                    years: "1904-1912",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Immigrant education. Learned English as second language."
                 ),
                 EducationEntry(
                     institution: "City College of New York",
-                    years: "1916-1918",
+                    years: "pre-Revolution",
                     degree: "Incomplete (left for the war)",
                     notes: "Studied law. Too poor to continue after father's death."
                 )
@@ -333,7 +333,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "Aaron Wallace (né Walinsky)",
                     relation: "Father",
-                    status: "Deceased (1917)",
+                    status: "Deceased",
                     occupation: "Tailor",
                     notes: "Jewish immigrant from Poland. Died of influenza. Changed family name to Wallace for assimilation.",
                     isSecret: false
@@ -341,7 +341,7 @@ class CharacterBiographyProvider {
                 mother: FamilyMember(
                     name: "Rebecca Wallace (née Goldstein)",
                     relation: "Mother",
-                    status: "Deceased (1940)",
+                    status: "Deceased",
                     occupation: "Seamstress",
                     notes: "Died in a tenement fire during the Revolution. Wallace was too busy to attend the funeral.",
                     isSecret: false
@@ -349,7 +349,7 @@ class CharacterBiographyProvider {
                 spouse: FamilyMember(
                     name: "Sarah Wallace (née Bernstein)",
                     relation: "Wife",
-                    status: "Deceased (1945)",
+                    status: "Deceased",
                     occupation: "Teacher",
                     notes: "Died of cancer. The only person Wallace ever truly loved. He visits her grave weekly.",
                     isSecret: false
@@ -358,7 +358,7 @@ class CharacterBiographyProvider {
                     FamilyMember(
                         name: "David Wallace",
                         relation: "Son",
-                        status: "Deceased (1942)",
+                        status: "Deceased",
                         occupation: "Soldier",
                         notes: "Killed in the Intervention War, fighting Canadian forces in the Pacific Northwest. His death broke something in Wallace.",
                         isSecret: false
@@ -414,7 +414,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "wallace_blackwood_murder",
                     title: "Blackwood's End",
-                    fullContent: "Director Samuel Blackwood did not die in an 'accident' in 1945. Wallace arranged his death to look like a car crash. Blackwood knew too much and was becoming erratic—he might have exposed the fabricated nature of many Purge trials. Wallace removed him surgically. He inherited Blackwood's files, his methods, and his guilt. He tells himself he was better than Blackwood. He hopes it's true.",
+                    fullContent: "Director Samuel Blackwood did not die in an 'accident' during the Purges. Wallace arranged his death to look like a car crash. Blackwood knew too much and was becoming erratic—he might have exposed the fabricated nature of many Purge trials. Wallace removed him surgically. He inherited Blackwood's files, his methods, and his guilt. He tells himself he was better than Blackwood. He hopes it's true.",
                     discoveryDifficulty: 9,
                     evidenceLocations: ["The mechanic who 'serviced' Blackwood's car (deceased)", "Wallace's private journals (if they exist)", "Blackwood's hidden papers (location unknown)"],
                     potentialConsequences: "Would prove the security apparatus has been run by murderers and liars from the beginning. Would delegitimize the entire Purge apparatus.",
@@ -435,13 +435,13 @@ class CharacterBiographyProvider {
             quotations: [
                 CharacterQuote(
                     quote: "I know where the bodies are buried, Comrade. I buried most of them myself.",
-                    context: "To a rival who threatened exposure, 1946",
+                    context: "To a rival who threatened exposure, after the Purges",
                     era: "after the Purges",
                     isPublic: false
                 ),
                 CharacterQuote(
                     quote: "The Revolution requires clean hands and dirty work. I do the dirty work so others can keep their hands clean.",
-                    context: "To a young officer questioning methods, 1948",
+                    context: "To a young officer questioning methods",
                     era: "years later",
                     isPublic: false
                 ),
@@ -470,13 +470,13 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Segregated Public Schools, Macon",
-                    years: "1908-1916",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Education ended at 14. Jim Crow South limited opportunities."
                 ),
                 EducationEntry(
                     institution: "Army Correspondence Courses",
-                    years: "1937-1942",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Self-educated in military history and tactics while fighting"
                 )
@@ -494,7 +494,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "Elijah Carter",
                     relation: "Father",
-                    status: "Deceased (1918)",
+                    status: "Deceased",
                     occupation: "Sharecropper",
                     notes: "Lynched by a white mob for 'disrespecting' a landlord. Raymond was sixteen.",
                     isSecret: false
@@ -502,7 +502,7 @@ class CharacterBiographyProvider {
                 mother: FamilyMember(
                     name: "Ruth Carter (née Jackson)",
                     relation: "Mother",
-                    status: "Deceased (1930)",
+                    status: "Deceased",
                     occupation: "Domestic Worker",
                     notes: "Died of exhaustion and heartbreak after years of poverty. Raymond carries her photograph.",
                     isSecret: false
@@ -510,7 +510,7 @@ class CharacterBiographyProvider {
                 spouse: FamilyMember(
                     name: "Elizabeth Carter (née Briggs)",
                     relation: "Wife",
-                    status: "Deceased (1947)",
+                    status: "Deceased",
                     occupation: "Teacher",
                     notes: "Married into the Briggs family—Commissar Briggs's niece. Died of pneumonia. A genuine love match despite the political advantages.",
                     isSecret: false
@@ -537,7 +537,7 @@ class CharacterBiographyProvider {
                     FamilyMember(
                         name: "James Carter",
                         relation: "Brother",
-                        status: "Deceased (1937)",
+                        status: "Deceased",
                         occupation: "Worker",
                         notes: "Killed at Chicago. Raymond held him as he died.",
                         isSecret: false
@@ -622,7 +622,7 @@ class CharacterBiographyProvider {
                 ),
                 CharacterQuote(
                     quote: "Steele was a better soldier than me. I'm alive because I was better at politics. That's not a compliment.",
-                    context: "To Fletcher, drunk, 1950",
+                    context: "To Fletcher, drunk, years after the Purges",
                     era: "present day",
                     isPublic: false
                 )
@@ -645,13 +645,13 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Boston Public Schools",
-                    years: "1916-1924",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Irish Catholic school. Excelled academically."
                 ),
                 EducationEntry(
                     institution: "Workers' Academy",
-                    years: "1930-1932",
+                    years: "pre-Revolution",
                     degree: "Certificate in Revolutionary Theory",
                     notes: "Top of her class. Attracted Fitzgerald's attention."
                 )
@@ -667,7 +667,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "Thomas Patterson",
                     relation: "Father",
-                    status: "Deceased (1936)",
+                    status: "Deceased",
                     occupation: "Longshoreman",
                     notes: "Killed in the March on Washington. A genuine martyr.",
                     isSecret: false
@@ -675,7 +675,7 @@ class CharacterBiographyProvider {
                 mother: FamilyMember(
                     name: "Mary Patterson (née O'Brien)",
                     relation: "Mother",
-                    status: "Deceased (1948)",
+                    status: "Deceased",
                     occupation: "Factory Worker",
                     notes: "Died of heart failure. Eleanor was too busy to be at her bedside.",
                     isSecret: false
@@ -704,7 +704,7 @@ class CharacterBiographyProvider {
             ),
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
-                recruitedBy: "Father Brennan (denounced 1943)",
+                recruitedBy: "Father Brennan (denounced during the Purges)",
                 civilWarRole: "Youth League organizer in Boston. Kept the young people motivated during the siege.",
                 purgeExperience: "Denounced her mentor, Father Brennan, to survive. His children were sent to orphanages. She has never seen them again.",
                 keyMoments: [
@@ -726,7 +726,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "patterson_brennan",
                     title: "The Brennan Lie",
-                    fullContent: "Father Michael Brennan was a Catholic priest who secretly joined the revolutionary movement. He recruited young Eleanor Patterson, taught her to read Marx, gave her purpose. During the Religious Roundup of 1943, Eleanor was pressured to denounce him as a Vatican agent. She did. She testified to conversations that never happened, meetings that never occurred. Brennan was executed. His three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages. Eleanor never learned what happened to them. She has spent ten years trying not to find out. She collects poetry because Brennan taught her to love it. She never reads religious poetry—it hurts too much.",
+                    fullContent: "Father Michael Brennan was a Catholic priest who secretly joined the revolutionary movement. He recruited young Eleanor Patterson, taught her to read Marx, gave her purpose. During the Religious Roundup during the Purges, Eleanor was pressured to denounce him as a Vatican agent. She did. She testified to conversations that never happened, meetings that never occurred. Brennan was executed. His three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages. Eleanor never learned what happened to them. She has spent ten years trying not to find out. She collects poetry because Brennan taught her to love it. She never reads religious poetry—it hurts too much.",
                     discoveryDifficulty: 7,
                     evidenceLocations: ["Wallace's files on the Brennan case", "The orphanage records", "Surviving parishioners from Brennan's church"],
                     potentialConsequences: "Would expose Patterson as someone who destroyed an innocent man to save herself. The Brennan children, if found, could testify to their father's character.",
@@ -772,13 +772,13 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Pittsburgh Public Schools",
-                    years: "1918-1928",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Polish immigrant community school. Showed mathematical talent."
                 ),
                 EducationEntry(
                     institution: "University of Chicago",
-                    years: "1928-1932",
+                    years: "pre-Revolution",
                     degree: "Bachelor of Science, Economics",
                     notes: "Pre-purge university. Genuinely talented at mathematics."
                 )
@@ -794,7 +794,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "Adam Kowalski",
                     relation: "Father",
-                    status: "Deceased (1927)",
+                    status: "Deceased",
                     occupation: "Steel Mill Worker",
                     notes: "Died in a mill accident. Stefan was fifteen. Swore never to work with his hands.",
                     isSecret: false
@@ -854,7 +854,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "kowalski_famine",
                     title: "The Kansas Numbers",
-                    fullContent: "During the Kansas Famine of 1943, Kowalski's office produced agricultural statistics showing record grain production in the Plains Zone. In reality, collectivization quotas were killing people. Thousands died while his reports showed success. He knew. He produced the numbers anyway because the alternative was being accused of 'spreading defeatism.' Laura Erickson's brother was one of those who died. If she ever sees the original data Kowalski suppressed, she will know he helped kill her family.",
+                    fullContent: "During the Kansas Famine during the Purges, Kowalski's office produced agricultural statistics showing record grain production in the Plains Zone. In reality, collectivization quotas were killing people. Thousands died while his reports showed success. He knew. He produced the numbers anyway because the alternative was being accused of 'spreading defeatism.' Laura Erickson's brother was one of those who died. If she ever sees the original data Kowalski suppressed, she will know he helped kill her family.",
                     discoveryDifficulty: 6,
                     evidenceLocations: ["Original data files (if they still exist)", "Erickson's private research", "Surviving witnesses from the Plains Zone"],
                     potentialConsequences: "Would expose Kowalski as complicit in mass death. Would make him an enemy of Erickson and anyone who lost family in Kansas.",
@@ -894,13 +894,13 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Minneapolis Public Schools",
-                    years: "1914-1924",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Working-class education"
                 ),
                 EducationEntry(
                     institution: "Workers' Night School",
-                    years: "1928-1932",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Self-educated in Marxist theory"
                 )
@@ -987,7 +987,7 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Baltimore Streets",
-                    years: "1914-1924",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Mostly self-taught. Learned to survive."
                 )
@@ -1002,7 +1002,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "Thomas Williams",
                     relation: "Father",
-                    status: "Deceased (1932)",
+                    status: "Deceased",
                     occupation: "Dockworker",
                     notes: "Drank himself to death after mother died.",
                     isSecret: false
@@ -1010,7 +1010,7 @@ class CharacterBiographyProvider {
                 mother: FamilyMember(
                     name: "Mary Williams",
                     relation: "Mother",
-                    status: "Deceased (1934)",
+                    status: "Deceased",
                     occupation: "Seamstress",
                     notes: "Died of tuberculosis.",
                     isSecret: false
@@ -1084,7 +1084,7 @@ class CharacterBiographyProvider {
             education: [
                 EducationEntry(
                     institution: "Columbus Public Schools",
-                    years: "1906-1918",
+                    years: "pre-Revolution",
                     degree: nil,
                     notes: "Middle-class education—not working-class as he claims"
                 )
@@ -1099,7 +1099,7 @@ class CharacterBiographyProvider {
                 father: FamilyMember(
                     name: "Arthur Fletcher",
                     relation: "Father",
-                    status: "Deceased (1945)",
+                    status: "Deceased",
                     occupation: "Railroad Supervisor (not worker as claimed)",
                     notes: "Middle-class background Fletcher has hidden",
                     isSecret: true
@@ -1107,7 +1107,7 @@ class CharacterBiographyProvider {
                 mother: FamilyMember(
                     name: "Elizabeth Fletcher (née Harper)",
                     relation: "Mother",
-                    status: "Deceased (1940)",
+                    status: "Deceased",
                     occupation: "Schoolteacher",
                     notes: "The family had a piano.",
                     isSecret: true
