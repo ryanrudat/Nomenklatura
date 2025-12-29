@@ -1316,18 +1316,129 @@ struct CharacterDetailView: View {
 
     // MARK: - INTEL Tab
 
+    /// Required clearance level to view full intel (based on character's position)
+    private var intelClearanceRequired: Int {
+        guard let positionIndex = character.positionIndex else { return 3 }
+        // Higher-ranking characters require higher clearance to view their intel
+        if positionIndex >= 7 { return 7 }       // Standing Committee members
+        if positionIndex >= 5 { return 5 }       // Senior officials
+        if positionIndex >= 3 { return 4 }       // Mid-level officials
+        return 3                                  // Junior officials
+    }
+
+    /// Check if player has clearance to view this character's full intel
+    private var hasIntelClearance: Bool {
+        guard let game = game else { return true }
+        let playerClearance = min(game.currentPositionIndex + 1, 8)
+        return playerClearance >= intelClearanceRequired
+    }
+
     private var intelTabContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Personality assessment
-            personalityAssessment
-
-            // Risk assessment
-            riskAssessmentSection
-
-            // History if available
-            if let game = game {
-                characterHistorySection(game: game)
+            // Classification header
+            HStack {
+                DocumentClassificationBadge(
+                    classification: intelClearanceRequired >= 6 ? .secret : .confidential,
+                    compact: true
+                )
+                Spacer()
+                if !hasIntelClearance {
+                    Text("PARTIAL ACCESS")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundColor(FiftiesColors.stampRed)
+                }
             }
+
+            if hasIntelClearance {
+                // Full access - show all intel
+                personalityAssessment
+                riskAssessmentSection
+
+                if let game = game {
+                    characterHistorySection(game: game)
+                }
+            } else {
+                // Restricted access - show redacted intel
+                redactedIntelSection
+            }
+        }
+    }
+
+    /// Redacted intel section for players without sufficient clearance
+    private var redactedIntelSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Redacted personality section
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("PERSONALITY PROFILE")
+                        .font(.system(size: 10, weight: .bold))
+                        .tracking(1)
+                        .foregroundColor(theme.inkGray)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                        Text("CLASSIFIED")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .foregroundColor(FiftiesColors.stampRed)
+                }
+
+                // Redacted trait grid
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    ForEach(["Ambitious", "Paranoid", "Ruthless", "Competent", "Loyal", "Corrupt"], id: \.self) { _ in
+                        HStack {
+                            Text("████████")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(.black)
+                            Spacer()
+                            Text("███")
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundColor(.black)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .background(theme.inkLight.opacity(0.1))
+                    }
+                }
+            }
+
+            // Redacted risk section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("THREAT ASSESSMENT")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                HStack {
+                    Text("Risk Level:")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.inkGray)
+                    Spacer()
+                    Text("[REDACTED - LEVEL \(intelClearanceRequired) CLEARANCE REQUIRED]")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(FiftiesColors.stampRed)
+                }
+                .padding(12)
+                .background(FiftiesColors.stampRed.opacity(0.05))
+                .overlay(
+                    Rectangle()
+                        .stroke(FiftiesColors.stampRed.opacity(0.3), lineWidth: 1)
+                )
+            }
+
+            // Clearance upgrade notice
+            VStack(spacing: 8) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 24))
+                    .foregroundColor(theme.inkLight)
+                Text("Full intelligence profile requires\nLevel \(intelClearanceRequired) security clearance")
+                    .font(.system(size: 10, design: .monospaced))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(theme.inkGray)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
         }
     }
 

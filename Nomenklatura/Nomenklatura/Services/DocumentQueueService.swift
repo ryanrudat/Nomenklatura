@@ -101,6 +101,9 @@ class DocumentQueueService: ObservableObject {
         categoriesGeneratedThisTurn.removeAll()
         crisisDocumentGeneratedThisTurn = false
 
+        // Generate pending follow-up documents FIRST (these have narrative priority)
+        generatePendingFollowUpDocuments(game: game)
+
         // Also track existing document titles to avoid duplicates
         let existingTitles = Set(getActiveDocuments(for: game).map { $0.title })
 
@@ -232,7 +235,8 @@ class DocumentQueueService: ObservableObject {
             weights[.economic] = 30
         }
 
-        // TODO: Adjust based on player's role when role system is implemented
+        // Apply role-based document weighting based on player's track and position
+        applyRoleBasedWeights(&weights, game: game)
 
         // Weighted random selection
         let totalWeight = weights.values.reduce(0, +)
@@ -246,6 +250,63 @@ class DocumentQueueService: ObservableObject {
         }
 
         return .political // Default fallback
+    }
+
+    /// Apply role-based document weighting based on player's track and position
+    private func applyRoleBasedWeights(_ weights: inout [DocumentCategory: Double], game: Game) {
+        let playerTrack = game.currentCommittedTrack
+        let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+
+        // Adjust weights based on player's career track
+        // Players receive more documents relevant to their specialization
+        if let track = playerTrack {
+            switch track {
+            case .securityServices:
+                // Security track: 2x security documents, 1.5x crisis documents
+                weights[.security] = (weights[.security] ?? 15) * 2.0
+                weights[.crisis] = (weights[.crisis] ?? 3) * 1.5
+            case .economicPlanning:
+                // Economic track: 1.75x economic documents
+                weights[.economic] = (weights[.economic] ?? 20) * 1.75
+            case .militaryPolitical:
+                // Military track: 2x military documents
+                weights[.military] = (weights[.military] ?? 15) * 2.0
+            case .partyApparatus:
+                // Party track: 1.75x political, 1.5x personnel documents
+                weights[.political] = (weights[.political] ?? 20) * 1.75
+                weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
+            case .foreignAffairs:
+                // Foreign Affairs track: 2x diplomatic documents
+                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 2.0
+            case .stateMinistry:
+                // State Ministry: 1.5x economic, 1.5x political
+                weights[.economic] = (weights[.economic] ?? 20) * 1.5
+                weights[.political] = (weights[.political] ?? 20) * 1.5
+            case .regional:
+                // Regional track: 1.5x economic, 1.5x personnel (regional matters)
+                weights[.economic] = (weights[.economic] ?? 20) * 1.5
+                weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
+            case .shared:
+                // Shared track: No specific weighting - balanced documents
+                break
+            }
+        }
+
+        // Clearance-based filtering
+        // Low clearance players don't see crisis or high-sensitivity documents
+        if clearanceLevel < 3 {
+            weights[.crisis] = 0  // No crisis documents for low-level officials
+        }
+
+        // Higher positions see more personnel matters (promotions, transfers, etc.)
+        if clearanceLevel >= 5 {
+            weights[.personnel] = (weights[.personnel] ?? 15) * 1.3
+        }
+
+        // Very high positions see more diplomatic matters
+        if clearanceLevel >= 6 {
+            weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.2
+        }
     }
 
     // MARK: - Category-Specific Document Generators
@@ -1738,9 +1799,16 @@ class DocumentQueueService: ObservableObject {
         }
 
         // Trigger follow-up documents
-        if let _ = option.triggersDocument {
-            // TODO: Generate follow-up document based on triggerId
-            // For now, this is handled by flag system
+        if let triggerId = option.triggersDocument {
+            // Queue follow-up document for future generation
+            // Store the parent document ID and chain context for narrative continuity
+            let queueKey = "pending_doc_\(triggerId)"
+            if !game.flags.contains(queueKey) {
+                game.flags.append(queueKey)
+            }
+            // Also store the parent document ID for chain tracking
+            game.variables["doc_parent_\(triggerId)"] = document.id.uuidString
+            game.variables["doc_chain_\(triggerId)"] = document.chainId ?? document.id.uuidString
         }
 
         return option
@@ -1761,7 +1829,483 @@ class DocumentQueueService: ObservableObject {
         // Apply disposition change
         character.disposition += reaction.dispositionChange
 
-        // TODO: Queue a follow-up event if reaction is significant
+        // Queue a follow-up event if reaction is significant (disposition change >= 15 or <= -15)
+        if abs(reaction.dispositionChange) >= 15 {
+            let reactionType = reaction.dispositionChange > 0 ? "positive" : "negative"
+            let triggerId = "character_reaction_\(character.id.uuidString.prefix(8))_\(reactionType)"
+            if !game.flags.contains("pending_doc_\(triggerId)") {
+                game.flags.append("pending_doc_\(triggerId)")
+                game.variables["reaction_character_\(triggerId)"] = character.id.uuidString
+                game.variables["reaction_type_\(triggerId)"] = reactionType
+            }
+        }
+    }
+
+    // MARK: - Document Follow-Up Generation
+
+    /// Generate pending follow-up documents from queued triggers
+    func generatePendingFollowUpDocuments(game: Game) {
+        let pendingFlags = game.flags.filter { $0.hasPrefix("pending_doc_") }
+
+        for flag in pendingFlags {
+            let triggerId = flag.replacingOccurrences(of: "pending_doc_", with: "")
+
+            if let followUpDoc = createFollowUpDocument(triggerId: triggerId, game: game) {
+                followUpDoc.game = game
+                game.deskDocuments.append(followUpDoc)
+            }
+
+            // Clear the processed flag
+            game.flags.removeAll { $0 == flag }
+
+            // Clean up associated variables
+            game.variables.removeValue(forKey: "doc_parent_\(triggerId)")
+            game.variables.removeValue(forKey: "doc_chain_\(triggerId)")
+            game.variables.removeValue(forKey: "reaction_character_\(triggerId)")
+            game.variables.removeValue(forKey: "reaction_type_\(triggerId)")
+        }
+    }
+
+    /// Create a follow-up document based on trigger ID pattern
+    private func createFollowUpDocument(triggerId: String, game: Game) -> DeskDocument? {
+        let parentId = game.variables["doc_parent_\(triggerId)"]
+        let chainId = game.variables["doc_chain_\(triggerId)"]
+
+        // Match trigger patterns to document types
+        switch triggerId {
+        // Investigation follow-ups
+        case let id where id.hasPrefix("investigation_"):
+            return generateInvestigationFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Arrest follow-ups
+        case let id where id.hasPrefix("arrest_") || id.hasPrefix("arrested_"):
+            return generateArrestFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Appeal/denial follow-ups
+        case let id where id.hasPrefix("appeal_") || id.hasPrefix("denied_"):
+            return generateAppealFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Consequence reports
+        case let id where id.hasPrefix("consequence_"):
+            return generateConsequenceFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Character reactions
+        case let id where id.hasPrefix("character_reaction_"):
+            return generateCharacterReactionFollowUp(triggerId: id, game: game)
+
+        // Policy implementation follow-ups
+        case let id where id.hasPrefix("policy_"):
+            return generatePolicyFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        default:
+            return nil
+        }
+    }
+
+    // MARK: - Follow-Up Document Templates
+
+    /// Generate an investigation report following an investigation request
+    private func generateInvestigationFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let outcomes = [
+            ("evidence_found", "Investigation has uncovered concerning evidence", true),
+            ("nothing_found", "Investigation concluded with no actionable findings", false),
+            ("inconclusive", "Investigation results are inconclusive - more time needed", false)
+        ]
+
+        let (outcomeId, summary, requiresAction) = outcomes.randomElement()!
+
+        let body = """
+        INVESTIGATION REPORT
+        Reference: \(triggerId.uppercased())
+
+        Following your authorization, our agents conducted a thorough investigation.
+
+        FINDINGS: \(summary)
+
+        \(outcomeId == "evidence_found" ?
+            "Subject was observed engaging in unauthorized contacts. Documentation attached (classified).\n\nRECOMMENDED ACTION: Proceed to formal interrogation." :
+            outcomeId == "nothing_found" ?
+            "No evidence of wrongdoing was discovered. Subject appears to be a loyal citizen.\n\nRECOMMENDED ACTION: Close case file." :
+            "Further surveillance is recommended before drawing conclusions.\n\nRECOMMENDED ACTION: Extend investigation period.")
+
+        Awaiting your direction.
+
+        - Bureau of People's Security
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_investigation_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Investigation Report: \(triggerId.replacingOccurrences(of: "investigation_", with: "").capitalized)")
+            .from("Investigation Division", title: "Bureau of People's Security")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(requiresAction ? .priority : .routine)
+            .inCategory(.security)
+            .classified(as: "CLASSIFIED")
+            .withBody(body)
+            .withGenerationReason("investigation_follow_up")
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "investigation_follow_up")
+        }
+
+        if requiresAction {
+            builder = builder
+                .requiresDecision(true)
+                .addOption(
+                    id: "proceed_interrogation",
+                    text: "PROCEED - Authorize formal interrogation",
+                    shortDescription: "Authorized interrogation",
+                    effects: ["security": 5, "stability": -3]
+                )
+                .addOption(
+                    id: "close_case",
+                    text: "CLOSE CASE - Evidence insufficient",
+                    shortDescription: "Closed case",
+                    effects: ["security": -3]
+                )
+                .addOption(
+                    id: "continue_surveillance",
+                    text: "CONTINUE SURVEILLANCE - Gather more evidence",
+                    shortDescription: "Extended surveillance",
+                    effects: ["network": -5]
+                )
+        } else {
+            builder = builder
+                .requiresDecision(true)
+                .addOption(
+                    id: "acknowledge",
+                    text: "ACKNOWLEDGE - File report",
+                    shortDescription: "Acknowledged report",
+                    effects: [:]
+                )
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a detention/arrest update following an arrest authorization
+    private func generateArrestFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let subjectName = triggerId
+            .replacingOccurrences(of: "arrested_", with: "")
+            .replacingOccurrences(of: "arrest_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("confession", "Subject has confessed to anti-state activities", "TRIAL PREPARATION"),
+            ("resistance", "Subject is refusing to cooperate despite questioning", "EXTENDED DETENTION"),
+            ("complications", "Medical complications have arisen during detention", "MEDICAL REVIEW"),
+            ("new_leads", "Subject has implicated additional individuals", "EXPANDED INVESTIGATION")
+        ]
+
+        let (outcomeType, summary, nextStep) = outcomes.randomElement()!
+
+        let body = """
+        DETENTION UPDATE
+        Subject: \(subjectName.uppercased())
+        Status: IN CUSTODY
+
+        Following the arrest you authorized, we submit this status report.
+
+        CURRENT SITUATION: \(summary)
+
+        \(outcomeType == "confession" ?
+            "The confession implicates several co-conspirators. Names attached in separate classified annex." :
+            outcomeType == "resistance" ?
+            "Enhanced interrogation methods may be required. Your authorization is requested." :
+            outcomeType == "complications" ?
+            "Subject requires medical attention. This may delay proceedings and attract attention." :
+            "Subject claims knowledge of a broader network. Investigation scope may need to expand significantly.")
+
+        RECOMMENDED NEXT STEP: \(nextStep)
+
+        Awaiting further instructions.
+
+        - Detention Facility Command
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_detention_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Detention Update: \(subjectName)")
+            .from("Detention Commander", title: "Facility 7")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.priority)
+            .inCategory(.security)
+            .classified(as: "SECRET")
+            .withBody(body)
+            .requiresDecision(true)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "arrest_follow_up")
+        }
+
+        switch outcomeType {
+        case "confession":
+            builder = builder
+                .addOption(id: "trial", text: "PROCEED TO TRIAL", shortDescription: "Ordered trial",
+                          effects: ["security": 10, "stability": -5])
+                .addOption(id: "expand", text: "INVESTIGATE NAMED INDIVIDUALS", shortDescription: "Expanded investigation",
+                          effects: ["security": 5, "network": -10])
+        case "resistance":
+            builder = builder
+                .addOption(id: "enhanced", text: "AUTHORIZE ENHANCED METHODS", shortDescription: "Enhanced interrogation",
+                          effects: ["security": 5, "stability": -10])
+                .addOption(id: "patience", text: "CONTINUE STANDARD METHODS", shortDescription: "Continued questioning",
+                          effects: [:])
+                .addOption(id: "release", text: "RELEASE - INSUFFICIENT EVIDENCE", shortDescription: "Released subject",
+                          effects: ["security": -10, "stability": 5])
+        case "complications":
+            builder = builder
+                .addOption(id: "medical", text: "PROVIDE MEDICAL CARE", shortDescription: "Provided medical care",
+                          effects: ["treasury": -10])
+                .addOption(id: "transfer", text: "TRANSFER TO HOSPITAL (RISKY)", shortDescription: "Transferred to hospital",
+                          effects: ["security": -10])
+                .addOption(id: "continue", text: "CONTINUE DESPITE COMPLICATIONS", shortDescription: "Continued detention",
+                          effects: ["stability": -5])
+        default:
+            builder = builder
+                .addOption(id: "expand", text: "EXPAND INVESTIGATION", shortDescription: "Expanded investigation",
+                          effects: ["network": -15, "security": 10])
+                .addOption(id: "focus", text: "FOCUS ON CURRENT SUBJECT", shortDescription: "Maintained focus",
+                          effects: [:])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate an appeal letter following a denial
+    private func generateAppealFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let appealTypes = [
+            ("resource", "Resource Allocation Appeal", "Our department is struggling without the requested resources."),
+            ("personnel", "Personnel Decision Appeal", "We respectfully request reconsideration of the personnel decision."),
+            ("quota", "Quota Appeal", "The current targets are physically impossible to achieve.")
+        ]
+
+        let (appealType, title, opening) = appealTypes.randomElement()!
+
+        let body = """
+        [FORMAL APPEAL - SECOND REQUEST]
+
+        Comrade,
+
+        \(opening)
+
+        We understand resources are limited and priorities must be set. However, we believe the original decision may not have considered all relevant factors.
+
+        ADDITIONAL CONTEXT:
+        - \(appealType == "resource" ? "Three workers have been injured due to equipment failures this month alone." :
+             appealType == "personnel" ? "The individual in question has served faithfully for 12 years with an exemplary record." :
+             "Other factories with newer equipment receive the same quotas despite having twice our capacity.")
+
+        We do not make this appeal lightly. We ask only for fair consideration.
+
+        Respectfully submitted,
+        - Department Representative
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_appeal_\(UUID().uuidString.prefix(6))")
+            .ofType(.letter)
+            .titled(title)
+            .from("Department Representative", title: "Appeals Office")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(appealType == "resource" ? .economic : appealType == "personnel" ? .personnel : .economic)
+            .withBody(body)
+            .withFootnote("This is their second appeal. A third will go to your superiors.")
+            .requiresDecision(true)
+            .addOption(id: "reconsider", text: "RECONSIDER - Grant the appeal", shortDescription: "Granted appeal",
+                      effects: appealType == "resource" ? ["treasury": -30, "stability": 5] : ["stability": 5])
+            .addOption(id: "deny_final", text: "DENY FINAL - No further appeals", shortDescription: "Denied final",
+                      effects: ["stability": -5])
+            .addOption(id: "partial", text: "PARTIAL GRANT - Compromise solution", shortDescription: "Partial grant",
+                      effects: [:])
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "appeal_follow_up")
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a consequence report showing effects of a previous decision
+    private func generateConsequenceFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let consequences = [
+            ("positive", "POSITIVE OUTCOMES REPORT", "The decision has yielded favorable results beyond expectations."),
+            ("negative", "COMPLICATIONS REPORT", "Unforeseen complications have arisen from the recent decision."),
+            ("mixed", "SITUATION ASSESSMENT", "The decision has produced mixed results requiring your attention.")
+        ]
+
+        let (consequenceType, title, opening) = consequences.randomElement()!
+
+        let body = """
+        \(title)
+        Reference: Previous Decision
+
+        \(opening)
+
+        \(consequenceType == "positive" ?
+            "Production has increased by 12% in affected sectors.\nWorker morale shows improvement.\nOther departments are requesting similar measures." :
+            consequenceType == "negative" ?
+            "Unexpected resistance has emerged from affected parties.\nCosts have exceeded initial projections by 40%.\nQuestions are being raised at higher levels." :
+            "Some metrics show improvement while others have declined.\nThe situation remains fluid and may require adjustment.\nFurther monitoring is recommended.")
+
+        This report is for your awareness. \(consequenceType == "negative" ? "Immediate attention may be required." : "No immediate action required unless you wish to adjust course.")
+
+        - Analysis Division
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_consequence_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Analysis Division", title: "Strategic Planning")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(consequenceType == "negative" ? .priority : .routine)
+            .inCategory(.political)
+            .withBody(body)
+            .requiresDecision(consequenceType == "negative")
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "consequence_follow_up")
+        }
+
+        if consequenceType == "negative" {
+            builder = builder
+                .addOption(id: "address", text: "ADDRESS ISSUES - Take corrective action", shortDescription: "Took corrective action",
+                          effects: ["treasury": -20, "stability": 5])
+                .addOption(id: "stay_course", text: "STAY THE COURSE - Issues will resolve", shortDescription: "Maintained course",
+                          effects: ["stability": -5])
+                .addOption(id: "deflect", text: "DEFLECT BLAME - Not your responsibility", shortDescription: "Deflected blame",
+                          effects: ["patronFavor": -5])
+        } else {
+            builder = builder
+                .addOption(id: "acknowledge", text: "ACKNOWLEDGE - Note for records", shortDescription: "Acknowledged",
+                          effects: [:])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a response from a character following a significant reaction
+    private func generateCharacterReactionFollowUp(triggerId: String, game: Game) -> DeskDocument? {
+        guard let characterIdString = game.variables["reaction_character_\(triggerId)"],
+              let characterId = UUID(uuidString: characterIdString),
+              let character = game.characters.first(where: { $0.id == characterId }) else {
+            return nil
+        }
+
+        let reactionType = game.variables["reaction_type_\(triggerId)"] ?? "neutral"
+        let isPositive = reactionType == "positive"
+
+        let body: String
+        let title: String
+        let urgency: DocumentUrgency
+
+        if isPositive {
+            title = "Message from \(character.name)"
+            urgency = .routine
+            body = """
+            [PERSONAL NOTE]
+
+            Comrade,
+
+            I wanted to express my gratitude for your recent decision. It is rare to find someone in your position who acts with such wisdom and consideration.
+
+            I believe we could work well together. Should you ever need assistance in matters within my purview, you need only ask.
+
+            I look forward to our continued cooperation.
+
+            With respect,
+            \(character.name)
+            \(character.title ?? "")
+            """
+        } else {
+            title = "Formal Complaint: \(character.name)"
+            urgency = .priority
+            body = """
+            [OFFICIAL CORRESPONDENCE]
+
+            To Whom It May Concern,
+
+            I am writing to formally register my objection to the recent decision regarding matters under my oversight.
+
+            The action taken was neither wise nor necessary, and I intend to raise this matter through appropriate channels.
+
+            I trust that future decisions will be made with greater consideration for those affected.
+
+            \(character.name)
+            \(character.title ?? "")
+            """
+        }
+
+        return DeskDocument.builder()
+            .withTemplateId("followup_reaction_\(UUID().uuidString.prefix(6))")
+            .ofType(isPositive ? .personalNote : .letter)
+            .titled(title)
+            .from(character.name, title: character.title, characterId: character.id.uuidString)
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(urgency)
+            .inCategory(.personal)
+            .withBody(body)
+            .withGenerationReason("character_reaction_follow_up")
+            .requiresDecision(true)
+            .addOption(
+                id: isPositive ? "accept" : "acknowledge",
+                text: isPositive ? "ACCEPT OFFER - Build relationship" : "ACKNOWLEDGE - Note the objection",
+                shortDescription: isPositive ? "Accepted alliance offer" : "Acknowledged complaint",
+                effects: isPositive ? ["network": 10] : [:]
+            )
+            .addOption(
+                id: isPositive ? "cautious" : "dismiss",
+                text: isPositive ? "CAUTIOUS RESPONSE - Don't commit" : "DISMISS - Ignore the complaint",
+                shortDescription: isPositive ? "Cautious response" : "Dismissed complaint",
+                effects: isPositive ? [:] : ["network": -5]
+            )
+            .build()
+    }
+
+    /// Generate a policy implementation update
+    private func generatePolicyFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let body = """
+        POLICY IMPLEMENTATION UPDATE
+        Reference: \(triggerId.uppercased())
+
+        The policy you approved has been implemented across affected sectors.
+
+        IMPLEMENTATION STATUS: 78% Complete
+        COMPLIANCE RATE: Satisfactory
+
+        Notable observations:
+        - Initial resistance has subsided
+        - Some regional variations in implementation
+        - Full compliance expected within two weeks
+
+        No action required unless you wish to adjust implementation parameters.
+
+        - Implementation Office
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_policy_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Policy Implementation Update")
+            .from("Implementation Office", title: "Administrative Division")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.political)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(id: "acknowledge", text: "ACKNOWLEDGE", shortDescription: "Acknowledged update", effects: [:])
+            .addOption(id: "accelerate", text: "ACCELERATE IMPLEMENTATION", shortDescription: "Accelerated", effects: ["stability": -5])
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "policy_follow_up")
+        }
+
+        return builder.build()
     }
 }
 

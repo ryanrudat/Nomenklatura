@@ -137,6 +137,11 @@ struct WorldEvent: Codable, Identifiable, Sendable {
     var responseDeadline: Int?     // Turn by which response needed
     var hasBeenRead: Bool = false
 
+    // Cascade Tracking (for event chains)
+    var triggeredBy: String?       // ID of parent event that caused this one
+    var cascadeDepth: Int = 0      // How many levels deep in the cascade chain (max 2)
+    var narrativeHint: String?     // Subtle text linking to parent event (e.g., "Following tensions from the recent border incident...")
+
     init(
         eventType: WorldEventType,
         turnOccurred: Int,
@@ -160,6 +165,16 @@ struct WorldEvent: Codable, Identifiable, Sendable {
 
     var severity: EventSeverity {
         eventType.severity
+    }
+
+    /// Whether this event was triggered by another event (is part of a cascade)
+    var isPartOfCascade: Bool {
+        triggeredBy != nil
+    }
+
+    /// Whether this event can trigger further cascades (hasn't reached max depth)
+    var canTriggerCascade: Bool {
+        cascadeDepth < 2
     }
 }
 
@@ -205,6 +220,10 @@ final class WorldEventRecord {
     var wasPlayerInvolved: Bool
     var isClassified: Bool
 
+    // Cascade tracking
+    var triggeredBy: String?      // ID of parent event
+    var cascadeDepth: Int
+
     @Relationship(inverse: \Game.worldEventHistory) var game: Game?
 
     init(event: WorldEvent) {
@@ -218,6 +237,8 @@ final class WorldEventRecord {
         self.hasBeenRead = event.hasBeenRead
         self.wasPlayerInvolved = event.wasPlayerInvolved
         self.isClassified = event.isClassified
+        self.triggeredBy = event.triggeredBy
+        self.cascadeDepth = event.cascadeDepth
     }
 
     var event: WorldEvent? {

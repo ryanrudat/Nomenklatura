@@ -191,14 +191,37 @@ struct DocumentDetailView: View {
                 .foregroundColor(FiftiesColors.typewriterInk)
                 .padding(.bottom, 10)
 
-            // Body text with clickable names
-            ClickableNarrativeText(
-                text: document.bodyText,
-                game: game,
-                font: .system(size: 13, design: .serif),
-                color: FiftiesColors.typewriterInk,
-                lineSpacing: 6
-            )
+            // Body text with clickable names - apply redaction for classified docs if player lacks clearance
+            if shouldRedactBody {
+                // Show redacted version for classified documents player can't fully access
+                VStack(alignment: .leading, spacing: 8) {
+                    ClickableNarrativeText(
+                        text: redactedBodyText,
+                        game: game,
+                        font: .system(size: 13, design: .serif),
+                        color: FiftiesColors.typewriterInk,
+                        lineSpacing: 6
+                    )
+
+                    // Clearance notice
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 10))
+                        Text("Some details redacted - higher clearance required")
+                            .font(.system(size: 9, design: .monospaced))
+                    }
+                    .foregroundColor(FiftiesColors.stampRed.opacity(0.7))
+                    .padding(.top, 8)
+                }
+            } else {
+                ClickableNarrativeText(
+                    text: document.bodyText,
+                    game: game,
+                    font: .system(size: 13, design: .serif),
+                    color: FiftiesColors.typewriterInk,
+                    lineSpacing: 6
+                )
+            }
 
             // Footnote if present
             if let footnote = document.footnoteText {
@@ -353,6 +376,37 @@ struct DocumentDetailView: View {
 
     private var formattedDate: String {
         RevolutionaryCalendar.formatTurnFull(document.turnReceived).uppercased()
+    }
+
+    // MARK: - Redaction Support
+
+    /// Determine required clearance level from classification
+    private var requiredClearanceLevel: Int {
+        guard let classification = document.classification?.uppercased() else { return 0 }
+        switch classification {
+        case "TOP SECRET", "EYES ONLY":
+            return 7
+        case "SECRET":
+            return 6
+        case "CLASSIFIED", "CONFIDENTIAL":
+            return 4
+        case "RESTRICTED":
+            return 2
+        default:
+            return 0
+        }
+    }
+
+    /// Check if body text should be redacted based on player's clearance
+    private var shouldRedactBody: Bool {
+        let playerClearance = min(game.currentPositionIndex + 1, 8)
+        return requiredClearanceLevel > 0 && playerClearance < requiredClearanceLevel
+    }
+
+    /// Apply redaction patterns to sensitive information in document body
+    private var redactedBodyText: String {
+        let redactionManager = RedactionManager(accessLevel: min(game.currentPositionIndex + 1, 8))
+        return redactionManager.redactSensitivePatterns(document.bodyText, requiredLevel: requiredClearanceLevel)
     }
 
     private var stripeColor: Color {

@@ -1346,3 +1346,255 @@ extension InternationalEventService {
         return responses
     }
 }
+
+// MARK: - Authority-Gated Event Response
+
+extension InternationalEventService {
+
+    /// Check if player has sufficient authority to respond to a world event
+    /// Based on player's position level and career track
+    func canPlayerRespondToEvent(_ event: WorldEvent, game: Game) -> Bool {
+        let positionLevel = game.currentPositionIndex + 1
+        let playerTrack = game.currentCommittedTrack
+
+        switch event.eventType {
+        // Diplomatic events - Foreign Affairs track OR mid-level position
+        case .borderIncident, .ambassadorRecall, .treatyProposal, .summitAnnouncement, .secretNegotiations:
+            return playerTrack == .foreignAffairs || positionLevel >= 4
+
+        // Military events - Military track OR senior position
+        case .armsBuildUp, .militaryExercise, .proxyConflict:
+            return playerTrack == .militaryPolitical || positionLevel >= 5
+
+        // Political upheavals - Senior leadership (level 6+)
+        case .revolution, .coup, .leadershipChange:
+            return positionLevel >= 6
+
+        // Economic events - Economic track OR mid-level position
+        case .economicCrisis, .tradeDispute, .resourceDiscovery, .harvestFailure, .industrialAccident:
+            return playerTrack == .economicPlanning || positionLevel >= 4
+
+        // Security events - Security track OR senior position
+        case .defection, .purge:
+            return playerTrack == .securityServices || positionLevel >= 5
+
+        // Election results - Anyone at mid-level can be informed
+        case .electionResult:
+            return positionLevel >= 3
+
+        // Treaty violations - Foreign Affairs OR Security OR senior position
+        case .treatyViolation:
+            return playerTrack == .foreignAffairs || playerTrack == .securityServices || positionLevel >= 5
+        }
+    }
+
+    /// Generate a position-appropriate document for a world event (if player has authority)
+    func generateEventDocument(for event: WorldEvent, game: Game) -> DeskDocument? {
+        guard canPlayerRespondToEvent(event, game: game) else {
+            return nil
+        }
+
+        guard let country = game.country(withId: event.countryId) else {
+            return nil
+        }
+
+        let positionLevel = game.currentPositionIndex + 1
+        let classification = event.isClassified ? "SECRET" : (positionLevel >= 5 ? "CONFIDENTIAL" : nil)
+
+        // Build narrative hint into description if this is a cascade event
+        var description = event.description
+        if let narrativeHint = event.narrativeHint {
+            description = "\(narrativeHint), \(description.prefix(1).lowercased())\(description.dropFirst())"
+        }
+
+        let body = """
+        INTERNATIONAL SITUATION REPORT
+        Country: \(country.name.uppercased())
+        Classification: \(classification ?? "ROUTINE")
+
+        HEADLINE: \(event.headline)
+
+        SITUATION:
+        \(description)
+
+        ASSESSMENT:
+        This development requires your attention and response as \(game.currentPositionName).
+
+        \(generateRecommendedActionsText(for: event, country: country))
+
+        Your response is requested.
+
+        - International Analysis Division
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("world_event_\(event.id)")
+            .ofType(.report)
+            .titled(event.headline)
+            .from("International Analysis Division", title: "Foreign Ministry")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(event.severity >= .major ? .priority : .routine)
+            .inCategory(.diplomatic)
+            .withBody(body)
+            .requiresDecision(true)
+
+        if let classification = classification {
+            builder = builder.classified(as: classification)
+        }
+
+        // Add response options based on event type
+        builder = addEventResponseOptions(builder, for: event, country: country)
+
+        return builder.build()
+    }
+
+    /// Generate recommended actions text for document body
+    private func generateRecommendedActionsText(for event: WorldEvent, country: ForeignCountry) -> String {
+        switch event.eventType {
+        case .borderIncident:
+            return """
+            RECOMMENDED OPTIONS:
+            - Escalate: Reinforce border positions and demand formal apology
+            - Negotiate: Propose joint investigation with \(country.name) authorities
+            - Protest: Issue formal diplomatic protest through normal channels
+            """
+
+        case .revolution, .coup:
+            return """
+            RECOMMENDED OPTIONS:
+            - Support: Provide material and diplomatic support to favorable factions
+            - Monitor: Maintain observation while assessing new leadership
+            - Intervene: Consider covert actions to influence outcome
+            """
+
+        case .economicCrisis:
+            return """
+            RECOMMENDED OPTIONS:
+            - Aid: Offer emergency economic assistance to maintain influence
+            - Exploit: Use crisis to extract favorable concessions
+            - Distance: Minimize exposure to avoid contagion effects
+            """
+
+        case .treatyViolation:
+            return """
+            RECOMMENDED OPTIONS:
+            - Sanction: Impose diplomatic and economic penalties
+            - Arbitrate: Propose third-party mediation
+            - Overlook: Quietly accept violation to maintain broader relationship
+            """
+
+        default:
+            return """
+            RECOMMENDED OPTIONS:
+            - Engage: Take active diplomatic measures
+            - Monitor: Continue observation and analysis
+            - Report: Escalate to higher authority for decision
+            """
+        }
+    }
+
+    /// Add response options to document based on event type
+    private func addEventResponseOptions(_ builder: DeskDocumentBuilder, for event: WorldEvent, country: ForeignCountry) -> DeskDocumentBuilder {
+        var modifiedBuilder = builder
+
+        switch event.eventType {
+        case .borderIncident:
+            modifiedBuilder = modifiedBuilder
+                .addOption(id: "escalate", text: "ESCALATE - Reinforce and demand apology",
+                          shortDescription: "Escalated border response",
+                          effects: ["worldTension": 10, "militaryReadiness": 5])
+                .addOption(id: "negotiate", text: "NEGOTIATE - Propose joint investigation",
+                          shortDescription: "Proposed investigation",
+                          effects: ["worldTension": -5])
+                .addOption(id: "protest", text: "PROTEST - Issue formal diplomatic protest",
+                          shortDescription: "Lodged formal protest",
+                          effects: ["worldTension": 3])
+
+        case .revolution, .coup:
+            modifiedBuilder = modifiedBuilder
+                .addOption(id: "support", text: "SUPPORT - Aid favorable factions",
+                          shortDescription: "Supported favorable factions",
+                          effects: ["treasury": -20, "worldTension": 10])
+                .addOption(id: "monitor", text: "MONITOR - Assess new leadership",
+                          shortDescription: "Monitored situation",
+                          effects: [:])
+                .addOption(id: "intervene", text: "INTERVENE - Covert action",
+                          shortDescription: "Authorized covert intervention",
+                          effects: ["treasury": -30, "security": 10])
+
+        case .economicCrisis:
+            modifiedBuilder = modifiedBuilder
+                .addOption(id: "aid", text: "AID - Provide emergency assistance",
+                          shortDescription: "Provided emergency aid",
+                          effects: ["treasury": -25])
+                .addOption(id: "exploit", text: "EXPLOIT - Extract concessions",
+                          shortDescription: "Extracted concessions",
+                          effects: ["treasury": 10, "stability": -5])
+                .addOption(id: "distance", text: "DISTANCE - Minimize exposure",
+                          shortDescription: "Minimized exposure",
+                          effects: [:])
+
+        case .treatyViolation:
+            modifiedBuilder = modifiedBuilder
+                .addOption(id: "sanction", text: "SANCTION - Impose penalties",
+                          shortDescription: "Imposed sanctions",
+                          effects: ["worldTension": 15])
+                .addOption(id: "arbitrate", text: "ARBITRATE - Seek mediation",
+                          shortDescription: "Sought mediation",
+                          effects: ["worldTension": -5])
+                .addOption(id: "overlook", text: "OVERLOOK - Accept violation quietly",
+                          shortDescription: "Accepted violation",
+                          effects: ["patronFavor": -10])
+
+        default:
+            modifiedBuilder = modifiedBuilder
+                .addOption(id: "engage", text: "ENGAGE - Active diplomatic response",
+                          shortDescription: "Engaged diplomatically",
+                          effects: ["worldTension": 5])
+                .addOption(id: "monitor", text: "MONITOR - Continue observation",
+                          shortDescription: "Continued monitoring",
+                          effects: [:])
+                .addOption(id: "escalate_report", text: "ESCALATE - Report to superiors",
+                          shortDescription: "Escalated to superiors",
+                          effects: ["patronFavor": -3])
+        }
+
+        return modifiedBuilder
+    }
+
+    /// Filter world events to only those the player can respond to
+    func filterEventsForPlayerAuthority(events: [WorldEvent], game: Game) -> [WorldEvent] {
+        return events.filter { canPlayerRespondToEvent($0, game: game) }
+    }
+
+    /// Get the required position level for an event type
+    func requiredPositionLevel(for eventType: WorldEventType) -> Int {
+        switch eventType {
+        case .revolution, .coup, .leadershipChange:
+            return 6  // Senior leadership
+        case .armsBuildUp, .militaryExercise, .proxyConflict, .defection, .purge, .treatyViolation:
+            return 5  // Senior officials
+        case .borderIncident, .ambassadorRecall, .treatyProposal, .summitAnnouncement, .secretNegotiations,
+             .economicCrisis, .tradeDispute, .resourceDiscovery, .harvestFailure, .industrialAccident:
+            return 4  // Mid-level officials
+        case .electionResult:
+            return 3  // Junior officials can be informed
+        }
+    }
+
+    /// Get the preferred track for handling an event type
+    func preferredTrack(for eventType: WorldEventType) -> ExpandedCareerTrack? {
+        switch eventType {
+        case .borderIncident, .ambassadorRecall, .treatyProposal, .summitAnnouncement, .secretNegotiations, .treatyViolation:
+            return .foreignAffairs
+        case .armsBuildUp, .militaryExercise, .proxyConflict:
+            return .militaryPolitical
+        case .defection, .purge:
+            return .securityServices
+        case .economicCrisis, .tradeDispute, .resourceDiscovery, .harvestFailure, .industrialAccident:
+            return .economicPlanning
+        case .revolution, .coup, .leadershipChange, .electionResult:
+            return nil  // Political events go to leadership regardless of track
+        }
+    }
+}

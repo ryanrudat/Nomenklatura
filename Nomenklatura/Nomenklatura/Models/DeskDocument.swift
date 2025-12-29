@@ -265,6 +265,11 @@ final class DeskDocument {
     var game: Game?
     var relatedDocumentIds: [String]?   // UUIDs of connected documents
 
+    // Document Chain Tracking (for follow-up documents)
+    var parentDocumentId: String?       // UUID of the document that triggered this one
+    var chainId: String?                // Groups related documents in the same narrative chain
+    var generationReason: String?       // Why this document was generated (e.g., "investigation_follow_up", "consequence_report")
+
     // MARK: - Computed Properties
 
     var documentTypeEnum: DocumentType {
@@ -309,6 +314,16 @@ final class DeskDocument {
     /// Whether this document is from a known character
     var isFromKnownCharacter: Bool {
         senderCharacterId != nil
+    }
+
+    /// Whether this document is a follow-up to another document
+    var isFollowUp: Bool {
+        parentDocumentId != nil
+    }
+
+    /// Whether this document is part of a document chain
+    var isPartOfChain: Bool {
+        chainId != nil
     }
 
     // MARK: - Initialization
@@ -404,6 +419,9 @@ class DeskDocumentBuilder {
     private var consequenceIfIgnored: String?
     private var consequenceEffects: [String: Int]?
     private var customDeadline: Int?
+    private var parentDocumentId: String?
+    private var chainId: String?
+    private var generationReason: String?
 
     func withTemplateId(_ id: String) -> DeskDocumentBuilder {
         self.templateId = id
@@ -503,6 +521,20 @@ class DeskDocumentBuilder {
         return self
     }
 
+    /// Set this document as a follow-up to another document
+    func asFollowUpTo(documentId: String, chainId: String? = nil, reason: String? = nil) -> DeskDocumentBuilder {
+        self.parentDocumentId = documentId
+        self.chainId = chainId
+        self.generationReason = reason
+        return self
+    }
+
+    /// Set just the generation reason (for documents not in a chain)
+    func withGenerationReason(_ reason: String) -> DeskDocumentBuilder {
+        self.generationReason = reason
+        return self
+    }
+
     func build() -> DeskDocument {
         let doc = DeskDocument(
             templateId: templateId,
@@ -524,6 +556,11 @@ class DeskDocumentBuilder {
         doc.footnoteText = footnoteText
         doc.consequenceIfIgnored = consequenceIfIgnored
         doc.consequenceEffects = consequenceEffects
+
+        // Chain tracking
+        doc.parentDocumentId = parentDocumentId
+        doc.chainId = chainId
+        doc.generationReason = generationReason
 
         if let custom = customDeadline {
             doc.turnDeadline = turnReceived + custom

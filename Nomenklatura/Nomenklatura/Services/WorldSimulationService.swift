@@ -531,29 +531,246 @@ final class WorldSimulationService {
     // MARK: - Cascading Consequences
 
     /// Process events that might trigger additional events
+    /// Uses LOW probability (15-25%) cascades for a stable but reactive world
+    /// Max cascade depth of 2 to prevent runaway event chains
     private func processCascadingConsequences(events: [WorldEvent], game: Game) -> [WorldEvent] {
-        // Placeholder for cascading event logic - not yet implemented
-        let cascadedEvents: [WorldEvent] = []
+        var cascadedEvents: [WorldEvent] = []
 
         for event in events {
-            // Revolution might trigger Atlantic Union response
-            if event.eventType == .revolution {
-                if let country = game.country(withId: event.countryId),
-                   country.politicalBloc == .capitalist {
-                    // TODO: Could trigger Atlantic Union intervention
-                }
-            }
+            // Only allow cascades from events that haven't reached max depth
+            guard event.canTriggerCascade else { continue }
 
-            // Border incident might escalate
-            if event.eventType == .borderIncident {
-                // 20% chance of escalation
-                if Double.random(in: 0...1) < 0.2 {
-                    // TODO: Generate escalation event
+            switch event.eventType {
+
+            // Border incident cascades (18% chance)
+            case .borderIncident:
+                if Double.random(in: 0...1) < 0.18 {
+                    if let country = game.country(withId: event.countryId) {
+                        if let cascadeEvent = createCascadeEvent(
+                            type: .armsBuildUp,
+                            parentEvent: event,
+                            country: country,
+                            narrativeHint: "Following tensions from the recent border incident",
+                            game: game
+                        ) {
+                            cascadedEvents.append(cascadeEvent)
+                        }
+                    }
                 }
+
+            // Arms buildup cascades (16% chance)
+            case .armsBuildUp:
+                if Double.random(in: 0...1) < 0.16 {
+                    if let country = game.country(withId: event.countryId) {
+                        if let cascadeEvent = createCascadeEvent(
+                            type: .militaryExercise,
+                            parentEvent: event,
+                            country: country,
+                            narrativeHint: "In response to the recent military expansion",
+                            game: game
+                        ) {
+                            cascadedEvents.append(cascadeEvent)
+                        }
+                    }
+                }
+
+            // Revolution cascades (22% chance) - can spread to neighboring vulnerable nations
+            case .revolution:
+                if let originCountry = game.country(withId: event.countryId) {
+                    // Check for spread to vulnerable neighbors (20% per vulnerable country)
+                    let vulnerableCountries = game.foreignCountries.filter { country in
+                        country.countryId != event.countryId &&
+                        country.economicPower < 40 &&
+                        country.diplomaticTension > 50
+                    }
+
+                    for vulnerable in vulnerableCountries.prefix(2) {  // Max 2 potential spreads
+                        if Double.random(in: 0...1) < 0.20 {
+                            if let cascadeEvent = createCascadeEvent(
+                                type: .revolution,
+                                parentEvent: event,
+                                country: vulnerable,
+                                narrativeHint: "Inspired by recent events in \(originCountry.name)",
+                                game: game
+                            ) {
+                                cascadedEvents.append(cascadeEvent)
+                                break  // Only one spread per turn
+                            }
+                        }
+                    }
+
+                    // Atlantic Union response to capitalist revolution (25% chance)
+                    if originCountry.politicalBloc == .capitalist {
+                        if Double.random(in: 0...1) < 0.25 {
+                            if let atlanticUnion = game.foreignCountries.first(where: { $0.countryId == "atlantic_union" }) {
+                                if let cascadeEvent = createCascadeEvent(
+                                    type: .militaryExercise,
+                                    parentEvent: event,
+                                    country: atlanticUnion,
+                                    narrativeHint: "In response to revolutionary unrest in \(originCountry.name)",
+                                    game: game
+                                ) {
+                                    cascadedEvents.append(cascadeEvent)
+                                }
+                            }
+                        }
+                    }
+                }
+
+            // Coup cascades (22% chance)
+            case .coup:
+                if Double.random(in: 0...1) < 0.22 {
+                    if let country = game.country(withId: event.countryId) {
+                        if let cascadeEvent = createCascadeEvent(
+                            type: .purge,
+                            parentEvent: event,
+                            country: country,
+                            narrativeHint: "As the new leadership consolidates power",
+                            game: game
+                        ) {
+                            cascadedEvents.append(cascadeEvent)
+                        }
+                    }
+                }
+
+            // Economic crisis cascades (17% chance)
+            case .economicCrisis:
+                if Double.random(in: 0...1) < 0.17 {
+                    if let country = game.country(withId: event.countryId) {
+                        if let cascadeEvent = createCascadeEvent(
+                            type: .tradeDispute,
+                            parentEvent: event,
+                            country: country,
+                            narrativeHint: "As economic difficulties strain trade relations",
+                            game: game
+                        ) {
+                            cascadedEvents.append(cascadeEvent)
+                        }
+                    }
+                }
+
+            // Treaty violation cascades (23% chance)
+            case .treatyViolation:
+                if Double.random(in: 0...1) < 0.23 {
+                    if let country = game.country(withId: event.countryId) {
+                        if let cascadeEvent = createCascadeEvent(
+                            type: .ambassadorRecall,
+                            parentEvent: event,
+                            country: country,
+                            narrativeHint: "Following the breach of diplomatic agreements",
+                            game: game
+                        ) {
+                            cascadedEvents.append(cascadeEvent)
+                        }
+                    }
+                }
+
+            // Purge cascades (15% chance)
+            case .purge:
+                if Double.random(in: 0...1) < 0.15 {
+                    if let country = game.country(withId: event.countryId) {
+                        if let cascadeEvent = createCascadeEvent(
+                            type: .economicCrisis,
+                            parentEvent: event,
+                            country: country,
+                            narrativeHint: "As political instability disrupts economic management",
+                            game: game
+                        ) {
+                            cascadedEvents.append(cascadeEvent)
+                        }
+                    }
+                }
+
+            default:
+                break
             }
         }
 
+        // Also process any pending cascades queued from previous turns
+        cascadedEvents.append(contentsOf: processPendingCascades(game: game))
+
         return cascadedEvents
+    }
+
+    /// Create a cascade event linked to its parent
+    private func createCascadeEvent(
+        type: WorldEventType,
+        parentEvent: WorldEvent,
+        country: ForeignCountry,
+        narrativeHint: String,
+        game: Game
+    ) -> WorldEvent? {
+        let headline = generateHeadline(type: type, country: country)
+        let description = generateDescription(type: type, country: country, game: game)
+
+        var event = WorldEvent(
+            eventType: type,
+            turnOccurred: game.turnNumber,
+            countryId: country.countryId,
+            headline: headline,
+            description: description,
+            isClassified: type.severity >= .significant
+        )
+
+        // Set cascade tracking fields
+        event.triggeredBy = parentEvent.id
+        event.cascadeDepth = parentEvent.cascadeDepth + 1
+        event.narrativeHint = narrativeHint
+
+        // Add consequences
+        event.consequences = generateConsequences(type: type, country: country, game: game)
+
+        return event
+    }
+
+    /// Process pending cascade events queued from previous turns
+    private func processPendingCascades(game: Game) -> [WorldEvent] {
+        var events: [WorldEvent] = []
+
+        // Check for pending cascade flags
+        let pendingKeys = game.variables.keys.filter { $0.hasPrefix("pending_cascade_") }
+
+        for key in pendingKeys {
+            // Parse the key format: pending_cascade_{parentId}_{triggerTurn}
+            let components = key.replacingOccurrences(of: "pending_cascade_", with: "").split(separator: "_")
+            guard components.count >= 2,
+                  let triggerTurn = Int(components.last ?? "0"),
+                  triggerTurn <= game.turnNumber,
+                  let countryId = game.variables[key] else {
+                continue
+            }
+
+            // Generate the cascade event if trigger turn has arrived
+            if let country = game.country(withId: countryId) {
+                var event = WorldEvent(
+                    eventType: .tradeDispute,  // Default cascade type
+                    turnOccurred: game.turnNumber,
+                    countryId: countryId,
+                    headline: generateHeadline(type: .tradeDispute, country: country),
+                    description: "Delayed consequences of previous events continue to unfold.",
+                    isClassified: false
+                )
+                event.narrativeHint = "As earlier tensions continue to evolve"
+                events.append(event)
+            }
+
+            // Clean up the processed cascade
+            game.variables.removeValue(forKey: key)
+        }
+
+        return events
+    }
+
+    /// Queue a cascade event for a future turn
+    private func queueFutureCascade(
+        parentEventId: String,
+        countryId: String,
+        delayTurns: Int,
+        game: Game
+    ) {
+        let triggerTurn = game.turnNumber + delayTurns
+        let key = "pending_cascade_\(parentEventId)_\(triggerTurn)"
+        game.variables[key] = countryId
     }
 
     // MARK: - Apply Effects
@@ -583,7 +800,14 @@ final class WorldSimulationService {
 
                 case .triggerFollowUp:
                     // Queue follow-up event for next turn
-                    break
+                    // Use the consequence amount as the delay in turns
+                    let delayTurns = max(1, consequence.amount)
+                    queueFutureCascade(
+                        parentEventId: event.id,
+                        countryId: event.countryId,
+                        delayTurns: delayTurns,
+                        game: game
+                    )
                 }
             }
         }
