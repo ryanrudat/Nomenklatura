@@ -489,35 +489,108 @@ class EconomyService {
         // Record all economic indicators to history before changes
         game.recordEconomicHistory()
 
-        // 1. Calculate GDP growth based on policies and economic system
+        // 1. Calculate GDP growth based on policies, treasury, and economic system
         let gdpChange = calculateGDPGrowth(game: game)
         game.applyGDPChange(gdpChange)
 
-        // 2. Calculate inflation based on policies and economic conditions
+        // 2. GDP affects Treasury - higher GDP = more tax revenue
+        applyGDPToTreasury(game: game)
+
+        // 3. Calculate inflation based on policies and economic conditions
         let inflationChange = calculateInflationChange(game: game)
         game.applyInflationChange(inflationChange)
 
-        // 3. Calculate unemployment based on economic performance
+        // 4. Calculate unemployment based on economic performance
         let unemploymentChange = calculateUnemploymentChange(game: game)
         game.applyUnemploymentChange(unemploymentChange)
 
-        // 4. Update trade balance based on foreign relations
+        // 5. Update trade balance based on foreign relations
         game.tradeBalance = calculateTradeBalance(game: game)
 
-        // 5. Update sector shares based on policy focus
+        // 6. Update sector shares based on policy focus and performance
         updateSectorShares(game: game)
 
-        // 6. Advance Five-Year Plan (every 4 turns = 1 year)
+        // 7. Apply sector production effects to national stats
+        applySectorEffects(game: game)
+
+        // 8. Process regional economies (interoperability with national economy)
+        processRegionalEconomies(game: game)
+
+        // 9. Advance Five-Year Plan (every 4 turns = 1 year)
         if game.turnNumber % 4 == 0 {
             game.advanceFiveYearPlanYear()
         }
 
-        // 7. Check for economic crises and create events if needed
+        // 10. Check for economic crises and create events if needed
         checkForEconomicCrisis(game: game)
 
         #if DEBUG
-        print("[Economy] GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
+        print("[Economy] GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%, Treasury: \(game.treasury)")
         #endif
+    }
+
+    /// Apply GDP effects to Treasury (the interoperability between GDP and Treasury)
+    private func applyGDPToTreasury(game: Game) {
+        // GDP growth affects tax revenue
+        let growthRate = game.gdpGrowthRate
+
+        // Calculate treasury change based on GDP performance
+        var treasuryChange = 0
+
+        // Strong GDP growth generates revenue surplus
+        if growthRate > 5.0 {
+            treasuryChange = 3
+        } else if growthRate > 2.0 {
+            treasuryChange = 1
+        } else if growthRate < -3.0 {
+            treasuryChange = -3  // Recession costs money
+        } else if growthRate < 0.0 {
+            treasuryChange = -1  // Stagnation drains reserves
+        }
+
+        // High GDP base provides more revenue even with slow growth
+        if game.gdpIndex >= 120 {
+            treasuryChange += 2
+        } else if game.gdpIndex >= 110 {
+            treasuryChange += 1
+        } else if game.gdpIndex <= 80 {
+            treasuryChange -= 2  // Collapsed economy drains treasury
+        } else if game.gdpIndex <= 90 {
+            treasuryChange -= 1
+        }
+
+        // Inflation erodes treasury value
+        if game.inflationRate >= 30 {
+            treasuryChange -= 3
+        } else if game.inflationRate >= 20 {
+            treasuryChange -= 1
+        }
+
+        // Apply the change
+        if treasuryChange != 0 {
+            game.applyStat("treasury", change: treasuryChange)
+        }
+    }
+
+    /// Apply sector production effects to national stats
+    private func applySectorEffects(game: Game) {
+        // Agriculture sector affects food supply
+        let agricultureEffect = (game.agricultureShare - 20) / 10  // Baseline is 20%
+        if agricultureEffect != 0 {
+            game.applyStat("foodSupply", change: agricultureEffect)
+        }
+
+        // Industry sector affects industrial output and GDP
+        let industryEffect = (game.industryShare - 45) / 15  // Baseline is 45%
+        if industryEffect != 0 {
+            game.applyStat("industrialOutput", change: industryEffect)
+        }
+
+        // Services sector affects popular support (consumer goods availability)
+        let servicesEffect = (game.servicesShare - 35) / 20  // Baseline is 35%
+        if servicesEffect != 0 {
+            game.applyStat("popularSupport", change: servicesEffect)
+        }
     }
 
     /// Calculate GDP growth based on economic system and policies
@@ -588,6 +661,24 @@ class EconomyService {
         }
         if game.popularSupport < 30 {
             growth -= 1  // Low morale hurts productivity
+        }
+
+        // Treasury affects state investment capacity (GDP <-> Treasury interoperability)
+        if game.treasury >= 80 {
+            growth += 3  // Ample state resources fuel investment
+        } else if game.treasury >= 60 {
+            growth += 1  // Healthy finances support growth
+        } else if game.treasury <= 20 {
+            growth -= 3  // Empty treasury cripples state investment
+        } else if game.treasury <= 35 {
+            growth -= 1  // Low resources limit growth
+        }
+
+        // Industrial output affects economic productivity
+        if game.industrialOutput >= 70 {
+            growth += 2  // Strong industrial base
+        } else if game.industrialOutput <= 35 {
+            growth -= 2  // Weak industrial capacity limits growth
         }
 
         // Trade agreements boost growth (capped to prevent runaway bonus)
@@ -751,6 +842,367 @@ class EconomyService {
         game.agricultureShare = max(10, min(40, agriculture * 100 / total))
         game.industryShare = max(30, min(60, industry * 100 / total))
         game.servicesShare = 100 - game.agricultureShare - game.industryShare
+
+        // Process detailed sector performance
+        processSectorPerformance(game: game)
+    }
+
+    /// Process each sector's performance, applying dependencies and natural drift
+    private func processSectorPerformance(game: Game) {
+        // Process each sector
+        for sector in EconomicSector.allCases {
+            var productionChange = 0
+            var moraleChange = 0
+            var efficiencyChange = 0
+
+            let currentPerf = game.sectorPerformance(for: sector)
+
+            // 1. Check dependency health - weak dependencies hurt production
+            for depSector in sector.dependencies {
+                let depPerf = game.sectorPerformance(for: depSector)
+                if depPerf.actualOutput < 40 {
+                    productionChange -= 3  // Dependent sector struggling
+                } else if depPerf.actualOutput < 60 {
+                    productionChange -= 1
+                } else if depPerf.actualOutput >= 80 {
+                    productionChange += 1  // Strong dependencies boost output
+                }
+            }
+
+            // 2. Investment effects - investment drives production growth
+            if currentPerf.investmentLevel >= 70 {
+                productionChange += 2
+                efficiencyChange += 1
+            } else if currentPerf.investmentLevel <= 30 {
+                productionChange -= 2  // Underinvestment causes decay
+                efficiencyChange -= 1
+            }
+
+            // Investment naturally decays (needs constant allocation)
+            game.applySectorChange(sector, investmentChange: -3)
+
+            // 3. Morale effects from national conditions
+            if game.popularSupport >= 70 {
+                moraleChange += 1
+            } else if game.popularSupport <= 30 {
+                moraleChange -= 2
+            }
+
+            // Stability affects worker morale
+            if game.stability <= 40 {
+                moraleChange -= 1
+            }
+
+            // 4. Policy effects on specific sectors
+            applySectorPolicyEffects(game: game, sector: sector, productionChange: &productionChange, efficiencyChange: &efficiencyChange)
+
+            // 5. Apply changes
+            game.applySectorChange(sector, productionChange: productionChange, moraleChange: moraleChange, efficiencyChange: efficiencyChange)
+
+            // 6. Sector output affects national economy
+            let newPerf = game.sectorPerformance(for: sector)
+            applySectorToNationalEconomy(game: game, sector: sector, performance: newPerf)
+        }
+    }
+
+    /// Apply policy effects to specific sectors
+    private func applySectorPolicyEffects(game: Game, sector: EconomicSector, productionChange: inout Int, efficiencyChange: inout Int) {
+        switch sector {
+        case .agriculture:
+            // Collectivization policy affects agriculture
+            if let slot = game.policySlot(withId: "private_enterprise") {
+                if slot.currentOptionId == "private_prohibited" {
+                    efficiencyChange -= 2  // Collectivized agriculture less efficient
+                } else if slot.currentOptionId == "small_plots" {
+                    efficiencyChange += 2  // Private plots boost agriculture
+                    productionChange += 1
+                }
+            }
+
+        case .heavyIndustry:
+            // Central planning favors heavy industry
+            if game.currentEconomicSystem == .commandEconomy {
+                productionChange += 2  // State priority
+            }
+
+        case .lightIndustry:
+            // Market mechanisms help consumer goods
+            if let slot = game.policySlot(withId: "price_controls") {
+                if slot.currentOptionId == "market_signals" {
+                    efficiencyChange += 2
+                    productionChange += 1
+                } else if slot.currentOptionId == "full_control" {
+                    productionChange -= 2  // Shortages from price controls
+                }
+            }
+
+        case .defense:
+            // Military loyalty affects defense production
+            if game.militaryLoyalty >= 70 {
+                efficiencyChange += 1
+            }
+
+        case .energy, .mining:
+            // Regional industrial capacity affects extraction industries
+            let totalRegionalIndustry = game.regions.reduce(0) { $0 + $1.industrialCapacity }
+            if totalRegionalIndustry >= 60 {
+                productionChange += 1
+            } else if totalRegionalIndustry <= 30 {
+                productionChange -= 1
+            }
+
+        case .construction:
+            // Treasury affects state construction projects
+            if game.treasury >= 70 {
+                productionChange += 2
+            } else if game.treasury <= 30 {
+                productionChange -= 2
+            }
+
+        case .transport:
+            // Foreign trade policy affects transport
+            if let slot = game.policySlot(withId: "foreign_trade") {
+                if slot.currentOptionId == "joint_ventures" {
+                    productionChange += 1  // More goods to move
+                }
+            }
+        }
+    }
+
+    /// Apply sector output to national economic indicators
+    private func applySectorToNationalEconomy(game: Game, sector: EconomicSector, performance: SectorPerformance) {
+        let output = performance.actualOutput
+
+        // Strong sectors boost their primary stat
+        if output >= 70 {
+            game.applyStat(sector.primaryEffect, change: 1)
+        } else if output <= 30 {
+            game.applyStat(sector.primaryEffect, change: -1)
+        }
+
+        // Very strong/weak sectors affect secondary stat
+        if output >= 85 {
+            game.applyStat(sector.secondaryEffect, change: 1)
+        } else if output <= 20 {
+            game.applyStat(sector.secondaryEffect, change: -1)
+        }
+
+        // Sector collapse triggers crisis flag
+        if output <= 15 {
+            let crisisFlag = "sector_crisis_\(sector.rawValue)"
+            if !game.flags.contains(crisisFlag) {
+                game.flags.append(crisisFlag)
+            }
+        }
+    }
+
+    // MARK: - Regional Economic Processing
+
+    /// Process all regional economies and their impact on national indicators
+    private func processRegionalEconomies(game: Game) {
+        #if DEBUG
+        print("[Economy] Processing regional economies for \(game.regions.count) regions")
+        #endif
+
+        for region in game.regions {
+            // 1. Process this region's economy
+            processRegionEconomy(region: region, game: game)
+
+            // 2. Apply regional contribution to national economy
+            applyRegionToNational(region: region, game: game)
+
+            // 3. Apply national conditions to region
+            applyNationalToRegion(region: region, game: game)
+        }
+
+        // 4. Calculate aggregate regional effects
+        calculateAggregateRegionalEffects(game: game)
+    }
+
+    /// Process individual region's economic performance
+    private func processRegionEconomy(region: Region, game: Game) {
+        // Regional economic drift based on type and conditions
+        var industryChange = 0
+        var agricultureChange = 0
+        var infrastructureChange = 0
+
+        // 1. Regional type affects base performance
+        switch region.type {
+        case .industrial:
+            industryChange += 1
+            agricultureChange -= 1
+        case .agricultural:
+            agricultureChange += 1
+            industryChange -= 1
+        case .resource:
+            industryChange += 1
+            // Natural resource regions support industry
+        case .strategic:
+            // Strategic regions maintain balance
+            break
+        case .capital:
+            industryChange += 1
+            infrastructureChange += 1
+        case .peripheral:
+            industryChange -= 1
+            infrastructureChange -= 1
+        case .contested:
+            industryChange -= 2
+            agricultureChange -= 2
+            infrastructureChange -= 2
+        }
+
+        // 2. Party control affects economic efficiency
+        if region.partyControl >= 80 {
+            industryChange += 1  // Strong organization helps
+        } else if region.partyControl <= 30 {
+            industryChange -= 2  // Weak control hurts productivity
+            agricultureChange -= 1
+        }
+
+        // 3. Popular loyalty affects output
+        if region.popularLoyalty >= 70 {
+            industryChange += 1
+            agricultureChange += 1
+        } else if region.popularLoyalty <= 30 {
+            industryChange -= 2  // Workers resist
+            agricultureChange -= 2
+        }
+
+        // 4. Infrastructure affects everything
+        if region.infrastructureQuality >= 70 {
+            industryChange += 1
+            agricultureChange += 1
+        } else if region.infrastructureQuality <= 30 {
+            industryChange -= 2
+            agricultureChange -= 1
+        }
+
+        // 5. National policies affect regions
+        if game.currentEconomicSystem == .commandEconomy {
+            industryChange += 1  // Central direction helps industry
+            agricultureChange -= 1  // But hurts agriculture
+        } else if game.currentEconomicSystem == .marketSocialism {
+            agricultureChange += 1  // Market incentives help farming
+        }
+
+        // 6. Apply changes with dampening to prevent wild swings
+        region.industrialCapacity = max(10, min(100, region.industrialCapacity + industryChange / 2))
+        region.agriculturalOutput = max(10, min(100, region.agriculturalOutput + agricultureChange / 2))
+
+        // Infrastructure decays slowly without investment
+        if region.infrastructureQuality > 50 {
+            infrastructureChange -= 1
+        }
+        region.infrastructureQuality = max(10, min(100, region.infrastructureQuality + infrastructureChange / 2))
+    }
+
+    /// Apply region's economic output to national indicators
+    private func applyRegionToNational(region: Region, game: Game) {
+        let contribution = region.economicContribution
+        let scaleFactor = Double(contribution) / 100.0
+
+        // Large/important regions have more impact
+        if contribution >= 15 {
+            // Major economic region
+            if region.industrialCapacity >= 70 {
+                game.applyStat("industrialOutput", change: 1)
+            } else if region.industrialCapacity <= 30 {
+                game.applyStat("industrialOutput", change: -1)
+            }
+
+            if region.agriculturalOutput >= 70 {
+                game.applyStat("foodSupply", change: 1)
+            } else if region.agriculturalOutput <= 30 {
+                game.applyStat("foodSupply", change: -1)
+            }
+        }
+
+        // Regional instability affects national stability
+        if region.status.severity >= 2 {
+            let stabilityPenalty = Int(Double(region.status.severity) * scaleFactor * 2)
+            game.applyStat("stability", change: -stabilityPenalty)
+        }
+
+        // Regional resource output affects treasury
+        if region.naturalResources >= 70 {
+            let resourceBonus = Int(scaleFactor * 2)
+            game.applyStat("treasury", change: resourceBonus)
+        }
+    }
+
+    /// Apply national economic conditions to a region
+    private func applyNationalToRegion(region: Region, game: Game) {
+        // National prosperity lifts all regions
+        if game.gdpIndex >= 110 {
+            region.industrialCapacity = min(100, region.industrialCapacity + 1)
+            region.infrastructureQuality = min(100, region.infrastructureQuality + 1)
+        } else if game.gdpIndex <= 80 {
+            region.industrialCapacity = max(10, region.industrialCapacity - 1)
+        }
+
+        // National food situation affects regional loyalty
+        if game.foodSupply >= 70 {
+            region.popularLoyalty = min(100, region.popularLoyalty + 1)
+        } else if game.foodSupply <= 30 {
+            region.popularLoyalty = max(0, region.popularLoyalty - 2)
+            region.autonomyDesire = min(100, region.autonomyDesire + 1)
+        }
+
+        // High inflation hurts all regions
+        if game.inflationRate >= 30 {
+            region.popularLoyalty = max(0, region.popularLoyalty - 1)
+        }
+
+        // National stability affects regions
+        if game.stability >= 70 {
+            region.partyControl = min(100, region.partyControl + 1)
+        } else if game.stability <= 30 {
+            region.partyControl = max(0, region.partyControl - 2)
+            region.autonomyDesire = min(100, region.autonomyDesire + 2)
+        }
+    }
+
+    /// Calculate aggregate effects of all regions on national economy
+    private func calculateAggregateRegionalEffects(game: Game) {
+        guard !game.regions.isEmpty else { return }
+
+        // Calculate average regional health
+        let totalIndustrial = game.regions.reduce(0) { $0 + $1.industrialCapacity }
+        let totalAgricultural = game.regions.reduce(0) { $0 + $1.agriculturalOutput }
+        let totalInfrastructure = game.regions.reduce(0) { $0 + $1.infrastructureQuality }
+        let regionCount = game.regions.count
+
+        let avgIndustrial = totalIndustrial / regionCount
+        let avgAgricultural = totalAgricultural / regionCount
+        let avgInfrastructure = totalInfrastructure / regionCount
+
+        // Strong regional infrastructure boosts GDP
+        if avgInfrastructure >= 70 {
+            game.applyStat("gdpIndex", change: 1)
+        } else if avgInfrastructure <= 30 {
+            game.applyStat("gdpIndex", change: -1)
+        }
+
+        // Count crisis regions
+        let crisisRegions = game.regions.filter { $0.status.severity >= 2 }.count
+        if crisisRegions >= 3 {
+            game.applyStat("stability", change: -3)
+            game.applyStat("eliteLoyalty", change: -2)
+            if !game.flags.contains("regional_crisis_widespread") {
+                game.flags.append("regional_crisis_widespread")
+            }
+        }
+
+        // Count highly productive regions
+        let productiveRegions = game.regions.filter { $0.industrialCapacity >= 70 || $0.agriculturalOutput >= 70 }.count
+        if productiveRegions >= game.regions.count / 2 {
+            game.applyStat("treasury", change: 2)
+        }
+
+        #if DEBUG
+        print("[Economy] Regional averages - Industry: \(avgIndustrial), Agriculture: \(avgAgricultural), Infrastructure: \(avgInfrastructure)")
+        #endif
     }
 
     /// Check for and create economic crisis events
@@ -805,10 +1257,237 @@ class EconomyService {
         }
     }
 
-    /// Process foreign country economies each turn
+    /// Process foreign country economies each turn with full interoperability
     func processForeignEconomies(game: Game) {
+        #if DEBUG
+        print("[Economy] Processing foreign economies for \(game.foreignCountries.count) countries")
+        #endif
+
         for country in game.foreignCountries {
+            // 1. Process the country's internal economy
             country.processEconomicTurn()
+
+            // 2. Apply player's economy effects on this country
+            applyPlayerEconomyEffects(from: game, to: country)
+
+            // 3. Apply this country's economy effects on player
+            applyForeignEconomyEffects(from: country, to: game)
+
+            // 4. Check for economic reform triggers
+            checkForeignEconomicReforms(country: country, game: game)
+
+            // 5. Check for crisis contagion
+            checkEconomicContagion(from: country, to: game)
+        }
+
+        // 6. Calculate global economic trend
+        updateGlobalEconomicTrend(game: game)
+    }
+
+    /// Player's economic performance affects trading partners
+    private func applyPlayerEconomyEffects(from game: Game, to country: ForeignCountry) {
+        // Only allies and neutral countries are affected
+        guard country.relationshipScore > -30 else { return }
+
+        // Strong player economy helps trading partners
+        if game.gdpIndex >= 110 && country.hasTreaty(of: .tradeAgreement) {
+            country.applyGDPGrowthChange(1)
+        }
+
+        // Player recession hurts trade partners
+        if game.isInRecession && country.hasTreaty(of: .tradeAgreement) {
+            country.applyGDPGrowthChange(-1)
+        }
+
+        // Aid packages boost receiving country
+        if country.hasTreaty(of: .aidPackage) {
+            country.applyGDPGrowthChange(2)
+            country.applyUnemploymentChange(-1)
+        }
+    }
+
+    /// Foreign country's economy affects player
+    private func applyForeignEconomyEffects(from country: ForeignCountry, to game: Game) {
+        // Socialist bloc allies' performance affects our economy
+        if country.politicalBloc == .socialist && country.relationshipScore > 30 {
+            // Strong ally economies help us
+            if country.gdpGrowth >= 5 {
+                game.applyStat("gdpIndex", change: 1)
+            }
+
+            // Ally in crisis hurts us
+            if country.hasEconomicCrisis {
+                game.applyStat("gdpIndex", change: -1)
+                game.applyStat("treasury", change: -2)  // Aid obligations
+            }
+        }
+
+        // Major trading partner's economic health affects trade balance
+        if country.hasTreaty(of: .tradeAgreement) {
+            if country.gdpGrowth <= -3 {
+                // Partner in recession = reduced exports
+                game.tradeBalance = max(-30, game.tradeBalance - 2)
+            } else if country.gdpGrowth >= 5 {
+                // Thriving partner = increased exports
+                game.tradeBalance = min(30, game.tradeBalance + 1)
+            }
+        }
+
+        // Economic powerhouse countries affect global conditions
+        if country.economicPower >= 80 {
+            // Soviet Union or major power economic shifts affect us
+            if country.hasEconomicCrisis {
+                game.applyStat("stability", change: -2)  // Global uncertainty
+            }
+        }
+    }
+
+    /// Check if foreign country triggers economic reform
+    private func checkForeignEconomicReforms(country: ForeignCountry, game: Game) {
+        // Countries in crisis may reform
+        guard country.hasReformPressure else { return }
+
+        // Roll for reform (higher tendency = higher chance)
+        let reformChance = country.economicReformTendency + (country.consecutiveGDPDeclines * 10)
+        let roll = Int.random(in: 0...100)
+
+        if roll < reformChance {
+            let currentSystem = country.currentEconomicSystem
+            let newSystem = determineEconomicReform(from: currentSystem, for: country)
+
+            if newSystem != currentSystem {
+                country.changeEconomicSystem(to: newSystem)
+
+                #if DEBUG
+                print("[Economy] \(country.name) reformed from \(currentSystem.displayName) to \(newSystem.displayName)")
+                #endif
+            }
+        }
+    }
+
+    /// Determine what economic system a country reforms to
+    private func determineEconomicReform(from current: EconomicSystemType, for country: ForeignCountry) -> EconomicSystemType {
+        switch current {
+        case .commandEconomy:
+            // Command economies can liberalize
+            return .marketSocialism
+
+        case .cronyCapitalism:
+            // Crony capitalism can reform toward free market or mixed
+            return Bool.random() ? .mixedEconomy : .freeMarket
+
+        case .freeMarket:
+            // Free market in crisis may adopt more state control
+            return .mixedEconomy
+
+        case .mixedEconomy:
+            // Mixed can go either direction based on government type
+            if country.governmentType == .communistState || country.governmentType == .socialistRepublic {
+                return .marketSocialism
+            } else {
+                return Bool.random() ? .freeMarket : .mixedEconomy
+            }
+
+        case .marketSocialism:
+            // Market socialism can revert to command or liberalize further
+            return Bool.random() ? .commandEconomy : .mixedEconomy
+        }
+    }
+
+    /// Economic crisis contagion - crisis in one country can spread
+    private func checkEconomicContagion(from country: ForeignCountry, to game: Game) {
+        guard country.hasEconomicCrisis else { return }
+        guard country.relationshipScore > -50 else { return }  // Must have some connection
+
+        // Calculate contagion risk
+        var contagionRisk = 0
+
+        // Geographic proximity increases risk
+        if country.borderingRegionId != nil {
+            contagionRisk += 15
+        }
+
+        // Trade ties increase risk
+        if country.hasTreaty(of: .tradeAgreement) {
+            contagionRisk += 20
+        }
+
+        // Same political bloc increases risk
+        if country.politicalBloc == .socialist {
+            contagionRisk += 10
+        }
+
+        // Large economy = more impact
+        contagionRisk += country.economicPower / 10
+
+        // Roll for contagion
+        let roll = Int.random(in: 0...100)
+        if roll < contagionRisk {
+            // Contagion effect - minor economic impact
+            game.applyStat("stability", change: -1)
+
+            // Specific crisis types have specific contagion effects
+            if country.gdpGrowth <= -5 {
+                game.applyStat("gdpIndex", change: -1)
+            }
+            if country.countryInflationRate >= 30 {
+                game.applyInflationChange(1)
+            }
+
+            #if DEBUG
+            print("[Economy] Economic contagion from \(country.name) affecting PSRA")
+            #endif
+        }
+    }
+
+    /// Update global economic trend based on all foreign economies
+    private func updateGlobalEconomicTrend(game: Game) {
+        var totalGrowth = 0
+        var crisisCount = 0
+        var boomCount = 0
+
+        for country in game.foreignCountries {
+            totalGrowth += country.gdpGrowth
+
+            if country.hasEconomicCrisis { crisisCount += 1 }
+            if country.gdpGrowth >= 5 { boomCount += 1 }
+        }
+
+        let countryCount = max(1, game.foreignCountries.count)
+        let averageGrowth = totalGrowth / countryCount
+
+        // Global recession affects everyone
+        if averageGrowth < 0 && crisisCount >= 3 {
+            if !game.flags.contains("global_recession") {
+                game.flags.append("global_recession")
+                game.applyStat("gdpIndex", change: -3)
+                game.applyStat("treasury", change: -5)
+
+                #if DEBUG
+                print("[Economy] Global recession triggered")
+                #endif
+            }
+        } else if game.flags.contains("global_recession") && averageGrowth > 2 {
+            // Recovery from global recession
+            game.flags.removeAll { $0 == "global_recession" }
+
+            #if DEBUG
+            print("[Economy] Global recession ended")
+            #endif
+        }
+
+        // Global boom benefits everyone
+        if averageGrowth >= 4 && boomCount >= 4 {
+            if !game.flags.contains("global_boom") {
+                game.flags.append("global_boom")
+                game.applyStat("gdpIndex", change: 2)
+
+                #if DEBUG
+                print("[Economy] Global economic boom")
+                #endif
+            }
+        } else if game.flags.contains("global_boom") && averageGrowth < 2 {
+            game.flags.removeAll { $0 == "global_boom" }
         }
     }
 }

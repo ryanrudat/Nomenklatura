@@ -103,6 +103,105 @@ enum EconomicSector: String, Codable, CaseIterable {
         case .defense: return "shield.fill"
         }
     }
+
+    /// Primary stat this sector affects
+    var primaryEffect: String {
+        switch self {
+        case .heavyIndustry: return "industrialOutput"
+        case .lightIndustry: return "popularSupport"
+        case .agriculture: return "foodSupply"
+        case .energy: return "industrialOutput"
+        case .mining: return "treasury"
+        case .construction: return "stability"
+        case .transport: return "gdpIndex"
+        case .defense: return "militaryLoyalty"
+        }
+    }
+
+    /// Secondary stat this sector affects
+    var secondaryEffect: String {
+        switch self {
+        case .heavyIndustry: return "gdpIndex"
+        case .lightIndustry: return "treasury"
+        case .agriculture: return "stability"
+        case .energy: return "gdpIndex"
+        case .mining: return "industrialOutput"
+        case .construction: return "popularSupport"
+        case .transport: return "industrialOutput"
+        case .defense: return "stability"
+        }
+    }
+
+    /// How investment-heavy this sector is (affects treasury drain)
+    var investmentCost: Int {
+        switch self {
+        case .heavyIndustry: return 4
+        case .lightIndustry: return 2
+        case .agriculture: return 2
+        case .energy: return 5
+        case .mining: return 3
+        case .construction: return 4
+        case .transport: return 5
+        case .defense: return 6
+        }
+    }
+
+    /// How many workers this sector employs (affects unemployment)
+    var laborIntensity: Int {
+        switch self {
+        case .heavyIndustry: return 4
+        case .lightIndustry: return 5
+        case .agriculture: return 4
+        case .energy: return 2
+        case .mining: return 3
+        case .construction: return 5
+        case .transport: return 3
+        case .defense: return 3
+        }
+    }
+
+    /// Which sectors support this sector's production
+    var dependencies: [EconomicSector] {
+        switch self {
+        case .heavyIndustry: return [.energy, .mining]
+        case .lightIndustry: return [.heavyIndustry, .agriculture]
+        case .agriculture: return [.energy, .transport]
+        case .energy: return [.mining, .transport]
+        case .mining: return [.energy, .transport]
+        case .construction: return [.heavyIndustry, .transport]
+        case .transport: return [.energy, .heavyIndustry]
+        case .defense: return [.heavyIndustry, .energy]
+        }
+    }
+}
+
+// MARK: - Sector Performance Tracking
+
+/// Tracks individual sector performance
+struct SectorPerformance: Codable {
+    var sectorId: String
+    var productionLevel: Int = 50       // 0-100, current output
+    var investmentLevel: Int = 50       // 0-100, recent investment
+    var workerMorale: Int = 50          // 0-100, affects productivity
+    var efficiency: Int = 50            // 0-100, tech/management level
+
+    /// Calculate actual output based on all factors
+    var actualOutput: Int {
+        let base = productionLevel
+        let moraleModifier = (workerMorale - 50) / 10  // -5 to +5
+        let efficiencyModifier = (efficiency - 50) / 10  // -5 to +5
+        return max(0, min(100, base + moraleModifier + efficiencyModifier))
+    }
+
+    /// Sector health description
+    var healthDescription: String {
+        let output = actualOutput
+        if output >= 80 { return "Exceeding quotas" }
+        if output >= 60 { return "Meeting targets" }
+        if output >= 40 { return "Underperforming" }
+        if output >= 20 { return "Crisis conditions" }
+        return "Collapsed"
+    }
 }
 
 // MARK: - Economic Effects

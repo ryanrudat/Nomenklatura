@@ -157,12 +157,15 @@ final class Game {
     // Five-Year Plan tracking
     var currentFiveYearPlan: Int = 1           // Which plan we're on (1st, 2nd, etc.)
     var fiveYearPlanYear: Int = 1              // Year within current plan (1-5)
-    var planTargetsMet: Int = 0                // Cumulative targets met this plan
+    var planTargetsMet: Int = 0                // Cumulative targets met this plan (out of 20 possible)
+    var planTargetsData: Data?                 // Encoded FiveYearPlanTargets
+    var planPerformanceScore: Int = 50         // 0-100, overall plan performance
 
     // Economic history (for trends)
     var gdpHistoryData: Data?                  // Encoded [Int] - last 20 turns of GDP
     var inflationHistoryData: Data?            // Encoded [Int] - last 20 turns of inflation rate
     var unemploymentHistoryData: Data?         // Encoded [Int] - last 20 turns of unemployment rate
+    var sectorPerformanceData: Data?           // Encoded [String: SectorPerformance]
 
     // Personal stat history (for sparklines)
     var standingHistoryData: Data?             // Encoded [Int] - last 20 turns
@@ -1937,6 +1940,95 @@ extension Game {
         }
     }
 
+    // MARK: - Sector Performance Tracking
+
+    /// All sector performance data
+    var sectorPerformance: [String: SectorPerformance] {
+        get {
+            guard let data = sectorPerformanceData else { return initializeDefaultSectors() }
+            return (try? JSONDecoder().decode([String: SectorPerformance].self, from: data)) ?? initializeDefaultSectors()
+        }
+        set {
+            sectorPerformanceData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Get performance for a specific sector
+    func sectorPerformance(for sector: EconomicSector) -> SectorPerformance {
+        return sectorPerformance[sector.rawValue] ?? SectorPerformance(sectorId: sector.rawValue)
+    }
+
+    /// Update a sector's performance
+    func updateSector(_ sector: EconomicSector, production: Int? = nil, investment: Int? = nil, morale: Int? = nil, efficiency: Int? = nil) {
+        var allSectors = sectorPerformance
+        var perf = allSectors[sector.rawValue] ?? SectorPerformance(sectorId: sector.rawValue)
+
+        if let production = production {
+            perf.productionLevel = max(0, min(100, production))
+        }
+        if let investment = investment {
+            perf.investmentLevel = max(0, min(100, investment))
+        }
+        if let morale = morale {
+            perf.workerMorale = max(0, min(100, morale))
+        }
+        if let efficiency = efficiency {
+            perf.efficiency = max(0, min(100, efficiency))
+        }
+
+        allSectors[sector.rawValue] = perf
+        sectorPerformance = allSectors
+    }
+
+    /// Apply sector performance change
+    func applySectorChange(_ sector: EconomicSector, productionChange: Int = 0, investmentChange: Int = 0, moraleChange: Int = 0, efficiencyChange: Int = 0) {
+        var allSectors = sectorPerformance
+        var perf = allSectors[sector.rawValue] ?? SectorPerformance(sectorId: sector.rawValue)
+
+        perf.productionLevel = max(0, min(100, perf.productionLevel + productionChange))
+        perf.investmentLevel = max(0, min(100, perf.investmentLevel + investmentChange))
+        perf.workerMorale = max(0, min(100, perf.workerMorale + moraleChange))
+        perf.efficiency = max(0, min(100, perf.efficiency + efficiencyChange))
+
+        allSectors[sector.rawValue] = perf
+        sectorPerformance = allSectors
+    }
+
+    /// Initialize default sector values
+    private func initializeDefaultSectors() -> [String: SectorPerformance] {
+        var sectors: [String: SectorPerformance] = [:]
+        for sector in EconomicSector.allCases {
+            sectors[sector.rawValue] = SectorPerformance(sectorId: sector.rawValue)
+        }
+        return sectors
+    }
+
+    /// Average sector health (0-100)
+    var averageSectorHealth: Int {
+        let sectors = sectorPerformance
+        guard !sectors.isEmpty else { return 50 }
+        let total = sectors.values.reduce(0) { $0 + $1.actualOutput }
+        return total / sectors.count
+    }
+
+    /// Weakest sector (for potential crisis triggers)
+    var weakestSector: (sector: EconomicSector, performance: SectorPerformance)? {
+        let sectors = sectorPerformance
+        guard !sectors.isEmpty else { return nil }
+
+        var weakest: (EconomicSector, SectorPerformance)?
+        var lowestOutput = 101
+
+        for sector in EconomicSector.allCases {
+            if let perf = sectors[sector.rawValue], perf.actualOutput < lowestOutput {
+                lowestOutput = perf.actualOutput
+                weakest = (sector, perf)
+            }
+        }
+
+        return weakest
+    }
+
     /// Record all economic indicators to history (call once per turn)
     func recordEconomicHistory() {
         recordGDPToHistory()
@@ -2238,14 +2330,147 @@ extension Game {
 
     /// Advance Five-Year Plan year (call every 4 turns = 1 year)
     func advanceFiveYearPlanYear() {
+        // Evaluate targets for the ending year before advancing
+        evaluateYearlyTargets()
+
         fiveYearPlanYear += 1
         if fiveYearPlanYear > 5 {
+            // Plan completion - apply consequences
+            completeFiveYearPlan()
+
             // New plan begins
             currentFiveYearPlan += 1
             fiveYearPlanYear = 1
             planTargetsMet = 0
+            planPerformanceScore = 50
+
+            // Initialize new targets
+            initializePlanTargets()
         }
         updatedAt = Date()
+    }
+
+    /// Five-Year Plan targets for current plan
+    var planTargets: FiveYearPlanTargets {
+        get {
+            guard let data = planTargetsData else { return FiveYearPlanTargets() }
+            return (try? JSONDecoder().decode(FiveYearPlanTargets.self, from: data)) ?? FiveYearPlanTargets()
+        }
+        set {
+            planTargetsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Initialize targets for a new Five-Year Plan
+    func initializePlanTargets() {
+        var targets = FiveYearPlanTargets()
+
+        // Set targets based on current state + ambitious growth
+        targets.gdpTarget = gdpIndex + 25  // Aim for 25% growth over 5 years
+        targets.industrialTarget = industrialOutput + 15
+        targets.agricultureTarget = foodSupply + 10
+        targets.treasuryTarget = max(60, treasury + 10)
+
+        // Track starting values
+        targets.startingGDP = gdpIndex
+        targets.startingIndustrial = industrialOutput
+        targets.startingAgriculture = foodSupply
+        targets.startingTreasury = treasury
+
+        planTargets = targets
+    }
+
+    /// Evaluate progress against yearly sub-targets
+    private func evaluateYearlyTargets() {
+        var targets = planTargets
+
+        // Calculate progress toward each target
+        let gdpProgress = calculateProgress(current: gdpIndex, start: targets.startingGDP, target: targets.gdpTarget)
+        let industrialProgress = calculateProgress(current: industrialOutput, start: targets.startingIndustrial, target: targets.industrialTarget)
+        let agricultureProgress = calculateProgress(current: foodSupply, start: targets.startingAgriculture, target: targets.agricultureTarget)
+
+        // Expected progress = fiveYearPlanYear / 5 (e.g., year 3 = 60% progress expected)
+        let expectedProgress = Double(fiveYearPlanYear) / 5.0
+
+        // Award targets met for exceeding expected progress
+        var yearlyTargetsMet = 0
+        if gdpProgress >= expectedProgress { yearlyTargetsMet += 1 }
+        if industrialProgress >= expectedProgress { yearlyTargetsMet += 1 }
+        if agricultureProgress >= expectedProgress { yearlyTargetsMet += 1 }
+        if treasury >= targets.treasuryTarget { yearlyTargetsMet += 1 }
+
+        planTargetsMet += yearlyTargetsMet
+
+        // Update performance score
+        let overallProgress = (gdpProgress + industrialProgress + agricultureProgress) / 3.0
+        planPerformanceScore = Int((overallProgress / expectedProgress) * 50.0) + 25  // 25-75 range, biased toward 50
+        planPerformanceScore = max(0, min(100, planPerformanceScore))
+
+        planTargets = targets
+    }
+
+    /// Calculate progress as fraction (0.0 to 1.0+)
+    private func calculateProgress(current: Int, start: Int, target: Int) -> Double {
+        let needed = target - start
+        guard needed > 0 else { return 1.0 }
+        let achieved = current - start
+        return max(0.0, Double(achieved) / Double(needed))
+    }
+
+    /// Complete a Five-Year Plan and apply consequences
+    private func completeFiveYearPlan() {
+        let performance = planPerformanceScore
+        let targets = planTargets
+
+        // Calculate overall success
+        let gdpMet = gdpIndex >= targets.gdpTarget
+        let industrialMet = industrialOutput >= targets.industrialTarget
+        let agricultureMet = foodSupply >= targets.agricultureTarget
+        let treasuryMet = treasury >= targets.treasuryTarget
+
+        let targetCount = [gdpMet, industrialMet, agricultureMet, treasuryMet].filter { $0 }.count
+
+        // Apply consequences based on performance
+        if targetCount >= 4 {
+            // Exceeded all targets - major bonus
+            applyStat("standing", change: 15)
+            applyStat("popularSupport", change: 10)
+            applyStat("eliteLoyalty", change: 10)
+            applyStat("reputationCompetent", change: 15)
+            flags.append("plan_\(currentFiveYearPlan)_exceeded")
+        } else if targetCount >= 3 {
+            // Met most targets - good
+            applyStat("standing", change: 8)
+            applyStat("reputationCompetent", change: 10)
+            flags.append("plan_\(currentFiveYearPlan)_success")
+        } else if targetCount >= 2 {
+            // Partial success - mixed results
+            applyStat("standing", change: -5)
+            flags.append("plan_\(currentFiveYearPlan)_partial")
+        } else if targetCount == 1 {
+            // Mostly failed - consequences
+            applyStat("standing", change: -15)
+            applyStat("patronFavor", change: -10)
+            applyStat("reputationCompetent", change: -15)
+            flags.append("plan_\(currentFiveYearPlan)_underperformed")
+        } else {
+            // Complete failure - severe consequences
+            applyStat("standing", change: -25)
+            applyStat("patronFavor", change: -20)
+            applyStat("eliteLoyalty", change: -10)
+            applyStat("popularSupport", change: -15)
+            applyStat("reputationCompetent", change: -25)
+            flags.append("plan_\(currentFiveYearPlan)_failure")
+        }
+
+        // Performance modifies treasury (plan bonuses/penalties from central authority)
+        if performance >= 80 {
+            applyStat("treasury", change: 10)
+        } else if performance >= 60 {
+            applyStat("treasury", change: 5)
+        } else if performance < 40 {
+            applyStat("treasury", change: -10)
+        }
     }
 
     /// Current Five-Year Plan phase (based on year)
@@ -2289,23 +2514,95 @@ extension Game {
 
     /// Check for economic crisis conditions
     var hasEconomicCrisis: Bool {
-        inflationRate >= 50 ||      // Hyperinflation
-        unemploymentRate >= 20 ||   // Mass unemployment
-        gdpIndex <= 70 ||           // Economic collapse
-        (isInRecession && gdpIndex <= 85)  // Prolonged recession
+        inflationRate >= 50 ||          // Hyperinflation
+        unemploymentRate >= 20 ||       // Mass unemployment
+        gdpIndex <= 70 ||               // Economic collapse
+        foodSupply <= 30 ||             // Food crisis
+        treasury <= 15 ||               // Financial collapse
+        (isInRecession && gdpIndex <= 85) ||  // Prolonged recession
+        hasShortage ||                  // Consumer goods crisis
+        hasBlackMarketCrisis            // Underground economy dominates
     }
 
-    /// Type of current economic crisis (if any)
+    /// Whether there's a consumer goods shortage
+    var hasShortage: Bool {
+        // Shortage occurs when light industry is weak AND services share is low
+        if let lightIndustry = sectorPerformance["lightIndustry"] {
+            return lightIndustry.actualOutput <= 25 && servicesShare <= 20
+        }
+        return false
+    }
+
+    /// Whether black market has overtaken official economy
+    var hasBlackMarketCrisis: Bool {
+        // Black market dominates when price controls are strict + shortages exist + inflation is high
+        let hasStrictControls = policySlot(withId: "price_controls")?.currentOptionId == "full_control"
+        let hasModerateInflation = inflationRate >= 25
+        let hasLowOutput = sectorPerformance["lightIndustry"]?.actualOutput ?? 50 <= 35
+
+        return hasStrictControls && hasModerateInflation && hasLowOutput
+    }
+
+    /// Type of current economic crisis (if any) - returns most severe crisis
     var currentEconomicCrisisType: EconomicCrisisType? {
+        // Check in order of severity (most severe first)
+
+        // 1. Hyperinflation (Severity 5) - currency collapse
         if inflationRate >= 50 {
             return .hyperinflation
-        } else if unemploymentRate >= 20 {
-            return .laborUnrest
-        } else if gdpIndex <= 70 {
+        }
+
+        // 2. Bank Run (Severity 4) - financial panic
+        if treasury <= 15 && inflationRate >= 30 {
+            return .bankRun
+        }
+
+        // 3. Harvest Failure (Severity 4) - agricultural crisis
+        if foodSupply <= 30 {
+            return .harvestFailure
+        }
+
+        // 4. Industrial Collapse (Severity 4) - factory closures
+        if gdpIndex <= 70 {
             return .industrialCollapse
-        } else if tradeBalance <= -20 {
+        }
+
+        // 5. Trade Blockade (Severity 3) - external trade cut off
+        if tradeBalance <= -20 {
             return .tradeBlockade
         }
+
+        // 6. Labor Unrest (Severity 3) - strikes and work stoppages
+        if unemploymentRate >= 20 {
+            return .laborUnrest
+        }
+
+        // 7. Shortage (Severity 2) - consumer goods unavailable
+        if hasShortage {
+            return .shortage
+        }
+
+        // 8. Black Market (Severity 2) - underground economy dominates
+        if hasBlackMarketCrisis {
+            return .blackMarket
+        }
+
         return nil
+    }
+
+    /// All current economic crises (there can be multiple)
+    var currentEconomicCrises: [EconomicCrisisType] {
+        var crises: [EconomicCrisisType] = []
+
+        if inflationRate >= 50 { crises.append(.hyperinflation) }
+        if treasury <= 15 && inflationRate >= 30 { crises.append(.bankRun) }
+        if foodSupply <= 30 { crises.append(.harvestFailure) }
+        if gdpIndex <= 70 { crises.append(.industrialCollapse) }
+        if tradeBalance <= -20 { crises.append(.tradeBlockade) }
+        if unemploymentRate >= 20 { crises.append(.laborUnrest) }
+        if hasShortage { crises.append(.shortage) }
+        if hasBlackMarketCrisis { crises.append(.blackMarket) }
+
+        return crises
     }
 }
