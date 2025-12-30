@@ -218,7 +218,7 @@ struct BriefingContent {
 struct DailyDiplomaticBriefing: Codable, Identifiable {
     let id: String
     let turnNumber: Int
-    let dateString: String              // "March 15, 1953"
+    let dateString: String              // "15th of First Month, Year 43"
     let items: [DiplomaticBriefingItem]
 
     /// Priority items that should be highlighted

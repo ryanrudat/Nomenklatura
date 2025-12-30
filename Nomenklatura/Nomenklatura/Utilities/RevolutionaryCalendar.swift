@@ -163,10 +163,10 @@ struct RevolutionaryCalendar {
         return formatWithMonth(year, month: month)
     }
 
-    /// Format a turn with full date (day, month, year)
+    /// Format a turn with full date (day, month, year) using revolutionary month names
     static func formatTurnFull(_ turn: Int) -> String {
         let (year, month, day) = dateComponents(from: turn)
-        let monthName = poeticMonthNames[safe: month - 1] ?? "Unknown"
+        let monthName = monthNames[safe: month - 1] ?? "Unknown Month"
         return "\(ordinal(day)) of \(monthName), \(format(year))"
     }
 

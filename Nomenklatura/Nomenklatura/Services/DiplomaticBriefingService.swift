@@ -585,14 +585,7 @@ class DiplomaticBriefingService {
     }
 
     private func formatGameDate(turn: Int) -> String {
-        // Game starts in 1953, each turn is roughly 3 months
-        let startYear = 1953
-        let yearsElapsed = turn / 4
-        let quarter = turn % 4
-
-        let month = ["January", "April", "July", "October"][quarter]
-        let year = startYear + yearsElapsed
-
-        return "\(month) \(year)"
+        // Use Revolutionary Calendar with revolutionary month names
+        RevolutionaryCalendar.formatTurnFull(turn)
     }
 }
