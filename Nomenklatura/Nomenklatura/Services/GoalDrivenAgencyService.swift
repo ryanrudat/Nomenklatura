@@ -65,6 +65,14 @@ final class GoalDrivenAgencyService {
                     continue
                 }
 
+                // Filter by goal type - ensure goal-driven content matches player's authority level
+                if let primaryGoal = character.primaryGoal {
+                    guard game.currentPositionIndex >= primaryGoal.goalType.minimumPositionIndex else {
+                        goalLogger.debug("Goal type \(primaryGoal.goalType.displayName) requires position \(primaryGoal.goalType.minimumPositionIndex), player at \(game.currentPositionIndex), skipping")
+                        continue
+                    }
+                }
+
                 events.append(event)
 
                 // Update character's last initiated turn to prevent repeat contacts

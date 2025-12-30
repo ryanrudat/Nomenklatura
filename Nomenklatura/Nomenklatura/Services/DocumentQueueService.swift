@@ -2197,6 +2197,15 @@ class DocumentQueueService: ObservableObject {
         let (program, target, duration) = programs.randomElement()!
         let slots = Int.random(in: 15...30)
 
+        // Generate participant list
+        let participants = generateParticipantList(count: min(slots, 8), targetGroup: target)
+        let participantList = participants.map { "  • \($0)" }.joined(separator: "\n")
+        let remainingCount = slots - min(slots, 8)
+        let remainingText = remainingCount > 0 ? "\n  ... and \(remainingCount) others (see attached roster)" : ""
+
+        // Identify a potentially problematic nomination for MODIFY option
+        let problematicName = participants.randomElement() ?? "Comrade Petrov"
+
         let body = """
         TRAINING PROGRAM ASSIGNMENT
 
@@ -2205,7 +2214,10 @@ class DocumentQueueService: ObservableObject {
         Duration: \(duration)
         Available Slots: \(slots)
 
-        The Personnel Development Office requests your approval for the attached list of \(slots) participants.
+        NOMINATED PARTICIPANTS:
+        \(participantList)\(remainingText)
+
+        The Personnel Development Office requests your approval for this participant list.
 
         All nominees have been cleared by their supervisors. Training budget has been allocated.
 
@@ -2232,9 +2244,9 @@ class DocumentQueueService: ObservableObject {
             )
             .addOption(
                 id: "modify",
-                text: "MODIFY - Substitute certain individuals",
-                shortDescription: "Modified participant list",
-                effects: [:]
+                text: "MODIFY - Remove \(problematicName), add alternate",
+                shortDescription: "Substituted participant",
+                effects: ["patronFavor": 1]  // Shows you're paying attention
             )
             .addOption(
                 id: "expand",
@@ -2243,6 +2255,43 @@ class DocumentQueueService: ObservableObject {
                 effects: ["treasury": -10]
             )
             .build()
+    }
+
+    /// Generate realistic participant names for training programs
+    private func generateParticipantList(count: Int, targetGroup: String) -> [String] {
+        let surnames = [
+            "Petrov", "Ivanov", "Sokolov", "Volkov", "Kozlov", "Novikov", "Morozov",
+            "Pavlov", "Semenov", "Golubev", "Vinogradov", "Bogdanov", "Voronov",
+            "Fedorov", "Mikhailov", "Belyaev", "Tarasov", "Belov", "Komarov", "Orlov",
+            "Kiselev", "Makarov", "Andreev", "Kovalev", "Ilyin", "Gusev", "Titov",
+            "Kuzmin", "Kudryavtsev", "Baranov", "Kulikova", "Alekseev", "Stepanov"
+        ]
+
+        let ranks: [String]
+        switch targetGroup {
+        case "Factory Supervisors":
+            ranks = ["Foreman", "Sr. Technician", "Shift Lead", "Production Chief", "Safety Inspector"]
+        case "Office Staff":
+            ranks = ["Clerk", "Secretary", "Typist", "Filing Specialist", "Records Keeper", "Assistant"]
+        default: // All Personnel
+            ranks = ["Comrade", "Worker", "Employee", "Staff Member", "Technician"]
+        }
+
+        var participants: [String] = []
+        var usedSurnames = Set<String>()
+
+        for _ in 0..<count {
+            var surname = surnames.randomElement()!
+            while usedSurnames.contains(surname) && usedSurnames.count < surnames.count {
+                surname = surnames.randomElement()!
+            }
+            usedSurnames.insert(surname)
+
+            let rank = ranks.randomElement()!
+            participants.append("\(rank) \(surname)")
+        }
+
+        return participants
     }
 
     /// Level 3+: Standard transfer request
