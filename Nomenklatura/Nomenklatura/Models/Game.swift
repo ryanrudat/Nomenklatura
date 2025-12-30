@@ -225,6 +225,9 @@ final class Game {
     // Historical Sessions (pre-game history Year 1-43)
     @Relationship(deleteRule: .cascade) var historicalSessions: [HistoricalSession]
 
+    // Codex Communication System (NPC-to-Player messaging)
+    @Relationship(deleteRule: .cascade) var codexMessages: [CodexMessage]
+
     var createdAt: Date
     var updatedAt: Date
 
@@ -377,6 +380,9 @@ final class Game {
         // Historical sessions (generated on game start)
         self.historicalSessions = []
 
+        // Codex communication system
+        self.codexMessages = []
+
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -521,6 +527,52 @@ extension Game {
     var playerFaction: PlayerFactionConfig? {
         guard let factionId = playerFactionId else { return nil }
         return PlayerFactionConfig.faction(withId: factionId)
+    }
+
+    // MARK: - Codex Communication
+
+    /// Number of unread Codex messages
+    var unreadCodexCount: Int {
+        codexMessages.filter { !$0.isRead && !$0.isArchived }.count
+    }
+
+    /// Unread Codex messages sorted by priority and time
+    var unreadCodexMessages: [CodexMessage] {
+        codexMessages
+            .filter { !$0.isRead && !$0.isArchived }
+            .sorted { msg1, msg2 in
+                // Sort by priority first, then by timestamp (newest first)
+                if msg1.codexPriority.sortOrder != msg2.codexPriority.sortOrder {
+                    return msg1.codexPriority.sortOrder < msg2.codexPriority.sortOrder
+                }
+                return msg1.timestamp > msg2.timestamp
+            }
+    }
+
+    /// All active (non-archived) Codex messages
+    var activeCodexMessages: [CodexMessage] {
+        codexMessages
+            .filter { !$0.isArchived }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
+    /// Messages requiring response from the player
+    var pendingResponses: [CodexMessage] {
+        codexMessages.filter { $0.requiresResponse && $0.playerResponseId == nil && !$0.isArchived }
+    }
+
+    /// Get messages in a conversation thread
+    func codexThread(for threadId: UUID) -> [CodexMessage] {
+        codexMessages
+            .filter { $0.threadId == threadId }
+            .sorted { $0.timestamp < $1.timestamp }
+    }
+
+    /// Get messages from a specific character
+    func codexMessages(from characterId: String) -> [CodexMessage] {
+        codexMessages
+            .filter { $0.senderId == characterId }
+            .sorted { $0.timestamp > $1.timestamp }
     }
 
     // MARK: - Policy Slots

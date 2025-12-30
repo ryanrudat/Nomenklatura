@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 import os.log
 
 private let gameLogger = Logger(subsystem: "com.ryanrudat.Nomenklatura", category: "GameEngine")
@@ -577,6 +578,62 @@ class GameEngine {
 
         // Record stat history for sparklines (at end of turn after all processing)
         game.recordAllStatHistory()
+    }
+
+    /// Extended end-of-turn processing that includes Codex and Consequence integration
+    /// Call this instead of endTurnUpdates when you have a ModelContext available
+    func endTurnUpdatesWithContext(game: Game, ladder: [LadderPosition], context: ModelContext) async {
+        // Run standard end-of-turn updates
+        endTurnUpdates(game: game, ladder: ladder)
+
+        // Process consequences and generate Codex reactions
+        let firedConsequences = ConsequenceEngine.shared.processConsequences(game: game)
+        await processConsequenceCodexReactions(consequences: firedConsequences, game: game, context: context)
+
+        // Process event-driven Codex messages (relationship triggers, state thresholds, check-ins)
+        await CodexService.shared.processEventDrivenMessages(game: game, context: context)
+
+        gameLogger.info("End-of-turn Codex processing complete. \(firedConsequences.count) consequences fired.")
+    }
+
+    /// Generate Codex messages for characters affected by fired consequences
+    private func processConsequenceCodexReactions(consequences: [ProcessedConsequence], game: Game, context: ModelContext) async {
+        for processed in consequences {
+            // Check if consequence has a related character
+            if let characterId = processed.consequence.relatedCharacterId {
+                CodexService.shared.queueConsequenceReaction(
+                    consequenceType: processed.consequence.type.rawValue,
+                    consequenceDescription: processed.consequence.description,
+                    characterId: characterId,
+                    game: game,
+                    context: context
+                )
+            }
+
+            // For elite backlash, have patron comment if patron exists and favor is low
+            if processed.consequence.type == .eliteBacklash, let patron = game.patron {
+                if game.patronFavor < 50 {
+                    CodexService.shared.queueConsequenceReaction(
+                        consequenceType: "eliteBacklash",
+                        consequenceDescription: processed.consequence.description,
+                        characterId: patron.templateId,
+                        game: game,
+                        context: context
+                    )
+                }
+            }
+
+            // For coalition forming, have rival gloat if rival exists
+            if processed.consequence.type == .coalitionForms, let rival = game.primaryRival {
+                CodexService.shared.queueConsequenceReaction(
+                    consequenceType: "coalitionForms",
+                    consequenceDescription: processed.consequence.description,
+                    characterId: rival.templateId,
+                    game: game,
+                    context: context
+                )
+            }
+        }
     }
 
     /// Process intelligence leaks based on player's Network stat

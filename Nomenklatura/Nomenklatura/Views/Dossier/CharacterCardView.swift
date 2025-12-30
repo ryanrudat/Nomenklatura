@@ -795,26 +795,71 @@ struct CharacterDetailView: View {
         return text
     }
 
+    /// Extract zone name from a position title like "Secretary of the Southern Zone"
+    private func extractZoneName(from title: String?) -> String? {
+        guard let title = title else { return nil }
+
+        // Pattern: "Secretary of the X Zone" or "Governor of the X Zone"
+        let patterns = [
+            "Secretary of the ",
+            "Governor of the "
+        ]
+
+        for pattern in patterns {
+            if title.contains(pattern) {
+                // Extract everything after the pattern
+                if let range = title.range(of: pattern) {
+                    return String(title[range.upperBound...])
+                }
+            }
+        }
+        return nil
+    }
+
     /// Generate a unique service record based on character attributes
     private func generateUniqueServiceRecord() -> String {
         let era = character.introducedTurn > 10 ? "'52" : "'48"
         let faction = character.factionId ?? "independent"
 
-        // Background based on faction
+        // PRIORITY 1: Use character's actual backstory if available
+        if let backstory = character.backstory, !backstory.isEmpty {
+            // Truncate to reasonable length for service record display
+            let maxLength = 400
+            if backstory.count > maxLength {
+                let truncated = String(backstory.prefix(maxLength))
+                if let lastPeriod = truncated.lastIndex(of: ".") {
+                    return String(truncated[...lastPeriod])
+                }
+                return truncated + "..."
+            }
+            return backstory
+        }
+
+        // PRIORITY 2: Generate zone-appropriate text for regional characters
         let factionBackground: String
-        switch faction {
-        case "reformists":
-            factionBackground = "Subject rose through academic channels before joining the Party apparatus. Previous work in theoretical economics at the People's Institute."
-        case "old_guard":
-            factionBackground = "Subject is a veteran of the Revolution, having served in the original Committees of Public Safety during the Civil War period."
-        case "youth_league":
-            factionBackground = "Subject emerged from the Young Pioneers program, noted for ideological fervor and organizational skills during campus activities."
-        case "princelings":
-            factionBackground = "Subject comes from a family with established Party connections. Parents held positions during the founding of the PSRA."
-        case "regional":
-            factionBackground = "Subject has deep roots in provincial administration, having served in multiple capacities across the western territories."
-        default:
-            factionBackground = "Subject's origins prior to Party membership remain partially unclear. Some records were lost during the consolidation period."
+        if faction == "regional", let zoneName = extractZoneName(from: character.title) {
+            factionBackground = "Subject has deep roots in \(zoneName) administration, having served in multiple capacities throughout the region."
+        } else {
+            // PRIORITY 3: Use faction-based templates for characters without backstory
+            switch faction {
+            case "reformists":
+                factionBackground = "Subject rose through academic channels before joining the Party apparatus. Previous work in theoretical economics at the People's Institute."
+            case "old_guard":
+                factionBackground = "Subject is a veteran of the Revolution, having served in the original Committees of Public Safety during the Civil War period."
+            case "youth_league":
+                factionBackground = "Subject emerged from the Young Pioneers program, noted for ideological fervor and organizational skills during campus activities."
+            case "princelings":
+                factionBackground = "Subject comes from a family with established Party connections. Parents held positions during the founding of the PSRA."
+            case "regional":
+                // Fallback if zone couldn't be extracted - use origin location if available
+                if let origin = character.originLocation {
+                    factionBackground = "Subject has deep roots in regional administration near \(origin), having served in multiple capacities throughout the territory."
+                } else {
+                    factionBackground = "Subject has deep roots in provincial administration, having served in multiple capacities across regional territories."
+                }
+            default:
+                factionBackground = "Subject's origins prior to Party membership remain partially unclear. Some records were lost during the consolidation period."
+            }
         }
 
         // Personality-influenced details
@@ -884,25 +929,77 @@ struct CharacterDetailView: View {
         let sector = (character.introducedTurn % 8) + 1
         let currentRole: String
 
+        // For deceased characters
+        if !character.isAlive {
+            return "Final assignment terminated. All active duties rescinded."
+        }
+
         if let title = character.title {
-            if title.contains("Minister") {
+            // Check for zone-specific positions first (regional track)
+            if let zoneName = extractZoneName(from: title) {
+                if title.contains("Governor") {
+                    currentRole = "Currently governs the \(zoneName) from regional headquarters."
+                } else if title.contains("Secretary") {
+                    currentRole = "Presently serves as Party Secretary for the \(zoneName)."
+                } else {
+                    currentRole = "Currently assigned to \(zoneName) administration."
+                }
+            }
+            // Ambassador positions
+            else if title.contains("Ambassador to") {
+                let country = title.replacingOccurrences(of: "Ambassador to ", with: "")
+                currentRole = "Currently leads diplomatic mission in \(country)."
+            }
+            else if title.contains("Ambassador") {
+                currentRole = "Currently serves in diplomatic mission abroad."
+            }
+            // Central positions
+            else if title.contains("General Secretary") {
+                currentRole = "Presides over the Standing Committee from the Capitol Complex."
+            }
+            else if title.contains("Deputy General Secretary") {
+                currentRole = "Serves on the Standing Committee with expanded executive authority."
+            }
+            else if title.contains("Second Secretary") {
+                currentRole = "Manages daily operations of the Central Committee Secretariat."
+            }
+            else if title.contains("Minister") {
                 currentRole = "Currently directing ministerial operations with full security clearance."
-            } else if title.contains("Secretary") {
-                currentRole = "Presently assigned to secretarial duties within the central apparatus."
-            } else if title.contains("Director") {
+            }
+            else if title.contains("Director") {
                 currentRole = "Overseeing directorate functions with expanded operational authority."
-            } else if title.contains("Deputy") {
+            }
+            else if title.contains("Chairman") && title.contains("Planning") {
+                currentRole = "Chairs the State Planning Commission operations."
+            }
+            else if title.contains("Secretary") && title.contains("Central Committee") {
+                currentRole = "Serves on the Central Committee Secretariat."
+            }
+            else if title.contains("Secretary") {
+                // Generic secretary fallback - check position track
+                if character.positionTrack == "partyApparatus" {
+                    currentRole = "Presently assigned to secretarial duties within the central apparatus."
+                } else {
+                    currentRole = "Presently assigned to secretarial duties within assigned jurisdiction."
+                }
+            }
+            else if title.contains("Deputy") {
                 currentRole = "Serving in deputy capacity with supervisory responsibilities."
-            } else {
+            }
+            else if title.contains("Commissar") || title.contains("Political") {
+                currentRole = "Serves as political officer with commissar responsibilities."
+            }
+            else if title.contains("Colonel") || title.contains("Major") || title.contains("Captain") || title.contains("Lieutenant") {
+                currentRole = "Currently assigned to security operations with appropriate clearance."
+            }
+            else if title.contains("Counselor") {
+                currentRole = "Serves in diplomatic capacity at assigned embassy."
+            }
+            else {
                 currentRole = "Maintaining assigned duties in Sector \(sector) operations."
             }
         } else {
             currentRole = "Current assignment: classified operations, Sector \(sector)."
-        }
-
-        // For deceased characters
-        if !character.isAlive {
-            return "Final assignment terminated. All active duties rescinded."
         }
 
         return currentRole

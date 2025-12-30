@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
 import Combine
 
 // MARK: - Document Queue Service
@@ -680,15 +681,212 @@ class DocumentQueueService: ObservableObject {
             .build()
     }
 
-    // MARK: - Other Category Generators (Stubs for now)
+    // MARK: - Military Category Documents
 
     private func generateMilitaryDocument(for game: Game) -> DeskDocument {
-        let templates = [
-            generateRequisitionRequest,
-            generateBorderIncidentReport,
-            generateDisciplineCase
+        let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+
+        // Military clearances reflect operational responsibility:
+        // - Levels 1-2: Administrative filing, supply paperwork
+        // - Levels 3-4: Unit discipline, equipment allocation
+        // - Levels 5+: Border incidents, tactical decisions
+        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
+            (1, generateSupplyFilingRequest),       // Level 1+ (routine filing)
+            (1, generateMaintenanceLogReview),      // Level 1+ (basic admin)
+            (2, generateRequisitionRequest),        // Level 2+ (resource allocation)
+            (3, generateDisciplineCase),            // Level 3+ (personnel matters)
+            (4, generateBorderIncidentReport),      // Level 4+ (high-stakes tactical)
+            (5, generateMilitaryReadinessAssessment) // Level 5+ (strategic oversight)
         ]
-        return templates.randomElement()!(game)
+
+        let available = templates.filter { $0.minClearance <= clearanceLevel }
+
+        // Weighted selection preferring appropriate challenge level
+        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
+            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
+            return Array(repeating: template.generator, count: weight)
+        }
+
+        if let generator = weighted.randomElement() {
+            return generator(game)
+        }
+
+        return generateSupplyFilingRequest(for: game)
+    }
+
+    /// Level 1+: Basic administrative filing
+    private func generateSupplyFilingRequest(for game: Game) -> DeskDocument {
+        let items = [
+            ("Winter boots", "23rd Infantry", "47 pairs"),
+            ("Uniform buttons", "Quartermaster Depot", "2,400 units"),
+            ("Typewriter ribbons", "Administrative Pool", "36 spools"),
+            ("Blankets", "Training Barracks", "85 units")
+        ]
+
+        let (item, unit, quantity) = items.randomElement()!
+
+        let body = """
+        SUPPLY REQUEST - FILING CONFIRMATION
+
+        Request ID: SR-\(Int.random(in: 10000...99999))
+        Requesting Unit: \(unit)
+        Item: \(item)
+        Quantity: \(quantity)
+
+        This request has been logged in the central supply system. Please verify the quantities match the attached requisition form and file according to standard procedure.
+
+        Note: Any discrepancies should be noted on Form 27-B and forwarded to the Supply Audit Office.
+
+        REQUIRES YOUR SIGNATURE FOR FILING.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("supply_filing_\(UUID().uuidString.prefix(6))")
+            .ofType(.requisition)
+            .titled("Supply Filing: \(item)")
+            .from("Central Supply Office", title: "Logistics Division")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.military)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "approve",
+                text: "APPROVE - Quantities verified",
+                shortDescription: "Approved filing",
+                effects: [:]
+            )
+            .addOption(
+                id: "flag_discrepancy",
+                text: "FLAG DISCREPANCY - Request audit",
+                shortDescription: "Flagged for audit",
+                effects: ["security": 2]
+            )
+            .build()
+    }
+
+    /// Level 1+: Basic maintenance review
+    private func generateMaintenanceLogReview(for game: Game) -> DeskDocument {
+        let vehicles = [
+            ("Transport Truck #147", "3rd Transport Battalion"),
+            ("Staff Car #23", "Regional Command Pool"),
+            ("Maintenance Vehicle #89", "Repair Depot")
+        ]
+
+        let (vehicle, unit) = vehicles.randomElement()!
+        let hoursLogged = Int.random(in: 200...450)
+
+        let body = """
+        MONTHLY MAINTENANCE LOG REVIEW
+
+        Vehicle: \(vehicle)
+        Assigned Unit: \(unit)
+        Hours Logged This Month: \(hoursLogged)
+
+        The attached maintenance log has been submitted for monthly review. Standard procedure requires verification that:
+
+        1. Oil changes performed on schedule
+        2. Tire inspections documented
+        3. Fuel consumption within normal parameters
+
+        Chief Mechanic notes: "All appears in order, but the fuel consumption seems slightly high. Could be nothing."
+
+        SIGN TO CONFIRM REVIEW COMPLETE.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("maintenance_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Maintenance Review: \(vehicle)")
+            .from("Motor Pool", title: "Vehicle Maintenance")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.military)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "approve",
+                text: "APPROVE - Log satisfactory",
+                shortDescription: "Approved maintenance log",
+                effects: [:]
+            )
+            .addOption(
+                id: "investigate_fuel",
+                text: "INVESTIGATE - Check fuel records",
+                shortDescription: "Investigated fuel usage",
+                effects: ["security": 3]
+            )
+            .addOption(
+                id: "request_detail",
+                text: "REQUEST DETAIL - Need more information",
+                shortDescription: "Requested details",
+                effects: [:]
+            )
+            .build()
+    }
+
+    /// Level 5+: Strategic military readiness assessment
+    private func generateMilitaryReadinessAssessment(for game: Game) -> DeskDocument {
+        let authority = AuthorityLanguage(game: game)
+
+        let readinessPercent = Int.random(in: 55...78)
+        let criticalShortage = ["ammunition", "medical supplies", "winter gear", "vehicle parts"].randomElement()!
+
+        let body = """
+        CLASSIFIED - STRATEGIC ASSESSMENT
+        QUARTERLY MILITARY READINESS REPORT
+
+        OVERALL READINESS: \(readinessPercent)%
+
+        CRITICAL FINDINGS:
+        1. \(criticalShortage.capitalized) reserves below minimum threshold
+        2. Training exercises delayed due to budget constraints
+        3. Officer retention down 12% from last quarter
+
+        REGIONAL BREAKDOWN:
+        - Northern District: 72% (border tensions increasing)
+        - Eastern District: 65% (equipment shortages)
+        - Southern District: 81% (stable)
+        - Western District: 58% (significant concerns)
+
+        RECOMMENDATION: Immediate resource reallocation to address critical shortages. Without action, readiness could fall below 50% within two quarters.
+
+        \(authority.approvalChain)
+        """
+
+        let authorizeText = authority.isTopLeadership ? "AUTHORIZE REALLOCATION" : "RECOMMEND REALLOCATION"
+
+        return DeskDocument.builder()
+            .withTemplateId("readiness_\(UUID().uuidString.prefix(6))")
+            .ofType(.intelligence)
+            .titled("Strategic Readiness Assessment")
+            .from("General Staff", title: "Defense Ministry")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.priority)
+            .inCategory(.military)
+            .classified(as: "TOP SECRET")
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "reallocate",
+                text: "\(authorizeText) - Address shortages",
+                shortDescription: "Authorized reallocation",
+                effects: ["military": 10, "treasury": -40]
+            )
+            .addOption(
+                id: "defer",
+                text: "DEFER - Request updated assessment",
+                shortDescription: "Deferred action",
+                effects: ["military": -5]
+            )
+            .addOption(
+                id: "minimize",
+                text: "MINIMIZE REPORT - Revise figures upward",
+                shortDescription: "Minimized concerns",
+                effects: ["security": -5],
+                setsFlag: "falsified_readiness_report"
+            )
+            .build()
     }
 
     private func generateRequisitionRequest(for game: Game) -> DeskDocument {
@@ -1467,16 +1665,275 @@ class DocumentQueueService: ObservableObject {
             .build()
     }
 
+    // MARK: - Diplomatic Category Documents
+
     private func generateDiplomaticDocument(for game: Game) -> DeskDocument {
+        let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+
+        // Diplomatic clearances reflect international exposure:
+        // - Levels 1-2: Translation filing, visitor logs (clerical)
+        // - Levels 3-4: Visa processing, cultural exchange coordination
+        // - Levels 5-6: Embassy communications, ambassador cables
+        // - Levels 7+: Treaty negotiations, international incidents
+        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
+            (1, generateTranslationFiling),          // Level 1+ (routine clerical)
+            (2, generateVisitorLogReview),           // Level 2+ (low-level security)
+            (3, generateVisaApplicationReview),      // Level 3+ (minor decisions)
+            (4, generateCulturalExchangeCoordination), // Level 4+ (inter-ministry)
+            (5, generateEmbassyCable),               // Level 5+ (confidential comms)
+            (6, generateDiplomaticIncidentReport)    // Level 6+ (sensitive matters)
+        ]
+
+        let available = templates.filter { $0.minClearance <= clearanceLevel }
+
+        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
+            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
+            return Array(repeating: template.generator, count: weight)
+        }
+
+        if let generator = weighted.randomElement() {
+            return generator(game)
+        }
+
+        return generateTranslationFiling(for: game)
+    }
+
+    /// Level 1+: Basic translation filing
+    private func generateTranslationFiling(for game: Game) -> DeskDocument {
+        let documents = [
+            ("Trade Circular #127", "French", "Commercial Division"),
+            ("Technical Manual Excerpt", "German", "Industrial Bureau"),
+            ("Agricultural Report Summary", "English", "Ministry of Agriculture"),
+            ("Cultural Bulletin", "Italian", "Propaganda Office")
+        ]
+
+        let (docName, language, requestor) = documents.randomElement()!
+
+        let body = """
+        TRANSLATION REQUEST FILING
+
+        Document: \(docName)
+        Source Language: \(language)
+        Requesting Office: \(requestor)
+
+        The attached document has been translated per standard protocol. Please verify the filing code and forward to the requesting department.
+
+        Translator notes: "Standard commercial language. No unusual terminology detected."
+
+        SIGN TO CONFIRM FILING COMPLETE.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("translation_\(UUID().uuidString.prefix(6))")
+            .ofType(.memo)
+            .titled("Translation Filing: \(docName)")
+            .from("Translation Bureau", title: "Foreign Ministry")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.diplomatic)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "file",
+                text: "FILE - Standard processing",
+                shortDescription: "Filed translation",
+                effects: [:]
+            )
+            .addOption(
+                id: "flag",
+                text: "FLAG FOR REVIEW - Request original",
+                shortDescription: "Flagged for review",
+                effects: ["security": 1]
+            )
+            .build()
+    }
+
+    /// Level 2+: Visitor log verification
+    private func generateVisitorLogReview(for game: Game) -> DeskDocument {
+        let visitors = [
+            ("Dr. Hans Mueller", "Austrian Trade Delegation", "3 days"),
+            ("Mr. James Crawford", "British Cultural Attaché Office", "1 week"),
+            ("Mme. Isabelle Dupont", "French Academic Exchange", "5 days")
+        ]
+
+        let (name, affiliation, duration) = visitors.randomElement()!
+
+        let body = """
+        FOREIGN VISITOR LOG - VERIFICATION REQUIRED
+
+        Visitor: \(name)
+        Affiliation: \(affiliation)
+        Duration of Visit: \(duration)
+        Host Department: Cultural Affairs
+
+        The visitor access log requires your verification signature before archiving. Standard security notation indicates no unusual activity during the visit.
+
+        Building Security notes: "Visitor adhered to designated areas. No protocol violations observed."
+
+        VERIFY AND SIGN FOR RECORDS.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("visitor_log_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Visitor Log: \(name)")
+            .from("Building Security", title: "Foreign Ministry")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.diplomatic)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "verify",
+                text: "VERIFY - Sign for archiving",
+                shortDescription: "Verified visitor log",
+                effects: [:]
+            )
+            .addOption(
+                id: "request_detail",
+                text: "REQUEST DETAIL - Who approved extended access?",
+                shortDescription: "Questioned access",
+                effects: ["security": 2]
+            )
+            .build()
+    }
+
+    /// Level 3+: Visa application processing
+    private func generateVisaApplicationReview(for game: Game) -> DeskDocument {
+        let applicants = [
+            ("Prof. Erik Lindqvist", "Sweden", "Academic exchange program"),
+            ("Mr. Antonio Silva", "Portugal", "Trade delegation member"),
+            ("Ms. Maria Kowalczyk", "Poland (emigre)", "Family reunification claim")
+        ]
+
+        let (name, nationality, purpose) = applicants.randomElement()!
+
+        let body = """
+        VISA APPLICATION REVIEW
+
+        Applicant: \(name)
+        Nationality: \(nationality)
+        Purpose of Visit: \(purpose)
+
+        Background Check: CLEARED (Standard)
+        Sponsoring Department: Ministry of Foreign Affairs
+
+        Application has passed initial screening. Your authorization is required for final processing.
+
+        Case Officer notes: "Standard application. No flags in our records."
+
+        AUTHORIZE / DENY / REQUEST ADDITIONAL REVIEW
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("visa_\(UUID().uuidString.prefix(6))")
+            .ofType(.assessment)
+            .titled("Visa Application: \(name)")
+            .from("Visa Processing Office", title: "Foreign Ministry")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.diplomatic)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "authorize",
+                text: "AUTHORIZE - Approve visa",
+                shortDescription: "Approved visa",
+                effects: ["diplomatic": 2]
+            )
+            .addOption(
+                id: "deny",
+                text: "DENY - Insufficient justification",
+                shortDescription: "Denied visa",
+                effects: ["security": 2, "diplomatic": -2]
+            )
+            .addOption(
+                id: "additional_review",
+                text: "ADDITIONAL REVIEW - Request security check",
+                shortDescription: "Requested security review",
+                effects: ["security": 3]
+            )
+            .build()
+    }
+
+    /// Level 4+: Cultural exchange program coordination
+    private func generateCulturalExchangeCoordination(for game: Game) -> DeskDocument {
+        let programs = [
+            ("Youth Orchestra Exchange", "Vienna", "Austrian Cultural Ministry"),
+            ("Technical Student Program", "Dresden", "Technical University"),
+            ("Athletic Delegation Visit", "Prague", "Sports Committee")
+        ]
+
+        let (program, city, partner) = programs.randomElement()!
+
+        let body = """
+        INTER-MINISTRY COORDINATION REQUEST
+
+        Program: \(program)
+        Destination: \(city)
+        Partner Organization: \(partner)
+
+        The Cultural Affairs Division requests your coordination signature for the upcoming exchange program. Multiple ministries must approve participation lists.
+
+        Security has cleared 23 of 25 proposed participants. Two individuals require additional background verification.
+
+        Question: Should we proceed with 23 participants or delay until all 25 are cleared?
+
+        Deadline for partner notification: 5 days
+
+        AWAITING YOUR DECISION.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("exchange_\(UUID().uuidString.prefix(6))")
+            .ofType(.assessment)
+            .titled("Exchange Program: \(program)")
+            .from("Cultural Affairs Division", title: "Foreign Ministry")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.priority)
+            .inCategory(.diplomatic)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "proceed_23",
+                text: "PROCEED - 23 participants, meet deadline",
+                shortDescription: "Approved partial list",
+                effects: ["diplomatic": 5]
+            )
+            .addOption(
+                id: "delay",
+                text: "DELAY - Wait for full clearance",
+                shortDescription: "Delayed for clearances",
+                effects: ["security": 3, "diplomatic": -3]
+            )
+            .addOption(
+                id: "replace",
+                text: "REPLACE - Find alternate participants",
+                shortDescription: "Replaced unclear participants",
+                effects: ["diplomatic": 3]
+            )
+            .build()
+    }
+
+    /// Level 5+: Embassy cable (the original diplomatic template)
+    private func generateEmbassyCable(for game: Game) -> DeskDocument {
+        let embassies = [
+            ("London", "Ambassador Mitchell", "British academics propose cultural symposium"),
+            ("Paris", "Ambassador Rousseau", "French trade delegation requests expanded access"),
+            ("Vienna", "Ambassador Hartmann", "Austrian officials suggest bilateral talks")
+        ]
+
+        let (city, ambassador, topic) = embassies.randomElement()!
+
         let body = """
         DECODED CABLE - CONFIDENTIAL
-        FROM: Embassy, London
+        FROM: Embassy, \(city)
 
-        British academics propose cultural symposium in Vienna on "shared European heritage."
+        \(topic) on "shared European heritage."
 
-        Initial assessment: Professor Whitmore likely connected to British intelligence.
+        Initial assessment: Key foreign participants may have intelligence connections.
 
-        However, symposium provides opportunities:
+        However, the proposal provides opportunities:
         1. Propaganda value
         2. Intelligence gathering
         3. Potential recruitment
@@ -1491,8 +1948,8 @@ class DocumentQueueService: ObservableObject {
         return DeskDocument.builder()
             .withTemplateId("cable_\(UUID().uuidString.prefix(6))")
             .ofType(.cable)
-            .titled("Embassy Cable: Cultural Exchange")
-            .from("Ambassador Mitchell", title: "London Embassy")
+            .titled("Embassy Cable: \(city)")
+            .from(ambassador, title: "\(city) Embassy")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.priority)
             .inCategory(.diplomatic)
@@ -1526,9 +1983,393 @@ class DocumentQueueService: ObservableObject {
             .build()
     }
 
+    /// Level 6+: Diplomatic incident requiring senior attention
+    private func generateDiplomaticIncidentReport(for game: Game) -> DeskDocument {
+        let authority = AuthorityLanguage(game: game)
+
+        let incidents = [
+            ("Embassy staff detained briefly at border", "Western authorities", "claimed 'document irregularities'"),
+            ("Diplomatic pouch delayed", "Foreign customs", "unprecedented 'inspection request'"),
+            ("Trade attaché expelled", "Host government", "alleged 'activities incompatible with status'")
+        ]
+
+        let (incident, actor, detail) = incidents.randomElement()!
+
+        let body = """
+        DIPLOMATIC INCIDENT REPORT - URGENT
+        CLASSIFICATION: SECRET
+
+        INCIDENT: \(incident)
+        FOREIGN ACTOR: \(actor)
+        STATED REASON: \(detail)
+
+        Our embassy has lodged a formal protest. The foreign ministry has not yet responded.
+
+        Assessment: This may be an isolated incident or part of a broader pattern of provocations.
+
+        Options:
+        1. Measured response - formal protest only
+        2. Proportional response - similar action against their personnel
+        3. Escalation - summon their ambassador for explanation
+
+        \(authority.approvalChain)
+        """
+
+        let escalateText = authority.isPolitburoMember ? "ESCALATE - Summon their ambassador" : "RECOMMEND ESCALATION"
+
+        return DeskDocument.builder()
+            .withTemplateId("incident_\(UUID().uuidString.prefix(6))")
+            .ofType(.intelligence)
+            .titled("Diplomatic Incident Report")
+            .from("Foreign Ministry", title: "Crisis Desk")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.urgent)
+            .inCategory(.diplomatic)
+            .classified(as: "SECRET")
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "measured",
+                text: "MEASURED RESPONSE - Formal protest only",
+                shortDescription: "Lodged formal protest",
+                effects: ["diplomatic": -5]
+            )
+            .addOption(
+                id: "proportional",
+                text: "PROPORTIONAL - Mirror their action",
+                shortDescription: "Proportional response",
+                effects: ["diplomatic": -10, "security": 5]
+            )
+            .addOption(
+                id: "escalate",
+                text: escalateText,
+                shortDescription: "Escalated incident",
+                effects: ["diplomatic": -15, "patronFavor": 5],
+                setsFlag: "escalated_diplomatic_incident"
+            )
+            .build()
+    }
+
+    // MARK: - Personnel Category Documents
+
     private func generatePersonnelDocument(for game: Game) -> DeskDocument {
+        let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+
+        // Personnel clearances reflect administrative scope:
+        // - Levels 1-2: Leave requests, timesheet verification
+        // - Levels 3-4: Minor transfers, training assignments
+        // - Levels 5+: Senior appointments, politically sensitive transfers
+        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
+            (1, generateLeaveRequestFiling),         // Level 1+ (routine admin)
+            (1, generateTimesheetVerification),      // Level 1+ (basic clerical)
+            (2, generateTrainingAssignment),         // Level 2+ (minor decisions)
+            (3, generateMinorTransferRequest),       // Level 3+ (standard transfers)
+            (4, generateSeniorTransferRequest),      // Level 4+ (sensitive transfers)
+            (5, generateNepotismTransferRequest)     // Level 5+ (politically charged)
+        ]
+
+        let available = templates.filter { $0.minClearance <= clearanceLevel }
+
+        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
+            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
+            return Array(repeating: template.generator, count: weight)
+        }
+
+        if let generator = weighted.randomElement() {
+            return generator(game)
+        }
+
+        return generateLeaveRequestFiling(for: game)
+    }
+
+    /// Level 1+: Basic leave request filing
+    private func generateLeaveRequestFiling(for game: Game) -> DeskDocument {
+        let employees = [
+            ("Comrade Petrov", "Filing Clerk", "2 days"),
+            ("Comrade Ivanova", "Typist Pool", "1 week"),
+            ("Comrade Sokolov", "Mail Room", "3 days")
+        ]
+
+        let (name, department, duration) = employees.randomElement()!
+        let reason = ["family matter", "medical appointment", "personal business"].randomElement()!
+
+        let body = """
+        LEAVE REQUEST - ADMINISTRATIVE FILING
+
+        Employee: \(name)
+        Department: \(department)
+        Requested Duration: \(duration)
+        Reason: \(reason.capitalized)
+
+        Supervisor has approved this request. Your signature is required for central records.
+
+        Note: Employee has sufficient leave balance.
+
+        SIGN TO FILE IN CENTRAL RECORDS.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("leave_\(UUID().uuidString.prefix(6))")
+            .ofType(.memo)
+            .titled("Leave Request: \(name)")
+            .from("Personnel Records", title: "Central Administration")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.personnel)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "file",
+                text: "FILE - Process normally",
+                shortDescription: "Filed leave request",
+                effects: [:]
+            )
+            .addOption(
+                id: "verify",
+                text: "VERIFY - Check leave balance first",
+                shortDescription: "Verified leave balance",
+                effects: [:]
+            )
+            .build()
+    }
+
+    /// Level 1+: Timesheet verification
+    private func generateTimesheetVerification(for game: Game) -> DeskDocument {
+        let departments = [
+            ("Records Division", "47 employees", "2,115 hours"),
+            ("Typing Pool", "23 employees", "1,035 hours"),
+            ("Mail Services", "12 employees", "540 hours")
+        ]
+
+        let (dept, count, hours) = departments.randomElement()!
+
+        let body = """
+        MONTHLY TIMESHEET VERIFICATION
+
+        Department: \(dept)
+        Employees: \(count)
+        Total Hours Logged: \(hours)
+
+        The attached timesheet summary requires your verification before payroll processing. Standard procedure requires checking that:
+
+        1. Total hours match expected work days
+        2. Overtime is properly authorized
+        3. Absences are documented
+
+        Payroll Office notes: "All figures appear in order."
+
+        SIGN TO APPROVE FOR PAYROLL.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("timesheet_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Timesheet: \(dept)")
+            .from("Payroll Office", title: "Central Administration")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.personnel)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "approve",
+                text: "APPROVE - Forward to payroll",
+                shortDescription: "Approved timesheets",
+                effects: [:]
+            )
+            .addOption(
+                id: "audit",
+                text: "REQUEST AUDIT - Check overtime hours",
+                shortDescription: "Requested overtime audit",
+                effects: ["security": 1]
+            )
+            .build()
+    }
+
+    /// Level 2+: Training program assignment
+    private func generateTrainingAssignment(for game: Game) -> DeskDocument {
+        let programs = [
+            ("Industrial Safety Certification", "Factory Supervisors", "3 days"),
+            ("Administrative Procedures Update", "Office Staff", "1 day"),
+            ("Ideological Education Seminar", "All Personnel", "2 days")
+        ]
+
+        let (program, target, duration) = programs.randomElement()!
+        let slots = Int.random(in: 15...30)
+
+        let body = """
+        TRAINING PROGRAM ASSIGNMENT
+
+        Program: \(program)
+        Target Group: \(target)
+        Duration: \(duration)
+        Available Slots: \(slots)
+
+        The Personnel Development Office requests your approval for the attached list of \(slots) participants.
+
+        All nominees have been cleared by their supervisors. Training budget has been allocated.
+
+        Note: Ideological content has been approved by the Party Education Committee.
+
+        APPROVE LIST / REQUEST MODIFICATIONS
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("training_\(UUID().uuidString.prefix(6))")
+            .ofType(.assessment)
+            .titled("Training: \(program)")
+            .from("Personnel Development", title: "Training Office")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.personnel)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "approve",
+                text: "APPROVE - Proceed with listed participants",
+                shortDescription: "Approved training list",
+                effects: [:]
+            )
+            .addOption(
+                id: "modify",
+                text: "MODIFY - Substitute certain individuals",
+                shortDescription: "Modified participant list",
+                effects: [:]
+            )
+            .addOption(
+                id: "expand",
+                text: "EXPAND - Request additional slots",
+                shortDescription: "Requested expansion",
+                effects: ["treasury": -10]
+            )
+            .build()
+    }
+
+    /// Level 3+: Standard transfer request
+    private func generateMinorTransferRequest(for game: Game) -> DeskDocument {
+        let transfers = [
+            ("Sgt. Viktor Orlov", "Guard Post 7", "Administrative Pool", "personal request"),
+            ("Clerk Maria Volkov", "Records Office", "Personnel Division", "efficiency improvement"),
+            ("Tech. Dmitri Kozlov", "Maintenance Unit", "Motor Pool", "skill utilization")
+        ]
+
+        let (name, from, to, reason) = transfers.randomElement()!
+
         let body = """
         PERSONNEL TRANSFER REQUEST
+
+        Subject: \(name)
+        Current Assignment: \(from)
+        Requested Assignment: \(to)
+        Reason: \(reason.capitalized)
+
+        Both sending and receiving units have approved this transfer. Your authorization is required for inter-departmental moves.
+
+        Performance Review: Satisfactory
+        Security Status: Cleared
+
+        APPROVE / DENY / DEFER
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("transfer_minor_\(UUID().uuidString.prefix(6))")
+            .ofType(.assessment)
+            .titled("Transfer: \(name)")
+            .from("Personnel Division", title: "Central Administration")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.personnel)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "approve",
+                text: "APPROVE - Standard transfer",
+                shortDescription: "Approved transfer",
+                effects: [:]
+            )
+            .addOption(
+                id: "deny",
+                text: "DENY - Current position essential",
+                shortDescription: "Denied transfer",
+                effects: [:]
+            )
+            .addOption(
+                id: "defer",
+                text: "DEFER - Request justification",
+                shortDescription: "Deferred decision",
+                effects: [:]
+            )
+            .build()
+    }
+
+    /// Level 4+: Senior or sensitive transfer
+    private func generateSeniorTransferRequest(for game: Game) -> DeskDocument {
+        let transfers = [
+            ("Lt. Col. Nikolai Petrov", "Regional Command", "General Staff", "merit-based advancement"),
+            ("Director Elena Mikhailova", "Industrial Bureau", "Planning Commission", "restructuring"),
+            ("Commissar Alexei Volkov", "District Party Office", "Central Committee Staff", "career development")
+        ]
+
+        let (name, from, to, reason) = transfers.randomElement()!
+
+        let body = """
+        SENIOR PERSONNEL TRANSFER REQUEST
+        CLASSIFICATION: CONFIDENTIAL
+
+        Subject: \(name)
+        Current Assignment: \(from)
+        Requested Assignment: \(to)
+        Stated Reason: \(reason.capitalized)
+
+        This transfer involves senior personnel and requires additional scrutiny.
+
+        Background notes:
+        - Subject has 15 years of service
+        - Performance consistently rated "Excellent"
+        - No security concerns on record
+
+        However: The receiving unit already has full staffing. This transfer would create redundancy.
+
+        YOUR DECISION WILL BE NOTED.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("transfer_senior_\(UUID().uuidString.prefix(6))")
+            .ofType(.assessment)
+            .titled("Senior Transfer: \(name)")
+            .from("Senior Personnel Office", title: "Central Administration")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.priority)
+            .inCategory(.personnel)
+            .classified(as: "CONFIDENTIAL")
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "approve",
+                text: "APPROVE - Merit warrants position",
+                shortDescription: "Approved senior transfer",
+                effects: ["patronFavor": 5]
+            )
+            .addOption(
+                id: "deny",
+                text: "DENY - No vacancy exists",
+                shortDescription: "Denied on staffing grounds",
+                effects: [:]
+            )
+            .addOption(
+                id: "create_position",
+                text: "CREATE POSITION - Approve with new slot",
+                shortDescription: "Created new position",
+                effects: ["treasury": -20, "patronFavor": 10]
+            )
+            .build()
+    }
+
+    /// Level 5+: Politically sensitive transfer (nepotism case)
+    private func generateNepotismTransferRequest(for game: Game) -> DeskDocument {
+        let body = """
+        PERSONNEL TRANSFER REQUEST
+        CLASSIFICATION: CONFIDENTIAL
 
         Subject: Captain Anna Wallace
         Current Assignment: 3rd Artillery Battalion
@@ -1544,13 +2385,14 @@ class DocumentQueueService: ObservableObject {
         """
 
         return DeskDocument.builder()
-            .withTemplateId("transfer_\(UUID().uuidString.prefix(6))")
+            .withTemplateId("transfer_nepotism_\(UUID().uuidString.prefix(6))")
             .ofType(.assessment)
             .titled("Transfer Request: Capt. Wallace")
             .from("Personnel Division", title: "Defense Ministry")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.routine)
             .inCategory(.personnel)
+            .classified(as: "CONFIDENTIAL")
             .withBody(body)
             .withFootnote("The General has never asked directly. But he knows this is on your desk.")
             .requiresDecision(true)
@@ -1575,11 +2417,227 @@ class DocumentQueueService: ObservableObject {
             .build()
     }
 
+    // MARK: - Crisis Category Documents
+
     private func generateCrisisDocument(for game: Game) -> DeskDocument {
-        // Use position-aware language
+        let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+
+        // Crisis clearances reflect scope of authority:
+        // Note: Category-level filtering already prevents crisis < Level 3
+        // - Level 3: Minor incidents (equipment failures, supply issues)
+        // - Level 4: Local disturbances (small protests, workplace disputes)
+        // - Level 5+: Major crises (strikes, regional unrest, sabotage)
+        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
+            (3, generateEquipmentFailureCrisis),     // Level 3+ (facility incident)
+            (3, generateSupplyDisruptionCrisis),     // Level 3+ (logistical crisis)
+            (4, generateLocalDisturbanceCrisis),     // Level 4+ (minor unrest)
+            (5, generateWorkerStrikeCrisis),         // Level 5+ (major labor crisis)
+            (6, generateRegionalUnrestCrisis)        // Level 6+ (widespread unrest)
+        ]
+
+        let available = templates.filter { $0.minClearance <= clearanceLevel }
+
+        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
+            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
+            return Array(repeating: template.generator, count: weight)
+        }
+
+        if let generator = weighted.randomElement() {
+            return generator(game)
+        }
+
+        return generateEquipmentFailureCrisis(for: game)
+    }
+
+    /// Level 3+: Equipment failure requiring immediate action
+    private func generateEquipmentFailureCrisis(for game: Game) -> DeskDocument {
+        let incidents = [
+            ("Boiler explosion", "Heating Plant #12", "3 workers injured"),
+            ("Power generator failure", "Factory District 7", "production halted"),
+            ("Crane collapse", "Construction Site 4", "1 fatality, 2 injured")
+        ]
+
+        let (incident, location, casualties) = incidents.randomElement()!
+
+        let body = """
+        URGENT INCIDENT REPORT
+
+        INCIDENT: \(incident)
+        LOCATION: \(location)
+        CASUALTIES: \(casualties)
+
+        Emergency services have responded. The immediate danger is contained.
+
+        However, an investigation must be initiated. Options:
+
+        1. Internal review - handled quietly by the facility
+        2. Safety committee investigation - formal but controlled
+        3. Full external audit - thorough but may uncover other issues
+
+        Note: The facility manager is requesting guidance before speaking to workers.
+
+        RESPONSE REQUIRED WITHIN 24 HOURS.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("crisis_equipment_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("URGENT: \(incident)")
+            .from("Facility Manager", title: location)
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.urgent)
+            .inCategory(.crisis)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "internal",
+                text: "INTERNAL REVIEW - Handle quietly",
+                shortDescription: "Ordered internal review",
+                effects: ["security": 5, "stability": -5]
+            )
+            .addOption(
+                id: "committee",
+                text: "SAFETY COMMITTEE - Formal investigation",
+                shortDescription: "Ordered committee review",
+                effects: ["stability": 5]
+            )
+            .addOption(
+                id: "audit",
+                text: "FULL AUDIT - External investigation",
+                shortDescription: "Ordered external audit",
+                effects: ["stability": 10, "treasury": -15],
+                setsFlag: "ordered_safety_audit"
+            )
+            .withDeadline(turnsFromNow: 1)
+            .build()
+    }
+
+    /// Level 3+: Supply chain disruption
+    private func generateSupplyDisruptionCrisis(for game: Game) -> DeskDocument {
+        let disruptions = [
+            ("Coal shipment delayed", "Power Station 3", "48-hour reserves remaining"),
+            ("Food distribution breakdown", "District 14", "delivery trucks unavailable"),
+            ("Medical supplies shortage", "Regional Hospital", "critical medications low")
+        ]
+
+        let (issue, location, impact) = disruptions.randomElement()!
+
+        let body = """
+        SUPPLY EMERGENCY - URGENT
+
+        ISSUE: \(issue)
+        AFFECTED: \(location)
+        IMPACT: \(impact)
+
+        The situation requires immediate action to prevent escalation.
+
+        Options:
+        1. Emergency reallocation from other facilities
+        2. Priority transport requisition (costly)
+        3. Rationing protocol until normal supply resumes
+
+        Local officials are awaiting your guidance.
+
+        TIME-SENSITIVE MATTER.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("crisis_supply_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("SUPPLY EMERGENCY: \(issue)")
+            .from("Logistics Office", title: "Supply Command")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.urgent)
+            .inCategory(.crisis)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "reallocate",
+                text: "REALLOCATE - Draw from other facilities",
+                shortDescription: "Reallocated supplies",
+                effects: ["stability": 5]
+            )
+            .addOption(
+                id: "priority",
+                text: "PRIORITY TRANSPORT - Emergency requisition",
+                shortDescription: "Emergency transport ordered",
+                effects: ["treasury": -25, "stability": 10]
+            )
+            .addOption(
+                id: "ration",
+                text: "RATIONING - Temporary reduction",
+                shortDescription: "Implemented rationing",
+                effects: ["stability": -10, "treasury": 10]
+            )
+            .withDeadline(turnsFromNow: 1)
+            .build()
+    }
+
+    /// Level 4+: Local disturbance
+    private func generateLocalDisturbanceCrisis(for game: Game) -> DeskDocument {
+        let disturbances = [
+            ("Workers demanding overtime pay", "Textile Factory #23", "50 workers"),
+            ("Students protesting cafeteria conditions", "Technical Institute", "100 students"),
+            ("Residents complaining about water quality", "Housing Block 7", "200 residents")
+        ]
+
+        let (issue, location, scale) = disturbances.randomElement()!
+
+        let body = """
+        DISTURBANCE REPORT - PRIORITY
+
+        ISSUE: \(issue)
+        LOCATION: \(location)
+        SCALE: Approximately \(scale) involved
+
+        The situation is currently contained but could escalate. Local Party officials have requested guidance.
+
+        Assessment: This appears to be a legitimate grievance, not politically motivated. However, unaddressed complaints can attract unwanted attention.
+
+        Options:
+        1. Address grievance directly (may set precedent)
+        2. Disperse and investigate later
+        3. Refer to appropriate ministry
+
+        AWAITING YOUR DECISION.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("crisis_local_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("DISTURBANCE: \(location)")
+            .from("Local Party Secretary", title: "District Office")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.priority)
+            .inCategory(.crisis)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "address",
+                text: "ADDRESS GRIEVANCE - Meet their concerns",
+                shortDescription: "Addressed complaints",
+                effects: ["stability": 10, "treasury": -20]
+            )
+            .addOption(
+                id: "disperse",
+                text: "DISPERSE - Order them back to work",
+                shortDescription: "Ordered dispersal",
+                effects: ["stability": -5, "security": 5]
+            )
+            .addOption(
+                id: "refer",
+                text: "REFER - Pass to relevant ministry",
+                shortDescription: "Referred to ministry",
+                effects: [:]
+            )
+            .withDeadline(turnsFromNow: 2)
+            .build()
+    }
+
+    /// Level 5+: Major worker strike (original crisis template)
+    private func generateWorkerStrikeCrisis(for game: Game) -> DeskDocument {
         let authority = AuthorityLanguage(game: game)
 
-        // Military command context varies by position
         let militaryLine = authority.isTopLeadership ?
             "Military units are on standby awaiting your orders." :
             authority.isPolitburoMember ?
@@ -1605,7 +2663,6 @@ class DocumentQueueService: ObservableObject {
         \(authority.approvalChain)
         """
 
-        // Adjust option text based on authority level
         let suppressText = authority.isTopLeadership ? "SUPPRESS - Send in the military" :
                           authority.isPolitburoMember ? "RECOMMEND SUPPRESSION - Forward to General Secretary" :
                           "RECOMMEND FORCE - Escalate to Politburo"
@@ -1613,7 +2670,7 @@ class DocumentQueueService: ObservableObject {
                           "Recommended military suppression"
 
         return DeskDocument.builder()
-            .withTemplateId("crisis_\(UUID().uuidString.prefix(6))")
+            .withTemplateId("crisis_strike_\(UUID().uuidString.prefix(6))")
             .ofType(.report)
             .titled("CRISIS: Worker Unrest - Steel Mill #7")
             .from("Regional Command", title: "Crisis Center")
@@ -1650,6 +2707,81 @@ class DocumentQueueService: ObservableObject {
             .withConsequenceIfIgnored(
                 "The strike spread to three more factories. The situation is now out of control.",
                 effects: ["stability": -30, "patronFavor": -20]
+            )
+            .withDeadline(turnsFromNow: 1)
+            .build()
+    }
+
+    /// Level 6+: Regional unrest requiring high-level intervention
+    private func generateRegionalUnrestCrisis(for game: Game) -> DeskDocument {
+        let authority = AuthorityLanguage(game: game)
+
+        let body = """
+        CRISIS ALERT - CRITICAL
+        CLASSIFICATION: SECRET
+
+        Multiple districts are reporting coordinated unrest. The pattern suggests organization beyond local grievances.
+
+        AFFECTED AREAS:
+        - Industrial District 4: Production stopped
+        - Mining Region 7: Work slowdown
+        - Agricultural Collective 12: Refusing quotas
+
+        Intelligence suggests:
+        1. Possible external coordination
+        2. Underground pamphlets circulating
+        3. Former political prisoners may be involved
+
+        Regional security forces are overstretched. National resources may be required.
+
+        \(authority.approvalChain)
+
+        THIS REQUIRES IMMEDIATE HIGH-LEVEL ATTENTION.
+        """
+
+        let crackdownText = authority.isTopLeadership ? "AUTHORIZE CRACKDOWN - National security response" :
+                           "RECOMMEND CRACKDOWN - Forward to leadership"
+
+        return DeskDocument.builder()
+            .withTemplateId("crisis_regional_\(UUID().uuidString.prefix(6))")
+            .ofType(.intelligence)
+            .titled("CRISIS: Regional Unrest")
+            .from("State Security", title: "Emergency Operations")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.critical)
+            .inCategory(.crisis)
+            .classified(as: "SECRET")
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(
+                id: "crackdown",
+                text: crackdownText,
+                shortDescription: "Authorized regional crackdown",
+                effects: ["stability": -30, "security": 25],
+                setsFlag: "regional_crackdown"
+            )
+            .addOption(
+                id: "targeted",
+                text: "TARGETED RESPONSE - Arrest organizers only",
+                shortDescription: "Targeted arrests",
+                effects: ["stability": -10, "security": 15]
+            )
+            .addOption(
+                id: "concessions",
+                text: "EMERGENCY CONCESSIONS - Address root causes",
+                shortDescription: "Made emergency concessions",
+                effects: ["stability": 15, "treasury": -75, "patronFavor": -25]
+            )
+            .addOption(
+                id: "negotiate_leaders",
+                text: "NEGOTIATE - Talk to the organizers",
+                shortDescription: "Opened negotiations",
+                effects: ["stability": 5, "security": -15],
+                setsFlag: "negotiated_with_dissidents"
+            )
+            .withConsequenceIfIgnored(
+                "The regional unrest has spread to the capital. The government's authority is openly questioned.",
+                effects: ["stability": -50, "patronFavor": -30]
             )
             .withDeadline(turnsFromNow: 1)
             .build()
@@ -1812,6 +2944,114 @@ class DocumentQueueService: ObservableObject {
         }
 
         return option
+    }
+
+    /// Extended version that also schedules Codex message reactions from affected characters
+    func selectOptionWithCodexReaction(
+        document: DeskDocument,
+        optionId: String,
+        game: Game,
+        context: ModelContext
+    ) -> DocumentOption? {
+        // First, process the option normally
+        guard let option = selectOption(document: document, optionId: optionId, game: game) else {
+            return nil
+        }
+
+        // Schedule Codex reactions from relevant characters
+        scheduleCodexReactionsForDecision(document: document, option: option, game: game, context: context)
+
+        return option
+    }
+
+    /// Schedule Codex messages from characters affected by a document decision
+    private func scheduleCodexReactionsForDecision(
+        document: DeskDocument,
+        option: DocumentOption,
+        game: Game,
+        context: ModelContext
+    ) {
+        // Check if the document has a character reaction
+        if let reaction = option.characterReaction {
+            // Find the reacting character
+            if let character = game.characters.first(where: { $0.name == reaction.characterName }) {
+                // Only schedule Codex message if disposition change is significant
+                if abs(reaction.dispositionChange) >= 10 {
+                    CodexService.shared.scheduleDecisionReaction(
+                        character: character,
+                        decision: document,
+                        option: option,
+                        delay: 1,  // React next turn
+                        game: game,
+                        context: context
+                    )
+                }
+            }
+        }
+
+        // Check if the document sender is a character who should react
+        if let senderCharacter = game.characters.first(where: { $0.name == document.sender || $0.title == document.senderTitle }) {
+            // Patron reacts to decisions that affect their interests
+            if senderCharacter.isPatron {
+                // Check if decision affects patron favor
+                if let favorChange = option.effects["patronFavor"], abs(favorChange) >= 5 {
+                    CodexService.shared.scheduleDecisionReaction(
+                        character: senderCharacter,
+                        decision: document,
+                        option: option,
+                        delay: 1,
+                        game: game,
+                        context: context
+                    )
+                }
+            }
+
+            // Rival reacts to decisions that benefit or harm them
+            if senderCharacter.isRival {
+                // Check if decision affects rival threat
+                if let threatChange = option.effects["rivalThreat"], abs(threatChange) >= 5 {
+                    CodexService.shared.scheduleDecisionReaction(
+                        character: senderCharacter,
+                        decision: document,
+                        option: option,
+                        delay: 2,  // Rivals take longer to react
+                        game: game,
+                        context: context
+                    )
+                }
+            }
+        }
+
+        // Check for security-sensitive decisions that might trigger patron/rival messages
+        if let flag = option.setsFlag {
+            // Decisions that set sensitive flags should trigger character awareness
+            let sensitiveFlags = ["covered_up", "suppressed", "falsified", "negotiated_with", "arrested"]
+            if sensitiveFlags.contains(where: { flag.contains($0) }) {
+                // Patron may find out about sensitive decisions
+                if let patron = game.patron, Bool.random() {
+                    CodexService.shared.scheduleDecisionReaction(
+                        character: patron,
+                        decision: document,
+                        option: option,
+                        delay: Int.random(in: 2...4),  // Delayed discovery
+                        game: game,
+                        context: context
+                    )
+                }
+
+                // Rival may use sensitive decisions against player
+                if let rival = game.primaryRival, Bool.random() {
+                    CodexService.shared.scheduleDecisionReaction(
+                        character: rival,
+                        decision: document,
+                        option: option,
+                        delay: Int.random(in: 3...5),  // Even more delayed
+                        game: game,
+                        context: context
+                    )
+                }
+            }
+        }
     }
 
     /// Handle a character's reaction to a decision

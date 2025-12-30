@@ -202,6 +202,15 @@ struct ContentView: View {
             character.personalityLoyal = template.personality.loyal
             character.personalityCorrupt = template.personality.corrupt
 
+            // Copy biographical data from template
+            character.backstory = template.backstory
+            character.ageCategory = template.ageCategory
+            character.originLocation = template.originLocation
+            character.familyBackground = template.familyBackground
+
+            // Copy historical connections
+            character.historicalConnections = template.historicalConnections ?? []
+
             // Explicitly insert character into context to ensure persistence
             modelContext.insert(character)
             character.game = newGame
@@ -303,6 +312,11 @@ struct ContentView: View {
 
         // Record initial stats for sparkline history (so graphs have a starting point)
         newGame.recordAllStatHistory()
+
+        // Generate initial Codex messages (welcome message from patron)
+        Task {
+            await CodexService.shared.generateMessagesForTurn(game: newGame, context: modelContext)
+        }
 
         // Show game
         setupState = .playing
@@ -421,7 +435,7 @@ struct GameView: View {
                     case .dossier:
                         DossierView(game: game, onWorldTap: { showingWorldSheet = true }, onCongressTap: { showingCongressSheet = true })
                     case .codex:
-                        CodexView(onWorldTap: { showingWorldSheet = true }, onCongressTap: { showingCongressSheet = true })
+                        CodexTerminalView(game: game)
                     case .ladder:
                         OrgChartView(game: game, ladder: campaignConfig.ladder, onWorldTap: { showingWorldSheet = true }, onCongressTap: { showingCongressSheet = true })
                     }
@@ -558,36 +572,40 @@ struct GameView: View {
     }
 
     private func completePersonalAction() {
-        // Apply end-of-turn updates
-        GameEngine.shared.endTurnUpdates(game: game, ladder: campaignConfig.ladder)
+        // Apply end-of-turn updates with Codex and Consequence integration
+        Task {
+            await GameEngine.shared.endTurnUpdatesWithContext(game: game, ladder: campaignConfig.ladder, context: modelContext)
 
-        // Check for game end conditions
-        let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
-        if endCheck.gameOver {
-            endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
-            return
-        }
+            // Check for game end conditions (on main actor)
+            await MainActor.run {
+                let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
+                if endCheck.gameOver {
+                    endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
+                    return
+                }
 
-        // Check for promotion eligibility
-        let promotionCheck = GameEngine.shared.checkPromotionEligibility(game: game, ladder: campaignConfig.ladder)
-        if promotionCheck.canPromote, let nextPosition = promotionCheck.nextPosition {
-            // Execute promotion and show notification
-            GameEngine.shared.executePromotion(game: game, to: nextPosition)
-            promotionPosition = nextPosition
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                showPromotionNotification = true
+                // Check for promotion eligibility
+                let promotionCheck = GameEngine.shared.checkPromotionEligibility(game: game, ladder: campaignConfig.ladder)
+                if promotionCheck.canPromote, let nextPosition = promotionCheck.nextPosition {
+                    // Execute promotion and show notification
+                    GameEngine.shared.executePromotion(game: game, to: nextPosition)
+                    promotionPosition = nextPosition
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        showPromotionNotification = true
+                    }
+                }
+
+                // Clear outcome data
+                currentOutcome = nil
+
+                // Advance turn
+                game.phase = GamePhase.briefing.rawValue
+                game.turnNumber += 1
+                game.turnsInCurrentPosition += 1  // Track time in current position
+                game.actionPoints = 2  // Reset AP for next turn
+                game.usedActionsThisTurn = []  // Clear used actions for new turn
             }
         }
-
-        // Clear outcome data
-        currentOutcome = nil
-
-        // Advance turn
-        game.phase = GamePhase.briefing.rawValue
-        game.turnNumber += 1
-        game.turnsInCurrentPosition += 1  // Track time in current position
-        game.actionPoints = 2  // Reset AP for next turn
-        game.usedActionsThisTurn = []  // Clear used actions for new turn
 
         // Log turn event
         let turnEvent = GameEvent(

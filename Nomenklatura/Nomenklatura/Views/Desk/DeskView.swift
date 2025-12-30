@@ -26,6 +26,7 @@ struct DeskView: View {
     @State private var currentDynamicEvent: DynamicEvent?
     @State private var isAIGenerated = false
     @Environment(\.theme) var theme
+    @Environment(\.modelContext) private var modelContext
 
     // View state
     @State private var showContent = false
@@ -1394,46 +1395,18 @@ struct DeskView: View {
     // MARK: - Event Handlers
 
     private func handleDocumentDecision(document: DeskDocument, option: DocumentOption) {
-        // Apply the decision to the document
-        _ = documentQueue.selectOption(document: document, optionId: option.id, game: game)
-
-        // Apply stat effects
-        for (key, value) in option.effects {
-            game.applyStat(key, change: value)
-        }
-
-        // Handle flags
-        if let flag = option.setsFlag, !game.flags.contains(flag) {
-            game.flags.append(flag)
-        }
-        if let flag = option.removesFlag {
-            game.flags.removeAll { $0 == flag }
-        }
-
-        // Record in game events
-        let gameEvent = GameEvent(
-            turnNumber: game.turnNumber,
-            eventType: .decision,
-            summary: "Document: \(option.shortDescription)"
+        // Apply the decision using Codex-aware version that schedules character reactions
+        // This handles: stat effects, flags, events, character reactions, follow-up triggers, AND Codex messages
+        _ = documentQueue.selectOptionWithCodexReaction(
+            document: document,
+            optionId: option.id,
+            game: game,
+            context: modelContext
         )
-        gameEvent.decisionContext = document.bodyText
-        gameEvent.optionChosen = option.shortDescription
-        gameEvent.presenterName = document.sender
-        gameEvent.presenterTitle = document.senderTitle
-        gameEvent.game = game
-        game.events.append(gameEvent)
 
-        // Handle character reaction if present
+        // Handle immediate character reaction UI if present (for dynamic events)
         if let reaction = option.characterReaction {
             handleCharacterReaction(reaction: reaction, document: document)
-        }
-
-        // Trigger follow-up document if specified
-        if let triggerId = option.triggersDocument {
-            // Queue a follow-up document for next turn
-            if !game.flags.contains("pending_doc_\(triggerId)") {
-                game.flags.append("pending_doc_\(triggerId)")
-            }
         }
 
         // Close the detail view

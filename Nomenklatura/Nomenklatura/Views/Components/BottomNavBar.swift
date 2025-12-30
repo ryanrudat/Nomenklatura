@@ -29,7 +29,7 @@ enum NavTab: String, CaseIterable {
         case .desk: return "doc.text.fill"
         case .ledger: return "chart.bar.fill"
         case .dossier: return "person.fill"
-        case .codex: return "book.fill"
+        case .codex: return "text.bubble.fill"
         case .ladder: return "ladder.fill"
         }
     }
@@ -40,7 +40,7 @@ enum NavTab: String, CaseIterable {
         case .desk: return "doc.text.fill"
         case .ledger: return "chart.bar.fill"
         case .dossier: return "person.fill"
-        case .codex: return "book.fill"
+        case .codex: return "text.bubble.fill"
         case .ladder: return "arrow.up.right.circle.fill"
         }
     }
