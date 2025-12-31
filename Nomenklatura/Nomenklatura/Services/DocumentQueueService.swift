@@ -95,6 +95,9 @@ class DocumentQueueService: ObservableObject {
     /// Track if a crisis-themed document was generated (to coordinate with events)
     private var crisisDocumentGeneratedThisTurn: Bool = false
 
+    /// Track the last turn we generated documents for (to prevent reset on multiple calls same turn)
+    private var lastGenerationTurn: Int = -1
+
     // MARK: - Name Generation for Document Lists
 
     /// Eastern European/Soviet-style first names
@@ -177,10 +180,17 @@ class DocumentQueueService: ObservableObject {
         isProcessing = true
         defer { isProcessing = false }
 
-        // Reset duplicate tracking for new turn
-        generatedThisTurn.removeAll()
-        categoriesGeneratedThisTurn.removeAll()
-        crisisDocumentGeneratedThisTurn = false
+        // Only reset duplicate tracking when turn changes (prevents duplicates from multiple calls same turn)
+        if game.turnNumber != lastGenerationTurn {
+            generatedThisTurn.removeAll()
+            categoriesGeneratedThisTurn.removeAll()
+            crisisDocumentGeneratedThisTurn = false
+            lastGenerationTurn = game.turnNumber
+        } else {
+            // Already generated documents this turn - skip to avoid duplicates
+            documentLog.info("📄 [DocQueue] Skipping duplicate generation call for turn \(game.turnNumber)")
+            return
+        }
 
         // Generate pending follow-up documents FIRST (these have narrative priority)
         generatePendingFollowUpDocuments(game: game)

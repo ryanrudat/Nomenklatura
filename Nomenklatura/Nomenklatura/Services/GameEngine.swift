@@ -1194,6 +1194,42 @@ class GameEngine {
 
         // Check for character fate events
         checkCharacterFates(game: game)
+
+        // Autonomous NPC actions - evaluate organically, not every turn
+        // (Skip early turns to let player settle in)
+        guard game.turnNumber > 2 else { return }
+
+        // Natural pacing: NPCs don't always act - some turns are quiet
+        // Base 40% chance of any autonomous action, modified by game tension
+        let tensionBonus = (100 - game.stability) / 100  // More unstable = more NPC activity
+        let rivalBonus = game.rivalThreat > 50 ? 10 : 0   // High rival threat increases activity
+        let baseChance = 40 + tensionBonus + rivalBonus
+
+        guard Int.random(in: 1...100) <= baseChance else { return }
+
+        // Rotate which type of action is evaluated each turn for variety
+        // This prevents mechanical "check everything" feel
+        let actionType = game.turnNumber % 3
+
+        switch actionType {
+        case 0:
+            // Character agency turn - patron/rival/ally may act
+            if let characterEvent = CharacterAgencyService.shared.evaluateCharacterActions(game: game) {
+                game.queueDynamicEvent(characterEvent)
+            }
+        case 1:
+            // Goal-driven turn - NPCs pursue their ambitions
+            let goalEvents = GoalDrivenAgencyService.shared.evaluateGoalDrivenActions(game: game)
+            if let event = goalEvents.first {
+                game.queueDynamicEvent(event)
+            }
+        default:
+            // Memory-driven turn - grudges and gratitude surface
+            let memoryEvents = MemoryIntegrationService.shared.evaluateMemoryDrivenActions(game: game)
+            if let event = memoryEvents.first {
+                game.queueDynamicEvent(event)
+            }
+        }
     }
 
     private func applyRandomEvents(game: Game) {
