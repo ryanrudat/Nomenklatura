@@ -106,17 +106,6 @@ struct ContentView: View {
         }
         .environment(\.theme, themeManager.currentTheme)
         .onAppear {
-            // TEMPORARY: Force delete all existing games to test faction selection flow
-            // Remove this block after confirming faction selection works
-            if !games.isEmpty {
-                for oldGame in games {
-                    modelContext.delete(oldGame)
-                }
-                try? modelContext.save()
-                setupState = .campaignSelect
-                return
-            }
-
             // Check if there's an active game with proper faction
             if let game = activeGame {
                 // Repair any save state inconsistencies from older versions
