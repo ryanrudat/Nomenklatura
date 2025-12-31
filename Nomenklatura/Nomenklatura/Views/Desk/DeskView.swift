@@ -630,7 +630,8 @@ struct DeskView: View {
             .frame(height: 175)
             .onReceive(snapshotTimer) { _ in
                 // Only cycle images when loading screen is actually visible
-                guard loadingState.isLoading else { return }
+                // Check both isTransitioning and loadingState.isLoading since either shows the loading view
+                guard isTransitioning || loadingState.isLoading else { return }
 
                 // Slow fade out
                 withAnimation(.easeOut(duration: 1.2)) {
