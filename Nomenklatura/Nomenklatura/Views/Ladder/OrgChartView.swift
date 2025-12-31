@@ -575,8 +575,8 @@ struct StandingCommitteeLadderSheet: View {
             members.append((chair, .chairman))
         }
 
-        // Full members
-        for memberId in sc.fullMemberIds {
+        // Full members (excluding chair who was already added)
+        for memberId in sc.fullMemberIds where memberId != sc.chairId {
             if let member = game.characters.first(where: { $0.templateId == memberId && $0.isAlive }) {
                 members.append((member, .fullMember))
             }

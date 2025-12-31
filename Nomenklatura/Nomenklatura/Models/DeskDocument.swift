@@ -496,14 +496,16 @@ class DeskDocumentBuilder {
         text: String,
         shortDescription: String,
         effects: [String: Int] = [:],
-        setsFlag: String? = nil
+        setsFlag: String? = nil,
+        triggersDocument: String? = nil
     ) -> DeskDocumentBuilder {
         let option = DocumentOption(
             id: id,
             text: text,
             shortDescription: shortDescription,
             effects: effects,
-            setsFlag: setsFlag
+            setsFlag: setsFlag,
+            triggersDocument: triggersDocument
         )
         self.options.append(option)
         self.requiresDecision = true

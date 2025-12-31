@@ -475,7 +475,8 @@ class DocumentQueueService: ObservableObject {
                 text: "INVESTIGATE - Open a case file and assign an agent",
                 shortDescription: "Opened investigation",
                 effects: ["network": -5],
-                setsFlag: "investigating_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                setsFlag: "investigating_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                triggersDocument: "investigation_denunciation_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
             .addOption(
                 id: "file",
@@ -543,7 +544,8 @@ class DocumentQueueService: ObservableObject {
                 id: "enhanced",
                 text: "AUTHORIZE ENHANCED SURVEILLANCE",
                 shortDescription: "Authorized enhanced surveillance",
-                effects: ["network": -10, "security": 5]
+                effects: ["network": -10, "security": 5],
+                triggersDocument: "surveillance_\(target.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
             .addOption(
                 id: "continue",
@@ -616,7 +618,8 @@ class DocumentQueueService: ObservableObject {
                 text: authorizeText,
                 shortDescription: authorizeDesc,
                 effects: ["security": 10, "stability": -5],
-                setsFlag: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                setsFlag: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                triggersDocument: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
             .addOption(
                 id: "deny",
@@ -628,7 +631,8 @@ class DocumentQueueService: ObservableObject {
                 id: "delay",
                 text: "REQUEST MORE EVIDENCE",
                 shortDescription: "Requested more evidence",
-                effects: [:]
+                effects: [:],
+                triggersDocument: "evidence_update_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
             .withConsequenceIfIgnored(
                 "The suspect fled while awaiting your decision. Security is furious.",
@@ -679,7 +683,8 @@ class DocumentQueueService: ObservableObject {
                 id: "investigate",
                 text: "INVESTIGATE - Conduct discreet inquiry",
                 shortDescription: "Ordered investigation",
-                effects: ["security": 3]
+                effects: ["security": 3],
+                triggersDocument: "investigation_security_\(UUID().uuidString.prefix(8))"
             )
             .addOption(
                 id: "note",
@@ -744,7 +749,8 @@ class DocumentQueueService: ObservableObject {
                 id: "pursue",
                 text: pursueText,
                 shortDescription: pursueDesc,
-                effects: ["network": -5]
+                effects: ["network": -5],
+                triggersDocument: "investigation_intel_\(UUID().uuidString.prefix(8))"
             )
             .addOption(
                 id: "maintain",
@@ -1033,7 +1039,8 @@ class DocumentQueueService: ObservableObject {
                 id: "reallocate",
                 text: "REALLOCATE FROM ANOTHER UNIT",
                 shortDescription: "Reallocated from other unit",
-                effects: ["military": 5]
+                effects: ["military": 5],
+                triggersDocument: "reallocation_\(unit.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
             .build()
     }
@@ -1091,7 +1098,8 @@ class DocumentQueueService: ObservableObject {
                 id: "interrogate",
                 text: "INTERROGATE PRISONER - Before Security gets involved",
                 shortDescription: "Interrogated prisoner first",
-                effects: ["network": 10, "security": -5]
+                effects: ["network": 10, "security": -5],
+                triggersDocument: "interrogation_border_\(UUID().uuidString.prefix(8))"
             )
             .withConsequenceIfIgnored(
                 "The situation at the border deteriorated. Questions are being asked about the delay.",
@@ -1135,7 +1143,8 @@ class DocumentQueueService: ObservableObject {
                 text: "EXECUTION - Send a message",
                 shortDescription: "Ordered execution",
                 effects: ["military": 10, "stability": -10],
-                setsFlag: "executed_reznik"
+                setsFlag: "executed_reznik",
+                triggersDocument: "case_outcome_execution_reynolds"
             )
             .addOption(
                 id: "labor",
@@ -1147,7 +1156,8 @@ class DocumentQueueService: ObservableObject {
                 id: "reeducation",
                 text: "RE-EDUCATION - 6 months, return to duty",
                 shortDescription: "Ordered re-education",
-                effects: ["military": -5]
+                effects: ["military": -5],
+                triggersDocument: "case_outcome_reeducation_reynolds"
             )
             .addOption(
                 id: "discharge",
@@ -1302,7 +1312,8 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Grant the adjustment",
                 shortDescription: "Approved quota adjustment",
-                effects: direction == "increase" ? ["standing": 5] : ["stability": 5]
+                effects: direction == "increase" ? ["standing": 5] : ["stability": 5],
+                triggersDocument: "compliance_quota_district_\(UUID().uuidString.prefix(6))"
             )
             .addOption(
                 id: "deny",
@@ -1455,13 +1466,15 @@ class DocumentQueueService: ObservableObject {
                 id: "report",
                 text: "REPORT UP - Tell the Minister",
                 shortDescription: "Reported to Minister",
-                effects: ["patronFavor": -10, "security": 10]
+                effects: ["patronFavor": -10, "security": 10],
+                triggersDocument: "consequence_ministerial_response"
             )
             .addOption(
                 id: "investigate",
                 text: "INVESTIGATE SOURCE - Find who's lying",
                 shortDescription: "Investigated source",
-                effects: ["network": -10]
+                effects: ["network": -10],
+                triggersDocument: "investigation_production_\(UUID().uuidString.prefix(8))"
             )
             .build()
     }
@@ -1506,7 +1519,8 @@ class DocumentQueueService: ObservableObject {
                 text: "REDUCE QUOTA - Make it achievable",
                 shortDescription: "Reduced quota",
                 effects: ["treasury": -10],
-                setsFlag: "helped_morrison"
+                setsFlag: "helped_morrison",
+                triggersDocument: "compliance_factory_morrison"
             )
             .addOption(
                 id: "approve_funds",
@@ -1531,7 +1545,8 @@ class DocumentQueueService: ObservableObject {
                 text: "VISIT FACTORY - See for yourself",
                 shortDescription: "Visited factory",
                 effects: [:],
-                setsFlag: "visited_morrison_factory"
+                setsFlag: "visited_morrison_factory",
+                triggersDocument: "visit_factory_morrison"
             )
             .withConsequenceIfIgnored(
                 "Director Morrison was arrested three months later. His daughters are now in a state orphanage.",
@@ -2235,8 +2250,9 @@ class DocumentQueueService: ObservableObject {
             .addOption(
                 id: "verify",
                 text: "VERIFY - Check leave balance first",
-                shortDescription: "Verified leave balance",
-                effects: [:]
+                shortDescription: "Requested verification",
+                effects: [:],
+                triggersDocument: "verification_leave_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
             )
             .build()
     }
@@ -3377,6 +3393,38 @@ class DocumentQueueService: ObservableObject {
         case let id where id.hasPrefix("policy_"):
             return generatePolicyFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
 
+        // Verification follow-ups (leave balance, credentials, etc.)
+        case let id where id.hasPrefix("verification_"):
+            return generateVerificationFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Interrogation follow-ups
+        case let id where id.hasPrefix("interrogation_"):
+            return generateInterrogationFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Visit/inspection follow-ups
+        case let id where id.hasPrefix("visit_"):
+            return generateVisitFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Evidence update follow-ups
+        case let id where id.hasPrefix("evidence_update_"):
+            return generateEvidenceUpdateFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Compliance follow-ups (quota, policy implementation)
+        case let id where id.hasPrefix("compliance_"):
+            return generateComplianceFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Reallocation impact follow-ups
+        case let id where id.hasPrefix("reallocation_"):
+            return generateReallocationImpactFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Surveillance result follow-ups
+        case let id where id.hasPrefix("surveillance_"):
+            return generateSurveillanceResultFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
+        // Case outcome follow-ups (discipline, sentencing)
+        case let id where id.hasPrefix("case_outcome_"):
+            return generateCaseOutcomeFollowUp(triggerId: id, parentId: parentId, chainId: chainId, game: game)
+
         default:
             return nil
         }
@@ -3783,6 +3831,729 @@ class DocumentQueueService: ObservableObject {
 
         if let parentId = parentId {
             builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "policy_follow_up")
+        }
+
+        return builder.build()
+    }
+
+    // MARK: - New Follow-Up Document Templates
+
+    /// Generate a verification follow-up (leave balance, credentials, etc.)
+    private func generateVerificationFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let subjectName = triggerId
+            .replacingOccurrences(of: "verification_leave_", with: "")
+            .replacingOccurrences(of: "verification_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("confirmed", "Verification Complete: Records Confirmed", "Balance verified. Employee has 12 days remaining leave. Request is within policy parameters.", true),
+            ("insufficient", "Verification Complete: Insufficient Balance", "Balance insufficient. Employee has only 4 days remaining, requested 7 days. Request exceeds available leave.", false),
+            ("discrepancy", "Verification Alert: Discrepancy Detected", "Accounting discrepancy detected. Records show 8 days unaccounted for. Possible clerical error or falsification.", true)
+        ]
+
+        let (outcomeId, title, details, requiresDecision) = outcomes.randomElement()!
+
+        let body = """
+        PERSONNEL VERIFICATION REPORT
+        Reference: \(triggerId.uppercased())
+        Subject: \(subjectName)
+
+        STATUS: \(title.uppercased())
+
+        FINDINGS:
+        \(details)
+
+        \(outcomeId == "confirmed" ?
+            "RECOMMENDATION: Approve leave request. All documentation in order." :
+            outcomeId == "insufficient" ?
+            "RECOMMENDATION: Deny request or approve partial leave (4 days maximum)." :
+            "RECOMMENDATION: Hold request pending investigation of discrepancy. Possible personnel file audit required.")
+
+        - HR Administration
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_verification_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("HR Administration", title: "Personnel Division")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(outcomeId == "discrepancy" ? .priority : .routine)
+            .inCategory(.personnel)
+            .classified(as: "CONFIDENTIAL")
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "verification_follow_up")
+        }
+
+        if outcomeId == "confirmed" {
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "approve_verified", text: "APPROVE - Balance confirmed", shortDescription: "Approved (verified)", effects: ["stability": 2])
+                .addOption(id: "deny_anyway", text: "DENY - Operational needs", shortDescription: "Denied despite balance", effects: ["stability": -3])
+        } else if outcomeId == "insufficient" {
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "deny_insufficient", text: "DENY - Insufficient balance", shortDescription: "Denied (insufficient)", effects: [:])
+                .addOption(id: "approve_partial", text: "APPROVE PARTIAL - 4 days only", shortDescription: "Approved partial", effects: ["stability": 1])
+                .addOption(id: "approve_exception", text: "APPROVE EXCEPTION - Grant anyway", shortDescription: "Approved exception", effects: ["stability": -2, "treasury": -5])
+        } else {
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "investigate_discrepancy", text: "INVESTIGATE - Audit personnel files", shortDescription: "Investigating discrepancy", effects: ["treasury": -10], triggersDocument: "investigation_personnel_\(subjectName.lowercased().replacingOccurrences(of: " ", with: "_"))")
+                .addOption(id: "dismiss_clerical", text: "DISMISS - Likely clerical error", shortDescription: "Dismissed as error", effects: [:])
+                .addOption(id: "hold_pending", text: "HOLD - Pending resolution", shortDescription: "Held pending", effects: [:])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate an interrogation follow-up
+    private func generateInterrogationFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let subjectRef = triggerId
+            .replacingOccurrences(of: "interrogation_border_", with: "Border Subject ")
+            .replacingOccurrences(of: "interrogation_", with: "Subject ")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("confession", "Interrogation Report: Confession Obtained", "Subject has confessed to border crossing with intent to defect. Names of co-conspirators provided.", true),
+            ("defiance", "Interrogation Report: Subject Uncooperative", "Subject maintains innocence despite extended questioning. No actionable intelligence obtained.", true),
+            ("intel", "Interrogation Report: Intelligence Gathered", "Subject provided valuable information about smuggling routes. Potential asset for future operations.", true),
+            ("cover_story", "Interrogation Report: Cover Story Verified", "Investigation confirms subject's cover story. Appears to be legitimate border worker with proper documentation.", false)
+        ]
+
+        let (outcomeId, title, summary, requiresAction) = outcomes.randomElement()!
+
+        let body = """
+        INTERROGATION SUMMARY
+        Reference: \(triggerId.uppercased())
+        Subject: \(subjectRef)
+
+        STATUS: \(title.uppercased())
+
+        SUMMARY:
+        \(summary)
+
+        \(outcomeId == "confession" ?
+            "Subject is cooperative and has requested leniency in exchange for further information.\n\nRECOMMENDATION: Formal charges and tribunal, or offer reduced sentence for additional names." :
+            outcomeId == "defiance" ?
+            "Subject shows signs of training to resist interrogation. May indicate foreign intelligence involvement.\n\nRECOMMENDATION: Extended detention or enhanced methods pending authorization." :
+            outcomeId == "intel" ?
+            "Information provided has been corroborated by field agents. Subject may be useful as informant.\n\nRECOMMENDATION: Consider recruitment or controlled release with surveillance." :
+            "No evidence of hostile intent. Detention not justified under current regulations.\n\nRECOMMENDATION: Release with monitoring notation in file.")
+
+        - Facility Security Command
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_interrogation_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Detention Commander", title: "Facility 7")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(requiresAction ? .priority : .routine)
+            .inCategory(.security)
+            .classified(as: "SECRET")
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "interrogation_follow_up")
+        }
+
+        switch outcomeId {
+        case "confession":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "tribunal", text: "TRIBUNAL - Formal charges", shortDescription: "Sent to tribunal", effects: ["security": 5, "stability": -3])
+                .addOption(id: "deal", text: "DEAL - Reduced sentence for names", shortDescription: "Offered deal", effects: ["security": 8, "network": 5])
+        case "defiance":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "enhanced", text: "ENHANCED METHODS - Authorize", shortDescription: "Enhanced interrogation", effects: ["security": 5, "stability": -10])
+                .addOption(id: "extended", text: "EXTENDED DETENTION - Continue standard", shortDescription: "Extended detention", effects: ["security": 2])
+                .addOption(id: "release_monitored", text: "RELEASE - With full surveillance", shortDescription: "Released monitored", effects: ["security": -3, "network": 5])
+        case "intel":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "recruit", text: "RECRUIT - Enlist as informant", shortDescription: "Recruited informant", effects: ["network": 10, "security": 3])
+                .addOption(id: "release_surveillance", text: "RELEASE - Controlled with surveillance", shortDescription: "Released surveillance", effects: ["network": 5])
+        default:
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "release", text: "RELEASE - No grounds for detention", shortDescription: "Released", effects: ["stability": 3])
+                .addOption(id: "file_notation", text: "RELEASE - With security notation", shortDescription: "Released with notation", effects: ["security": 2])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a visit/inspection follow-up
+    private func generateVisitFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let locationName = triggerId
+            .replacingOccurrences(of: "visit_factory_", with: "")
+            .replacingOccurrences(of: "visit_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("as_reported", "Inspection Report: Conditions As Stated", "Facility inspection confirms director's assessment. Equipment is indeed aging and workforce is stretched. Quota adjustment is reasonable.", "approve"),
+            ("worse", "Inspection Report: Conditions Critical", "Situation is more severe than reported. Multiple safety violations observed. Urgent intervention required to prevent catastrophic failure.", "urgent"),
+            ("hidden_issues", "Inspection Report: Discrepancies Found", "Director's report omitted significant details. Evidence of resource diversion and inflated maintenance costs. Possible embezzlement.", "investigate"),
+            ("model", "Inspection Report: Model Facility", "Contrary to appeal, facility exceeds standards. Director may be attempting to secure resources for personal gain. Current quotas achievable.", "deny")
+        ]
+
+        let (outcomeId, title, summary, recommendation) = outcomes.randomElement()!
+
+        let body = """
+        FACILITY INSPECTION REPORT
+        Location: \(locationName) Production Facility
+        Reference: \(triggerId.uppercased())
+
+        STATUS: \(title.uppercased())
+
+        OBSERVATIONS:
+        \(summary)
+
+        \(outcomeId == "as_reported" ?
+            "RECOMMENDATION: Approve quota adjustment as requested. Director appears competent and honest." :
+            outcomeId == "worse" ?
+            "RECOMMENDATION: Emergency resource allocation required. Without intervention, production will cease within weeks." :
+            outcomeId == "hidden_issues" ?
+            "RECOMMENDATION: Suspend director pending investigation. Audit all financial records. Consider replacement." :
+            "RECOMMENDATION: Deny appeal. Consider disciplinary action for filing fraudulent request.")
+
+        - Industrial Inspection Bureau
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_visit_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Chief Inspector", title: "Industrial Inspection Bureau")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(outcomeId == "worse" || outcomeId == "hidden_issues" ? .priority : .routine)
+            .inCategory(.economic)
+            .classified(as: "CONFIDENTIAL")
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "inspection_follow_up")
+        }
+
+        switch outcomeId {
+        case "as_reported":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "approve_adjustment", text: "APPROVE - Grant quota adjustment", shortDescription: "Approved adjustment", effects: ["stability": 5, "treasury": -10])
+                .addOption(id: "partial_adjustment", text: "PARTIAL - Reduce quota by half requested", shortDescription: "Partial adjustment", effects: ["stability": 2])
+        case "worse":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "emergency_funds", text: "EMERGENCY FUNDS - Immediate allocation", shortDescription: "Emergency funding", effects: ["treasury": -50, "stability": 10])
+                .addOption(id: "gradual_support", text: "GRADUAL SUPPORT - Phased assistance", shortDescription: "Gradual support", effects: ["treasury": -25, "stability": 3])
+                .addOption(id: "close_facility", text: "CLOSE FACILITY - Redistribute workers", shortDescription: "Closed facility", effects: ["stability": -15, "treasury": 20])
+        case "hidden_issues":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "suspend_investigate", text: "SUSPEND - Launch investigation", shortDescription: "Suspended for investigation", effects: ["security": 5, "stability": -5], triggersDocument: "investigation_embezzlement_\(locationName.lowercased().replacingOccurrences(of: " ", with: "_"))")
+                .addOption(id: "warn_only", text: "WARN - Issue formal warning", shortDescription: "Formal warning issued", effects: [:])
+                .addOption(id: "overlook", text: "OVERLOOK - Everyone does it", shortDescription: "Overlooked", effects: ["stability": 3, "security": -5])
+        default:
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "deny_discipline", text: "DENY - Disciplinary action", shortDescription: "Denied with discipline", effects: ["stability": -5, "standing": 3])
+                .addOption(id: "deny_warning", text: "DENY - Warning only", shortDescription: "Denied with warning", effects: [:])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate an evidence update follow-up
+    private func generateEvidenceUpdateFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let subjectName = triggerId
+            .replacingOccurrences(of: "evidence_update_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("strengthened", "Evidence Update: Case Strengthened", "Additional evidence has been gathered. Witness testimony corroborates suspicions. Case is now ready for prosecution.", true),
+            ("weakened", "Evidence Update: Case Compromised", "Key witness has recanted. Physical evidence chain of custody questioned. Prosecution would be risky.", false),
+            ("third_party", "Evidence Update: New Suspect Identified", "Investigation has implicated a third party of higher standing. Original subject may be a minor player.", true),
+            ("exonerated", "Evidence Update: Subject Cleared", "Further investigation reveals subject is innocent. Original accusation appears to be personal vendetta.", false)
+        ]
+
+        let (outcomeId, title, summary, urgent) = outcomes.randomElement()!
+
+        let body = """
+        CASE EVIDENCE UPDATE
+        Subject: \(subjectName)
+        Reference: \(triggerId.uppercased())
+
+        STATUS: \(title.uppercased())
+
+        UPDATE:
+        \(summary)
+
+        \(outcomeId == "strengthened" ?
+            "RECOMMENDATION: Proceed with arrest authorization. Evidence supports conviction." :
+            outcomeId == "weakened" ?
+            "RECOMMENDATION: Close case or continue surveillance. Arrest at this time would be premature." :
+            outcomeId == "third_party" ?
+            "RECOMMENDATION: Expand investigation to new suspect. Original subject may provide testimony against superior." :
+            "RECOMMENDATION: Release if detained. Close case. Consider investigation into accuser for filing false report.")
+
+        - Investigation Division
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_evidence_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Senior Investigator", title: "Bureau of People's Security")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(urgent ? .priority : .routine)
+            .inCategory(.security)
+            .classified(as: "SECRET")
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "evidence_update_follow_up")
+        }
+
+        switch outcomeId {
+        case "strengthened":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "authorize_arrest", text: "AUTHORIZE ARREST - Proceed", shortDescription: "Authorized arrest", effects: ["security": 10, "stability": -5])
+                .addOption(id: "continue_gathering", text: "CONTINUE - Gather more evidence", shortDescription: "Continued investigation", effects: ["security": 2])
+        case "weakened":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "close_case", text: "CLOSE CASE - Insufficient evidence", shortDescription: "Closed case", effects: ["stability": 3])
+                .addOption(id: "continue_surveillance", text: "CONTINUE SURVEILLANCE - Wait for opportunity", shortDescription: "Continued surveillance", effects: ["security": 2, "network": -5])
+        case "third_party":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "expand_investigation", text: "EXPAND - Investigate new suspect", shortDescription: "Expanded investigation", effects: ["security": 5, "network": -10], triggersDocument: "investigation_expanded_\(UUID().uuidString.prefix(6))")
+                .addOption(id: "focus_original", text: "FOCUS - Proceed with original subject", shortDescription: "Focused on original", effects: ["security": 3])
+                .addOption(id: "drop_both", text: "DROP - Too politically sensitive", shortDescription: "Dropped investigation", effects: ["security": -5, "stability": 5])
+        default:
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "close_exonerate", text: "CLOSE - Exonerate subject", shortDescription: "Exonerated subject", effects: ["stability": 5])
+                .addOption(id: "investigate_accuser", text: "INVESTIGATE ACCUSER - False report", shortDescription: "Investigating accuser", effects: ["security": 5, "stability": -3])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a compliance follow-up (quota, policy implementation)
+    private func generateComplianceFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let subjectRef = triggerId
+            .replacingOccurrences(of: "compliance_quota_", with: "Quota - ")
+            .replacingOccurrences(of: "compliance_factory_", with: "Factory - ")
+            .replacingOccurrences(of: "compliance_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("full", "Compliance Report: Full Achievement", "All targets met or exceeded. Implementation successful. Workers have adapted well to new requirements.", false),
+            ("partial", "Compliance Report: Partial Achievement", "78% of targets achieved. Some sectors struggling with adjustment. Additional time may be needed.", false),
+            ("non_compliance", "Compliance Report: Non-Compliance Detected", "Significant shortfalls in target achievement. Local officials may be sabotaging implementation or falsifying reports.", true),
+            ("over_performance", "Compliance Report: Exceptional Results", "Targets exceeded by 140%. Possible indication of previously set quotas being too low, or heroic worker effort.", false)
+        ]
+
+        let (outcomeId, title, summary, requiresAction) = outcomes.randomElement()!
+
+        let body = """
+        COMPLIANCE STATUS REPORT
+        Subject: \(subjectRef)
+        Reference: \(triggerId.uppercased())
+
+        STATUS: \(title.uppercased())
+
+        FINDINGS:
+        \(summary)
+
+        \(outcomeId == "full" ?
+            "RECOMMENDATION: Commend local officials. Consider as model for other regions." :
+            outcomeId == "partial" ?
+            "RECOMMENDATION: Monitor progress. May require additional resources or revised timeline." :
+            outcomeId == "non_compliance" ?
+            "RECOMMENDATION: Investigation into local officials. Consider replacing leadership or imposing penalties." :
+            "RECOMMENDATION: Review original quota settings. Either reward workers or adjust future targets upward.")
+
+        - Compliance Monitoring Division
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_compliance_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Compliance Monitor", title: "Central Planning Bureau")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(requiresAction ? .priority : .routine)
+            .inCategory(.economic)
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "compliance_follow_up")
+        }
+
+        switch outcomeId {
+        case "full":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "commend", text: "COMMEND - Issue commendation", shortDescription: "Issued commendation", effects: ["stability": 5, "standing": 3])
+                .addOption(id: "acknowledge", text: "ACKNOWLEDGE - Note success", shortDescription: "Acknowledged", effects: [:])
+        case "partial":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "extend_deadline", text: "EXTEND - Additional time granted", shortDescription: "Extended deadline", effects: ["stability": 3])
+                .addOption(id: "pressure", text: "PRESSURE - Demand full compliance", shortDescription: "Demanded compliance", effects: ["stability": -5, "standing": 2])
+                .addOption(id: "resources", text: "RESOURCES - Allocate additional support", shortDescription: "Allocated resources", effects: ["treasury": -15, "stability": 5])
+        case "non_compliance":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "investigate_officials", text: "INVESTIGATE - Audit local leadership", shortDescription: "Investigating officials", effects: ["security": 5, "stability": -5], triggersDocument: "investigation_compliance_\(UUID().uuidString.prefix(6))")
+                .addOption(id: "replace_leadership", text: "REPLACE - New local officials", shortDescription: "Replaced leadership", effects: ["stability": -10, "standing": 5])
+                .addOption(id: "accept_shortfall", text: "ACCEPT - Revise targets down", shortDescription: "Accepted shortfall", effects: ["standing": -5, "stability": 5])
+        default:
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "reward_workers", text: "REWARD - Bonuses for workers", shortDescription: "Rewarded workers", effects: ["treasury": -20, "stability": 10])
+                .addOption(id: "raise_quotas", text: "RAISE QUOTAS - Increase future targets", shortDescription: "Raised quotas", effects: ["stability": -5, "treasury": 10])
+                .addOption(id: "investigate_reporting", text: "INVESTIGATE - Verify numbers", shortDescription: "Investigating reports", effects: ["security": 3])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a reallocation impact follow-up
+    private func generateReallocationImpactFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let unitName = triggerId
+            .replacingOccurrences(of: "reallocation_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("smooth", "Reallocation Report: Transfer Complete", "Resource transfer completed without incident. Donor unit has adjusted operations successfully.", false),
+            ("complaint", "Reallocation Report: Formal Complaint Filed", "Commander of donor unit has filed formal objection. Claims transfer compromises readiness and endangers personnel.", true),
+            ("equipment_issues", "Reallocation Report: Equipment Problems", "Transferred equipment found to be in poor condition. Recipient unit reports significant maintenance required.", true),
+            ("morale_impact", "Reallocation Report: Morale Concerns", "Donor unit experiencing low morale following transfer. Personnel retention concerns reported.", false)
+        ]
+
+        let (outcomeId, title, summary, requiresAction) = outcomes.randomElement()!
+
+        let body = """
+        RESOURCE REALLOCATION IMPACT REPORT
+        Affected Unit: \(unitName)
+        Reference: \(triggerId.uppercased())
+
+        STATUS: \(title.uppercased())
+
+        IMPACT ASSESSMENT:
+        \(summary)
+
+        \(outcomeId == "smooth" ?
+            "RECOMMENDATION: No action required. File for records." :
+            outcomeId == "complaint" ?
+            "RECOMMENDATION: Address complaint or risk escalation to higher command. Commander has influential connections." :
+            outcomeId == "equipment_issues" ?
+            "RECOMMENDATION: Either allocate repair funds or source replacement equipment. Current state affects operational capability." :
+            "RECOMMENDATION: Consider morale-boosting measures for donor unit. Continued neglect may lead to discipline problems.")
+
+        - Logistics Command
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_reallocation_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Logistics Officer", title: "Resource Allocation Division")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(requiresAction ? .priority : .routine)
+            .inCategory(.military)
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "reallocation_follow_up")
+        }
+
+        switch outcomeId {
+        case "smooth":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "file", text: "FILE - Note successful transfer", shortDescription: "Filed", effects: [:])
+        case "complaint":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "dismiss_complaint", text: "DISMISS - Operational necessity", shortDescription: "Dismissed complaint", effects: ["militaryLoyalty": -5, "standing": 2])
+                .addOption(id: "partial_restore", text: "PARTIAL RESTORE - Return some resources", shortDescription: "Partially restored", effects: ["treasury": -15, "militaryLoyalty": 3])
+                .addOption(id: "full_restore", text: "FULL RESTORE - Reverse reallocation", shortDescription: "Fully restored", effects: ["treasury": -30, "militaryLoyalty": 5, "standing": -3])
+        case "equipment_issues":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "repair_funds", text: "REPAIR - Allocate maintenance budget", shortDescription: "Funded repairs", effects: ["treasury": -20, "militaryLoyalty": 3])
+                .addOption(id: "source_replacement", text: "REPLACE - Source new equipment", shortDescription: "Sourced replacement", effects: ["treasury": -40, "militaryLoyalty": 5])
+                .addOption(id: "make_do", text: "MAKE DO - Use as available", shortDescription: "Use as-is", effects: ["militaryLoyalty": -3])
+        default:
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "morale_boost", text: "BOOST MORALE - Extra rations and leave", shortDescription: "Boosted morale", effects: ["treasury": -10, "militaryLoyalty": 5])
+                .addOption(id: "ignore_morale", text: "IGNORE - Soldiers will adapt", shortDescription: "Ignored", effects: ["militaryLoyalty": -3])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a surveillance result follow-up
+    private func generateSurveillanceResultFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let subjectName = triggerId
+            .replacingOccurrences(of: "surveillance_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        let outcomes = [
+            ("incriminating", "Surveillance Report: Evidence Obtained", "Enhanced surveillance has captured incriminating activity. Subject observed meeting with known foreign contacts.", true),
+            ("nothing", "Surveillance Report: No Activity", "Extended surveillance period has yielded nothing of interest. Subject appears to lead unremarkable life.", false),
+            ("cover_blown", "Surveillance Report: Operation Compromised", "Subject has detected surveillance. Observed counter-surveillance behavior. Asset may be burned.", true),
+            ("asset_identified", "Surveillance Report: Recruitment Opportunity", "Subject displays disillusionment with current situation. May be receptive to recruitment as informant.", true)
+        ]
+
+        let (outcomeId, title, summary, requiresAction) = outcomes.randomElement()!
+
+        let body = """
+        ENHANCED SURVEILLANCE REPORT
+        Subject: \(subjectName)
+        Reference: \(triggerId.uppercased())
+
+        STATUS: \(title.uppercased())
+
+        FINDINGS:
+        \(summary)
+
+        \(outcomeId == "incriminating" ?
+            "RECOMMENDATION: Proceed to arrest and interrogation. Evidence sufficient for detention." :
+            outcomeId == "nothing" ?
+            "RECOMMENDATION: Close surveillance operation. Resources better allocated elsewhere." :
+            outcomeId == "cover_blown" ?
+            "RECOMMENDATION: Withdraw surveillance team. Consider whether to detain subject before they can flee or warn others." :
+            "RECOMMENDATION: Initiate recruitment approach. Subject may provide valuable intelligence if handled correctly.")
+
+        - Surveillance Division
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_surveillance_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled(title)
+            .from("Surveillance Commander", title: "Bureau of People's Security")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(requiresAction ? .priority : .routine)
+            .inCategory(.security)
+            .classified(as: "SECRET")
+            .withBody(body)
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "surveillance_follow_up")
+        }
+
+        switch outcomeId {
+        case "incriminating":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "arrest_now", text: "ARREST - Detain immediately", shortDescription: "Arrested subject", effects: ["security": 10, "stability": -5])
+                .addOption(id: "continue_watching", text: "CONTINUE - Identify network first", shortDescription: "Continued surveillance", effects: ["security": 3, "network": 5])
+        case "nothing":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "close_surveillance", text: "CLOSE - End operation", shortDescription: "Closed surveillance", effects: ["network": 5])
+                .addOption(id: "extend_period", text: "EXTEND - One more month", shortDescription: "Extended surveillance", effects: ["network": -5, "treasury": -10])
+        case "cover_blown":
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "withdraw", text: "WITHDRAW - Pull surveillance team", shortDescription: "Withdrew team", effects: ["security": -3])
+                .addOption(id: "detain_subject", text: "DETAIN - Arrest before flight", shortDescription: "Detained subject", effects: ["security": 5, "stability": -5])
+                .addOption(id: "double_down", text: "OVERT SURVEILLANCE - Let them know we're watching", shortDescription: "Overt surveillance", effects: ["security": 3, "stability": -3])
+        default:
+            builder = builder
+                .requiresDecision(true)
+                .addOption(id: "recruit", text: "RECRUIT - Initiate approach", shortDescription: "Initiated recruitment", effects: ["network": 10, "security": 5])
+                .addOption(id: "continue_observe", text: "OBSERVE - Monitor before approach", shortDescription: "Continued observation", effects: ["network": 3])
+                .addOption(id: "ignore", text: "IGNORE - Not worth the risk", shortDescription: "Ignored opportunity", effects: [:])
+        }
+
+        return builder.build()
+    }
+
+    /// Generate a case outcome follow-up (discipline, sentencing)
+    private func generateCaseOutcomeFollowUp(triggerId: String, parentId: String?, chainId: String?, game: Game) -> DeskDocument {
+        let isExecution = triggerId.contains("execution")
+        let isReeducation = triggerId.contains("reeducation")
+
+        let subjectName = triggerId
+            .replacingOccurrences(of: "case_outcome_execution_", with: "")
+            .replacingOccurrences(of: "case_outcome_reeducation_", with: "")
+            .replacingOccurrences(of: "case_outcome_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .capitalized
+
+        if isExecution {
+            let outcomes = [
+                ("carried_out", "Execution Report: Sentence Carried Out", "Sentence was carried out at dawn. Subject showed no resistance. Body has been disposed of per regulations.", false),
+                ("complications", "Execution Report: Complications Arose", "Execution was delayed due to procedural issues. Subject's family has filed appeal to higher authority.", true),
+                ("message_sent", "Execution Report: Deterrent Effect Noted", "Public announcement of execution has had visible effect on discipline. Reported incidents down 40% this week.", false)
+            ]
+            let (outcomeId, title, summary, requiresAction) = outcomes.randomElement()!
+
+            let body = """
+            CASE DISPOSITION REPORT
+            Subject: \(subjectName)
+            Sentence: Capital Punishment
+            Reference: \(triggerId.uppercased())
+
+            STATUS: \(title.uppercased())
+
+            REPORT:
+            \(summary)
+
+            \(outcomeId == "carried_out" ?
+                "RECOMMENDATION: File closed. No further action required." :
+                outcomeId == "complications" ?
+                "RECOMMENDATION: Address appeal immediately. Delay may be seen as weakness." :
+                "RECOMMENDATION: Consider similar measures for other discipline cases while deterrent effect is strong.")
+
+            - Military Justice Command
+            """
+
+            var builder = DeskDocument.builder()
+                .withTemplateId("followup_execution_\(UUID().uuidString.prefix(6))")
+                .ofType(.report)
+                .titled(title)
+                .from("Execution Commander", title: "Military Justice Division")
+                .receivedOnTurn(game.turnNumber)
+                .withUrgency(requiresAction ? .priority : .routine)
+                .inCategory(.military)
+                .classified(as: "CLASSIFIED")
+                .withBody(body)
+
+            if let parentId = parentId {
+                builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "execution_follow_up")
+            }
+
+            switch outcomeId {
+            case "carried_out":
+                builder = builder
+                    .requiresDecision(true)
+                    .addOption(id: "file_closed", text: "FILE - Case closed", shortDescription: "Filed closed", effects: [:])
+            case "complications":
+                builder = builder
+                    .requiresDecision(true)
+                    .addOption(id: "deny_appeal", text: "DENY APPEAL - Proceed immediately", shortDescription: "Denied appeal", effects: ["stability": -5, "standing": 3])
+                    .addOption(id: "review_appeal", text: "REVIEW - Consider appeal", shortDescription: "Reviewing appeal", effects: ["stability": 3, "standing": -3])
+            default:
+                builder = builder
+                    .requiresDecision(true)
+                    .addOption(id: "capitalize", text: "CAPITALIZE - Publicize further", shortDescription: "Publicized", effects: ["stability": -3, "militaryLoyalty": 5])
+                    .addOption(id: "note_effect", text: "NOTE - Record deterrent effect", shortDescription: "Noted effect", effects: [:])
+            }
+
+            return builder.build()
+
+        } else if isReeducation {
+            let outcomes = [
+                ("progress", "Reeducation Report: Progress Noted", "Subject showing signs of genuine reform. Participation in self-criticism sessions is exemplary.", false),
+                ("resistance", "Reeducation Report: Resistance Continues", "Subject maintains defiant attitude. Additional measures may be required.", true),
+                ("completed", "Reeducation Report: Program Complete", "Subject has completed reeducation program. Instructors recommend return to duty with monitoring.", false)
+            ]
+            let (outcomeId, title, summary, requiresAction) = outcomes.randomElement()!
+
+            let body = """
+            REEDUCATION STATUS REPORT
+            Subject: \(subjectName)
+            Program: Political Rehabilitation
+            Reference: \(triggerId.uppercased())
+
+            STATUS: \(title.uppercased())
+
+            ASSESSMENT:
+            \(summary)
+
+            \(outcomeId == "progress" ?
+                "RECOMMENDATION: Continue program. Expected completion in 3 months." :
+                outcomeId == "resistance" ?
+                "RECOMMENDATION: Extend program or escalate to labor assignment." :
+                "RECOMMENDATION: Approve return to duty. Assign to low-sensitivity position initially.")
+
+            - Political Education Division
+            """
+
+            var builder = DeskDocument.builder()
+                .withTemplateId("followup_reeducation_\(UUID().uuidString.prefix(6))")
+                .ofType(.report)
+                .titled(title)
+                .from("Reeducation Commander", title: "Political Education Division")
+                .receivedOnTurn(game.turnNumber)
+                .withUrgency(requiresAction ? .priority : .routine)
+                .inCategory(.personnel)
+                .withBody(body)
+
+            if let parentId = parentId {
+                builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "reeducation_follow_up")
+            }
+
+            switch outcomeId {
+            case "progress":
+                builder = builder
+                    .requiresDecision(true)
+                    .addOption(id: "continue_program", text: "CONTINUE - Maintain current program", shortDescription: "Continued program", effects: [:])
+                    .addOption(id: "accelerate", text: "ACCELERATE - Intensive sessions", shortDescription: "Accelerated program", effects: ["stability": -2])
+            case "resistance":
+                builder = builder
+                    .requiresDecision(true)
+                    .addOption(id: "extend_program", text: "EXTEND - Additional 6 months", shortDescription: "Extended program", effects: ["stability": 2])
+                    .addOption(id: "labor_camp", text: "LABOR ASSIGNMENT - Hard labor 2 years", shortDescription: "Assigned labor", effects: ["stability": -5, "security": 3])
+                    .addOption(id: "release_anyway", text: "RELEASE - Not worth resources", shortDescription: "Released", effects: ["security": -3, "stability": 3])
+            default:
+                builder = builder
+                    .requiresDecision(true)
+                    .addOption(id: "approve_return", text: "APPROVE - Return to duty", shortDescription: "Approved return", effects: ["militaryLoyalty": 3])
+                    .addOption(id: "assign_monitoring", text: "APPROVE WITH MONITORING - Extended surveillance", shortDescription: "Approved with monitoring", effects: ["security": 2])
+            }
+
+            return builder.build()
+        }
+
+        // Generic case outcome
+        let body = """
+        CASE STATUS UPDATE
+        Subject: \(subjectName)
+        Reference: \(triggerId.uppercased())
+
+        Case has been processed according to your directive.
+        No further action required unless you specify otherwise.
+
+        - Administrative Division
+        """
+
+        var builder = DeskDocument.builder()
+            .withTemplateId("followup_case_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("Case Status: \(subjectName)")
+            .from("Case Administrator", title: "Administrative Division")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(.routine)
+            .inCategory(.personnel)
+            .withBody(body)
+            .requiresDecision(true)
+            .addOption(id: "acknowledge", text: "ACKNOWLEDGE", shortDescription: "Acknowledged", effects: [:])
+
+        if let parentId = parentId {
+            builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "case_follow_up")
         }
 
         return builder.build()
