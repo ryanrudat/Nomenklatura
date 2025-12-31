@@ -315,6 +315,14 @@ final class GoalDrivenAgencyService {
         // Check if character might approach player for help
         guard character.disposition >= 50 && !character.isRival else { return nil }
 
+        // CRITICAL: Only NPCs at LOWER positions should seek player's endorsement
+        // A level 4 NPC shouldn't come to a level 2 player for career help
+        let npcPosition = character.positionIndex ?? 0
+        guard npcPosition < game.currentPositionIndex else {
+            goalLogger.debug("\(character.name) at position \(npcPosition) won't seek advancement help from player at position \(game.currentPositionIndex)")
+            return nil
+        }
+
         let title = frustrated ? "\(character.name) Makes Bold Move" : "\(character.name) Seeks Advancement"
         let text = frustrated
             ? "\(character.name) has grown frustrated with their stalled career. They're considering drastic action to secure a promotion, and have approached you about potentially supporting their candidacy."
@@ -440,6 +448,14 @@ final class GoalDrivenAgencyService {
         // Character is moving against their rival
         guard character.disposition >= 40 && target.id.uuidString != "player" else { return nil }
 
+        // High-level NPCs wouldn't share plots with junior officials
+        // Allow up to 2 levels above player (some cross-level scheming is realistic)
+        let npcPosition = character.positionIndex ?? 0
+        guard npcPosition <= game.currentPositionIndex + 2 else {
+            goalLogger.debug("\(character.name) at position \(npcPosition) won't share plots with player at position \(game.currentPositionIndex)")
+            return nil
+        }
+
         return DynamicEvent(
             eventType: .characterMessage,
             priority: .elevated,
@@ -477,6 +493,14 @@ final class GoalDrivenAgencyService {
     private func generateAllyElevationEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
         guard let targetId = goal.targetCharacterId,
               let ally = game.characters.first(where: { $0.id.uuidString == targetId }) else { return nil }
+
+        // High-level NPCs wouldn't ask junior officials for opinions on advancement
+        // Allow up to 2 levels above player
+        let npcPosition = character.positionIndex ?? 0
+        guard npcPosition <= game.currentPositionIndex + 2 else {
+            goalLogger.debug("\(character.name) at position \(npcPosition) won't ask player at position \(game.currentPositionIndex) for opinion")
+            return nil
+        }
 
         return DynamicEvent(
             eventType: .characterMessage,
@@ -1212,6 +1236,14 @@ final class GoalDrivenAgencyService {
         // Character seeking a patron relationship
         guard character.npcNeeds.securityCritical || goal.effectivePriority(currentTurn: game.turnNumber) > 70 else { return nil }
 
+        // CRITICAL: Only NPCs at LOWER positions would seek the player as a patron
+        // Patronage flows downward - you can't be a patron to someone above you
+        let npcPosition = character.positionIndex ?? 0
+        guard npcPosition < game.currentPositionIndex else {
+            goalLogger.debug("\(character.name) at position \(npcPosition) won't seek patronage from player at position \(game.currentPositionIndex)")
+            return nil
+        }
+
         return DynamicEvent(
             eventType: .characterMessage,
             priority: .normal,
@@ -1791,6 +1823,14 @@ final class GoalDrivenAgencyService {
 
         // Only generate if player is close to the security official
         guard character.disposition >= 50 else { return nil }
+
+        // Security officials wouldn't ask junior players for cooperation
+        // Player must be at least position 2 and NPC can be at most 2 levels above
+        let npcPosition = character.positionIndex ?? 0
+        guard game.currentPositionIndex >= 2 && npcPosition <= game.currentPositionIndex + 2 else {
+            goalLogger.debug("\(character.name) at position \(npcPosition) won't ask player at position \(game.currentPositionIndex) for security cooperation")
+            return nil
+        }
 
         return DynamicEvent(
             eventType: .networkIntel,
@@ -2458,6 +2498,14 @@ final class GoalDrivenAgencyService {
 
     private func generateBuildCadreNetworkEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
         guard character.disposition >= 30 else { return nil }
+
+        // High-level officials wouldn't recruit junior players into their networks
+        // Allow up to 2 levels above player (lateral and somewhat senior recruitment is realistic)
+        let npcPosition = character.positionIndex ?? 0
+        guard npcPosition <= game.currentPositionIndex + 2 else {
+            goalLogger.debug("\(character.name) at position \(npcPosition) won't recruit player at position \(game.currentPositionIndex) into network")
+            return nil
+        }
 
         return DynamicEvent(
             eventType: .characterMessage,
