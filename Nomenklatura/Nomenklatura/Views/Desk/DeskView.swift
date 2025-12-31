@@ -60,6 +60,21 @@ struct DeskView: View {
         CampaignLoader.shared.getColdWarCampaign()
     }
 
+    /// Computed property to check if loading section should be visible
+    /// Used by both the view display and the snapshot timer
+    private var isLoadingSectionVisible: Bool {
+        // Loading section shows when transitioning or loading
+        if isTransitioning || loadingState.isLoading {
+            return true
+        }
+        // Also shows as fallback when no content and no documents
+        let visibleDocuments = documentQueue.getVisibleDocuments(for: game)
+        if currentNewspaper == nil && currentScenario == nil && visibleDocuments.isEmpty {
+            return true
+        }
+        return false
+    }
+
     var body: some View {
         ZStack {
             // Wood desk background
@@ -630,8 +645,7 @@ struct DeskView: View {
             .frame(height: 175)
             .onReceive(snapshotTimer) { _ in
                 // Only cycle images when loading screen is actually visible
-                // Check both isTransitioning and loadingState.isLoading since either shows the loading view
-                guard isTransitioning || loadingState.isLoading else { return }
+                guard isLoadingSectionVisible else { return }
 
                 // Slow fade out
                 withAnimation(.easeOut(duration: 1.2)) {
