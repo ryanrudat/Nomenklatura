@@ -42,12 +42,12 @@ struct SnapshotLoadingView: View {
     ]
 
     // Duration for each image cycle (dark -> bright -> next)
-    private let imageCycleDuration: Double = 6.0
+    private let imageCycleDuration: Double = 4.0
     // How long the brightness animation takes
-    private let brightenDuration: Double = 4.5
+    private let brightenDuration: Double = 3.0
 
-    // Minimum time before allowing completion
-    private let minimumDisplayTime: Double = 5.0
+    // Minimum time before allowing completion (should be > imageCycleDuration to see cycling)
+    private let minimumDisplayTime: Double = 9.0
 
     var body: some View {
         ZStack {
