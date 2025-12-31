@@ -26,6 +26,7 @@ enum NotificationType: String, Codable, CaseIterable {
     // Codex notifications
     case plotThreadUpdate       // Plot thread resolved or updated
     case newPlotThread          // New storyline began
+    case newCodexMessage        // New message in Codex terminal
 
     // Ladder notifications
     case promotionAvailable     // Player can advance
@@ -44,7 +45,7 @@ enum NotificationType: String, Codable, CaseIterable {
             return .dossier
         case .statCriticalLow, .statCriticalHigh, .statSignificantChange:
             return .ledger
-        case .plotThreadUpdate, .newPlotThread:
+        case .plotThreadUpdate, .newPlotThread, .newCodexMessage:
             return .codex
         case .promotionAvailable, .demotionRisk, .badgeEarned:
             return .ladder

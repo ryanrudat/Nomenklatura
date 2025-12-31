@@ -250,6 +250,14 @@ final class CodexService: ObservableObject {
 
         // Show toast
         currentToast = message
+
+        // Add notification for badge
+        NotificationService.shared.notify(
+            .newCodexMessage,
+            title: "New Message",
+            detail: "From \(message.senderName)",
+            turn: game.turnNumber
+        )
     }
 
     private func deliverScheduledMessages(game: Game) {
@@ -258,6 +266,14 @@ final class CodexService: ObservableObject {
                 message.isDelivered = true
                 message.timestamp = Date()  // Update timestamp to delivery time
                 currentToast = message
+
+                // Add notification for badge
+                NotificationService.shared.notify(
+                    .newCodexMessage,
+                    title: "New Message",
+                    detail: "From \(message.senderName)",
+                    turn: game.turnNumber
+                )
             }
         }
     }
