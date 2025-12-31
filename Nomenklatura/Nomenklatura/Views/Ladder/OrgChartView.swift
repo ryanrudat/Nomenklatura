@@ -17,6 +17,7 @@ struct OrgChartView: View {
 
     @Environment(\.theme) var theme
     @State private var selectedPosition: LadderPosition? = nil
+    @State private var showStandingCommittee: Bool = false
 
     // Capital tracks (6 bureaus) - order matters for display
     private let capitalTracks: [ExpandedCareerTrack] = [
@@ -58,6 +59,9 @@ struct OrgChartView: View {
                 // Scrollable org chart
                 ScrollView([.horizontal, .vertical], showsIndicators: true) {
                     VStack(spacing: 0) {
+                        // === STANDING COMMITTEE ===
+                        standingCommitteeSection
+
                         // === TOP SHARED POSITIONS ===
                         apexSection
 
@@ -79,6 +83,72 @@ struct OrgChartView: View {
                 game: game
             )
             .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showStandingCommittee) {
+            StandingCommitteeLadderSheet(game: game)
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    // MARK: - Standing Committee Section
+
+    private var standingCommitteeSection: some View {
+        VStack(spacing: 0) {
+            // Standing Committee node (clickable)
+            Button(action: { showStandingCommittee = true }) {
+                VStack(spacing: 4) {
+                    // Header with icon
+                    HStack(spacing: 6) {
+                        Image(systemName: "building.columns.fill")
+                            .font(.system(size: 12))
+                        Text("STANDING COMMITTEE")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(1)
+                    }
+                    .foregroundColor(theme.accentGold)
+
+                    // Member count
+                    if let sc = game.standingCommittee {
+                        let memberCount = sc.fullMemberIds.count + sc.candidateMemberIds.count + (sc.chairId != nil ? 1 : 0)
+                        Text("\(memberCount) Members")
+                            .font(.system(size: 10))
+                            .foregroundColor(theme.inkGray)
+
+                        // Show if player is on committee
+                        if sc.playerIsOnCommittee {
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 6))
+                                Text("YOU ARE A MEMBER")
+                                    .font(.system(size: 7, weight: .bold))
+                                    .tracking(0.5)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(theme.sovietRed)
+                            .cornerRadius(2)
+                        }
+                    } else {
+                        Text("Tap to view members")
+                            .font(.system(size: 9))
+                            .foregroundColor(theme.inkLight)
+                    }
+                }
+                .frame(width: 200, height: 70)
+                .padding(10)
+                .background(theme.parchment)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(theme.accentGold, lineWidth: 2)
+                )
+                .cornerRadius(8)
+                .shadow(color: theme.accentGold.opacity(0.3), radius: 4, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+
+            // Connector to General Secretary
+            VerticalConnector(height: 25, isHighlighted: false, isAchieved: false)
         }
     }
 
@@ -481,6 +551,208 @@ struct PositionDetailSheet: View {
                     .font(.system(size: 12))
                     .foregroundColor(.statHigh)
             }
+        }
+    }
+}
+
+// MARK: - Standing Committee Ladder Sheet
+
+struct StandingCommitteeLadderSheet: View {
+    let game: Game
+    @Environment(\.theme) var theme
+    @Environment(\.dismiss) var dismiss
+
+    private var committeeMembers: [(character: GameCharacter, rank: SCRank)] {
+        guard let sc = game.standingCommittee else { return [] }
+
+        var members: [(GameCharacter, SCRank)] = []
+
+        // Chair first
+        if let chairId = sc.chairId,
+           let chair = game.characters.first(where: { $0.templateId == chairId && $0.isAlive }) {
+            members.append((chair, .chairman))
+        }
+
+        // Full members
+        for memberId in sc.fullMemberIds {
+            if let member = game.characters.first(where: { $0.templateId == memberId && $0.isAlive }) {
+                members.append((member, .fullMember))
+            }
+        }
+
+        // Candidate members
+        for memberId in sc.candidateMemberIds {
+            if let member = game.characters.first(where: { $0.templateId == memberId && $0.isAlive }) {
+                members.append((member, .candidateMember))
+            }
+        }
+
+        return members
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Header description
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "building.columns.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(theme.accentGold)
+                            Text("Standing Committee")
+                                .font(theme.headerFont)
+                        }
+
+                        Text("The supreme collective leadership body. These 7-9 individuals hold ultimate power over all state and party affairs.")
+                            .font(theme.narrativeFont)
+                            .foregroundColor(theme.inkGray)
+
+                        // Player status
+                        if let sc = game.standingCommittee, sc.playerIsOnCommittee {
+                            HStack(spacing: 4) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 10))
+                                Text("You are a \(sc.playerRank?.capitalized ?? "member") of this committee")
+                                    .font(theme.tagFont)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(theme.sovietRed)
+                        } else {
+                            Text("Position 5+ required for eligibility")
+                                .font(theme.tagFont)
+                                .foregroundColor(theme.inkLight)
+                        }
+                    }
+
+                    Divider()
+
+                    // Members list
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("COMMITTEE MEMBERS")
+                            .font(theme.labelFont)
+                            .fontWeight(.semibold)
+                            .tracking(1)
+
+                        if committeeMembers.isEmpty {
+                            Text("No committee members found")
+                                .font(theme.narrativeFont)
+                                .foregroundColor(theme.inkLight)
+                                .italic()
+                        } else {
+                            ForEach(committeeMembers, id: \.character.id) { member, rank in
+                                SCMemberRow(character: member, rank: rank, game: game)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(theme.parchmentDark)
+                    .cornerRadius(8)
+                }
+                .padding()
+            }
+            .background(theme.parchment)
+            .navigationTitle("Standing Committee")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - SC Member Row
+
+private struct SCMemberRow: View {
+    let character: GameCharacter
+    let rank: SCRank
+    let game: Game
+    @Environment(\.theme) var theme
+
+    private var positionTitle: String {
+        guard let index = character.positionIndex else { return "Unknown Position" }
+        let ladder = CampaignLoader.shared.getColdWarCampaign().ladder
+        if let trackName = character.positionTrack,
+           let track = ExpandedCareerTrack(rawValue: trackName),
+           let pos = ladder.first(where: { $0.index == index && $0.expandedTrack == track }) {
+            return pos.title
+        }
+        if let pos = ladder.first(where: { $0.index == index && $0.expandedTrack == .shared }) {
+            return pos.title
+        }
+        return "Position \(index)"
+    }
+
+    private var factionName: String? {
+        guard let factionId = character.factionId else { return nil }
+        return game.factions.first(where: { $0.factionId == factionId })?.name
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Rank indicator
+            VStack {
+                Image(systemName: rank == .chairman ? "crown.fill" : "person.fill")
+                    .font(.system(size: rank == .chairman ? 16 : 14))
+                    .foregroundColor(rankColor)
+            }
+            .frame(width: 30)
+
+            // Character info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(character.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(theme.inkBlack)
+
+                Text(positionTitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.inkGray)
+
+                HStack(spacing: 8) {
+                    // Rank badge
+                    Text(rank.displayName.uppercased())
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(rankColor)
+                        .cornerRadius(2)
+
+                    // Faction
+                    if let faction = factionName {
+                        Text(faction)
+                            .font(.system(size: 9))
+                            .foregroundColor(theme.inkLight)
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Relationship indicator
+            if character.isPatron {
+                Image(systemName: "shield.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.accentGold)
+            } else if character.isRival {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.sovietRed)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(theme.parchment)
+        .cornerRadius(6)
+    }
+
+    private var rankColor: Color {
+        switch rank {
+        case .chairman: return theme.accentGold
+        case .fullMember: return Color(hex: "4A4A4A")
+        case .candidateMember: return Color(hex: "7A7A7A")
         }
     }
 }
