@@ -94,7 +94,7 @@ struct DossierView: View {
                 // Tab selector
                 DossierTabBar(selectedTab: $selectedTab)
 
-                // Content
+                // Content with swipe navigation
                 ScrollView {
                     VStack(spacing: 10) {
                         switch selectedTab {
@@ -114,6 +114,26 @@ struct DossierView: View {
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: 100)
                 }
+                .gesture(
+                    DragGesture(minimumDistance: 50, coordinateSpace: .local)
+                        .onEnded { value in
+                            let horizontalDistance = value.translation.width
+                            let verticalDistance = abs(value.translation.height)
+
+                            // Only handle if horizontal swipe is dominant
+                            guard abs(horizontalDistance) > verticalDistance else { return }
+
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                if horizontalDistance < -50, let nextTab = selectedTab.next {
+                                    // Swipe left -> go to next tab
+                                    selectedTab = nextTab
+                                } else if horizontalDistance > 50, let prevTab = selectedTab.previous {
+                                    // Swipe right -> go to previous tab
+                                    selectedTab = prevTab
+                                }
+                            }
+                        }
+                )
             }
         }
     }
@@ -1291,6 +1311,22 @@ enum DossierTab: String, CaseIterable {
     case figures = "FIGURES"
     case factions = "FACTIONS"
     case journal = "JOURNAL"
+
+    /// Get the next tab (for swipe left)
+    var next: DossierTab? {
+        let allCases = DossierTab.allCases
+        guard let currentIndex = allCases.firstIndex(of: self),
+              currentIndex < allCases.count - 1 else { return nil }
+        return allCases[currentIndex + 1]
+    }
+
+    /// Get the previous tab (for swipe right)
+    var previous: DossierTab? {
+        let allCases = DossierTab.allCases
+        guard let currentIndex = allCases.firstIndex(of: self),
+              currentIndex > 0 else { return nil }
+        return allCases[currentIndex - 1]
+    }
 }
 
 // MARK: - Tab Bar

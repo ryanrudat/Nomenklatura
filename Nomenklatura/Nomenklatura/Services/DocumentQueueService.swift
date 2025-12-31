@@ -95,6 +95,80 @@ class DocumentQueueService: ObservableObject {
     /// Track if a crisis-themed document was generated (to coordinate with events)
     private var crisisDocumentGeneratedThisTurn: Bool = false
 
+    // MARK: - Name Generation for Document Lists
+
+    /// Eastern European/Soviet-style first names
+    private let firstNames = [
+        "Viktor", "Ivan", "Nikolai", "Dmitri", "Sergei", "Aleksei", "Boris", "Yuri", "Andrei", "Pavel",
+        "Maria", "Natasha", "Olga", "Katerina", "Anna", "Elena", "Tatiana", "Irina", "Svetlana", "Ludmila",
+        "Mikhail", "Vasili", "Grigori", "Fyodor", "Oleg", "Konstantin", "Vladimir", "Pyotr", "Arkady", "Roman",
+        "Vera", "Nina", "Galina", "Zoya", "Larisa", "Tamara", "Valentina", "Raisa", "Nadia", "Sonya"
+    ]
+
+    /// Eastern European/Soviet-style last names
+    private let lastNames = [
+        "Petrov", "Kozlov", "Volkov", "Morozov", "Sokolov", "Fedorov", "Ivanov", "Kuznetsov", "Popov", "Smirnov",
+        "Novikov", "Lebedev", "Orlov", "Zaitsev", "Pavlov", "Kovalev", "Belov", "Medvedev", "Andreev", "Makarov",
+        "Gromov", "Borisov", "Kiselev", "Zhukov", "Voronov", "Korolev", "Baranov", "Stepanov", "Golubev", "Vinogradov",
+        "Bogdanov", "Voronin", "Sorokin", "Danilov", "Grigoriev", "Romanov", "Vasiliev", "Tarasov", "Belousov", "Nikitin"
+    ]
+
+    /// Work unit/department assignments for context
+    private let workUnits = [
+        "Section A", "Section B", "Section C", "Unit 12", "Unit 7", "Unit 23",
+        "Records", "Filing", "Processing", "Registry", "Archives", "Communications",
+        "Motor Pool", "Maintenance", "Security Detail", "Administrative Pool", "Typing Pool",
+        "Department 3", "Department 5", "Department 8", "Bureau 2", "Bureau 6"
+    ]
+
+    /// Generate a list of random names with optional unit assignments
+    private func generateNameList(count: Int, includeUnits: Bool = false) -> [String] {
+        var names: Set<String> = []
+        var attempts = 0
+        let maxAttempts = count * 3
+
+        while names.count < count && attempts < maxAttempts {
+            attempts += 1
+            let first = firstNames.randomElement()!
+            let last = lastNames.randomElement()!
+            let fullName: String
+
+            if includeUnits {
+                let unit = workUnits.randomElement()!
+                fullName = "\(first) \(last) (\(unit))"
+            } else {
+                fullName = "\(first) \(last)"
+            }
+
+            names.insert(fullName)
+        }
+
+        return Array(names).sorted { $0.components(separatedBy: " ").last ?? "" < $1.components(separatedBy: " ").last ?? "" }
+    }
+
+    /// Format a name list as a numbered document attachment
+    private func formatNameListAsAttachment(names: [String], title: String) -> String {
+        var result = """
+
+        ═══════════════════════════════════════════
+        ATTACHMENT: \(title.uppercased())
+        ═══════════════════════════════════════════
+
+        """
+
+        for (index, name) in names.enumerated() {
+            result += "\(String(format: "%2d", index + 1)). \(name)\n"
+        }
+
+        result += """
+
+        ───────────────────────────────────────────
+        Total: \(names.count) personnel
+        """
+
+        return result
+    }
+
     /// Generate new documents for the current turn
     func generateDocumentsForTurn(game: Game) {
         let clearance = min(game.currentPositionIndex + 1, 8)
@@ -1872,6 +1946,23 @@ class DocumentQueueService: ObservableObject {
 
         let (program, city, partner) = programs.randomElement()!
 
+        // Generate participant lists - 23 cleared, 2 pending
+        let clearedNames = generateNameList(count: 23, includeUnits: false)
+        let pendingNames = generateNameList(count: 2, includeUnits: false)
+
+        let clearedList = formatNameListAsAttachment(names: clearedNames, title: "Cleared Participants")
+        let pendingSection = """
+
+        ═══════════════════════════════════════════
+        PENDING SECURITY CLEARANCE
+        ═══════════════════════════════════════════
+
+         1. \(pendingNames[0]) - AWAITING REVIEW
+         2. \(pendingNames[1]) - AWAITING REVIEW
+
+        ───────────────────────────────────────────
+        """
+
         let body = """
         INTER-MINISTRY COORDINATION REQUEST
 
@@ -1888,6 +1979,8 @@ class DocumentQueueService: ObservableObject {
         Deadline for partner notification: 5 days
 
         AWAITING YOUR DECISION.
+        \(clearedList)
+        \(pendingSection)
         """
 
         return DeskDocument.builder()
@@ -2151,19 +2244,46 @@ class DocumentQueueService: ObservableObject {
     /// Level 1+: Timesheet verification
     private func generateTimesheetVerification(for game: Game) -> DeskDocument {
         let departments = [
-            ("Records Division", "47 employees", "2,115 hours"),
-            ("Typing Pool", "23 employees", "1,035 hours"),
-            ("Mail Services", "12 employees", "540 hours")
+            ("Records Division", 47, 2115),
+            ("Typing Pool", 23, 1035),
+            ("Mail Services", 12, 540)
         ]
 
-        let (dept, count, hours) = departments.randomElement()!
+        let (dept, employeeCount, totalHours) = departments.randomElement()!
+
+        // Generate employee timesheet summary
+        let employeeNames = generateNameList(count: min(employeeCount, 15), includeUnits: false) // Show up to 15 for readability
+        var timesheetEntries: [String] = []
+        var runningTotal = 0
+
+        for (index, name) in employeeNames.enumerated() {
+            let standardHours = 45
+            let overtime = index % 4 == 0 ? Int.random(in: 2...8) : 0 // Some have overtime
+            let hours = standardHours + overtime
+            runningTotal += hours
+            let overtimeNote = overtime > 0 ? " (+\(overtime) OT)" : ""
+            timesheetEntries.append("\(String(format: "%2d", index + 1)). \(name): \(hours) hrs\(overtimeNote)")
+        }
+
+        let timesheetSummary = """
+
+        ═══════════════════════════════════════════
+        ATTACHMENT: TIMESHEET SUMMARY (SAMPLE)
+        ═══════════════════════════════════════════
+
+        \(timesheetEntries.joined(separator: "\n"))
+        \(employeeCount > 15 ? "\n        ... and \(employeeCount - 15) additional employees" : "")
+
+        ───────────────────────────────────────────
+        Sample Total: \(runningTotal) hrs | Full Dept: \(totalHours) hrs
+        """
 
         let body = """
         MONTHLY TIMESHEET VERIFICATION
 
         Department: \(dept)
-        Employees: \(count)
-        Total Hours Logged: \(hours)
+        Employees: \(employeeCount) employees
+        Total Hours Logged: \(totalHours) hours
 
         The attached timesheet summary requires your verification before payroll processing. Standard procedure requires checking that:
 
@@ -2174,6 +2294,7 @@ class DocumentQueueService: ObservableObject {
         Payroll Office notes: "All figures appear in order."
 
         SIGN TO APPROVE FOR PAYROLL.
+        \(timesheetSummary)
         """
 
         return DeskDocument.builder()
@@ -2212,6 +2333,10 @@ class DocumentQueueService: ObservableObject {
         let (program, target, duration) = programs.randomElement()!
         let slots = Int.random(in: 15...30)
 
+        // Generate actual participant names
+        let participantNames = generateNameList(count: slots, includeUnits: true)
+        let participantList = formatNameListAsAttachment(names: participantNames, title: "Nominated Participants")
+
         let body = """
         TRAINING PROGRAM ASSIGNMENT
 
@@ -2227,6 +2352,7 @@ class DocumentQueueService: ObservableObject {
         Note: Ideological content has been approved by the Party Education Committee.
 
         APPROVE LIST / REQUEST MODIFICATIONS
+        \(participantList)
         """
 
         return DeskDocument.builder()

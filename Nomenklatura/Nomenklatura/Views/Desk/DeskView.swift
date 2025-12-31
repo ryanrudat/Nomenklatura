@@ -1059,11 +1059,9 @@ struct DeskView: View {
             Color.black.opacity(0.5 * (1 - min(scenarioOverlayOffset / 300, 0.5)))
                 .ignoresSafeArea()
                 .onTapGesture {
-                    // Allow tap to dismiss for non-decision scenarios
-                    if !scenario.requiresDecision {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            showFullScenario = false
-                        }
+                    // Allow tap to dismiss for all scenarios
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showFullScenario = false
                     }
                 }
 
@@ -1075,21 +1073,19 @@ struct DeskView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 4)
 
-                // Close button (only for non-decision scenarios)
-                if !scenario.requiresDecision {
-                    HStack {
-                        Spacer()
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                showFullScenario = false
-                            }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(.white.opacity(0.8))
+                // Close button - always visible for dismissal
+                HStack {
+                    Spacer()
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            showFullScenario = false
                         }
-                        .padding(.horizontal)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.white.opacity(0.8))
                     }
+                    .padding(.horizontal)
                 }
 
                 ScrollView {
@@ -1128,7 +1124,7 @@ struct DeskView: View {
                     }
                     .onEnded { value in
                         if value.translation.height > dismissThreshold {
-                            // Dismiss
+                            // Dismiss - allow for all scenarios (decisions will be handled at end of turn)
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showFullScenario = false
                                 scenarioOverlayOffset = 0
