@@ -3862,7 +3862,7 @@ class DocumentQueueService: ObservableObject {
             ("discrepancy", "Verification Alert: Discrepancy Detected", "Accounting discrepancy detected. Records show 8 days unaccounted for. Possible clerical error or falsification.", true)
         ]
 
-        let (outcomeId, title, details, requiresDecision) = outcomes.randomElement()!
+        let (outcomeId, title, details, _) = outcomes.randomElement()!
 
         let body = """
         PERSONNEL VERIFICATION REPORT
@@ -4015,7 +4015,7 @@ class DocumentQueueService: ObservableObject {
             ("model", "Inspection Report: Model Facility", "Contrary to appeal, facility exceeds standards. Director may be attempting to secure resources for personal gain. Current quotas achievable.", "deny")
         ]
 
-        let (outcomeId, title, summary, recommendation) = outcomes.randomElement()!
+        let (outcomeId, title, summary, _) = outcomes.randomElement()!
 
         let body = """
         FACILITY INSPECTION REPORT
