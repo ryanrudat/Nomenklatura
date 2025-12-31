@@ -59,10 +59,7 @@ struct OrgChartView: View {
                 // Scrollable org chart
                 ScrollView([.horizontal, .vertical], showsIndicators: true) {
                     VStack(spacing: 0) {
-                        // === STANDING COMMITTEE ===
-                        standingCommitteeSection
-
-                        // === TOP SHARED POSITIONS ===
+                        // === TOP SHARED POSITIONS (GS chairs the SC) ===
                         apexSection
 
                         // === BUREAU BRANCHES (Index 6 → 2) ===
@@ -90,84 +87,31 @@ struct OrgChartView: View {
         }
     }
 
-    // MARK: - Standing Committee Section
-
-    private var standingCommitteeSection: some View {
-        VStack(spacing: 0) {
-            // Standing Committee node (clickable)
-            Button(action: { showStandingCommittee = true }) {
-                VStack(spacing: 4) {
-                    // Header with icon
-                    HStack(spacing: 6) {
-                        Image(systemName: "building.columns.fill")
-                            .font(.system(size: 12))
-                        Text("STANDING COMMITTEE")
-                            .font(.system(size: 11, weight: .bold))
-                            .tracking(1)
-                    }
-                    .foregroundColor(theme.accentGold)
-
-                    // Member count
-                    if let sc = game.standingCommittee {
-                        let memberCount = sc.fullMemberIds.count + sc.candidateMemberIds.count + (sc.chairId != nil ? 1 : 0)
-                        Text("\(memberCount) Members")
-                            .font(.system(size: 10))
-                            .foregroundColor(theme.inkGray)
-
-                        // Show if player is on committee
-                        if sc.playerIsOnCommittee {
-                            HStack(spacing: 2) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 6))
-                                Text("YOU ARE A MEMBER")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .tracking(0.5)
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(theme.sovietRed)
-                            .cornerRadius(2)
-                        }
-                    } else {
-                        Text("Tap to view members")
-                            .font(.system(size: 9))
-                            .foregroundColor(theme.inkLight)
-                    }
-                }
-                .frame(width: 200, height: 70)
-                .padding(10)
-                .background(theme.parchment)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(theme.accentGold, lineWidth: 2)
-                )
-                .cornerRadius(8)
-                .shadow(color: theme.accentGold.opacity(0.3), radius: 4, x: 0, y: 2)
-            }
-            .buttonStyle(.plain)
-
-            // Connector to General Secretary
-            VerticalConnector(height: 25, isHighlighted: false, isAchieved: false)
-        }
-    }
-
-    // MARK: - Apex Section (General Secretary & Deputy)
+    // MARK: - Apex Section (General Secretary & Deputy + Standing Committee)
 
     private var apexSection: some View {
         VStack(spacing: 0) {
-            // Index 8: General Secretary
-            if let genSec = getPosition(index: 8, track: .shared) {
-                SharedPositionNode(
-                    position: genSec,
-                    holders: getHolders(for: genSec),
-                    isPlayerPosition: isPlayerPosition(genSec),
-                    isAchieved: genSec.index < game.currentPositionIndex,
-                    onTap: { selectedPosition = genSec }
-                )
+            // Top row: GS with Standing Committee sidebar
+            HStack(alignment: .top, spacing: 20) {
+                // Index 8: General Secretary (Supreme Leader)
+                if let genSec = getPosition(index: 8, track: .shared) {
+                    VStack(spacing: 0) {
+                        SharedPositionNode(
+                            position: genSec,
+                            holders: getHolders(for: genSec),
+                            isPlayerPosition: isPlayerPosition(genSec),
+                            isAchieved: genSec.index < game.currentPositionIndex,
+                            scRank: .chairman,  // GS chairs the Standing Committee
+                            onTap: { selectedPosition = genSec }
+                        )
+                    }
+                }
 
-                VerticalConnector(height: 20, isHighlighted: false, isAchieved: game.currentPositionIndex > 8)
+                // Standing Committee (collective body chaired by GS)
+                standingCommitteeNode
             }
+
+            VerticalConnector(height: 20, isHighlighted: false, isAchieved: game.currentPositionIndex > 8)
 
             // Index 7: Deputy General Secretary
             if let deputy = getPosition(index: 7, track: .shared) {
@@ -189,6 +133,64 @@ struct OrgChartView: View {
             )
             .frame(width: CGFloat(6) * bureauSpacing)
         }
+    }
+
+    // Standing Committee node (clickable sidebar showing the collective body)
+    private var standingCommitteeNode: some View {
+        Button(action: { showStandingCommittee = true }) {
+            VStack(spacing: 4) {
+                // Header
+                HStack(spacing: 4) {
+                    Image(systemName: "building.columns.fill")
+                        .font(.system(size: 10))
+                    Text("STANDING COMMITTEE")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(0.5)
+                }
+                .foregroundColor(theme.accentGold)
+
+                // Member info
+                if let sc = game.standingCommittee {
+                    let memberCount = sc.fullMemberIds.count + sc.candidateMemberIds.count + (sc.chairId != nil ? 1 : 0)
+                    Text("\(memberCount) Members")
+                        .font(.system(size: 9))
+                        .foregroundColor(theme.inkGray)
+
+                    Text("Collective Leadership")
+                        .font(.system(size: 8))
+                        .foregroundColor(theme.inkLight)
+                        .italic()
+
+                    // Player status
+                    if sc.playerIsOnCommittee {
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 5))
+                            Text("MEMBER")
+                                .font(.system(size: 6, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(theme.sovietRed)
+                        .cornerRadius(2)
+                    }
+                } else {
+                    Text("Tap to view")
+                        .font(.system(size: 8))
+                        .foregroundColor(theme.inkLight)
+                }
+            }
+            .frame(width: 120, height: 70)
+            .padding(6)
+            .background(theme.parchmentDark.opacity(0.5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(theme.accentGold.opacity(0.6), lineWidth: 1)
+            )
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Bureau Section (6 columns × 5 rows)
