@@ -34,7 +34,11 @@ struct SnapshotLoadingView: View {
         "snapshot_3",
         "snapshot_4",
         "snapshot_5",
-        "snapshot_6"
+        "snapshot_6",
+        "snapshot_7",
+        "snapshot_8",
+        "snapshot_9",
+        "snapshot_10"
     ]
 
     // Duration for each image cycle (dark -> bright -> next)

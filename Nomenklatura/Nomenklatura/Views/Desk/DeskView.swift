@@ -50,7 +50,7 @@ struct DeskView: View {
     // Loading snapshot cycling
     @State private var currentSnapshotIndex = 0
     @State private var snapshotOpacity: Double = 1.0
-    private let snapshotImages = ["snapshot_1", "snapshot_2", "snapshot_3", "snapshot_4", "snapshot_5", "snapshot_6", "snapshot_7"]
+    private let snapshotImages = ["snapshot_1", "snapshot_2", "snapshot_3", "snapshot_4", "snapshot_5", "snapshot_6", "snapshot_7", "snapshot_8", "snapshot_9", "snapshot_10"]
     private let snapshotTimer = Timer.publish(every: 5.0, on: .main, in: .common).autoconnect()
 
     // Observe the shared loading state
