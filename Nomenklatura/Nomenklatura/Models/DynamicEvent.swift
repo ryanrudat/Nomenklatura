@@ -56,6 +56,7 @@ enum DynamicEventType: String, Codable {
     case networkIntel          // Contacts share information
     case allyRequest           // Ally asks for help
     case worldNews             // External events affecting player
+    case institutionalChange   // SC decisions, leadership changes
 
     var displayName: String {
         switch self {
@@ -69,6 +70,7 @@ enum DynamicEventType: String, Codable {
         case .networkIntel: return "Intelligence"
         case .allyRequest: return "Request"
         case .worldNews: return "News"
+        case .institutionalChange: return "Official Notice"
         }
     }
 
@@ -84,12 +86,13 @@ enum DynamicEventType: String, Codable {
         case .networkIntel: return "antenna.radiowaves.left.and.right"
         case .allyRequest: return "person.fill.questionmark"
         case .worldNews: return "newspaper.fill"
+        case .institutionalChange: return "building.columns.fill"
         }
     }
 
     var requiresResponse: Bool {
         switch self {
-        case .ambientTension, .worldNews:
+        case .ambientTension, .worldNews, .institutionalChange:
             return false
         default:
             return true
@@ -118,6 +121,8 @@ enum DynamicEventType: String, Codable {
             return 0  // Consequences can hit anyone
         case .urgentInterruption:
             return 3  // Major crises only reach those with authority
+        case .institutionalChange:
+            return 5  // SC-level changes for senior officials
         }
     }
 

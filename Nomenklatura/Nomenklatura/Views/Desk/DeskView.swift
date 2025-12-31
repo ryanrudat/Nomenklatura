@@ -1577,6 +1577,8 @@ struct DeskView: View {
                 return .plotDevelopment
             case .urgentInterruption:
                 return .plotDevelopment
+            case .institutionalChange:
+                return .factionDiscovery
             }
         }()
 

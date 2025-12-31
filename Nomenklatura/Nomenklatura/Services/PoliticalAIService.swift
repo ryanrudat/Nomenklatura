@@ -551,55 +551,32 @@ class PoliticalAIService {
 
     // MARK: - Standing Committee Member Proposals
 
-    /// Process proposals from SC members (not GS)
+    /// Process proposals from SC members using the autonomous proposal generator
     private func processStandingCommitteeProposals(game: Game) -> [PoliticalEvent]? {
-        guard let committee = game.standingCommittee else { return nil }
+        // Use SCProposalGenerator for autonomous NPC proposals
+        let proposalResults = SCProposalGenerator.generateProposals(game: game)
+
+        guard !proposalResults.isEmpty else { return nil }
 
         var events: [PoliticalEvent] = []
 
-        // Each SC member has a small chance to propose something
-        for memberId in committee.memberIds {
-            // Skip the GS (handled separately)
-            if memberId == committee.chairId { continue }
+        for result in proposalResults {
+            // Create political event for the proposal
+            events.append(PoliticalEvent(
+                eventType: .proposalSubmitted,
+                characterId: result.sponsorId,
+                characterName: result.sponsorName,
+                slotId: nil,  // SC agenda items, not policy slots
+                optionId: nil,
+                narrative: "\(result.sponsorName) has submitted a proposal to the Standing Committee: \(result.proposal.title)",
+                consequences: [],
+                turn: game.turnNumber
+            ))
 
-            guard let member = game.characters.first(where: { $0.templateId == memberId && $0.isActive }) else {
-                continue
-            }
-
-            // Low chance per member per turn
-            let proposeChance = 5 + member.personalityAmbitious / 10
-            guard Int.random(in: 1...100) <= proposeChance else { continue }
-
-            // Find a policy this member's faction would like
-            if let factionId = member.factionId,
-               let proposal = selectFactionPolicy(factionId: factionId, member: member, game: game) {
-
-                guard let slot = game.policySlot(withId: proposal.slotId) else { continue }
-
-                slot.proposeChange(
-                    optionId: proposal.targetOptionId,
-                    characterId: member.templateId,
-                    turn: game.turnNumber
-                )
-
-                let optionName = slot.option(withId: proposal.targetOptionId)?.name ?? "Unknown"
-
-                events.append(PoliticalEvent(
-                    eventType: .proposalSubmitted,
-                    characterId: member.templateId,
-                    characterName: member.name,
-                    slotId: proposal.slotId,
-                    optionId: proposal.targetOptionId,
-                    narrative: "\(member.name) has submitted a proposal to the Standing Committee: change \(slot.name) to \(optionName).",
-                    consequences: [],
-                    turn: game.turnNumber
-                ))
-
-                politicalLogger.info("SC member \(member.name) proposed: \(optionName)")
-            }
+            politicalLogger.info("SC proposal generated: \(result.sponsorName) proposed \(result.proposal.title)")
         }
 
-        return events.isEmpty ? nil : events
+        return events
     }
 
     /// Select a policy for a faction member to propose

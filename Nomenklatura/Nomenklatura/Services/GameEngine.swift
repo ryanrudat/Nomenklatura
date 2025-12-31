@@ -561,6 +561,9 @@ class GameEngine {
         // Political AI - NPC policy proposals and voting
         processPoliticalAI(game: game)
 
+        // Standing Committee meetings - convene periodically and process decisions
+        processStandingCommitteeCycle(game: game)
+
         // Position offers - check expirations and generate new offers
         processPositionOffers(game: game)
 
@@ -753,6 +756,339 @@ class GameEngine {
             game.events.append(gameEvent)
 
             gameLogger.info("Political event: \(event.eventType.rawValue) - \(event.narrative)")
+        }
+    }
+
+    /// Process Standing Committee meeting cycle
+    /// Convenes meetings based on LeadershipConfig settings
+    private func processStandingCommitteeCycle(game: Game) {
+        guard let committee = game.standingCommittee else { return }
+
+        // Get leadership config (with defaults)
+        let config = CampaignLoader.shared.loadCampaign(id: game.campaignId)?.leadershipConfig
+        let meetingInterval = config?.meetingFrequency ?? 5
+        let minAgenda = config?.minimumAgendaItems ?? 1
+
+        let turnsSinceMeeting = game.turnNumber - committee.lastMeetingTurn
+
+        // Check if it's time for a meeting
+        guard turnsSinceMeeting >= meetingInterval else {
+            gameLogger.debug("SC meeting not due. Turns since last: \(turnsSinceMeeting)/\(meetingInterval)")
+            return
+        }
+
+        // Need agenda items to meet (unless crisis)
+        guard committee.pendingAgenda.count >= minAgenda || game.stability < 30 else {
+            gameLogger.debug("SC meeting skipped - insufficient agenda items (\(committee.pendingAgenda.count)/\(minAgenda))")
+            return
+        }
+
+        gameLogger.info("Convening Standing Committee meeting (turn \(game.turnNumber))")
+
+        // Convene the meeting
+        let result = StandingCommitteeService.shared.conveneMeeting(
+            committee: committee,
+            game: game
+        )
+
+        // Process decisions and generate downstream effects
+        processMeetingDecisions(result: result, game: game)
+
+        // Log the meeting as a game event
+        let gameEvent = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .standingCommitteeMeeting,
+            summary: result.narrative
+        )
+        gameEvent.importance = 8
+        gameEvent.game = game
+        game.events.append(gameEvent)
+
+        gameLogger.info("SC meeting concluded. \(result.itemResults.count) decisions made.")
+    }
+
+    /// Process the results of a Standing Committee meeting
+    /// Generates trickle-down effects like documents, events, and world state changes
+    private func processMeetingDecisions(result: CommitteeMeetingResult, game: Game) {
+        for decision in result.itemResults {
+            // Process passed decisions
+            if decision.outcome == .approved || decision.outcome == .amendedAndApproved {
+                // Apply any stat effects from the decision
+                applyDecisionEffects(decision: decision, game: game)
+
+                // Queue documents for players based on position level
+                queueDecisionDocuments(decision: decision, game: game)
+
+                // Queue events for players if decision is significant
+                if decision.item.priority == .urgent || decision.item.priority == .critical {
+                    queueDecisionEvent(decision: decision, game: game)
+                }
+
+                gameLogger.info("SC decision passed: \(decision.item.title)")
+            } else if decision.outcome == .rejected {
+                // Failed proposals may have political consequences
+                if let sponsorId = decision.item.sponsorId,
+                   let sponsor = game.characters.first(where: { $0.templateId == sponsorId }) {
+                    // Sponsor loses disposition (their reputation suffers)
+                    sponsor.disposition = max(0, sponsor.disposition - 5)
+                    gameLogger.info("SC decision rejected: \(decision.item.title) - \(sponsor.name) loses standing")
+                }
+            }
+        }
+    }
+
+    /// Apply effects of a passed SC decision to game state
+    private func applyDecisionEffects(decision: CommitteeDecisionResult, game: Game) {
+        let item = decision.item
+
+        // Category-based effects
+        switch item.category {
+        case .economic:
+            // Economic decisions affect industrial output and treasury
+            let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
+            game.industrialOutput = min(100, game.industrialOutput + impact)
+
+        case .security:
+            // Security decisions affect stability but may hurt popular support
+            let impact = item.priority == .critical ? 8 : (item.priority == .urgent ? 5 : 2)
+            game.stability = min(100, game.stability + impact)
+            game.popularSupport = max(0, game.popularSupport - (impact / 2))
+
+        case .personnel:
+            // Personnel changes affect elite loyalty
+            let impact = item.priority == .critical ? 6 : (item.priority == .urgent ? 4 : 2)
+            game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
+
+        case .foreign:
+            // Foreign policy affects international standing
+            let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
+            game.internationalStanding = min(100, game.internationalStanding + impact)
+
+        case .ideological:
+            // Ideological decisions affect elite loyalty but may hurt popular support
+            let impact = item.priority == .critical ? 5 : 3
+            game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
+            game.popularSupport = max(0, game.popularSupport - 2)
+
+        case .crisis:
+            // Crisis responses have mixed effects
+            game.stability = min(100, game.stability + 5)
+
+        case .policy:
+            // General policy has modest stability effect
+            game.stability = min(100, game.stability + 2)
+
+        case .succession:
+            // Succession decisions affect elite loyalty and stability
+            game.eliteLoyalty = min(100, game.eliteLoyalty + 5)
+            game.stability = min(100, game.stability + 3)
+        }
+    }
+
+    /// Queue documents for players based on SC decisions
+    private func queueDecisionDocuments(decision: CommitteeDecisionResult, game: Game) {
+        // Only queue documents for significant decisions
+        guard decision.item.priority != .routine else { return }
+
+        // Generate appropriate document based on player's position level
+        let clearanceLevel = game.currentPositionIndex
+        var document: DeskDocument?
+
+        switch decision.item.category {
+        case .economic:
+            if clearanceLevel <= 3 {
+                document = DeskDocument.builder()
+                    .withTemplateId("sc_economic_directive_\(game.turnNumber)")
+                    .ofType(.directive)
+                    .titled("Production Quota Adjustment Notice")
+                    .from("Standing Committee Secretariat", title: "Economic Affairs Division")
+                    .receivedOnTurn(game.turnNumber)
+                    .withUrgency(.routine)
+                    .inCategory(.economic)
+                    .withBody("""
+                        NOTICE TO ALL BUREAUS
+
+                        Following the Standing Committee's directive on \(decision.item.title), your bureau's quotas have been updated.
+
+                        All personnel must review and acknowledge compliance requirements within the specified timeframe.
+
+                        Failure to meet adjusted targets will be noted in performance evaluations.
+
+                        By order of the Standing Committee
+                        """)
+                    .requiresDecision(true)
+                    .addOption(id: "acknowledge", text: "Acknowledge and comply", shortDescription: "Acknowledged directive", effects: [:])
+                    .addOption(id: "request_extension", text: "Request implementation extension", shortDescription: "Requested extension", effects: ["stability": -1])
+                    .build()
+            } else {
+                document = DeskDocument.builder()
+                    .withTemplateId("sc_economic_policy_\(game.turnNumber)")
+                    .ofType(.directive)
+                    .titled("Economic Policy Implementation Directive")
+                    .from("Standing Committee", title: "Central Government")
+                    .receivedOnTurn(game.turnNumber)
+                    .withUrgency(.priority)
+                    .inCategory(.economic)
+                    .withBody("""
+                        DIRECTIVE TO SENIOR OFFICIALS
+
+                        The Standing Committee has approved: \(decision.item.title)
+
+                        As a senior official, you are responsible for ensuring your department implements these measures promptly and completely.
+
+                        Implementation progress will be monitored. Report any obstacles through proper channels.
+
+                        By authority of the Standing Committee
+                        """)
+                    .requiresDecision(true)
+                    .addOption(id: "implement", text: "Begin immediate implementation", shortDescription: "Ordered implementation", effects: ["eliteLoyalty": 2])
+                    .addOption(id: "delay", text: "Request clarification before acting", shortDescription: "Delayed for clarification", effects: ["eliteLoyalty": -2])
+                    .build()
+            }
+
+        case .security:
+            document = DeskDocument.builder()
+                .withTemplateId("sc_security_directive_\(game.turnNumber)")
+                .ofType(.directive)
+                .titled("Security Vigilance Notice")
+                .from("State Security Directorate", title: "Standing Committee Authority")
+                .receivedOnTurn(game.turnNumber)
+                .withUrgency(.priority)
+                .inCategory(.security)
+                .withBody("""
+                    SECURITY DIRECTIVE - ALL PERSONNEL
+
+                    The Standing Committee has issued new security directives regarding \(decision.item.title).
+
+                    All personnel are expected to maintain heightened vigilance. Report any suspicious activities or behaviors through established channels.
+
+                    Remember: Security is everyone's responsibility.
+
+                    State Security Directorate
+                    """)
+                .requiresDecision(true)
+                .addOption(id: "acknowledge", text: "Acknowledge and increase vigilance", shortDescription: "Acknowledged security notice", effects: [:])
+                .addOption(id: "report", text: "Report observed concerns", shortDescription: "Submitted security report", effects: ["network": -3, "stability": 1])
+                .build()
+
+        case .personnel:
+            if clearanceLevel >= 4 {
+                document = DeskDocument.builder()
+                    .withTemplateId("sc_personnel_notice_\(game.turnNumber)")
+                    .ofType(.directive)
+                    .titled("Personnel Changes Notification")
+                    .from("Central Personnel Department", title: "Standing Committee")
+                    .receivedOnTurn(game.turnNumber)
+                    .withUrgency(.priority)
+                    .inCategory(.political)
+                    .withBody("""
+                        LEADERSHIP CHANGES ANNOUNCEMENT
+
+                        The Standing Committee has approved changes to leadership positions: \(decision.item.title)
+
+                        These changes take effect immediately. All affected departments should ensure smooth transitions.
+
+                        Cooperation with incoming leadership is expected from all personnel.
+
+                        Central Personnel Department
+                        """)
+                    .requiresDecision(true)
+                    .addOption(id: "acknowledge", text: "Acknowledge personnel changes", shortDescription: "Acknowledged changes", effects: [:])
+                    .addOption(id: "contact", text: "Reach out to affected parties", shortDescription: "Made contacts", effects: ["network": 2])
+                    .build()
+            }
+
+        case .ideological:
+            document = DeskDocument.builder()
+                .withTemplateId("sc_ideological_directive_\(game.turnNumber)")
+                .ofType(.directive)
+                .titled("Political Education Directive")
+                .from("Propaganda Department", title: "Central Committee")
+                .receivedOnTurn(game.turnNumber)
+                .withUrgency(.routine)
+                .inCategory(.political)
+                .withBody("""
+                    POLITICAL EDUCATION NOTICE
+
+                    Following the Committee's guidance on \(decision.item.title), all units must conduct political study sessions.
+
+                    Attendance is mandatory. Study materials will be distributed through party channels.
+
+                    Strengthen your ideological foundation. Build socialist consciousness.
+
+                    Propaganda Department
+                    """)
+                .requiresDecision(true)
+                .addOption(id: "attend", text: "Schedule attendance", shortDescription: "Scheduled study session", effects: ["eliteLoyalty": 1])
+                .addOption(id: "organize", text: "Organize unit study session", shortDescription: "Organized study session", effects: ["eliteLoyalty": 2, "network": -1])
+                .build()
+
+        default:
+            break
+        }
+
+        // Queue the document if we generated one
+        if let doc = document {
+            game.deskDocuments.append(doc)
+            gameLogger.info("Queued SC directive document: \(doc.title)")
+        }
+    }
+
+    /// Queue a dynamic event for the player about an SC decision
+    private func queueDecisionEvent(decision: CommitteeDecisionResult, game: Game) {
+        let title: String
+        let briefText: String
+        let priority: EventPriority
+
+        switch decision.item.category {
+        case .crisis:
+            title = "Standing Committee Crisis Response"
+            briefText = "The Standing Committee has convened to address: \(decision.item.title)"
+            priority = .urgent
+        case .security:
+            title = "Security Policy Update"
+            briefText = "New security measures approved: \(decision.item.title)"
+            priority = .elevated
+        case .personnel:
+            title = "Leadership Changes Announced"
+            briefText = "The Standing Committee has decided: \(decision.item.title)"
+            priority = .elevated
+        default:
+            title = "Standing Committee Decision"
+            briefText = "The Committee has approved: \(decision.item.title)"
+            priority = .normal
+        }
+
+        // Look up sponsor name from sponsorId
+        let sponsorName: String
+        if let sponsorId = decision.item.sponsorId,
+           let sponsor = game.characters.first(where: { $0.templateId == sponsorId }) {
+            sponsorName = sponsor.name
+        } else {
+            sponsorName = "Standing Committee"
+        }
+
+        // Only notify high-level players directly
+        if game.currentPositionIndex >= 5 {
+            let event = DynamicEvent(
+                eventType: .institutionalChange,
+                priority: priority,
+                title: title,
+                briefText: briefText,
+                initiatingCharacterName: sponsorName,
+                turnGenerated: game.turnNumber,
+                isUrgent: priority == .urgent,
+                responseOptions: [
+                    EventResponse(
+                        id: "acknowledge",
+                        text: "Acknowledge and prepare",
+                        shortText: "Acknowledge",
+                        effects: [:]
+                    )
+                ],
+                iconName: "building.columns.fill"
+            )
+            game.queueDynamicEvent(event)
         }
     }
 

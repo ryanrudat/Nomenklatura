@@ -787,6 +787,7 @@ extension Game {
         case .networkIntel: return 3
         case .allyRequest: return 3
         case .worldNews: return 2
+        case .institutionalChange: return 5  // SC decisions don't happen frequently
         }
     }
 

@@ -725,6 +725,9 @@ struct EventTypeHelpView: View {
 
         case .worldNews:
             return "Events in the wider world are affecting the political landscape. International crises, economic developments, or policy changes may create opportunities or dangers for you."
+
+        case .institutionalChange:
+            return "The Standing Committee has made a decision that affects the entire state apparatus. High-level policy changes can reshape the political landscape and create both opportunities and dangers."
         }
     }
 
@@ -759,6 +762,9 @@ struct EventTypeHelpView: View {
 
         case .worldNews:
             return "External events can shift the balance of power. Watch for opportunities to position yourself advantageously as the political winds change."
+
+        case .institutionalChange:
+            return "When the Standing Committee acts, adapt quickly. Those who align with new policies advance; those who resist are swept aside."
         }
     }
 }

@@ -41,6 +41,80 @@ struct CampaignConfig: Codable, Identifiable {
 
     // Player faction selection
     var playerFactions: [PlayerFactionConfig]?
+
+    // Leadership dynamics configuration
+    var leadershipConfig: LeadershipConfig?
+}
+
+// MARK: - Leadership Configuration
+
+/// Configures the power dynamics between the General Secretary and Standing Committee
+struct LeadershipConfig: Codable {
+    /// How much power the GS has relative to the SC (0.0-1.0)
+    /// 0.0 = Pure collective leadership (SC can override GS)
+    /// 0.5 = Balanced (GS leads but needs SC consensus)
+    /// 1.0 = Near-absolute (GS can override SC, Xi Jinping style)
+    var generalSecretaryPower: Double = 0.5
+
+    /// GS vote weight in SC decisions (1 = normal, 2 = double, 3 = triple)
+    var gsVoteWeight: Int = 1
+
+    /// Can GS issue decrees without SC vote?
+    var gsCanDecree: Bool = true
+
+    /// Political capital cost multiplier for decrees (higher = more expensive)
+    var decreeCostMultiplier: Double = 1.5
+
+    /// Frequency of SC meetings in turns (default: every 5 turns)
+    var meetingFrequency: Int = 5
+
+    /// Minimum agenda items required to convene a meeting
+    var minimumAgendaItems: Int = 1
+
+    /// Can SC override GS decisions?
+    var scCanOverrideGs: Bool = true
+
+    /// Threshold for SC to override GS (votes needed as fraction of total members)
+    var overrideThreshold: Double = 0.75
+
+    static var collectiveLeadership: LeadershipConfig {
+        LeadershipConfig(
+            generalSecretaryPower: 0.3,
+            gsVoteWeight: 1,
+            gsCanDecree: false,
+            decreeCostMultiplier: 2.0,
+            meetingFrequency: 4,
+            minimumAgendaItems: 1,
+            scCanOverrideGs: true,
+            overrideThreshold: 0.6
+        )
+    }
+
+    static var strongLeader: LeadershipConfig {
+        LeadershipConfig(
+            generalSecretaryPower: 0.8,
+            gsVoteWeight: 2,
+            gsCanDecree: true,
+            decreeCostMultiplier: 1.0,
+            meetingFrequency: 6,
+            minimumAgendaItems: 2,
+            scCanOverrideGs: true,
+            overrideThreshold: 0.9
+        )
+    }
+
+    static var absoluteLeader: LeadershipConfig {
+        LeadershipConfig(
+            generalSecretaryPower: 1.0,
+            gsVoteWeight: 3,
+            gsCanDecree: true,
+            decreeCostMultiplier: 0.5,
+            meetingFrequency: 8,
+            minimumAgendaItems: 3,
+            scCanOverrideGs: false,
+            overrideThreshold: 1.0
+        )
+    }
 }
 
 // MARK: - Starting Stats
