@@ -18,6 +18,7 @@ final class Game {
     // MARK: - Transient Caches (Not Persisted)
     @Transient private var _pendingDynamicEventsCache: [DynamicEvent]?
     @Transient private var _dynamicEventCooldownsCache: [String: Int]?
+    @Transient private var _documentConsequencesCache: [ScheduledConsequence]?
     @Transient private var _pendingProjectsCache: [PendingProject]?
     @Transient private var _activeShowTrialsCache: [ShowTrial]?
     @Transient private var _earnedBadgesCache: [EarnedBadge]?
@@ -89,6 +90,9 @@ final class Game {
     var lastDynamicEventTurn: Int        // Last turn a dynamic event fired
     var consecutiveEventTurns: Int       // For pacing - quiet turns after events
     var dynamicEventCooldownsData: Data? // Encoded [String: Int] for type cooldowns
+
+    // Document decision consequences
+    var documentConsequencesData: Data?  // Encoded [ScheduledConsequence] - delayed effects from desk decisions
 
     // Narrative Memory system
     var storySummary: String             // AI-maintained narrative summary (~1500 chars max)
@@ -686,6 +690,44 @@ extension Game {
         set {
             _dynamicEventCooldownsCache = newValue
             dynamicEventCooldownsData = try? Self.sharedEncoder.encode(newValue)
+        }
+    }
+
+    // MARK: - Document Consequences
+
+    /// Scheduled consequences from desk document decisions
+    var documentConsequences: [ScheduledConsequence] {
+        get {
+            if let cached = _documentConsequencesCache { return cached }
+            guard let data = documentConsequencesData else { return [] }
+            let decoded = (try? Self.sharedDecoder.decode([ScheduledConsequence].self, from: data)) ?? []
+            _documentConsequencesCache = decoded
+            return decoded
+        }
+        set {
+            _documentConsequencesCache = newValue
+            documentConsequencesData = try? Self.sharedEncoder.encode(newValue)
+        }
+    }
+
+    /// Schedule a delayed consequence from a document decision
+    func scheduleDocumentConsequence(_ consequence: ScheduledConsequence) {
+        var current = documentConsequences
+        current.append(consequence)
+        documentConsequences = current
+    }
+
+    /// Get all document consequences due this turn
+    func documentConsequencesDueThisTurn() -> [ScheduledConsequence] {
+        documentConsequences.filter { $0.triggerTurn <= turnNumber && !$0.hasTriggered }
+    }
+
+    /// Mark a document consequence as triggered
+    func markDocumentConsequenceTriggered(id: UUID) {
+        var current = documentConsequences
+        if let index = current.firstIndex(where: { $0.id == id }) {
+            current[index].hasTriggered = true
+            documentConsequences = current
         }
     }
 

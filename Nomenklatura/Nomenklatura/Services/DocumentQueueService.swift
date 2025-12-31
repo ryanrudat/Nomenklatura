@@ -10,6 +10,9 @@ import Foundation
 import SwiftUI
 import SwiftData
 import Combine
+import os.log
+
+private let documentLog = Logger(subsystem: "com.ryanrudat.Nomenklatura", category: "DocumentQueue")
 
 // MARK: - Document Queue Service
 
@@ -94,6 +97,9 @@ class DocumentQueueService: ObservableObject {
 
     /// Generate new documents for the current turn
     func generateDocumentsForTurn(game: Game) {
+        let clearance = min(game.currentPositionIndex + 1, 8)
+        documentLog.info("📄 [DocQueue] Starting document generation for turn \(game.turnNumber), Position: \(game.currentPositionIndex), Clearance: \(clearance)")
+
         isProcessing = true
         defer { isProcessing = false }
 
@@ -2055,6 +2061,9 @@ class DocumentQueueService: ObservableObject {
     private func generatePersonnelDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
+        // DEBUG: Log clearance level
+        documentLog.info("📋 [Personnel] Position Index: \(game.currentPositionIndex), Clearance Level: \(clearanceLevel)")
+
         // Personnel clearances reflect administrative scope:
         // - Levels 1-2: Leave requests, timesheet verification
         // - Levels 3-4: Minor transfers, training assignments
@@ -2070,13 +2079,19 @@ class DocumentQueueService: ObservableObject {
 
         let available = templates.filter { $0.minClearance <= clearanceLevel }
 
+        // DEBUG: Log available templates with their clearance requirements
+        let availableClearances = available.map { $0.minClearance }
+        documentLog.info("📋 [Personnel] Available templates: \(availableClearances.count) with clearances: \(availableClearances)")
+
         let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
             let weight = max(1, 3 - (clearanceLevel - template.minClearance))
             return Array(repeating: template.generator, count: weight)
         }
 
         if let generator = weighted.randomElement() {
-            return generator(game)
+            let doc = generator(game)
+            documentLog.info("📋 [Personnel] Generated document: \(doc.title)")
+            return doc
         }
 
         return generateLeaveRequestFiling(for: game)
@@ -2247,6 +2262,14 @@ class DocumentQueueService: ObservableObject {
 
     /// Level 3+: Standard transfer request
     private func generateMinorTransferRequest(for game: Game) -> DeskDocument {
+        let clearance = min(game.currentPositionIndex + 1, 8)
+
+        // FAILSAFE: This requires clearance 3+
+        if clearance < 3 {
+            documentLog.error("🚨 [MinorTransfer] FAILSAFE - Redirecting at clearance \(clearance)")
+            return generateLeaveRequestFiling(for: game)
+        }
+
         let transfers = [
             ("Sgt. Viktor Orlov", "Guard Post 7", "Administrative Pool", "personal request"),
             ("Clerk Maria Volkov", "Records Office", "Personnel Division", "efficiency improvement"),
@@ -2304,6 +2327,14 @@ class DocumentQueueService: ObservableObject {
 
     /// Level 4+: Senior or sensitive transfer
     private func generateSeniorTransferRequest(for game: Game) -> DeskDocument {
+        let clearance = min(game.currentPositionIndex + 1, 8)
+
+        // FAILSAFE: This requires clearance 4+
+        if clearance < 4 {
+            documentLog.error("🚨 [SeniorTransfer] FAILSAFE - Redirecting at clearance \(clearance)")
+            return generateLeaveRequestFiling(for: game)
+        }
+
         let transfers = [
             ("Lt. Col. Nikolai Petrov", "Regional Command", "General Staff", "merit-based advancement"),
             ("Director Elena Mikhailova", "Industrial Bureau", "Planning Commission", "restructuring"),
@@ -2367,6 +2398,20 @@ class DocumentQueueService: ObservableObject {
 
     /// Level 5+: Politically sensitive transfer (nepotism case)
     private func generateNepotismTransferRequest(for game: Game) -> DeskDocument {
+        let clearance = min(game.currentPositionIndex + 1, 8)
+
+        // CRITICAL: This should ONLY be called for clearance level 5+
+        documentLog.error("🚨 [NEPOTISM] Called! Position Index: \(game.currentPositionIndex), Clearance: \(clearance)")
+
+        // Assert in debug builds to catch this issue
+        assert(clearance >= 5, "NEPOTISM document generated at clearance \(clearance) - should only appear at 5+")
+
+        // FAILSAFE: If somehow called at wrong clearance, generate a simple leave request instead
+        if clearance < 5 {
+            documentLog.error("🚨 [NEPOTISM] FAILSAFE TRIGGERED - Redirecting to leave request at clearance \(clearance)")
+            return generateLeaveRequestFiling(for: game)
+        }
+
         let body = """
         PERSONNEL TRANSFER REQUEST
         CLASSIFICATION: CONFIDENTIAL
@@ -2961,7 +3006,76 @@ class DocumentQueueService: ObservableObject {
         // Schedule Codex reactions from relevant characters
         scheduleCodexReactionsForDecision(document: document, option: option, game: game, context: context)
 
+        // Schedule delayed consequences based on the decision
+        scheduleDocumentConsequences(document: document, option: option, game: game)
+
         return option
+    }
+
+    /// Schedule delayed consequences for a document decision
+    /// These consequences will fire in future turns, reflecting real-world effects of bureaucratic decisions
+    private func scheduleDocumentConsequences(document: DeskDocument, option: DocumentOption, game: Game) {
+        let currentTurn = game.turnNumber
+        var consequences: [ScheduledConsequence] = []
+
+        // Base delay for consequences (2-5 turns)
+        let baseDelay = Int.random(in: 2...5)
+
+        // Check if this decision has significant effects worth scheduling consequences for
+        let totalEffectMagnitude = option.effects.values.reduce(0) { $0 + abs($1) }
+        guard totalEffectMagnitude >= 10 else { return }  // Only schedule for impactful decisions
+
+        // Generate consequences based on document category
+        switch document.categoryEnum {
+        case .military:
+            consequences.append(contentsOf: generateMilitaryConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .security:
+            consequences.append(contentsOf: generateSecurityConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .economic:
+            consequences.append(contentsOf: generateEconomicDocConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .political:
+            consequences.append(contentsOf: generatePoliticalDocConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .personnel:
+            consequences.append(contentsOf: generatePersonnelConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .diplomatic:
+            consequences.append(contentsOf: generateDiplomaticConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .crisis:
+            consequences.append(contentsOf: generateCrisisConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+
+        case .personal:
+            // Personal matters can lead to gratitude or resentment
+            consequences.append(contentsOf: generatePersonalConsequences(
+                document: document, option: option, currentTurn: currentTurn, baseDelay: baseDelay, game: game
+            ))
+        }
+
+        // Schedule all generated consequences
+        for consequence in consequences {
+            game.scheduleDocumentConsequence(consequence)
+            #if DEBUG
+            print("[DocConsequence] Scheduled: \(consequence.type.displayName) for turn \(consequence.triggerTurn)")
+            #endif
+        }
     }
 
     /// Schedule Codex messages from characters affected by a document decision
@@ -3546,6 +3660,371 @@ class DocumentQueueService: ObservableObject {
         }
 
         return builder.build()
+    }
+
+    // MARK: - Document Consequence Generators
+
+    /// Generate consequences for military document decisions
+    private func generateMilitaryConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Approved military spending can succeed or fail
+        if let treasuryCost = option.effects["treasury"], treasuryCost < -20 {
+            // High-cost military decisions have operational outcomes
+            if Bool.random() { // 50% chance of success
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .operationalSuccess,
+                    magnitude: 30,
+                    description: "The operation authorized in '\(document.title)' has achieved its objectives. Command reports favorable outcomes.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["militaryLoyalty": 5, "stability": 3]
+                ))
+            } else {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .operationalFailure,
+                    magnitude: 40,
+                    description: "The operation authorized in '\(document.title)' has encountered significant setbacks. An inquiry may be warranted.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["militaryLoyalty": -5, "stability": -5, "standing": -3]
+                ))
+            }
+        }
+
+        // Denied military requests breed resentment
+        if let militaryEffect = option.effects["military"], militaryEffect < 0 {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay + 1,
+                type: .militaryUnrest,
+                magnitude: 25,
+                description: "Grumbling in military circles about your handling of '\(document.title)'. Officers remember who denied their requests.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["militaryLoyalty": -3]
+            ))
+        }
+
+        return consequences
+    }
+
+    /// Generate consequences for security document decisions
+    private func generateSecurityConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Approving arrests/investigations creates political fallout
+        if option.text.lowercased().contains("approve") || option.text.lowercased().contains("authorize") {
+            // Security actions can backfire
+            if Int.random(in: 1...100) <= 30 { // 30% chance of blowback
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .investigationOpened,
+                    magnitude: 35,
+                    description: "Your authorization of '\(document.title)' has drawn scrutiny. Someone is asking questions about your role.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["network": -5, "standing": -3]
+                ))
+            }
+        }
+
+        // Denying security requests may let threats fester
+        if option.text.lowercased().contains("deny") || option.text.lowercased().contains("reject") {
+            if Int.random(in: 1...100) <= 40 { // 40% chance
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay + 2,
+                    type: .bureaucraticBlowback,
+                    magnitude: 30,
+                    description: "The matter you dismissed in '\(document.title)' has resurfaced. Security reports suggest the threat was real.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["stability": -5, "security": -5]
+                ))
+            }
+        }
+
+        return consequences
+    }
+
+    /// Generate consequences for economic document decisions
+    private func generateEconomicDocConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Large economic commitments have delayed effects
+        if let treasuryCost = option.effects["treasury"], treasuryCost < -30 {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay + 2,
+                type: .resourceShortage,
+                magnitude: 35,
+                description: "The expenditure approved in '\(document.title)' has strained resources in other areas. Budget shortfalls are emerging.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["treasury": -10, "industrialOutput": -3]
+            ))
+        }
+
+        // Economic reforms create political reactions
+        if let outputChange = option.effects["industrialOutput"], abs(outputChange) >= 5 {
+            if outputChange > 0 {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .politicalFavor,
+                    magnitude: 25,
+                    description: "Your economic decision in '\(document.title)' has improved production figures. Certain factions view you more favorably.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["standing": 3, "patronFavor": 2]
+                ))
+            } else {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .eliteBacklash,
+                    magnitude: 30,
+                    description: "Your economic decision in '\(document.title)' has hurt production. Questions are being asked about your judgment.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["standing": -3, "eliteLoyalty": -5]
+                ))
+            }
+        }
+
+        return consequences
+    }
+
+    /// Generate consequences for political document decisions
+    private func generatePoliticalDocConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Political decisions affect relationships long-term
+        if let patronEffect = option.effects["patronFavor"], abs(patronEffect) >= 5 {
+            let isPositive = patronEffect > 0
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay,
+                type: isPositive ? .gratitude : .resentment,
+                magnitude: 30,
+                description: isPositive ?
+                    "Your handling of '\(document.title)' has been noted favorably in certain circles. Allies remember loyalty." :
+                    "Your decision on '\(document.title)' has not been forgotten. Certain parties feel... disappointed.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: isPositive ? ["network": 3] : ["network": -3, "rivalThreat": 5]
+            ))
+        }
+
+        // Stability changes have ripple effects
+        if let stabilityChange = option.effects["stability"], stabilityChange < -5 {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay + 1,
+                type: .popularUnrest,
+                magnitude: 25,
+                description: "The instability caused by '\(document.title)' continues to ripple outward. Regional reports indicate growing discontent.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["popularSupport": -5, "stability": -3]
+            ))
+        }
+
+        return consequences
+    }
+
+    /// Generate consequences for personnel document decisions
+    private func generatePersonnelConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Personnel decisions affect loyalty
+        if option.text.lowercased().contains("approve") || option.text.lowercased().contains("transfer") {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay,
+                type: .gratitude,
+                magnitude: 20,
+                description: "The individual affected by '\(document.title)' has not forgotten your favorable decision. You may have made an ally.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["network": 2]
+            ))
+        }
+
+        // Denied personnel requests breed resentment
+        if option.text.lowercased().contains("deny") || option.text.lowercased().contains("reject") {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay,
+                type: .resentment,
+                magnitude: 25,
+                description: "The individual denied in '\(document.title)' harbors resentment. In the Party, such feelings can fester.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["network": -2]
+            ))
+        }
+
+        return consequences
+    }
+
+    /// Generate consequences for diplomatic document decisions
+    private func generateDiplomaticConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Diplomatic decisions have international ramifications
+        if let standingChange = option.effects["internationalStanding"], abs(standingChange) >= 5 {
+            let isPositive = standingChange > 0
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay + 1,
+                type: isPositive ? .politicalFavor : .internationalPressure,
+                magnitude: 30,
+                description: isPositive ?
+                    "Your diplomatic handling of '\(document.title)' has improved foreign perception. Trade opportunities may emerge." :
+                    "Your decision on '\(document.title)' has drawn international criticism. Foreign pressure is mounting.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: isPositive ? ["treasury": 5] : ["treasury": -5, "stability": -3]
+            ))
+        }
+
+        return consequences
+    }
+
+    /// Generate consequences for crisis document decisions
+    private func generateCrisisConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Crisis decisions always have follow-up effects
+        let effectTotal = option.effects.values.reduce(0, +)
+        let wasPositiveAction = effectTotal < 0 // Negative treasury = spending to address crisis
+
+        if wasPositiveAction {
+            // Addressing crisis can succeed or partially succeed
+            if Bool.random() {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .operationalSuccess,
+                    magnitude: 40,
+                    description: "Your decisive action on '\(document.title)' has contained the crisis. The situation is stabilizing.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["stability": 5, "standing": 5, "patronFavor": 3]
+                ))
+            } else {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay,
+                    type: .bureaucraticBlowback,
+                    magnitude: 35,
+                    description: "Despite resources committed to '\(document.title)', the situation remains precarious. More may be needed.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["stability": -3]
+                ))
+            }
+        } else {
+            // Inaction or minimal action on crisis
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay - 1, // Crisis consequences come faster
+                type: .popularUnrest,
+                magnitude: 45,
+                description: "Your restrained response to '\(document.title)' has allowed the situation to deteriorate. Public confidence is shaken.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["popularSupport": -10, "stability": -5]
+            ))
+        }
+
+        return consequences
+    }
+
+    private func generatePersonalConsequences(
+        document: DeskDocument,
+        option: DocumentOption,
+        currentTurn: Int,
+        baseDelay: Int,
+        game: Game
+    ) -> [ScheduledConsequence] {
+        var consequences: [ScheduledConsequence] = []
+
+        // Personal appeals create strong relationship effects
+        let effectTotal = option.effects.values.reduce(0, +)
+        let wasHelpful = effectTotal < 0  // Spending resources to help = helpful
+
+        if wasHelpful {
+            // Helping someone creates gratitude
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay,
+                type: .gratitude,
+                magnitude: 30,
+                description: "Your assistance regarding '\(document.title)' has not been forgotten. You have earned a friend in the apparatus.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["network": 3, "patronFavor": 2]
+            ))
+
+            // But helping one may slight another
+            if Bool.random() {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + baseDelay + 2,
+                    type: .resentment,
+                    magnitude: 20,
+                    description: "Others have taken note of who you chose to assist. Not everyone approves of favoritism.",
+                    relatedDocumentId: document.id.uuidString,
+                    relatedOptionId: option.id,
+                    statEffects: ["rivalThreat": 3]
+                ))
+            }
+        } else {
+            // Refusing personal appeals creates resentment
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + baseDelay,
+                type: .resentment,
+                magnitude: 25,
+                description: "Your rejection of the request in '\(document.title)' has created an enemy. Slights are remembered in the Party.",
+                relatedDocumentId: document.id.uuidString,
+                relatedOptionId: option.id,
+                statEffects: ["network": -2]
+            ))
+        }
+
+        return consequences
     }
 }
 

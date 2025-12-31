@@ -489,35 +489,83 @@ class EconomyService {
         // Record all economic indicators to history before changes
         game.recordEconomicHistory()
 
-        // 1. Calculate GDP growth based on policies and economic system
+        // 1. Calculate and apply treasury income (tax revenue)
+        let treasuryIncome = calculateTreasuryIncome(game: game)
+        game.applyStat("treasury", change: treasuryIncome)
+
+        // 2. Calculate GDP growth based on policies and economic system
         let gdpChange = calculateGDPGrowth(game: game)
         game.applyGDPChange(gdpChange)
 
-        // 2. Calculate inflation based on policies and economic conditions
+        // 3. Calculate inflation based on policies and economic conditions
         let inflationChange = calculateInflationChange(game: game)
         game.applyInflationChange(inflationChange)
 
-        // 3. Calculate unemployment based on economic performance
+        // 4. Calculate unemployment based on economic performance
         let unemploymentChange = calculateUnemploymentChange(game: game)
         game.applyUnemploymentChange(unemploymentChange)
 
-        // 4. Update trade balance based on foreign relations
+        // 5. Update trade balance based on foreign relations
         game.tradeBalance = calculateTradeBalance(game: game)
 
-        // 5. Update sector shares based on policy focus
+        // 6. Update sector shares based on policy focus
         updateSectorShares(game: game)
 
-        // 6. Advance Five-Year Plan (every 4 turns = 1 year)
+        // 7. Advance Five-Year Plan (every 4 turns = 1 year)
         if game.turnNumber % 4 == 0 {
             game.advanceFiveYearPlanYear()
         }
 
-        // 7. Check for economic crises and create events if needed
+        // 8. Check for economic crises and create events if needed
         checkForEconomicCrisis(game: game)
 
         #if DEBUG
-        print("[Economy] GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
+        print("[Economy] Treasury income: +\(treasuryIncome), GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
         #endif
+    }
+
+    /// Calculate treasury income (tax revenue) based on economic conditions
+    /// Base income of 8-12 per turn, modified by economic health
+    private func calculateTreasuryIncome(game: Game) -> Int {
+        // Base income represents normal tax collection
+        var income = 10
+
+        // GDP bonus/penalty: healthy economy generates more revenue
+        // GDP 100 = baseline, each 10 points difference = ±1 income
+        let gdpModifier = (game.gdpIndex - 100) / 10
+        income += gdpModifier
+
+        // Industrial output bonus: productive industry = more revenue
+        // industrialOutput 50 = baseline, each 10 points = ±1 income
+        let industryModifier = (game.industrialOutput - 50) / 10
+        income += industryModifier
+
+        // Trade balance bonus: positive trade = more revenue
+        if game.tradeBalance > 0 {
+            income += game.tradeBalance / 10
+        } else if game.tradeBalance < -10 {
+            income += game.tradeBalance / 15  // Negative trade hurts less
+        }
+
+        // Unemployment penalty: fewer workers = less tax revenue
+        // 5% unemployment = baseline, each 5% above = -1 income
+        if game.unemploymentRate > 5 {
+            income -= (game.unemploymentRate - 5) / 5
+        }
+
+        // Inflation penalty: high inflation erodes real revenue
+        if game.inflationRate > 10 {
+            income -= game.inflationRate / 20
+        }
+
+        // Crisis penalty: economic crisis severely reduces revenue
+        if game.hasEconomicCrisis {
+            income -= 5
+        }
+
+        // Ensure minimum income of 3 (even failing states collect some tax)
+        // and maximum of 20 (prevent runaway treasury)
+        return max(3, min(20, income))
     }
 
     /// Calculate GDP growth based on economic system and policies

@@ -299,10 +299,11 @@ class ConsequenceEngine {
 
     // MARK: - Consequence Processing
 
-    /// Process all due consequences for a turn
+    /// Process all due consequences for a turn (both law-based and document-based)
     func processConsequences(game: Game) -> [ProcessedConsequence] {
         var processed: [ProcessedConsequence] = []
 
+        // Process law-based consequences
         let dueConsequences = game.consequencesDueThisTurn()
 
         for (law, consequence) in dueConsequences {
@@ -314,8 +315,139 @@ class ConsequenceEngine {
             law.markConsequenceTriggered(id: consequence.id)
         }
 
+        // Process document-based consequences (NEW)
+        let dueDocConsequences = game.documentConsequencesDueThisTurn()
+
+        for consequence in dueDocConsequences {
+            let result = applyDocumentConsequence(consequence, game: game)
+            processed.append(result)
+
+            // Mark as triggered
+            game.markDocumentConsequenceTriggered(id: consequence.id)
+
+            #if DEBUG
+            print("[ConsequenceEngine] Document consequence fired: \(consequence.type.displayName)")
+            #endif
+        }
+
         game.updatedAt = Date()
         return processed
+    }
+
+    /// Apply a document-originated consequence to the game
+    private func applyDocumentConsequence(_ consequence: ScheduledConsequence, game: Game) -> ProcessedConsequence {
+        // Apply stat effects if any
+        if let effects = consequence.statEffects {
+            for (stat, change) in effects {
+                game.applyStat(stat, change: change)
+            }
+        }
+
+        // Generate narrative
+        let narrative = generateDocumentConsequenceNarrative(consequence, game: game)
+
+        return ProcessedConsequence(
+            consequence: consequence,
+            law: nil,  // No associated law for document consequences
+            narrative: narrative,
+            turn: game.turnNumber
+        )
+    }
+
+    /// Generate narrative text for a document-originated consequence
+    private func generateDocumentConsequenceNarrative(_ consequence: ScheduledConsequence, game: Game) -> String {
+        switch consequence.type {
+        case .operationalSuccess:
+            return """
+                OPERATIONAL SUCCESS
+
+                \(consequence.description)
+
+                The operation has achieved its objectives. Your judgment in authorizing this course of action has been validated.
+                """
+
+        case .operationalFailure:
+            return """
+                OPERATIONAL SETBACK
+
+                \(consequence.description)
+
+                Results have fallen short of expectations. Questions may arise about the decision to proceed.
+                """
+
+        case .bureaucraticBlowback:
+            return """
+                ADMINISTRATIVE REVIEW
+
+                \(consequence.description)
+
+                Your previous decisions are being scrutinized. The bureaucratic machinery grinds slowly but thoroughly.
+                """
+
+        case .investigationOpened:
+            return """
+                INQUIRY INITIATED
+
+                \(consequence.description)
+
+                Someone has taken an interest in your activities. Discretion is advised.
+                """
+
+        case .gratitude:
+            return """
+                DEBT OF GRATITUDE
+
+                \(consequence.description)
+
+                Loyalty earned today may prove valuable tomorrow. In the Party, such debts are rarely forgotten.
+                """
+
+        case .resentment:
+            return """
+                GRUDGE HELD
+
+                \(consequence.description)
+
+                Some wounds do not heal quickly. Watch for signs of retribution.
+                """
+
+        case .resourceShortage:
+            return """
+                RESOURCE STRAIN
+
+                \(consequence.description)
+
+                The treasury feels the weight of previous commitments. Hard choices may be necessary.
+                """
+
+        case .politicalFavor:
+            return """
+                POLITICAL CAPITAL EARNED
+
+                \(consequence.description)
+
+                Your star rises. Use this momentum wisely.
+                """
+
+        case .politicalEnmity:
+            return """
+                ENEMIES MADE
+
+                \(consequence.description)
+
+                Not all battles are won on the front lines. Some are fought in corridors and committee rooms.
+                """
+
+        default:
+            // Fall through to the general consequence description
+            return """
+                CONSEQUENCE OF PAST DECISIONS
+
+                \(consequence.description)
+
+                The wheels of bureaucracy turn, and past decisions bear fruit—bitter or sweet.
+                """
+        }
     }
 
     /// Apply a single consequence to the game
@@ -436,6 +568,12 @@ class ConsequenceEngine {
                 The distant zones and territories feel the effects of decisions made in Washington. \
                 Not all of them appreciate the attention.
                 """
+
+        // Document consequence types (handled by generateDocumentConsequenceNarrative)
+        case .bureaucraticBlowback, .investigationOpened, .gratitude, .resentment,
+             .resourceShortage, .operationalSuccess, .operationalFailure,
+             .politicalFavor, .politicalEnmity:
+            return consequence.description
         }
     }
 
@@ -474,6 +612,34 @@ class ConsequenceEngine {
         case .regionalTension:
             iconName = "map.fill"
             priority = 6
+        // Document consequence types
+        case .bureaucraticBlowback:
+            iconName = "doc.badge.gearshape.fill"
+            priority = 6
+        case .investigationOpened:
+            iconName = "magnifyingglass"
+            priority = 7
+        case .gratitude:
+            iconName = "hand.thumbsup.fill"
+            priority = 5
+        case .resentment:
+            iconName = "hand.thumbsdown.fill"
+            priority = 6
+        case .resourceShortage:
+            iconName = "exclamationmark.triangle.fill"
+            priority = 6
+        case .operationalSuccess:
+            iconName = "checkmark.seal.fill"
+            priority = 5
+        case .operationalFailure:
+            iconName = "xmark.seal.fill"
+            priority = 7
+        case .politicalFavor:
+            iconName = "star.fill"
+            priority = 5
+        case .politicalEnmity:
+            iconName = "bolt.fill"
+            priority = 7
         }
 
         // Convert priority Int to EventPriority
@@ -505,6 +671,9 @@ class ConsequenceEngine {
             relatedIds = nil
         }
 
+        // Determine linked decision ID (law ID or document ID)
+        let linkedId = processed.law?.lawId ?? processed.consequence.relatedDocumentId ?? "consequence_\(processed.consequence.id)"
+
         return DynamicEvent(
             eventType: .consequenceCallback,
             priority: eventPriority,
@@ -515,7 +684,7 @@ class ConsequenceEngine {
             turnGenerated: processed.turn,
             isUrgent: eventPriority >= .urgent,
             responseOptions: responses,
-            linkedDecisionId: processed.law.lawId,
+            linkedDecisionId: linkedId,
             callbackFlag: "consequence_\(processed.consequence.id)_resolved",
             iconName: iconName
         )
@@ -526,7 +695,7 @@ class ConsequenceEngine {
 
 struct ProcessedConsequence {
     let consequence: ScheduledConsequence
-    let law: Law
+    let law: Law?  // Optional for document-based consequences
     let narrative: String
     let turn: Int
 }

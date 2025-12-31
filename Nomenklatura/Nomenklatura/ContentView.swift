@@ -13,6 +13,7 @@ import SwiftData
 enum GameSetupState {
     case campaignSelect
     case factionSelect(campaignId: String)
+    case preparing(campaignId: String, factionId: String)  // Pre-generation phase
     case playing
 }
 
@@ -47,12 +48,29 @@ struct ContentView: View {
                 FactionSelectView(
                     factions: factions,
                     onFactionSelected: { factionId in
-                        startNewGame(campaignId: campaignId, factionId: factionId)
+                        // Move to preparing state instead of directly starting game
+                        withAnimation {
+                            setupState = .preparing(campaignId: campaignId, factionId: factionId)
+                        }
                     },
                     onBack: {
                         withAnimation {
                             setupState = .campaignSelect
                         }
+                    }
+                )
+
+            case .preparing(let campaignId, let factionId):
+                GamePreparationView(
+                    campaignId: campaignId,
+                    factionId: factionId,
+                    onGameReady: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            setupState = .playing
+                        }
+                    },
+                    onCreateGame: { campaignId, factionId in
+                        startNewGame(campaignId: campaignId, factionId: factionId)
                     }
                 )
 
@@ -318,8 +336,7 @@ struct ContentView: View {
             await CodexService.shared.generateMessagesForTurn(game: newGame, context: modelContext)
         }
 
-        // Show game
-        setupState = .playing
+        // Note: setupState is managed by GamePreparationView now - don't set .playing here
     }
 
     /// Apply faction stat modifiers to the new game
@@ -777,6 +794,207 @@ struct PromotionNotificationView: View {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
                 showContent = true
             }
+        }
+    }
+}
+
+// MARK: - Game Preparation View
+
+struct GamePreparationView: View {
+    let campaignId: String
+    let factionId: String
+    let onGameReady: () -> Void
+    let onCreateGame: (String, String) -> Void
+    @Environment(\.theme) var theme
+    @Environment(\.modelContext) private var modelContext
+    @Query private var games: [Game]
+
+    @State private var preparationPhase: PreparationPhase = .creatingGame
+    @State private var progress: Double = 0
+    @State private var statusMessage: String = "Preparing your first day in office..."
+    @State private var isComplete = false
+
+    @ObservedObject private var loadingState = ScenarioManager.shared.loadingState
+
+    private var activeGame: Game? {
+        games.first { $0.currentStatus == .active }
+    }
+
+    enum PreparationPhase: Int {
+        case creatingGame = 0
+        case generatingDocuments = 1
+        case generatingBriefing = 2
+        case finalizing = 3
+        case complete = 4
+
+        var message: String {
+            switch self {
+            case .creatingGame: return "Creating your political dossier..."
+            case .generatingDocuments: return "Preparing government documents..."
+            case .generatingBriefing: return "Briefing the General Secretary..."
+            case .finalizing: return "Setting up your office..."
+            case .complete: return "Your first day begins."
+            }
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // Dark background
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 30) {
+                Spacer()
+
+                // Hammer and sickle or state seal icon
+                Image(systemName: "star.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(theme.accentGold)
+                    .shadow(color: theme.accentGold.opacity(0.3), radius: 10)
+
+                // Title
+                VStack(spacing: 8) {
+                    Text("PREPARING YOUR APPOINTMENT")
+                        .font(theme.headerFont)
+                        .tracking(3)
+                        .foregroundColor(theme.accentGold)
+
+                    Text(statusMessage)
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.schemeText.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+
+                // Progress bar
+                VStack(spacing: 12) {
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Background
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color(hex: "333333"))
+
+                            // Progress fill
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(theme.sovietRed)
+                                .frame(width: geometry.size.width * progress)
+                                .animation(.easeInOut(duration: 0.3), value: progress)
+                        }
+                    }
+                    .frame(height: 8)
+                    .padding(.horizontal, 60)
+
+                    Text("\(Int(progress * 100))%")
+                        .font(theme.tagFont)
+                        .foregroundColor(theme.schemeText.opacity(0.6))
+                }
+
+                // Phase indicators
+                HStack(spacing: 20) {
+                    ForEach(0..<4) { index in
+                        Circle()
+                            .fill(index <= preparationPhase.rawValue ? theme.accentGold : Color(hex: "444444"))
+                            .frame(width: 8, height: 8)
+                    }
+                }
+
+                Spacer()
+
+                // Flavor text
+                Text("The apparatus awaits your orders.")
+                    .font(theme.bodyFontSmall)
+                    .italic()
+                    .foregroundColor(theme.schemeText.opacity(0.4))
+                    .padding(.bottom, 40)
+            }
+        }
+        .task {
+            await prepareGame()
+        }
+        .onChange(of: loadingState.isLoading) { wasLoading, isLoading in
+            if wasLoading && !isLoading {
+                // Loading complete
+                completePreparation()
+            }
+        }
+    }
+
+    private func prepareGame() async {
+        // Phase 1: Create the game
+        await MainActor.run {
+            statusMessage = PreparationPhase.creatingGame.message
+            progress = 0.1
+        }
+
+        // Small delay for visual feedback
+        try? await Task.sleep(nanoseconds: 300_000_000)
+
+        // Create the game (this is synchronous)
+        await MainActor.run {
+            onCreateGame(campaignId, factionId)
+            progress = 0.3
+            preparationPhase = .generatingDocuments
+            statusMessage = PreparationPhase.generatingDocuments.message
+        }
+
+        // Phase 2: Generate documents
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        await MainActor.run {
+            if let game = activeGame {
+                DocumentQueueService.shared.generateDocumentsForTurn(game: game)
+            }
+            progress = 0.5
+            preparationPhase = .generatingBriefing
+            statusMessage = PreparationPhase.generatingBriefing.message
+        }
+
+        // Phase 3: Start briefing/scenario generation
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        await MainActor.run {
+            if let game = activeGame {
+                let config = CampaignLoader.shared.getColdWarCampaign()
+                ScenarioManager.shared.startBackgroundLoading(
+                    for: game,
+                    config: config,
+                    checkDynamicEvents: { nil }  // No dynamic events on first turn
+                )
+            }
+            progress = 0.7
+            preparationPhase = .finalizing
+            statusMessage = PreparationPhase.finalizing.message
+        }
+
+        // Wait for scenario generation with timeout
+        let startTime = Date()
+        let maxWait: TimeInterval = 15.0  // Maximum 15 seconds wait
+
+        while loadingState.isLoading && Date().timeIntervalSince(startTime) < maxWait {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            await MainActor.run {
+                // Update progress while waiting
+                let elapsed = Date().timeIntervalSince(startTime)
+                let waitProgress = min(elapsed / maxWait, 1.0)
+                progress = 0.7 + (0.25 * waitProgress)
+            }
+        }
+
+        // Complete
+        completePreparation()
+    }
+
+    private func completePreparation() {
+        guard !isComplete else { return }
+        isComplete = true
+
+        preparationPhase = .complete
+        statusMessage = PreparationPhase.complete.message
+        progress = 1.0
+
+        // Brief pause to show completion, then transition
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            onGameReady()
         }
     }
 }

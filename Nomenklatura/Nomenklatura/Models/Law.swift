@@ -91,6 +91,17 @@ enum ConsequenceType: String, Codable {
     case militaryUnrest         // Army concerns
     case regionalTension        // Regional instability increases
 
+    // Document decision consequences
+    case bureaucraticBlowback   // Decision comes back to haunt you
+    case investigationOpened    // Your decision triggers scrutiny
+    case gratitude              // Someone remembers your help
+    case resentment             // Someone remembers your slight
+    case resourceShortage       // Approved spending causes problems
+    case operationalSuccess     // Approved operation succeeds
+    case operationalFailure     // Approved operation fails
+    case politicalFavor         // Decision earns you allies
+    case politicalEnmity        // Decision earns you enemies
+
     var displayName: String {
         switch self {
         case .coalitionForms: return "Coalition Forms"
@@ -102,6 +113,15 @@ enum ConsequenceType: String, Codable {
         case .characterAction: return "Character Action"
         case .militaryUnrest: return "Military Unrest"
         case .regionalTension: return "Regional Tension"
+        case .bureaucraticBlowback: return "Bureaucratic Blowback"
+        case .investigationOpened: return "Investigation Opened"
+        case .gratitude: return "Gratitude"
+        case .resentment: return "Resentment"
+        case .resourceShortage: return "Resource Shortage"
+        case .operationalSuccess: return "Operational Success"
+        case .operationalFailure: return "Operational Failure"
+        case .politicalFavor: return "Political Favor"
+        case .politicalEnmity: return "Political Enmity"
         }
     }
 }
@@ -117,6 +137,8 @@ struct ScheduledConsequence: Codable, Identifiable {
     var hasTriggered: Bool = false
     var relatedLawId: String?
     var relatedCharacterId: String?
+    var relatedDocumentId: String?  // For document-originated consequences
+    var relatedOptionId: String?    // Which option was selected
     var statEffects: [String: Int]? // Stats to modify when triggered
 
     init(
@@ -126,6 +148,8 @@ struct ScheduledConsequence: Codable, Identifiable {
         description: String,
         relatedLawId: String? = nil,
         relatedCharacterId: String? = nil,
+        relatedDocumentId: String? = nil,
+        relatedOptionId: String? = nil,
         statEffects: [String: Int]? = nil
     ) {
         self.id = UUID()
@@ -136,7 +160,14 @@ struct ScheduledConsequence: Codable, Identifiable {
         self.hasTriggered = false
         self.relatedLawId = relatedLawId
         self.relatedCharacterId = relatedCharacterId
+        self.relatedDocumentId = relatedDocumentId
+        self.relatedOptionId = relatedOptionId
         self.statEffects = statEffects
+    }
+
+    /// Check if this is a document-originated consequence
+    var isDocumentConsequence: Bool {
+        relatedDocumentId != nil
     }
 }
 
