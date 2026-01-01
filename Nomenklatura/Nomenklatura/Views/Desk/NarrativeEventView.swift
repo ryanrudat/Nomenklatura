@@ -180,14 +180,21 @@ struct NarrativeEventView: View {
     }
 
     /// Action description based on category
+    /// Uses scenario templateId as seed for consistent selection (same scenario = same presenter mood)
     private var presenterAction: String {
+        // Use templateId hash to consistently select the same action for the same scenario
+        let hashValue = abs(scenario.templateId.hashValue)
+
         switch scenario.category {
         case .routineDay:
-            return ["shuffles papers nearby.", "passes by your desk.", "is working quietly.", "glances up briefly."].randomElement() ?? "is present."
+            let options = ["shuffles papers nearby.", "passes by your desk.", "is working quietly.", "glances up briefly."]
+            return options[hashValue % options.count]
         case .characterMoment:
-            return ["catches your eye.", "pauses near your office.", "seems to want a word.", "lingers for a moment."].randomElement() ?? "appears."
+            let options = ["catches your eye.", "pauses near your office.", "seems to want a word.", "lingers for a moment."]
+            return options[hashValue % options.count]
         case .tensionBuilder:
-            return ["mentions something troubling.", "speaks in hushed tones.", "seems uneasy.", "shares a concerning rumor."].randomElement() ?? "appears worried."
+            let options = ["mentions something troubling.", "speaks in hushed tones.", "seems uneasy.", "shares a concerning rumor."]
+            return options[hashValue % options.count]
         default:
             return "is present."
         }
