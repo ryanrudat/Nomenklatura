@@ -215,7 +215,7 @@ enum FiveYearPlanPhase: String, Codable, CaseIterable {
 // MARK: - Five-Year Plan Targets
 
 /// Tracks specific targets for a Five-Year Plan
-struct FiveYearPlanTargets: Codable, Sendable {
+struct FiveYearPlanTargets: Sendable {
     // Targets (what we're aiming for)
     var gdpTarget: Int = 125           // Target GDP index
     var industrialTarget: Int = 65     // Target industrial output
@@ -242,6 +242,37 @@ struct FiveYearPlanTargets: Codable, Sendable {
         guard needed > 0 else { return 100 }
         let achieved = current - start
         return max(0, (achieved * 100) / needed)
+    }
+}
+
+extension FiveYearPlanTargets: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case gdpTarget, industrialTarget, agricultureTarget, treasuryTarget
+        case startingGDP, startingIndustrial, startingAgriculture, startingTreasury
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        gdpTarget = try container.decode(Int.self, forKey: .gdpTarget)
+        industrialTarget = try container.decode(Int.self, forKey: .industrialTarget)
+        agricultureTarget = try container.decode(Int.self, forKey: .agricultureTarget)
+        treasuryTarget = try container.decode(Int.self, forKey: .treasuryTarget)
+        startingGDP = try container.decode(Int.self, forKey: .startingGDP)
+        startingIndustrial = try container.decode(Int.self, forKey: .startingIndustrial)
+        startingAgriculture = try container.decode(Int.self, forKey: .startingAgriculture)
+        startingTreasury = try container.decode(Int.self, forKey: .startingTreasury)
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(gdpTarget, forKey: .gdpTarget)
+        try container.encode(industrialTarget, forKey: .industrialTarget)
+        try container.encode(agricultureTarget, forKey: .agricultureTarget)
+        try container.encode(treasuryTarget, forKey: .treasuryTarget)
+        try container.encode(startingGDP, forKey: .startingGDP)
+        try container.encode(startingIndustrial, forKey: .startingIndustrial)
+        try container.encode(startingAgriculture, forKey: .startingAgriculture)
+        try container.encode(startingTreasury, forKey: .startingTreasury)
     }
 }
 
