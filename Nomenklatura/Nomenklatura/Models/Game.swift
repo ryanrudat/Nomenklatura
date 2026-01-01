@@ -582,6 +582,39 @@ extension Game {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
+    /// Get the count of messages in a thread
+    func codexThreadCount(for threadId: UUID) -> Int {
+        codexMessages.filter { $0.threadId == threadId }.count
+    }
+
+    /// Check if thread has unread messages
+    func codexThreadHasUnread(for threadId: UUID) -> Bool {
+        codexMessages.contains { $0.threadId == threadId && !$0.isRead && !$0.isArchived }
+    }
+
+    /// Get unique thread IDs with their latest message (for grouping)
+    var codexThreadSummaries: [(threadId: UUID, latestMessage: CodexMessage, messageCount: Int, hasUnread: Bool)] {
+        var threadMap: [UUID: [CodexMessage]] = [:]
+
+        for message in codexMessages where !message.isArchived {
+            guard let threadId = message.threadId else { continue }
+            threadMap[threadId, default: []].append(message)
+        }
+
+        return threadMap.compactMap { threadId, messages in
+            guard let latest = messages.max(by: { $0.timestamp < $1.timestamp }) else { return nil }
+            let hasUnread = messages.contains { !$0.isRead }
+            return (threadId, latest, messages.count, hasUnread)
+        }.sorted { $0.latestMessage.timestamp > $1.latestMessage.timestamp }
+    }
+
+    /// Get the conversation partner name for a thread
+    func codexThreadPartner(for threadId: UUID) -> (name: String, title: String?)? {
+        let thread = codexThread(for: threadId)
+        guard let firstNPC = thread.first(where: { $0.senderId != "player" }) else { return nil }
+        return (firstNPC.senderName, firstNPC.senderTitle)
+    }
+
     // MARK: - Policy Slots
 
     /// Get policy slots for a specific institution

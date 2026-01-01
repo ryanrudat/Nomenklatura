@@ -8,6 +8,11 @@
 import SwiftUI
 import SwiftData
 
+// Helper wrapper to make UUID identifiable for sheet presentation
+struct ThreadIdentifier: Identifiable {
+    let id: UUID
+}
+
 struct CodexTerminalView: View {
     @Bindable var game: Game
     @Environment(\.modelContext) private var modelContext
@@ -15,7 +20,7 @@ struct CodexTerminalView: View {
     @StateObject private var codexService = CodexService.shared
 
     @State private var selectedFilter: MessageFilter = .all
-    @State private var selectedMessage: CodexMessage?
+    @State private var selectedThread: ThreadIdentifier?
 
     enum MessageFilter: String, CaseIterable {
         case all = "ALL"
@@ -70,8 +75,8 @@ struct CodexTerminalView: View {
                 }
             }
         }
-        .sheet(item: $selectedMessage) { message in
-            CodexMessageDetailView(message: message, game: game)
+        .sheet(item: $selectedThread) { thread in
+            CodexThreadView(threadId: thread.id, game: game)
         }
     }
 
@@ -183,9 +188,11 @@ struct CodexTerminalView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(filteredMessages) { message in
-                    CodexMessageCard(message: message) {
-                        selectedMessage = message
-                        CodexService.shared.markAsRead(message)
+                    CodexMessageCard(message: message, game: game) {
+                        // Open thread view for this message's thread
+                        if let threadId = message.threadId {
+                            selectedThread = ThreadIdentifier(id: threadId)
+                        }
                     }
                 }
             }
@@ -253,8 +260,23 @@ struct CodexTerminalView: View {
 
 struct CodexMessageCard: View {
     let message: CodexMessage
+    let game: Game
     let onTap: () -> Void
     @Environment(\.theme) var theme
+
+    private var threadCount: Int {
+        guard let threadId = message.threadId else { return 1 }
+        return game.codexThreadCount(for: threadId)
+    }
+
+    private var isPartOfThread: Bool {
+        threadCount > 1
+    }
+
+    private var threadPartnerName: String? {
+        guard let threadId = message.threadId else { return nil }
+        return game.codexThreadPartner(for: threadId)?.name
+    }
 
     var body: some View {
         Button(action: onTap) {
@@ -270,6 +292,11 @@ struct CodexMessageCard: View {
                         // Message type stamp
                         messageTypeStamp
 
+                        // Thread indicator
+                        if isPartOfThread {
+                            threadIndicator
+                        }
+
                         Spacer()
 
                         // Timestamp
@@ -284,11 +311,15 @@ struct CodexMessageCard: View {
                         senderInitials
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(message.senderName)
+                            Text(message.senderId == "player" ? "You" : message.senderName)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(theme.inkBlack)
 
-                            if let title = message.senderTitle {
+                            if message.senderId == "player", let partnerName = threadPartnerName {
+                                Text("to \(partnerName)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(theme.inkGray)
+                            } else if let title = message.senderTitle {
                                 Text(title)
                                     .font(.system(size: 11))
                                     .foregroundColor(theme.inkGray)
@@ -310,15 +341,31 @@ struct CodexMessageCard: View {
                         .foregroundColor(theme.inkGray)
                         .lineLimit(2)
 
-                    // Response indicator
-                    if message.requiresResponse && message.playerResponseId == nil {
-                        HStack(spacing: 4) {
-                            Image(systemName: "exclamationmark.bubble.fill")
-                                .font(.system(size: 10))
-                            Text("Response Required")
-                                .font(.system(size: 10, weight: .semibold))
+                    // Bottom row: Response indicator + thread info
+                    HStack {
+                        // Response indicator
+                        if message.requiresResponse && message.playerResponseId == nil {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.bubble.fill")
+                                    .font(.system(size: 10))
+                                Text("Response Required")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .foregroundColor(theme.stampRed)
                         }
-                        .foregroundColor(theme.stampRed)
+
+                        Spacer()
+
+                        // Thread tap hint
+                        if isPartOfThread {
+                            HStack(spacing: 3) {
+                                Text("View thread")
+                                    .font(.system(size: 9))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 8, weight: .semibold))
+                            }
+                            .foregroundColor(theme.inkLight)
+                        }
                     }
                 }
                 .padding(12)
@@ -332,6 +379,20 @@ struct CodexMessageCard: View {
             .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         }
         .buttonStyle(.plain)
+    }
+
+    private var threadIndicator: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "arrow.turn.down.left")
+                .font(.system(size: 8))
+            Text("\(threadCount)")
+                .font(.system(size: 9, weight: .bold))
+        }
+        .foregroundColor(theme.accentGold)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(theme.accentGold.opacity(0.15))
+        .cornerRadius(3)
     }
 
     private var stripeColor: Color {
