@@ -9,6 +9,7 @@ import Foundation
 
 // MARK: - Character Interaction System
 
+@MainActor
 class CharacterInteractionSystem {
     static let shared = CharacterInteractionSystem()
 

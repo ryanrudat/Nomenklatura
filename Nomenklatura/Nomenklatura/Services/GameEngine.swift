@@ -1303,7 +1303,7 @@ class GameEngine {
             if fateRoll <= 1 {
                 let fates: [CharacterStatus] = [.dead, .disappeared, .retired]
                 let weights = [1, 2, 3] // Retirement most common, death least
-                let fate = weightedRandom(fates, weights: weights)
+                let fate = weightedRandom(fates, weights: weights) ?? .retired
                 applyFate(to: character, fate: fate, game: game)
                 continue
             }
@@ -1403,10 +1403,11 @@ class GameEngine {
         }
     }
 
-    private func weightedRandom<T>(_ items: [T], weights: [Int]) -> T {
-        // Guard against empty arrays or zero total weight to prevent crash
+    private func weightedRandom<T>(_ items: [T], weights: [Int]) -> T? {
+        // Guard against empty arrays - return nil instead of crashing
         guard !items.isEmpty else {
-            fatalError("weightedRandom called with empty items array")
+            assertionFailure("weightedRandom called with empty items array")
+            return nil
         }
 
         let totalWeight = weights.reduce(0, +)

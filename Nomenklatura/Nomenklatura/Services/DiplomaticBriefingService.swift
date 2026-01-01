@@ -447,9 +447,26 @@ class DiplomaticBriefingService {
             risk = .low
         }
 
-        // TODO: Track trends over multiple turns
-        let relationshipTrend: DiplomaticSituationSummary.Trend = .stable
-        let tensionTrend: DiplomaticSituationSummary.Trend = .stable
+        // Infer trends from current diplomatic indicators
+        // Relationship trend: based on ally/hostile balance and average relationship
+        let relationshipTrend: DiplomaticSituationSummary.Trend
+        if allies.count >= hostiles.count + 2 && avgRelationship > 20 {
+            relationshipTrend = .improving
+        } else if hostiles.count >= allies.count + 2 && avgRelationship < -20 {
+            relationshipTrend = .declining
+        } else {
+            relationshipTrend = .stable
+        }
+
+        // Tension trend: based on crisis count and maximum tension levels
+        let tensionTrend: DiplomaticSituationSummary.Trend
+        if maxTension > 70 && pendingCrises > 1 {
+            tensionTrend = .declining  // Tension is rising (bad)
+        } else if maxTension < 40 && pendingCrises == 0 {
+            tensionTrend = .improving  // Tension is falling (good)
+        } else {
+            tensionTrend = .stable
+        }
 
         return DiplomaticSituationSummary(
             turnNumber: game.turnNumber,
@@ -481,8 +498,12 @@ class DiplomaticBriefingService {
     }
 
     private func hasRecentChange(country: ForeignCountry, game: Game) -> Bool {
-        // TODO: Track relationship changes over turns
-        return country.diplomaticTension > 40
+        // Infer "recent change" from current diplomatic state indicators
+        // High tension, extreme relationships, or active treaties suggest recent activity
+        let hasHighTension = country.diplomaticTension > 50
+        let hasExtremeRelationship = abs(country.relationshipScore) > 40
+        let hasActiveTreaties = !country.treaties.isEmpty
+        return hasHighTension || hasExtremeRelationship || hasActiveTreaties
     }
 
     private func describeRelationshipTrend(score: Int) -> String {

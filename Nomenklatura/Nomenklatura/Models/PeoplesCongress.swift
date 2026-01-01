@@ -317,10 +317,9 @@ extension Game {
     }
 
     /// Get the current or most recent Congress session
-    /// Note: Would need to add congressSessions relationship to Game
     var currentCongressSession: CongressSession? {
-        // TODO: Implement once relationship is added
-        return nil
+        // Return the most recent session (highest session number)
+        return congressSessions.max(by: { $0.sessionNumber < $1.sessionNumber })
     }
 
     /// Convene a new Congress session

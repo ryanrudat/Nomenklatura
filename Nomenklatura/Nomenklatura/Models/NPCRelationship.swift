@@ -299,26 +299,83 @@ extension Game {
 
     /// Get relationship between two NPCs
     func npcRelationship(from sourceId: String, to targetId: String) -> NPCRelationship? {
-        // Note: This requires adding npcRelationships to Game's @Relationship
-        // For now, we'll need to query through characters
-        return nil  // TODO: Implement once relationship is added to Game
+        return npcRelationships.first { relationship in
+            relationship.sourceCharacterId == sourceId && relationship.targetCharacterId == targetId
+        }
     }
 
-    /// Get all relationships for a specific NPC
+    /// Get all relationships for a specific NPC (both as source and target)
     func npcRelationships(for characterId: String) -> [NPCRelationship] {
-        return []  // TODO: Implement
+        return npcRelationships.filter { relationship in
+            relationship.sourceCharacterId == characterId || relationship.targetCharacterId == characterId
+        }
+    }
+
+    /// Get relationships where this NPC is the source (their opinions of others)
+    func npcRelationshipsFrom(_ characterId: String) -> [NPCRelationship] {
+        return npcRelationships.filter { $0.sourceCharacterId == characterId }
+    }
+
+    /// Get relationships where this NPC is the target (others' opinions of them)
+    func npcRelationshipsTo(_ characterId: String) -> [NPCRelationship] {
+        return npcRelationships.filter { $0.targetCharacterId == characterId }
     }
 
     /// Initialize NPC-NPC relationships at game start
     func initializeNPCRelationships() {
-        // Create relationships between all active NPCs
-        // Initial disposition based on:
-        // - Same faction: +20 disposition, +10 trust
-        // - Different faction: -10 disposition
-        // - Same track: +10 (colleagues) or -15 (direct competitors at same level)
-        // - Position proximity: Higher positions gain fear/respect
+        // Get all active characters (player is tracked on Game, not in characters array)
+        // Use explicit loop to avoid SwiftData filter issues
+        var activeNPCs: [GameCharacter] = []
+        for character in characters {
+            if character.status == CharacterStatus.active.rawValue {
+                activeNPCs.append(character)
+            }
+        }
 
-        // TODO: Implement initialization logic
+        // Create relationships between all pairs of NPCs
+        for source in activeNPCs {
+            for target in activeNPCs where source.templateId != target.templateId {
+                // Skip if relationship already exists
+                if npcRelationship(from: source.templateId, to: target.templateId) != nil {
+                    continue
+                }
+
+                // Create new relationship with initial values based on faction/position
+                let relationship = NPCRelationship(
+                    sourceId: source.templateId,
+                    targetId: target.templateId,
+                    turn: turnNumber
+                )
+
+                // Adjust based on faction alignment
+                if source.factionId == target.factionId && source.factionId != nil {
+                    // Same faction: more positive
+                    relationship.disposition = 20
+                    relationship.trust = 30
+                    relationship.respect = 40
+                } else if source.factionId != nil && target.factionId != nil {
+                    // Different factions: somewhat wary
+                    relationship.disposition = -10
+                    relationship.trust = 10
+                }
+
+                // Higher position characters are feared/respected
+                if let sourcePos = source.positionIndex, let targetPos = target.positionIndex {
+                    if targetPos > sourcePos + 2 {
+                        // Target is much more senior
+                        relationship.fear = min(80, relationship.fear + (targetPos - sourcePos) * 10)
+                        relationship.respect = min(80, relationship.respect + (targetPos - sourcePos) * 8)
+                    } else if sourcePos > targetPos + 2 {
+                        // Source is much more senior - they might be dismissive
+                        relationship.respect = max(10, relationship.respect - 10)
+                    }
+                }
+
+                // Add relationship to game
+                relationship.game = self
+                npcRelationships.append(relationship)
+            }
+        }
     }
 }
 

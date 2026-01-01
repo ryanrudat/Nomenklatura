@@ -1057,7 +1057,28 @@ class CharacterBiographyProvider {
                     )
                 ]
             ),
-            darkSecrets: [],
+            darkSecrets: [
+                DarkSecret(
+                    id: "edwards_sister",
+                    title: "The Hidden Sister",
+                    fullContent: "Edwards has a sister, Sarah, living under an assumed name in the Great Lakes Zone. He has not contacted her in 15 years to protect her from his work. If enemies discovered her location, she could be used as leverage—or eliminated as a message. He would do almost anything to keep her safe.",
+                    discoveryDifficulty: 8,
+                    evidenceLocations: ["Pre-revolution Baltimore records", "Edwards' personal effects (hidden photograph)", "Great Lakes Zone identity registries"],
+                    potentialConsequences: "Could be used to blackmail Edwards or force his compliance. If exposed, his sister's life would be in danger.",
+                    whoKnows: ["wallace"],
+                    canBeUsedFor: ["blackmail", "leverage", "alliance"]
+                ),
+                DarkSecret(
+                    id: "edwards_cell_executions",
+                    title: "The Cell Executions",
+                    fullContent: "During the Revolution, Edwards executed three members of his own cell on Wallace's orders. One was almost certainly innocent—the real informer was discovered later, already dead. Edwards changed his name afterward. He still sees the innocent man's face in his dreams.",
+                    discoveryDifficulty: 7,
+                    evidenceLocations: ["Wallace's personal records", "Baltimore underground archives (if they survived)", "Edwards' pre-revolution identity documents"],
+                    potentialConsequences: "Would undermine Edwards' reputation for precision and judgment. Could be used to question Wallace's leadership if framed as an innocent man's murder.",
+                    whoKnows: ["wallace"],
+                    canBeUsedFor: ["exposure", "leverage", "discrediting"]
+                )
+            ],
             quotations: [
                 CharacterQuote(
                     quote: "The work is necessary. That doesn't make it clean.",
@@ -1148,7 +1169,28 @@ class CharacterBiographyProvider {
                 purgeExperience: "Testified against Steele. His mentor. His friend. His guilt.",
                 keyMoments: []
             ),
-            darkSecrets: [],
+            darkSecrets: [
+                DarkSecret(
+                    id: "fletcher_false_origins",
+                    title: "The Middle-Class Commissar",
+                    fullContent: "Fletcher claims working-class origins—a railroad worker's son who knew hardship. The truth is his father was a railroad supervisor, his mother a schoolteacher. The family had a piano. He learned revolutionary theory from books, not from hunger. His entire political identity is built on a fabricated biography.",
+                    discoveryDifficulty: 6,
+                    evidenceLocations: ["Columbus public records", "Ohio school archives", "Railroad company employment records", "Fletcher family property deeds"],
+                    potentialConsequences: "Would destroy Fletcher's credibility as a 'true worker' and undermine his authority in the Political Directorate. His rivals would use this to paint him as a fraud and class traitor.",
+                    whoKnows: [],
+                    canBeUsedFor: ["exposure", "blackmail", "discrediting", "political destruction"]
+                ),
+                DarkSecret(
+                    id: "fletcher_steele_betrayal",
+                    title: "The Mentor's Blood",
+                    fullContent: "Fletcher testified against General Steele during the Purges—the man who had been his mentor, his friend, the leader who made him. Fletcher's testimony sealed Steele's fate. He tells himself it was necessary, that Steele had become a danger. But late at night, he knows the truth: he testified to save himself, and he let them execute the best man he ever knew.",
+                    discoveryDifficulty: 4,
+                    evidenceLocations: ["Purge tribunal transcripts (classified)", "Wallace's personal files", "Steele's case file"],
+                    potentialConsequences: "Many veterans remember Steele fondly. If the details of Fletcher's testimony became known—especially if it was self-serving rather than principled—his reputation for loyalty would be shattered.",
+                    whoKnows: ["wallace", "mitchell"],
+                    canBeUsedFor: ["leverage", "alliance", "exposure"]
+                )
+            ],
             quotations: [
                 CharacterQuote(
                     quote: "At Chicago, the commissars held the line. That's what political officers do. We hold the line.",
