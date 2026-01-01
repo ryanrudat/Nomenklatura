@@ -38,19 +38,36 @@ struct CodexTerminalView: View {
         }
     }
 
-    private var filteredMessages: [CodexMessage] {
+    /// Thread summaries - one entry per conversation thread
+    private var filteredThreads: [(threadId: UUID, latestMessage: CodexMessage, messageCount: Int, hasUnread: Bool)] {
         switch selectedFilter {
         case .all:
-            return game.activeCodexMessages
+            return game.codexThreadSummaries
         case .unread:
-            return game.unreadCodexMessages
+            return game.codexThreadSummaries.filter { $0.hasUnread }
         case .urgent:
-            return game.codexMessages.filter {
-                !$0.isArchived && ($0.codexPriority == .critical || $0.codexPriority == .urgent)
-            }.sorted { $0.timestamp > $1.timestamp }
+            return game.codexThreadSummaries.filter {
+                $0.latestMessage.codexPriority == .critical || $0.latestMessage.codexPriority == .urgent
+            }
         case .archived:
-            return game.codexMessages.filter { $0.isArchived }.sorted { $0.timestamp > $1.timestamp }
+            // For archived, we need separate logic - show archived threads
+            return archivedThreadSummaries
         }
+    }
+
+    /// Archived thread summaries
+    private var archivedThreadSummaries: [(threadId: UUID, latestMessage: CodexMessage, messageCount: Int, hasUnread: Bool)] {
+        var threadMap: [UUID: [CodexMessage]] = [:]
+
+        for message in game.codexMessages where message.isArchived {
+            guard let threadId = message.threadId else { continue }
+            threadMap[threadId, default: []].append(message)
+        }
+
+        return threadMap.compactMap { threadId, messages in
+            guard let latest = messages.max(by: { $0.timestamp < $1.timestamp }) else { return nil }
+            return (threadId, latest, messages.count, false)
+        }.sorted { $0.latestMessage.timestamp > $1.latestMessage.timestamp }
     }
 
     var body: some View {
@@ -68,10 +85,10 @@ struct CodexTerminalView: View {
                     .padding(.top, 12)
 
                 // Message list or empty state
-                if filteredMessages.isEmpty {
+                if filteredThreads.isEmpty {
                     emptyState
                 } else {
-                    messageList
+                    threadList
                 }
             }
         }
@@ -170,29 +187,32 @@ struct CodexTerminalView: View {
     private func countForFilter(_ filter: MessageFilter) -> Int {
         switch filter {
         case .all:
-            return game.activeCodexMessages.count
+            return game.codexThreadSummaries.count
         case .unread:
-            return game.unreadCodexCount
+            return game.codexThreadSummaries.filter { $0.hasUnread }.count
         case .urgent:
-            return game.codexMessages.filter {
-                !$0.isArchived && ($0.codexPriority == .critical || $0.codexPriority == .urgent)
+            return game.codexThreadSummaries.filter {
+                $0.latestMessage.codexPriority == .critical || $0.latestMessage.codexPriority == .urgent
             }.count
         case .archived:
-            return game.codexMessages.filter { $0.isArchived }.count
+            return archivedThreadSummaries.count
         }
     }
 
-    // MARK: - Message List
+    // MARK: - Thread List
 
-    private var messageList: some View {
+    private var threadList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(filteredMessages) { message in
-                    CodexMessageCard(message: message, game: game) {
-                        // Open thread view for this message's thread
-                        if let threadId = message.threadId {
-                            selectedThread = ThreadIdentifier(id: threadId)
-                        }
+                ForEach(filteredThreads, id: \.threadId) { thread in
+                    CodexThreadCard(
+                        threadId: thread.threadId,
+                        latestMessage: thread.latestMessage,
+                        messageCount: thread.messageCount,
+                        hasUnread: thread.hasUnread,
+                        game: game
+                    ) {
+                        selectedThread = ThreadIdentifier(id: thread.threadId)
                     }
                 }
             }
@@ -256,95 +276,108 @@ struct CodexTerminalView: View {
     }
 }
 
-// MARK: - Message Card
+// MARK: - Thread Card (One card per conversation)
 
-struct CodexMessageCard: View {
-    let message: CodexMessage
+struct CodexThreadCard: View {
+    let threadId: UUID
+    let latestMessage: CodexMessage
+    let messageCount: Int
+    let hasUnread: Bool
     let game: Game
     let onTap: () -> Void
     @Environment(\.theme) var theme
 
-    private var threadCount: Int {
-        guard let threadId = message.threadId else { return 1 }
-        return game.codexThreadCount(for: threadId)
+    /// Get the conversation partner (the NPC in this thread)
+    private var conversationPartner: (name: String, title: String?)? {
+        game.codexThreadPartner(for: threadId)
     }
 
-    private var isPartOfThread: Bool {
-        threadCount > 1
-    }
-
-    private var threadPartnerName: String? {
-        guard let threadId = message.threadId else { return nil }
-        return game.codexThreadPartner(for: threadId)?.name
+    /// Check if any message in thread requires response
+    private var threadRequiresResponse: Bool {
+        let thread = game.codexThread(for: threadId)
+        return thread.contains { $0.requiresResponse && $0.playerResponseId == nil && $0.senderId != "player" }
     }
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 0) {
-                // Unread indicator / priority stripe
+                // Unread indicator stripe
                 Rectangle()
-                    .fill(stripeColor)
+                    .fill(hasUnread ? theme.accentGold : theme.inkGray.opacity(0.3))
                     .frame(width: 4)
 
                 VStack(alignment: .leading, spacing: 8) {
                     // Header row
                     HStack {
-                        // Message type stamp
-                        messageTypeStamp
+                        // Message count badge
+                        HStack(spacing: 3) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 9))
+                            Text("\(messageCount)")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundColor(theme.inkGray)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(theme.borderTan)
+                        .cornerRadius(3)
 
-                        // Thread indicator
-                        if isPartOfThread {
-                            threadIndicator
+                        // Unread badge
+                        if hasUnread {
+                            Text("NEW")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(theme.accentGold)
+                                .cornerRadius(3)
                         }
 
                         Spacer()
 
-                        // Timestamp
-                        Text(formatTimestamp(message.timestamp))
+                        // Latest message timestamp
+                        Text(formatTimestamp(latestMessage.timestamp))
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(theme.inkLight)
                     }
 
-                    // Sender info
-                    HStack(spacing: 8) {
-                        // Sender initials
-                        senderInitials
+                    // Conversation partner info
+                    if let partner = conversationPartner {
+                        HStack(spacing: 8) {
+                            // Partner initials
+                            partnerInitials(name: partner.name)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(message.senderId == "player" ? "You" : message.senderName)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(theme.inkBlack)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(partner.name)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(theme.inkBlack)
 
-                            if message.senderId == "player", let partnerName = threadPartnerName {
-                                Text("to \(partnerName)")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(theme.inkGray)
-                            } else if let title = message.senderTitle {
-                                Text(title)
-                                    .font(.system(size: 11))
-                                    .foregroundColor(theme.inkGray)
+                                if let title = partner.title {
+                                    Text(title)
+                                        .font(.system(size: 11))
+                                        .foregroundColor(theme.inkGray)
+                                }
                             }
                         }
                     }
 
-                    // Subject line
-                    if let subject = message.subject {
-                        Text(subject)
-                            .font(.system(size: 13, weight: .medium, design: .serif))
-                            .foregroundColor(theme.inkBlack)
-                            .lineLimit(1)
+                    // Latest message preview
+                    VStack(alignment: .leading, spacing: 4) {
+                        // Who sent the latest message
+                        Text(latestMessage.senderId == "player" ? "You:" : "\(latestMessage.senderName.components(separatedBy: " ").first ?? ""):")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(theme.inkGray)
+
+                        Text(latestMessage.content)
+                            .font(theme.bodyFontSmall)
+                            .foregroundColor(theme.inkGray)
+                            .lineLimit(2)
                     }
 
-                    // Preview
-                    Text(message.content)
-                        .font(theme.bodyFontSmall)
-                        .foregroundColor(theme.inkGray)
-                        .lineLimit(2)
-
-                    // Bottom row: Response indicator + thread info
+                    // Bottom row
                     HStack {
-                        // Response indicator
-                        if message.requiresResponse && message.playerResponseId == nil {
+                        // Response required indicator
+                        if threadRequiresResponse {
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.bubble.fill")
                                     .font(.system(size: 10))
@@ -356,93 +389,31 @@ struct CodexMessageCard: View {
 
                         Spacer()
 
-                        // Thread tap hint
-                        if isPartOfThread {
-                            HStack(spacing: 3) {
-                                Text("View thread")
-                                    .font(.system(size: 9))
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 8, weight: .semibold))
-                            }
-                            .foregroundColor(theme.inkLight)
+                        // Tap to view thread
+                        HStack(spacing: 3) {
+                            Text("View conversation")
+                                .font(.system(size: 9))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 8, weight: .semibold))
                         }
+                        .foregroundColor(theme.inkLight)
                     }
                 }
                 .padding(12)
             }
-            .background(message.isRead ? theme.parchmentDark : theme.parchmentDark.opacity(0.95))
+            .background(hasUnread ? theme.parchmentDark.opacity(0.95) : theme.parchmentDark)
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(message.isRead ? theme.borderTan : theme.accentGold.opacity(0.5), lineWidth: 1)
+                    .stroke(hasUnread ? theme.accentGold.opacity(0.5) : theme.borderTan, lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         }
         .buttonStyle(.plain)
     }
 
-    private var threadIndicator: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "arrow.turn.down.left")
-                .font(.system(size: 8))
-            Text("\(threadCount)")
-                .font(.system(size: 9, weight: .bold))
-        }
-        .foregroundColor(theme.accentGold)
-        .padding(.horizontal, 5)
-        .padding(.vertical, 2)
-        .background(theme.accentGold.opacity(0.15))
-        .cornerRadius(3)
-    }
-
-    private var stripeColor: Color {
-        if !message.isRead {
-            return theme.accentGold
-        }
-
-        switch message.codexPriority {
-        case .critical:
-            return theme.stampRed
-        case .urgent:
-            return theme.stampRed.opacity(0.7)
-        case .routine:
-            return theme.inkGray.opacity(0.3)
-        case .low:
-            return theme.inkLight.opacity(0.3)
-        }
-    }
-
-    private var messageTypeStamp: some View {
-        HStack(spacing: 4) {
-            Image(systemName: message.codexMessageType.iconName)
-                .font(.system(size: 9))
-            Text(message.codexMessageType.displayName)
-                .font(.system(size: 9, weight: .bold))
-                .tracking(0.5)
-        }
-        .foregroundColor(stampTextColor)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(stampBackgroundColor)
-        .cornerRadius(3)
-    }
-
-    private var stampTextColor: Color {
-        if message.codexMessageType.isUrgent {
-            return .white
-        }
-        return theme.inkGray
-    }
-
-    private var stampBackgroundColor: Color {
-        if message.codexMessageType.isUrgent {
-            return theme.stampRed
-        }
-        return theme.borderTan
-    }
-
-    private var senderInitials: some View {
-        let initials = message.senderName
+    private func partnerInitials(name: String) -> some View {
+        let initials = name
             .split(separator: " ")
             .prefix(2)
             .compactMap { $0.first }
