@@ -1035,22 +1035,21 @@ class EconomyService {
         case .agricultural:
             agricultureChange += 1
             industryChange -= 1
-        case .resource:
+        case .extractive:
             industryChange += 1
             // Natural resource regions support industry
-        case .strategic:
-            // Strategic regions maintain balance
-            break
+        case .border:
+            // Border regions maintain military focus
+            industryChange -= 1
         case .capital:
             industryChange += 1
             infrastructureChange += 1
-        case .peripheral:
-            industryChange -= 1
-            infrastructureChange -= 1
-        case .contested:
-            industryChange -= 2
-            agricultureChange -= 2
-            infrastructureChange -= 2
+        case .autonomous:
+            // Autonomous regions have their own dynamics
+            break
+        case .coastal:
+            industryChange += 1
+            // Trade access boosts industry
         }
 
         // 2. Party control affects economic efficiency

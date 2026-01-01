@@ -371,7 +371,7 @@ class PolicyService {
         newOption: PolicyOption,
         previousOption: PolicyOption?
     ) {
-        let optionId = newOption.optionId
+        let optionId = newOption.id
 
         // 1. Economic policy cascades
         applyEconomicPolicyCascades(game: game, optionId: optionId)
@@ -451,7 +451,7 @@ class PolicyService {
             game.applyStat("eliteLoyalty", change: 3)  // Elite power preserved
             for faction in game.factions {
                 if faction.factionId == "old_guard" {
-                    faction.influence = min(100, faction.influence + 5)
+                    faction.power = min(100, faction.power + 5)
                 }
             }
 
@@ -489,11 +489,11 @@ class PolicyService {
     private func applyMilitaryPolicyCascades(game: Game, optionId: String) {
         switch optionId {
         case "political_officers":
-            game.applySectorChange(.defense, efficiencyChange: -3, moraleChange: -5)
+            game.applySectorChange(.defense, moraleChange: -5, efficiencyChange: -3)
             game.applyStat("militaryLoyalty", change: 5)
 
         case "professional_army":
-            game.applySectorChange(.defense, efficiencyChange: 5, moraleChange: 5)
+            game.applySectorChange(.defense, moraleChange: 5, efficiencyChange: 5)
             game.applyStat("militaryLoyalty", change: -3)  // Less political control
 
         case "mass_mobilization":

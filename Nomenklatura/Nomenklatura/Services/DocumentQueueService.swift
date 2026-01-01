@@ -2372,16 +2372,13 @@ class DocumentQueueService: ObservableObject {
         Available Slots: \(slots)
 
         NOMINATED PARTICIPANTS:
-        \(participantList)\(remainingText)
+        \(participantList)
 
         The Personnel Development Office requests your approval for this participant list.
 
         All nominees have been cleared by their supervisors. Training budget has been allocated.
 
         Note: Ideological content has been approved by the Party Education Committee.
-
-        APPROVE LIST / REQUEST MODIFICATIONS
-        \(participantList)
         """
 
         return DeskDocument.builder()
@@ -2402,7 +2399,7 @@ class DocumentQueueService: ObservableObject {
             )
             .addOption(
                 id: "modify",
-                text: "MODIFY - Remove \(problematicName), add alternate",
+                text: "MODIFY - Remove a nominee, add alternate",
                 shortDescription: "Substituted participant",
                 effects: ["patronFavor": 1]  // Shows you're paying attention
             )
