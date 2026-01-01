@@ -49,10 +49,10 @@ struct RevolutionaryCalendar {
         return "\(monthName), Year \(year)"
     }
 
-    /// Full formal date: "15th day of the Third Month, 43rd Year of the Revolution"
+    /// Full formal date: "Third Month, 43rd Year of the Revolution" (no day per design)
     static func formatFull(day: Int, month: Int, year: Int) -> String {
         let monthName = monthNames[safe: month - 1] ?? "Unknown Month"
-        return "\(ordinal(day)) day of the \(monthName), \(ordinal(year)) Year of the Revolution"
+        return "\(monthName), \(ordinal(year)) Year of the Revolution"
     }
 
     // MARK: - Revolutionary Month Names
@@ -163,11 +163,12 @@ struct RevolutionaryCalendar {
         return formatWithMonth(year, month: month)
     }
 
-    /// Format a turn with full date (day, month, year)
+    /// Format a turn with month and year (no day number per design decision)
     static func formatTurnFull(_ turn: Int) -> String {
-        let (year, month, day) = dateComponents(from: turn)
+        let year = yearFromTurn(turn)
+        let month = monthFromTurn(turn)
         let monthName = poeticMonthNames[safe: month - 1] ?? "Unknown"
-        return "\(ordinal(day)) of \(monthName), \(format(year))"
+        return "\(monthName), \(format(year))"
     }
 
     /// Get a human-readable duration description
