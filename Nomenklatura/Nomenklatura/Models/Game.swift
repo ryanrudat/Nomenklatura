@@ -2458,7 +2458,7 @@ extension Game {
 
     /// Evaluate progress against yearly sub-targets
     private func evaluateYearlyTargets() {
-        var targets = planTargets
+        let targets = planTargets
 
         // Calculate progress toward each target
         let gdpProgress = calculateProgress(current: gdpIndex, start: targets.startingGDP, target: targets.gdpTarget)

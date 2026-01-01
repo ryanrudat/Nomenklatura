@@ -215,7 +215,7 @@ enum FiveYearPlanPhase: String, Codable, CaseIterable {
 // MARK: - Five-Year Plan Targets
 
 /// Tracks specific targets for a Five-Year Plan
-struct FiveYearPlanTargets: Codable {
+struct FiveYearPlanTargets: Codable, Sendable {
     // Targets (what we're aiming for)
     var gdpTarget: Int = 125           // Target GDP index
     var industrialTarget: Int = 65     // Target industrial output
