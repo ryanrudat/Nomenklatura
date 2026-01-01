@@ -183,6 +183,7 @@ struct DocumentOption: Codable, Identifiable {
     var triggersDocument: String?       // ID of follow-up document to generate
     var triggersEvent: String?          // ID of dynamic event to trigger
     var characterReaction: CharacterReactionInfo? // How a character reacts
+    var archetype: OptionArchetype?     // Track affinity signal - maps to bureau career path
 
     init(
         id: String,
@@ -193,7 +194,8 @@ struct DocumentOption: Codable, Identifiable {
         removesFlag: String? = nil,
         triggersDocument: String? = nil,
         triggersEvent: String? = nil,
-        characterReaction: CharacterReactionInfo? = nil
+        characterReaction: CharacterReactionInfo? = nil,
+        archetype: OptionArchetype? = nil
     ) {
         self.id = id
         self.text = text
@@ -204,6 +206,7 @@ struct DocumentOption: Codable, Identifiable {
         self.triggersDocument = triggersDocument
         self.triggersEvent = triggersEvent
         self.characterReaction = characterReaction
+        self.archetype = archetype
     }
 }
 
@@ -497,7 +500,8 @@ class DeskDocumentBuilder {
         shortDescription: String,
         effects: [String: Int] = [:],
         setsFlag: String? = nil,
-        triggersDocument: String? = nil
+        triggersDocument: String? = nil,
+        archetype: OptionArchetype? = nil
     ) -> DeskDocumentBuilder {
         let option = DocumentOption(
             id: id,
@@ -505,7 +509,8 @@ class DeskDocumentBuilder {
             shortDescription: shortDescription,
             effects: effects,
             setsFlag: setsFlag,
-            triggersDocument: triggersDocument
+            triggersDocument: triggersDocument,
+            archetype: archetype
         )
         self.options.append(option)
         self.requiresDecision = true

@@ -486,13 +486,15 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Opened investigation",
                 effects: ["network": -5],
                 setsFlag: "investigating_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
-                triggersDocument: "investigation_denunciation_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                triggersDocument: "investigation_denunciation_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                archetype: .investigate
             )
             .addOption(
                 id: "file",
                 text: "FILE - Keep on record but take no action",
                 shortDescription: "Filed report",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "burn",
@@ -504,7 +506,8 @@ class DocumentQueueService: ObservableObject {
                 id: "forward",
                 text: "FORWARD - Pass to superior (covers you)",
                 shortDescription: "Forwarded to superiors",
-                effects: ["patronFavor": -3]
+                effects: ["patronFavor": -3],
+                archetype: .deflect
             )
             .withConsequenceIfIgnored(
                 "The report sat on your desk. If \(name) later causes trouble, questions will be asked.",
@@ -555,19 +558,22 @@ class DocumentQueueService: ObservableObject {
                 text: "AUTHORIZE ENHANCED SURVEILLANCE",
                 shortDescription: "Authorized enhanced surveillance",
                 effects: ["network": -10, "security": 5],
-                triggersDocument: "surveillance_\(target.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                triggersDocument: "surveillance_\(target.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                archetype: .surveil
             )
             .addOption(
                 id: "continue",
                 text: "CONTINUE CURRENT LEVEL",
                 shortDescription: "Continued surveillance",
-                effects: [:]
+                effects: [:],
+                archetype: .surveil
             )
             .addOption(
                 id: "close",
                 text: "CLOSE SURVEILLANCE - Insufficient evidence",
                 shortDescription: "Closed surveillance",
-                effects: ["security": -3]
+                effects: ["security": -3],
+                archetype: .administrative
             )
             .build()
     }
@@ -629,20 +635,23 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: authorizeDesc,
                 effects: ["security": 10, "stability": -5],
                 setsFlag: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
-                triggersDocument: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                triggersDocument: "arrested_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                archetype: .repress
             )
             .addOption(
                 id: "deny",
                 text: "DENY - Insufficient evidence",
                 shortDescription: "Denied arrest",
-                effects: ["security": -5]
+                effects: ["security": -5],
+                archetype: .administrative
             )
             .addOption(
                 id: "delay",
                 text: "REQUEST MORE EVIDENCE",
                 shortDescription: "Requested more evidence",
                 effects: [:],
-                triggersDocument: "evidence_update_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                triggersDocument: "evidence_update_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                archetype: .delay
             )
             .withConsequenceIfIgnored(
                 "The suspect fled while awaiting your decision. Security is furious.",
@@ -694,19 +703,22 @@ class DocumentQueueService: ObservableObject {
                 text: "INVESTIGATE - Conduct discreet inquiry",
                 shortDescription: "Ordered investigation",
                 effects: ["security": 3],
-                triggersDocument: "investigation_security_\(UUID().uuidString.prefix(8))"
+                triggersDocument: "investigation_security_\(UUID().uuidString.prefix(8))",
+                archetype: .investigate
             )
             .addOption(
                 id: "note",
                 text: "NOTE - Log incident, no action",
                 shortDescription: "Logged incident",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "dismiss",
                 text: "DISMISS - No security concern",
                 shortDescription: "Dismissed concern",
-                effects: ["security": -2]
+                effects: ["security": -2],
+                archetype: .administrative
             )
             .build()
     }
@@ -760,19 +772,22 @@ class DocumentQueueService: ObservableObject {
                 text: pursueText,
                 shortDescription: pursueDesc,
                 effects: ["network": -5],
-                triggersDocument: "investigation_intel_\(UUID().uuidString.prefix(8))"
+                triggersDocument: "investigation_intel_\(UUID().uuidString.prefix(8))",
+                archetype: .investigate
             )
             .addOption(
                 id: "maintain",
                 text: "MAINTAIN COVER - Do not pursue",
                 shortDescription: "Maintained cover",
-                effects: [:]
+                effects: [:],
+                archetype: .surveil
             )
             .addOption(
                 id: "extract",
                 text: authority.hasIntelligenceAuthority ? "EXTRACT ASSET - Too risky" : "RECOMMEND EXTRACTION",
                 shortDescription: authority.hasIntelligenceAuthority ? "Extracted asset" : "Recommended extraction",
-                effects: ["network": -15, "security": 5]
+                effects: ["network": -15, "security": 5],
+                archetype: .surveil
             )
             .build()
     }
@@ -850,13 +865,15 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Quantities verified",
                 shortDescription: "Approved filing",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "flag_discrepancy",
                 text: "FLAG DISCREPANCY - Request audit",
                 shortDescription: "Flagged for audit",
-                effects: ["security": 2]
+                effects: ["security": 2],
+                archetype: .investigate
             )
             .build()
     }
@@ -904,19 +921,22 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Log satisfactory",
                 shortDescription: "Approved maintenance log",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "investigate_fuel",
                 text: "INVESTIGATE - Check fuel records",
                 shortDescription: "Investigated fuel usage",
-                effects: ["security": 3]
+                effects: ["security": 3],
+                archetype: .investigate
             )
             .addOption(
                 id: "request_detail",
                 text: "REQUEST DETAIL - Need more information",
                 shortDescription: "Requested details",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .build()
     }
@@ -967,20 +987,23 @@ class DocumentQueueService: ObservableObject {
                 id: "reallocate",
                 text: "\(authorizeText) - Address shortages",
                 shortDescription: "Authorized reallocation",
-                effects: ["military": 10, "treasury": -40]
+                effects: ["military": 10, "treasury": -40],
+                archetype: .military
             )
             .addOption(
                 id: "defer",
                 text: "DEFER - Request updated assessment",
                 shortDescription: "Deferred action",
-                effects: ["military": -5]
+                effects: ["military": -5],
+                archetype: .delay
             )
             .addOption(
                 id: "minimize",
                 text: "MINIMIZE REPORT - Revise figures upward",
                 shortDescription: "Minimized concerns",
                 effects: ["security": -5],
-                setsFlag: "falsified_readiness_report"
+                setsFlag: "falsified_readiness_report",
+                archetype: .deflect
             )
             .build()
     }
@@ -1031,26 +1054,30 @@ class DocumentQueueService: ObservableObject {
                 id: "approve_full",
                 text: "APPROVE IN FULL",
                 shortDescription: "Approved full requisition",
-                effects: ["treasury": -50, "military": 10]
+                effects: ["treasury": -50, "military": 10],
+                archetype: .allocate
             )
             .addOption(
                 id: "approve_partial",
                 text: "APPROVE PARTIAL - Essential items only",
                 shortDescription: "Approved partial requisition",
-                effects: ["treasury": -25, "military": 5]
+                effects: ["treasury": -25, "military": 5],
+                archetype: .allocate
             )
             .addOption(
                 id: "deny",
                 text: "DENY - Insufficient resources",
                 shortDescription: "Denied requisition",
-                effects: ["military": -10]
+                effects: ["military": -10],
+                archetype: .administrative
             )
             .addOption(
                 id: "reallocate",
                 text: "REALLOCATE FROM ANOTHER UNIT",
                 shortDescription: "Reallocated from other unit",
                 effects: ["military": 5],
-                triggersDocument: "reallocation_\(unit.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                triggersDocument: "reallocation_\(unit.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                archetype: .allocate
             )
             .build()
     }
@@ -1096,20 +1123,23 @@ class DocumentQueueService: ObservableObject {
                 text: "CONTAIN - Handle internally, no report",
                 shortDescription: "Contained incident",
                 effects: ["security": 5, "stability": -5],
-                setsFlag: "covered_up_border_incident"
+                setsFlag: "covered_up_border_incident",
+                archetype: .deflect
             )
             .addOption(
                 id: "escalate",
                 text: "ESCALATE - Report up the chain immediately",
                 shortDescription: "Reported incident",
-                effects: ["patronFavor": 5]
+                effects: ["patronFavor": 5],
+                archetype: .administrative
             )
             .addOption(
                 id: "interrogate",
                 text: "INTERROGATE PRISONER - Before Security gets involved",
                 shortDescription: "Interrogated prisoner first",
                 effects: ["network": 10, "security": -5],
-                triggersDocument: "interrogation_border_\(UUID().uuidString.prefix(8))"
+                triggersDocument: "interrogation_border_\(UUID().uuidString.prefix(8))",
+                archetype: .investigate
             )
             .withConsequenceIfIgnored(
                 "The situation at the border deteriorated. Questions are being asked about the delay.",
@@ -1154,26 +1184,30 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Ordered execution",
                 effects: ["military": 10, "stability": -10],
                 setsFlag: "executed_reznik",
-                triggersDocument: "case_outcome_execution_reynolds"
+                triggersDocument: "case_outcome_execution_reynolds",
+                archetype: .repress
             )
             .addOption(
                 id: "labor",
                 text: "HARD LABOR (10 years)",
                 shortDescription: "Sentenced to hard labor",
-                effects: ["military": 5, "stability": -5]
+                effects: ["military": 5, "stability": -5],
+                archetype: .repress
             )
             .addOption(
                 id: "reeducation",
                 text: "RE-EDUCATION - 6 months, return to duty",
                 shortDescription: "Ordered re-education",
                 effects: ["military": -5],
-                triggersDocument: "case_outcome_reeducation_reynolds"
+                triggersDocument: "case_outcome_reeducation_reynolds",
+                archetype: .loyalty
             )
             .addOption(
                 id: "discharge",
                 text: "MEDICAL DISCHARGE - Unfit for service",
                 shortDescription: "Medical discharge",
-                effects: ["military": -3]
+                effects: ["military": -3],
+                archetype: .administrative
             )
             .build()
     }
@@ -1239,13 +1273,15 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "ACKNOWLEDGE - Initial and file",
                 shortDescription: "Acknowledged budget report",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "question",
                 text: "REQUEST DETAILS - Ask for line items",
                 shortDescription: "Requested budget details",
-                effects: ["bureaucracy": 5]
+                effects: ["bureaucracy": 5],
+                archetype: .administrative
             )
             .withDeadline(turnsFromNow: 3)
             .build()
@@ -1281,13 +1317,15 @@ class DocumentQueueService: ObservableObject {
                 id: "file",
                 text: "FILE - Note for records",
                 shortDescription: "Filed supply notice",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "expedite",
                 text: "EXPEDITE - Use your authority to speed up",
                 shortDescription: "Expedited supply order",
-                effects: ["standing": 2, "bureaucracy": -5]
+                effects: ["standing": 2, "bureaucracy": -5],
+                archetype: .governance
             )
             .withDeadline(turnsFromNow: 4)
             .build()
@@ -1323,19 +1361,22 @@ class DocumentQueueService: ObservableObject {
                 text: "APPROVE - Grant the adjustment",
                 shortDescription: "Approved quota adjustment",
                 effects: direction == "increase" ? ["standing": 5] : ["stability": 5],
-                triggersDocument: "compliance_quota_district_\(UUID().uuidString.prefix(6))"
+                triggersDocument: "compliance_quota_district_\(UUID().uuidString.prefix(6))",
+                archetype: .production
             )
             .addOption(
                 id: "deny",
                 text: "DENY - Maintain current targets",
                 shortDescription: "Denied quota adjustment",
-                effects: direction == "increase" ? ["stability": -5] : ["standing": -5]
+                effects: direction == "increase" ? ["stability": -5] : ["standing": -5],
+                archetype: .production
             )
             .addOption(
                 id: "partial",
                 text: "PARTIAL - Approve half the requested change",
                 shortDescription: "Partially approved adjustment",
-                effects: [:]
+                effects: [:],
+                archetype: .production
             )
             .withDeadline(turnsFromNow: 2)
             .build()
@@ -1395,25 +1436,29 @@ class DocumentQueueService: ObservableObject {
                 id: "housing",
                 text: "\(verb) HOUSING - People must not freeze",
                 shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to housing" : "Recommended housing priority",
-                effects: ["stability": 10, "military": -10, "treasury": -20]
+                effects: ["stability": 10, "military": -10, "treasury": -20],
+                archetype: .allocate
             )
             .addOption(
                 id: "military",
                 text: "\(verb) MILITARY - Defense above all",
                 shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to military" : "Recommended military priority",
-                effects: ["military": 10, "stability": -10]
+                effects: ["military": 10, "stability": -10],
+                archetype: .military
             )
             .addOption(
                 id: "rail",
                 text: "\(verb) TRANSPORT - Keep economy moving",
                 shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to transport" : "Recommended transport priority",
-                effects: ["treasury": 20, "stability": -5]
+                effects: ["treasury": 20, "stability": -5],
+                archetype: .allocate
             )
             .addOption(
                 id: "export",
                 text: "\(verb) EXPORTS - Honor commitments",
                 shortDescription: authority.hasStrategicResourceAuthority ? "Allocated to exports" : "Recommended export priority",
-                effects: ["diplomatic": 10, "stability": -15]
+                effects: ["diplomatic": 10, "stability": -15],
+                archetype: .trade
             )
             .withConsequenceIfIgnored(
                 "Without your input, bureaucrats made the choice. Poorly.",
@@ -1464,27 +1509,31 @@ class DocumentQueueService: ObservableObject {
                 text: "BURY IT - Classify and destroy copies",
                 shortDescription: "Buried the report",
                 effects: ["security": -10],
-                setsFlag: "buried_discrepancy_report"
+                setsFlag: "buried_discrepancy_report",
+                archetype: .deflect
             )
             .addOption(
                 id: "correct",
                 text: "CORRECT QUIETLY - Adjust future targets",
                 shortDescription: "Quietly corrected",
-                effects: ["treasury": -20]
+                effects: ["treasury": -20],
+                archetype: .production
             )
             .addOption(
                 id: "report",
                 text: "REPORT UP - Tell the Minister",
                 shortDescription: "Reported to Minister",
                 effects: ["patronFavor": -10, "security": 10],
-                triggersDocument: "consequence_ministerial_response"
+                triggersDocument: "consequence_ministerial_response",
+                archetype: .administrative
             )
             .addOption(
                 id: "investigate",
                 text: "INVESTIGATE SOURCE - Find who's lying",
                 shortDescription: "Investigated source",
                 effects: ["network": -10],
-                triggersDocument: "investigation_production_\(UUID().uuidString.prefix(8))"
+                triggersDocument: "investigation_production_\(UUID().uuidString.prefix(8))",
+                archetype: .investigate
             )
             .build()
     }
@@ -1530,13 +1579,15 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Reduced quota",
                 effects: ["treasury": -10],
                 setsFlag: "helped_morrison",
-                triggersDocument: "compliance_factory_morrison"
+                triggersDocument: "compliance_factory_morrison",
+                archetype: .production
             )
             .addOption(
                 id: "approve_funds",
                 text: "APPROVE EMERGENCY FUNDS",
                 shortDescription: "Approved modernization",
-                effects: ["treasury": -50]
+                effects: ["treasury": -50],
+                archetype: .allocate
             )
             .addOption(
                 id: "ignore",
@@ -1548,7 +1599,8 @@ class DocumentQueueService: ObservableObject {
                 id: "advise_fudge",
                 text: "ADVISE - 'Do what everyone else does'",
                 shortDescription: "Advised to fudge numbers",
-                effects: ["security": -5]
+                effects: ["security": -5],
+                archetype: .deflect
             )
             .addOption(
                 id: "visit",
@@ -1556,7 +1608,8 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Visited factory",
                 effects: [:],
                 setsFlag: "visited_morrison_factory",
-                triggersDocument: "visit_factory_morrison"
+                triggersDocument: "visit_factory_morrison",
+                archetype: .governance
             )
             .withConsequenceIfIgnored(
                 "Director Morrison was arrested three months later. His daughters are now in a state orphanage.",
@@ -1625,7 +1678,8 @@ class DocumentQueueService: ObservableObject {
                 id: "confirm",
                 text: "CONFIRM - Will attend",
                 shortDescription: "Confirmed attendance",
-                effects: [:]
+                effects: [:],
+                archetype: .orthodox
             )
             .addOption(
                 id: "excuse",
@@ -1670,7 +1724,8 @@ class DocumentQueueService: ObservableObject {
                 id: "acknowledge",
                 text: "ACKNOWLEDGE - Will update materials",
                 shortDescription: "Acknowledged update",
-                effects: [:]
+                effects: [:],
+                archetype: .orthodox
             )
             .withDeadline(turnsFromNow: 4)
             .build()
@@ -1704,13 +1759,15 @@ class DocumentQueueService: ObservableObject {
                 id: "submit",
                 text: "SUBMIT - Complete certification promptly",
                 shortDescription: "Submitted certification",
-                effects: ["standing": 5]
+                effects: ["standing": 5],
+                archetype: .orthodox
             )
             .addOption(
                 id: "delay",
                 text: "DELAY - Request extension",
                 shortDescription: "Requested extension",
-                effects: ["standing": -5]
+                effects: ["standing": -5],
+                archetype: .delay
             )
             .withDeadline(turnsFromNow: 2)
             .build()
@@ -1748,13 +1805,15 @@ class DocumentQueueService: ObservableObject {
                 id: "comply",
                 text: "COMPLY FULLY - Update all materials",
                 shortDescription: "Complied with directive",
-                effects: ["patronFavor": 5]
+                effects: ["patronFavor": 5],
+                archetype: .ideological
             )
             .addOption(
                 id: "comply_slow",
                 text: "COMPLY SLOWLY - Drag your feet",
                 shortDescription: "Slow compliance",
-                effects: [:]
+                effects: [:],
+                archetype: .delay
             )
             .addOption(
                 id: "warn_officers",
@@ -1842,13 +1901,15 @@ class DocumentQueueService: ObservableObject {
                 id: "file",
                 text: "FILE - Standard processing",
                 shortDescription: "Filed translation",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "flag",
                 text: "FLAG FOR REVIEW - Request original",
                 shortDescription: "Flagged for review",
-                effects: ["security": 1]
+                effects: ["security": 1],
+                archetype: .investigate
             )
             .build()
     }
@@ -1892,13 +1953,15 @@ class DocumentQueueService: ObservableObject {
                 id: "verify",
                 text: "VERIFY - Sign for archiving",
                 shortDescription: "Verified visitor log",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "request_detail",
                 text: "REQUEST DETAIL - Who approved extended access?",
                 shortDescription: "Questioned access",
-                effects: ["security": 2]
+                effects: ["security": 2],
+                archetype: .investigate
             )
             .build()
     }
@@ -1944,19 +2007,22 @@ class DocumentQueueService: ObservableObject {
                 id: "authorize",
                 text: "AUTHORIZE - Approve visa",
                 shortDescription: "Approved visa",
-                effects: ["diplomatic": 2]
+                effects: ["diplomatic": 2],
+                archetype: .international
             )
             .addOption(
                 id: "deny",
                 text: "DENY - Insufficient justification",
                 shortDescription: "Denied visa",
-                effects: ["security": 2, "diplomatic": -2]
+                effects: ["security": 2, "diplomatic": -2],
+                archetype: .surveil
             )
             .addOption(
                 id: "additional_review",
                 text: "ADDITIONAL REVIEW - Request security check",
                 shortDescription: "Requested security review",
-                effects: ["security": 3]
+                effects: ["security": 3],
+                archetype: .surveil
             )
             .build()
     }
@@ -2022,19 +2088,22 @@ class DocumentQueueService: ObservableObject {
                 id: "proceed_23",
                 text: "PROCEED - 23 participants, meet deadline",
                 shortDescription: "Approved partial list",
-                effects: ["diplomatic": 5]
+                effects: ["diplomatic": 5],
+                archetype: .international
             )
             .addOption(
                 id: "delay",
                 text: "DELAY - Wait for full clearance",
                 shortDescription: "Delayed for clearances",
-                effects: ["security": 3, "diplomatic": -3]
+                effects: ["security": 3, "diplomatic": -3],
+                archetype: .surveil
             )
             .addOption(
                 id: "replace",
                 text: "REPLACE - Find alternate participants",
                 shortDescription: "Replaced unclear participants",
-                effects: ["diplomatic": 3]
+                effects: ["diplomatic": 3],
+                archetype: .international
             )
             .build()
     }
@@ -2084,25 +2153,29 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Send delegation",
                 shortDescription: "Approved delegation",
-                effects: ["diplomatic": 10, "security": -5]
+                effects: ["diplomatic": 10, "security": -5],
+                archetype: .negotiate
             )
             .addOption(
                 id: "approve_conditions",
                 text: "APPROVE WITH CONDITIONS - Security escort",
                 shortDescription: "Approved with conditions",
-                effects: ["diplomatic": 5]
+                effects: ["diplomatic": 5],
+                archetype: .negotiate
             )
             .addOption(
                 id: "decline_politely",
                 text: "DECLINE POLITELY - 'Scheduling conflicts'",
                 shortDescription: "Politely declined",
-                effects: ["diplomatic": -5]
+                effects: ["diplomatic": -5],
+                archetype: .international
             )
             .addOption(
                 id: "counter",
                 text: "COUNTER-PROPOSE - Hold it here instead",
                 shortDescription: "Counter-proposed",
-                effects: ["diplomatic": 5, "treasury": -30]
+                effects: ["diplomatic": 5, "treasury": -30],
+                archetype: .negotiate
             )
             .build()
     }
@@ -2156,20 +2229,23 @@ class DocumentQueueService: ObservableObject {
                 id: "measured",
                 text: "MEASURED RESPONSE - Formal protest only",
                 shortDescription: "Lodged formal protest",
-                effects: ["diplomatic": -5]
+                effects: ["diplomatic": -5],
+                archetype: .negotiate
             )
             .addOption(
                 id: "proportional",
                 text: "PROPORTIONAL - Mirror their action",
                 shortDescription: "Proportional response",
-                effects: ["diplomatic": -10, "security": 5]
+                effects: ["diplomatic": -10, "security": 5],
+                archetype: .attack
             )
             .addOption(
                 id: "escalate",
                 text: escalateText,
                 shortDescription: "Escalated incident",
                 effects: ["diplomatic": -15, "patronFavor": 5],
-                setsFlag: "escalated_diplomatic_incident"
+                setsFlag: "escalated_diplomatic_incident",
+                archetype: .attack
             )
             .build()
     }
@@ -2255,14 +2331,16 @@ class DocumentQueueService: ObservableObject {
                 id: "file",
                 text: "FILE - Process normally",
                 shortDescription: "Filed leave request",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "verify",
                 text: "VERIFY - Check leave balance first",
                 shortDescription: "Requested verification",
                 effects: [:],
-                triggersDocument: "verification_leave_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))"
+                triggersDocument: "verification_leave_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
+                archetype: .regulate
             )
             .build()
     }
@@ -2337,13 +2415,15 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Forward to payroll",
                 shortDescription: "Approved timesheets",
-                effects: [:]
+                effects: [:],
+                archetype: .administrative
             )
             .addOption(
                 id: "audit",
                 text: "REQUEST AUDIT - Check overtime hours",
                 shortDescription: "Requested overtime audit",
-                effects: ["security": 1]
+                effects: ["security": 1],
+                archetype: .regulate
             )
             .build()
     }
@@ -2395,19 +2475,22 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Proceed with listed participants",
                 shortDescription: "Approved training list",
-                effects: [:]
+                effects: [:],
+                archetype: .personnel
             )
             .addOption(
                 id: "modify",
                 text: "MODIFY - Remove a nominee, add alternate",
                 shortDescription: "Substituted participant",
-                effects: ["patronFavor": 1]  // Shows you're paying attention
+                effects: ["patronFavor": 1],  // Shows you're paying attention
+                archetype: .personnel
             )
             .addOption(
                 id: "expand",
                 text: "EXPAND - Request additional slots",
                 shortDescription: "Requested expansion",
-                effects: ["treasury": -10]
+                effects: ["treasury": -10],
+                archetype: .allocate
             )
             .build()
     }
@@ -2497,19 +2580,22 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Standard transfer",
                 shortDescription: "Approved transfer",
-                effects: [:]
+                effects: [:],
+                archetype: .personnel
             )
             .addOption(
                 id: "deny",
                 text: "DENY - Current position essential",
                 shortDescription: "Denied transfer",
-                effects: [:]
+                effects: [:],
+                archetype: .personnel
             )
             .addOption(
                 id: "defer",
                 text: "DEFER - Request justification",
                 shortDescription: "Deferred decision",
-                effects: [:]
+                effects: [:],
+                archetype: .delay
             )
             .build()
     }
@@ -2568,19 +2654,22 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - Merit warrants position",
                 shortDescription: "Approved senior transfer",
-                effects: ["patronFavor": 5]
+                effects: ["patronFavor": 5],
+                archetype: .personnel
             )
             .addOption(
                 id: "deny",
                 text: "DENY - No vacancy exists",
                 shortDescription: "Denied on staffing grounds",
-                effects: [:]
+                effects: [:],
+                archetype: .personnel
             )
             .addOption(
                 id: "create_position",
                 text: "CREATE POSITION - Approve with new slot",
                 shortDescription: "Created new position",
-                effects: ["treasury": -20, "patronFavor": 10]
+                effects: ["treasury": -20, "patronFavor": 10],
+                archetype: .governance
             )
             .build()
     }
@@ -2634,19 +2723,22 @@ class DocumentQueueService: ObservableObject {
                 id: "approve",
                 text: "APPROVE - She's qualified",
                 shortDescription: "Approved transfer",
-                effects: ["patronFavor": 10]
+                effects: ["patronFavor": 10],
+                archetype: .personnel
             )
             .addOption(
                 id: "deny",
                 text: "DENY - Needed in current role",
                 shortDescription: "Denied transfer",
-                effects: ["patronFavor": -15, "military": 5]
+                effects: ["patronFavor": -15, "military": 5],
+                archetype: .personnel
             )
             .addOption(
                 id: "defer",
                 text: "DEFER - Request more information",
                 shortDescription: "Deferred decision",
-                effects: [:]
+                effects: [:],
+                archetype: .delay
             )
             .build()
     }
@@ -2727,20 +2819,23 @@ class DocumentQueueService: ObservableObject {
                 id: "internal",
                 text: "INTERNAL REVIEW - Handle quietly",
                 shortDescription: "Ordered internal review",
-                effects: ["security": 5, "stability": -5]
+                effects: ["security": 5, "stability": -5],
+                archetype: .deflect
             )
             .addOption(
                 id: "committee",
                 text: "SAFETY COMMITTEE - Formal investigation",
                 shortDescription: "Ordered committee review",
-                effects: ["stability": 5]
+                effects: ["stability": 5],
+                archetype: .investigate
             )
             .addOption(
                 id: "audit",
                 text: "FULL AUDIT - External investigation",
                 shortDescription: "Ordered external audit",
                 effects: ["stability": 10, "treasury": -15],
-                setsFlag: "ordered_safety_audit"
+                setsFlag: "ordered_safety_audit",
+                archetype: .investigate
             )
             .withDeadline(turnsFromNow: 1)
             .build()
@@ -2789,19 +2884,22 @@ class DocumentQueueService: ObservableObject {
                 id: "reallocate",
                 text: "REALLOCATE - Draw from other facilities",
                 shortDescription: "Reallocated supplies",
-                effects: ["stability": 5]
+                effects: ["stability": 5],
+                archetype: .allocate
             )
             .addOption(
                 id: "priority",
                 text: "PRIORITY TRANSPORT - Emergency requisition",
                 shortDescription: "Emergency transport ordered",
-                effects: ["treasury": -25, "stability": 10]
+                effects: ["treasury": -25, "stability": 10],
+                archetype: .allocate
             )
             .addOption(
                 id: "ration",
                 text: "RATIONING - Temporary reduction",
                 shortDescription: "Implemented rationing",
-                effects: ["stability": -10, "treasury": 10]
+                effects: ["stability": -10, "treasury": 10],
+                archetype: .regulate
             )
             .withDeadline(turnsFromNow: 1)
             .build()
@@ -2850,19 +2948,22 @@ class DocumentQueueService: ObservableObject {
                 id: "address",
                 text: "ADDRESS GRIEVANCE - Meet their concerns",
                 shortDescription: "Addressed complaints",
-                effects: ["stability": 10, "treasury": -20]
+                effects: ["stability": 10, "treasury": -20],
+                archetype: .appease
             )
             .addOption(
                 id: "disperse",
                 text: "DISPERSE - Order them back to work",
                 shortDescription: "Ordered dispersal",
-                effects: ["stability": -5, "security": 5]
+                effects: ["stability": -5, "security": 5],
+                archetype: .repress
             )
             .addOption(
                 id: "refer",
                 text: "REFER - Pass to relevant ministry",
                 shortDescription: "Referred to ministry",
-                effects: [:]
+                effects: [:],
+                archetype: .deflect
             )
             .withDeadline(turnsFromNow: 2)
             .build()
@@ -2917,26 +3018,30 @@ class DocumentQueueService: ObservableObject {
                 id: "negotiate",
                 text: authority.isTopLeadership ? "NEGOTIATE - Meet their demands partially" : "RECOMMEND NEGOTIATION",
                 shortDescription: authority.isTopLeadership ? "Negotiated with workers" : "Recommended negotiation",
-                effects: ["stability": 10, "treasury": -30, "patronFavor": -10]
+                effects: ["stability": 10, "treasury": -30, "patronFavor": -10],
+                archetype: .negotiate
             )
             .addOption(
                 id: "suppress",
                 text: suppressText,
                 shortDescription: suppressDesc,
                 effects: ["stability": -20, "security": 15],
-                setsFlag: "suppressed_workers"
+                setsFlag: "suppressed_workers",
+                archetype: .repress
             )
             .addOption(
                 id: "investigate",
                 text: "INVESTIGATE 'ELEMENTS' - Find the ringleaders",
                 shortDescription: "Investigated ringleaders",
-                effects: ["security": 10, "stability": -5]
+                effects: ["security": 10, "stability": -5],
+                archetype: .investigate
             )
             .addOption(
                 id: "concede",
                 text: authority.isTopLeadership ? "CONCEDE ALL DEMANDS - End this now" : "RECOMMEND FULL CONCESSION",
                 shortDescription: authority.isTopLeadership ? "Full concession" : "Recommended full concession",
-                effects: ["stability": 20, "treasury": -50, "patronFavor": -20]
+                effects: ["stability": 20, "treasury": -50, "patronFavor": -20],
+                archetype: .appease
             )
             .withConsequenceIfIgnored(
                 "The strike spread to three more factories. The situation is now out of control.",
@@ -2992,26 +3097,30 @@ class DocumentQueueService: ObservableObject {
                 text: crackdownText,
                 shortDescription: "Authorized regional crackdown",
                 effects: ["stability": -30, "security": 25],
-                setsFlag: "regional_crackdown"
+                setsFlag: "regional_crackdown",
+                archetype: .repress
             )
             .addOption(
                 id: "targeted",
                 text: "TARGETED RESPONSE - Arrest organizers only",
                 shortDescription: "Targeted arrests",
-                effects: ["stability": -10, "security": 15]
+                effects: ["stability": -10, "security": 15],
+                archetype: .repress
             )
             .addOption(
                 id: "concessions",
                 text: "EMERGENCY CONCESSIONS - Address root causes",
                 shortDescription: "Made emergency concessions",
-                effects: ["stability": 15, "treasury": -75, "patronFavor": -25]
+                effects: ["stability": 15, "treasury": -75, "patronFavor": -25],
+                archetype: .appease
             )
             .addOption(
                 id: "negotiate_leaders",
                 text: "NEGOTIATE - Talk to the organizers",
                 shortDescription: "Opened negotiations",
                 effects: ["stability": 5, "security": -15],
-                setsFlag: "negotiated_with_dissidents"
+                setsFlag: "negotiated_with_dissidents",
+                archetype: .negotiate
             )
             .withConsequenceIfIgnored(
                 "The regional unrest has spread to the capital. The government's authority is openly questioned.",
@@ -3055,7 +3164,8 @@ class DocumentQueueService: ObservableObject {
                 text: "LEAVE LIGHT ON - You're interested",
                 shortDescription: "Signaled interest",
                 effects: ["network": 10, "security": -10],
-                setsFlag: "contacted_informant"
+                setsFlag: "contacted_informant",
+                archetype: .investigate
             )
             .addOption(
                 id: "burn",
@@ -3067,7 +3177,8 @@ class DocumentQueueService: ObservableObject {
                 id: "report",
                 text: "REPORT TO SECURITY - This could be a test",
                 shortDescription: "Reported to security",
-                effects: ["security": 5, "network": -10]
+                effects: ["security": 5, "network": -10],
+                archetype: .loyalty
             )
             .build()
     }
@@ -3143,6 +3254,21 @@ class DocumentQueueService: ObservableObject {
         }
         if let flag = option.removesFlag {
             game.flags.removeAll { $0 == flag }
+        }
+
+        // Apply track affinity based on option archetype
+        // This shapes the player's career path toward specific bureaus
+        if let archetype = option.archetype,
+           let track = archetype.associatedTrack {
+            game.addTrackAffinity(
+                track: track,
+                amount: archetype.affinityAmount,
+                source: .scenarioChoice,
+                description: "Decision: \(option.shortDescription)"
+            )
+            #if DEBUG
+            print("[Track Affinity] +\(archetype.affinityAmount) \(track.displayName) from '\(option.shortDescription)'")
+            #endif
         }
 
         // Record the decision
@@ -3531,19 +3657,22 @@ class DocumentQueueService: ObservableObject {
                     id: "proceed_interrogation",
                     text: "PROCEED - Authorize formal interrogation",
                     shortDescription: "Authorized interrogation",
-                    effects: ["security": 5, "stability": -3]
+                    effects: ["security": 5, "stability": -3],
+                    archetype: .investigate
                 )
                 .addOption(
                     id: "close_case",
                     text: "CLOSE CASE - Evidence insufficient",
                     shortDescription: "Closed case",
-                    effects: ["security": -3]
+                    effects: ["security": -3],
+                    archetype: .administrative
                 )
                 .addOption(
                     id: "continue_surveillance",
                     text: "CONTINUE SURVEILLANCE - Gather more evidence",
                     shortDescription: "Extended surveillance",
-                    effects: ["network": -5]
+                    effects: ["network": -5],
+                    archetype: .surveil
                 )
         } else {
             builder = builder
@@ -3552,7 +3681,8 @@ class DocumentQueueService: ObservableObject {
                     id: "acknowledge",
                     text: "ACKNOWLEDGE - File report",
                     shortDescription: "Acknowledged report",
-                    effects: [:]
+                    effects: [:],
+                    archetype: .administrative
                 )
         }
 
@@ -3620,31 +3750,31 @@ class DocumentQueueService: ObservableObject {
         case "confession":
             builder = builder
                 .addOption(id: "trial", text: "PROCEED TO TRIAL", shortDescription: "Ordered trial",
-                          effects: ["security": 10, "stability": -5])
+                          effects: ["security": 10, "stability": -5], archetype: .repress)
                 .addOption(id: "expand", text: "INVESTIGATE NAMED INDIVIDUALS", shortDescription: "Expanded investigation",
-                          effects: ["security": 5, "network": -10])
+                          effects: ["security": 5, "network": -10], archetype: .investigate)
         case "resistance":
             builder = builder
                 .addOption(id: "enhanced", text: "AUTHORIZE ENHANCED METHODS", shortDescription: "Enhanced interrogation",
-                          effects: ["security": 5, "stability": -10])
+                          effects: ["security": 5, "stability": -10], archetype: .repress)
                 .addOption(id: "patience", text: "CONTINUE STANDARD METHODS", shortDescription: "Continued questioning",
-                          effects: [:])
+                          effects: [:], archetype: .investigate)
                 .addOption(id: "release", text: "RELEASE - INSUFFICIENT EVIDENCE", shortDescription: "Released subject",
-                          effects: ["security": -10, "stability": 5])
+                          effects: ["security": -10, "stability": 5], archetype: .administrative)
         case "complications":
             builder = builder
                 .addOption(id: "medical", text: "PROVIDE MEDICAL CARE", shortDescription: "Provided medical care",
-                          effects: ["treasury": -10])
+                          effects: ["treasury": -10], archetype: .appease)
                 .addOption(id: "transfer", text: "TRANSFER TO HOSPITAL (RISKY)", shortDescription: "Transferred to hospital",
-                          effects: ["security": -10])
+                          effects: ["security": -10], archetype: .appease)
                 .addOption(id: "continue", text: "CONTINUE DESPITE COMPLICATIONS", shortDescription: "Continued detention",
-                          effects: ["stability": -5])
+                          effects: ["stability": -5], archetype: .repress)
         default:
             builder = builder
                 .addOption(id: "expand", text: "EXPAND INVESTIGATION", shortDescription: "Expanded investigation",
-                          effects: ["network": -15, "security": 10])
+                          effects: ["network": -15, "security": 10], archetype: .investigate)
                 .addOption(id: "focus", text: "FOCUS ON CURRENT SUBJECT", shortDescription: "Maintained focus",
-                          effects: [:])
+                          effects: [:], archetype: .investigate)
         }
 
         return builder.build()
@@ -3692,11 +3822,11 @@ class DocumentQueueService: ObservableObject {
             .withFootnote("This is their second appeal. A third will go to your superiors.")
             .requiresDecision(true)
             .addOption(id: "reconsider", text: "RECONSIDER - Grant the appeal", shortDescription: "Granted appeal",
-                      effects: appealType == "resource" ? ["treasury": -30, "stability": 5] : ["stability": 5])
+                      effects: appealType == "resource" ? ["treasury": -30, "stability": 5] : ["stability": 5], archetype: .appease)
             .addOption(id: "deny_final", text: "DENY FINAL - No further appeals", shortDescription: "Denied final",
-                      effects: ["stability": -5])
+                      effects: ["stability": -5], archetype: .administrative)
             .addOption(id: "partial", text: "PARTIAL GRANT - Compromise solution", shortDescription: "Partial grant",
-                      effects: [:])
+                      effects: [:], archetype: .negotiate)
 
         if let parentId = parentId {
             builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "appeal_follow_up")
@@ -3750,15 +3880,15 @@ class DocumentQueueService: ObservableObject {
         if consequenceType == "negative" {
             builder = builder
                 .addOption(id: "address", text: "ADDRESS ISSUES - Take corrective action", shortDescription: "Took corrective action",
-                          effects: ["treasury": -20, "stability": 5])
+                          effects: ["treasury": -20, "stability": 5], archetype: .governance)
                 .addOption(id: "stay_course", text: "STAY THE COURSE - Issues will resolve", shortDescription: "Maintained course",
-                          effects: ["stability": -5])
+                          effects: ["stability": -5], archetype: .orthodox)
                 .addOption(id: "deflect", text: "DEFLECT BLAME - Not your responsibility", shortDescription: "Deflected blame",
-                          effects: ["patronFavor": -5])
+                          effects: ["patronFavor": -5], archetype: .deflect)
         } else {
             builder = builder
                 .addOption(id: "acknowledge", text: "ACKNOWLEDGE - Note for records", shortDescription: "Acknowledged",
-                          effects: [:])
+                          effects: [:], archetype: .administrative)
         }
 
         return builder.build()
@@ -3831,13 +3961,15 @@ class DocumentQueueService: ObservableObject {
                 id: isPositive ? "accept" : "acknowledge",
                 text: isPositive ? "ACCEPT OFFER - Build relationship" : "ACKNOWLEDGE - Note the objection",
                 shortDescription: isPositive ? "Accepted alliance offer" : "Acknowledged complaint",
-                effects: isPositive ? ["network": 10] : [:]
+                effects: isPositive ? ["network": 10] : [:],
+                archetype: isPositive ? .negotiate : .administrative
             )
             .addOption(
                 id: isPositive ? "cautious" : "dismiss",
                 text: isPositive ? "CAUTIOUS RESPONSE - Don't commit" : "DISMISS - Ignore the complaint",
                 shortDescription: isPositive ? "Cautious response" : "Dismissed complaint",
-                effects: isPositive ? [:] : ["network": -5]
+                effects: isPositive ? [:] : ["network": -5],
+                archetype: isPositive ? .delay : .administrative
             )
             .build()
     }
@@ -3873,8 +4005,8 @@ class DocumentQueueService: ObservableObject {
             .inCategory(.political)
             .withBody(body)
             .requiresDecision(true)
-            .addOption(id: "acknowledge", text: "ACKNOWLEDGE", shortDescription: "Acknowledged update", effects: [:])
-            .addOption(id: "accelerate", text: "ACCELERATE IMPLEMENTATION", shortDescription: "Accelerated", effects: ["stability": -5])
+            .addOption(id: "acknowledge", text: "ACKNOWLEDGE", shortDescription: "Acknowledged update", effects: [:], archetype: .administrative)
+            .addOption(id: "accelerate", text: "ACCELERATE IMPLEMENTATION", shortDescription: "Accelerated", effects: ["stability": -5], archetype: .governance)
 
         if let parentId = parentId {
             builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "policy_follow_up")
@@ -3938,20 +4070,20 @@ class DocumentQueueService: ObservableObject {
         if outcomeId == "confirmed" {
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "approve_verified", text: "APPROVE - Balance confirmed", shortDescription: "Approved (verified)", effects: ["stability": 2])
-                .addOption(id: "deny_anyway", text: "DENY - Operational needs", shortDescription: "Denied despite balance", effects: ["stability": -3])
+                .addOption(id: "approve_verified", text: "APPROVE - Balance confirmed", shortDescription: "Approved (verified)", effects: ["stability": 2], archetype: .personnel)
+                .addOption(id: "deny_anyway", text: "DENY - Operational needs", shortDescription: "Denied despite balance", effects: ["stability": -3], archetype: .personnel)
         } else if outcomeId == "insufficient" {
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "deny_insufficient", text: "DENY - Insufficient balance", shortDescription: "Denied (insufficient)", effects: [:])
-                .addOption(id: "approve_partial", text: "APPROVE PARTIAL - 4 days only", shortDescription: "Approved partial", effects: ["stability": 1])
-                .addOption(id: "approve_exception", text: "APPROVE EXCEPTION - Grant anyway", shortDescription: "Approved exception", effects: ["stability": -2, "treasury": -5])
+                .addOption(id: "deny_insufficient", text: "DENY - Insufficient balance", shortDescription: "Denied (insufficient)", effects: [:], archetype: .regulate)
+                .addOption(id: "approve_partial", text: "APPROVE PARTIAL - 4 days only", shortDescription: "Approved partial", effects: ["stability": 1], archetype: .negotiate)
+                .addOption(id: "approve_exception", text: "APPROVE EXCEPTION - Grant anyway", shortDescription: "Approved exception", effects: ["stability": -2, "treasury": -5], archetype: .appease)
         } else {
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "investigate_discrepancy", text: "INVESTIGATE - Audit personnel files", shortDescription: "Investigating discrepancy", effects: ["treasury": -10], triggersDocument: "investigation_personnel_\(subjectName.lowercased().replacingOccurrences(of: " ", with: "_"))")
-                .addOption(id: "dismiss_clerical", text: "DISMISS - Likely clerical error", shortDescription: "Dismissed as error", effects: [:])
-                .addOption(id: "hold_pending", text: "HOLD - Pending resolution", shortDescription: "Held pending", effects: [:])
+                .addOption(id: "investigate_discrepancy", text: "INVESTIGATE - Audit personnel files", shortDescription: "Investigating discrepancy", effects: ["treasury": -10], triggersDocument: "investigation_personnel_\(subjectName.lowercased().replacingOccurrences(of: " ", with: "_"))", archetype: .investigate)
+                .addOption(id: "dismiss_clerical", text: "DISMISS - Likely clerical error", shortDescription: "Dismissed as error", effects: [:], archetype: .administrative)
+                .addOption(id: "hold_pending", text: "HOLD - Pending resolution", shortDescription: "Held pending", effects: [:], archetype: .delay)
         }
 
         return builder.build()
@@ -4014,24 +4146,24 @@ class DocumentQueueService: ObservableObject {
         case "confession":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "tribunal", text: "TRIBUNAL - Formal charges", shortDescription: "Sent to tribunal", effects: ["security": 5, "stability": -3])
-                .addOption(id: "deal", text: "DEAL - Reduced sentence for names", shortDescription: "Offered deal", effects: ["security": 8, "network": 5])
+                .addOption(id: "tribunal", text: "TRIBUNAL - Formal charges", shortDescription: "Sent to tribunal", effects: ["security": 5, "stability": -3], archetype: .repress)
+                .addOption(id: "deal", text: "DEAL - Reduced sentence for names", shortDescription: "Offered deal", effects: ["security": 8, "network": 5], archetype: .investigate)
         case "defiance":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "enhanced", text: "ENHANCED METHODS - Authorize", shortDescription: "Enhanced interrogation", effects: ["security": 5, "stability": -10])
-                .addOption(id: "extended", text: "EXTENDED DETENTION - Continue standard", shortDescription: "Extended detention", effects: ["security": 2])
-                .addOption(id: "release_monitored", text: "RELEASE - With full surveillance", shortDescription: "Released monitored", effects: ["security": -3, "network": 5])
+                .addOption(id: "enhanced", text: "ENHANCED METHODS - Authorize", shortDescription: "Enhanced interrogation", effects: ["security": 5, "stability": -10], archetype: .repress)
+                .addOption(id: "extended", text: "EXTENDED DETENTION - Continue standard", shortDescription: "Extended detention", effects: ["security": 2], archetype: .investigate)
+                .addOption(id: "release_monitored", text: "RELEASE - With full surveillance", shortDescription: "Released monitored", effects: ["security": -3, "network": 5], archetype: .surveil)
         case "intel":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "recruit", text: "RECRUIT - Enlist as informant", shortDescription: "Recruited informant", effects: ["network": 10, "security": 3])
-                .addOption(id: "release_surveillance", text: "RELEASE - Controlled with surveillance", shortDescription: "Released surveillance", effects: ["network": 5])
+                .addOption(id: "recruit", text: "RECRUIT - Enlist as informant", shortDescription: "Recruited informant", effects: ["network": 10, "security": 3], archetype: .surveil)
+                .addOption(id: "release_surveillance", text: "RELEASE - Controlled with surveillance", shortDescription: "Released surveillance", effects: ["network": 5], archetype: .surveil)
         default:
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "release", text: "RELEASE - No grounds for detention", shortDescription: "Released", effects: ["stability": 3])
-                .addOption(id: "file_notation", text: "RELEASE - With security notation", shortDescription: "Released with notation", effects: ["security": 2])
+                .addOption(id: "release", text: "RELEASE - No grounds for detention", shortDescription: "Released", effects: ["stability": 3], archetype: .administrative)
+                .addOption(id: "file_notation", text: "RELEASE - With security notation", shortDescription: "Released with notation", effects: ["security": 2], archetype: .administrative)
         }
 
         return builder.build()
@@ -4094,25 +4226,25 @@ class DocumentQueueService: ObservableObject {
         case "as_reported":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "approve_adjustment", text: "APPROVE - Grant quota adjustment", shortDescription: "Approved adjustment", effects: ["stability": 5, "treasury": -10])
-                .addOption(id: "partial_adjustment", text: "PARTIAL - Reduce quota by half requested", shortDescription: "Partial adjustment", effects: ["stability": 2])
+                .addOption(id: "approve_adjustment", text: "APPROVE - Grant quota adjustment", shortDescription: "Approved adjustment", effects: ["stability": 5, "treasury": -10], archetype: .production)
+                .addOption(id: "partial_adjustment", text: "PARTIAL - Reduce quota by half requested", shortDescription: "Partial adjustment", effects: ["stability": 2], archetype: .production)
         case "worse":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "emergency_funds", text: "EMERGENCY FUNDS - Immediate allocation", shortDescription: "Emergency funding", effects: ["treasury": -50, "stability": 10])
-                .addOption(id: "gradual_support", text: "GRADUAL SUPPORT - Phased assistance", shortDescription: "Gradual support", effects: ["treasury": -25, "stability": 3])
-                .addOption(id: "close_facility", text: "CLOSE FACILITY - Redistribute workers", shortDescription: "Closed facility", effects: ["stability": -15, "treasury": 20])
+                .addOption(id: "emergency_funds", text: "EMERGENCY FUNDS - Immediate allocation", shortDescription: "Emergency funding", effects: ["treasury": -50, "stability": 10], archetype: .allocate)
+                .addOption(id: "gradual_support", text: "GRADUAL SUPPORT - Phased assistance", shortDescription: "Gradual support", effects: ["treasury": -25, "stability": 3], archetype: .allocate)
+                .addOption(id: "close_facility", text: "CLOSE FACILITY - Redistribute workers", shortDescription: "Closed facility", effects: ["stability": -15, "treasury": 20], archetype: .reform)
         case "hidden_issues":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "suspend_investigate", text: "SUSPEND - Launch investigation", shortDescription: "Suspended for investigation", effects: ["security": 5, "stability": -5], triggersDocument: "investigation_embezzlement_\(locationName.lowercased().replacingOccurrences(of: " ", with: "_"))")
-                .addOption(id: "warn_only", text: "WARN - Issue formal warning", shortDescription: "Formal warning issued", effects: [:])
-                .addOption(id: "overlook", text: "OVERLOOK - Everyone does it", shortDescription: "Overlooked", effects: ["stability": 3, "security": -5])
+                .addOption(id: "suspend_investigate", text: "SUSPEND - Launch investigation", shortDescription: "Suspended for investigation", effects: ["security": 5, "stability": -5], triggersDocument: "investigation_embezzlement_\(locationName.lowercased().replacingOccurrences(of: " ", with: "_"))", archetype: .investigate)
+                .addOption(id: "warn_only", text: "WARN - Issue formal warning", shortDescription: "Formal warning issued", effects: [:], archetype: .personnel)
+                .addOption(id: "overlook", text: "OVERLOOK - Everyone does it", shortDescription: "Overlooked", effects: ["stability": 3, "security": -5], archetype: .deflect)
         default:
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "deny_discipline", text: "DENY - Disciplinary action", shortDescription: "Denied with discipline", effects: ["stability": -5, "standing": 3])
-                .addOption(id: "deny_warning", text: "DENY - Warning only", shortDescription: "Denied with warning", effects: [:])
+                .addOption(id: "deny_discipline", text: "DENY - Disciplinary action", shortDescription: "Denied with discipline", effects: ["stability": -5, "standing": 3], archetype: .personnel)
+                .addOption(id: "deny_warning", text: "DENY - Warning only", shortDescription: "Denied with warning", effects: [:], archetype: .administrative)
         }
 
         return builder.build()
@@ -4174,24 +4306,24 @@ class DocumentQueueService: ObservableObject {
         case "strengthened":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "authorize_arrest", text: "AUTHORIZE ARREST - Proceed", shortDescription: "Authorized arrest", effects: ["security": 10, "stability": -5])
-                .addOption(id: "continue_gathering", text: "CONTINUE - Gather more evidence", shortDescription: "Continued investigation", effects: ["security": 2])
+                .addOption(id: "authorize_arrest", text: "AUTHORIZE ARREST - Proceed", shortDescription: "Authorized arrest", effects: ["security": 10, "stability": -5], archetype: .repress)
+                .addOption(id: "continue_gathering", text: "CONTINUE - Gather more evidence", shortDescription: "Continued investigation", effects: ["security": 2], archetype: .investigate)
         case "weakened":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "close_case", text: "CLOSE CASE - Insufficient evidence", shortDescription: "Closed case", effects: ["stability": 3])
-                .addOption(id: "continue_surveillance", text: "CONTINUE SURVEILLANCE - Wait for opportunity", shortDescription: "Continued surveillance", effects: ["security": 2, "network": -5])
+                .addOption(id: "close_case", text: "CLOSE CASE - Insufficient evidence", shortDescription: "Closed case", effects: ["stability": 3], archetype: .administrative)
+                .addOption(id: "continue_surveillance", text: "CONTINUE SURVEILLANCE - Wait for opportunity", shortDescription: "Continued surveillance", effects: ["security": 2, "network": -5], archetype: .surveil)
         case "third_party":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "expand_investigation", text: "EXPAND - Investigate new suspect", shortDescription: "Expanded investigation", effects: ["security": 5, "network": -10], triggersDocument: "investigation_expanded_\(UUID().uuidString.prefix(6))")
-                .addOption(id: "focus_original", text: "FOCUS - Proceed with original subject", shortDescription: "Focused on original", effects: ["security": 3])
-                .addOption(id: "drop_both", text: "DROP - Too politically sensitive", shortDescription: "Dropped investigation", effects: ["security": -5, "stability": 5])
+                .addOption(id: "expand_investigation", text: "EXPAND - Investigate new suspect", shortDescription: "Expanded investigation", effects: ["security": 5, "network": -10], triggersDocument: "investigation_expanded_\(UUID().uuidString.prefix(6))", archetype: .investigate)
+                .addOption(id: "focus_original", text: "FOCUS - Proceed with original subject", shortDescription: "Focused on original", effects: ["security": 3], archetype: .investigate)
+                .addOption(id: "drop_both", text: "DROP - Too politically sensitive", shortDescription: "Dropped investigation", effects: ["security": -5, "stability": 5], archetype: .deflect)
         default:
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "close_exonerate", text: "CLOSE - Exonerate subject", shortDescription: "Exonerated subject", effects: ["stability": 5])
-                .addOption(id: "investigate_accuser", text: "INVESTIGATE ACCUSER - False report", shortDescription: "Investigating accuser", effects: ["security": 5, "stability": -3])
+                .addOption(id: "close_exonerate", text: "CLOSE - Exonerate subject", shortDescription: "Exonerated subject", effects: ["stability": 5], archetype: .administrative)
+                .addOption(id: "investigate_accuser", text: "INVESTIGATE ACCUSER - False report", shortDescription: "Investigating accuser", effects: ["security": 5, "stability": -3], archetype: .investigate)
         }
 
         return builder.build()
@@ -4254,26 +4386,26 @@ class DocumentQueueService: ObservableObject {
         case "full":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "commend", text: "COMMEND - Issue commendation", shortDescription: "Issued commendation", effects: ["stability": 5, "standing": 3])
-                .addOption(id: "acknowledge", text: "ACKNOWLEDGE - Note success", shortDescription: "Acknowledged", effects: [:])
+                .addOption(id: "commend", text: "COMMEND - Issue commendation", shortDescription: "Issued commendation", effects: ["stability": 5, "standing": 3], archetype: .personnel)
+                .addOption(id: "acknowledge", text: "ACKNOWLEDGE - Note success", shortDescription: "Acknowledged", effects: [:], archetype: .administrative)
         case "partial":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "extend_deadline", text: "EXTEND - Additional time granted", shortDescription: "Extended deadline", effects: ["stability": 3])
-                .addOption(id: "pressure", text: "PRESSURE - Demand full compliance", shortDescription: "Demanded compliance", effects: ["stability": -5, "standing": 2])
-                .addOption(id: "resources", text: "RESOURCES - Allocate additional support", shortDescription: "Allocated resources", effects: ["treasury": -15, "stability": 5])
+                .addOption(id: "extend_deadline", text: "EXTEND - Additional time granted", shortDescription: "Extended deadline", effects: ["stability": 3], archetype: .delay)
+                .addOption(id: "pressure", text: "PRESSURE - Demand full compliance", shortDescription: "Demanded compliance", effects: ["stability": -5, "standing": 2], archetype: .production)
+                .addOption(id: "resources", text: "RESOURCES - Allocate additional support", shortDescription: "Allocated resources", effects: ["treasury": -15, "stability": 5], archetype: .allocate)
         case "non_compliance":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "investigate_officials", text: "INVESTIGATE - Audit local leadership", shortDescription: "Investigating officials", effects: ["security": 5, "stability": -5], triggersDocument: "investigation_compliance_\(UUID().uuidString.prefix(6))")
-                .addOption(id: "replace_leadership", text: "REPLACE - New local officials", shortDescription: "Replaced leadership", effects: ["stability": -10, "standing": 5])
-                .addOption(id: "accept_shortfall", text: "ACCEPT - Revise targets down", shortDescription: "Accepted shortfall", effects: ["standing": -5, "stability": 5])
+                .addOption(id: "investigate_officials", text: "INVESTIGATE - Audit local leadership", shortDescription: "Investigating officials", effects: ["security": 5, "stability": -5], triggersDocument: "investigation_compliance_\(UUID().uuidString.prefix(6))", archetype: .investigate)
+                .addOption(id: "replace_leadership", text: "REPLACE - New local officials", shortDescription: "Replaced leadership", effects: ["stability": -10, "standing": 5], archetype: .personnel)
+                .addOption(id: "accept_shortfall", text: "ACCEPT - Revise targets down", shortDescription: "Accepted shortfall", effects: ["standing": -5, "stability": 5], archetype: .appease)
         default:
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "reward_workers", text: "REWARD - Bonuses for workers", shortDescription: "Rewarded workers", effects: ["treasury": -20, "stability": 10])
-                .addOption(id: "raise_quotas", text: "RAISE QUOTAS - Increase future targets", shortDescription: "Raised quotas", effects: ["stability": -5, "treasury": 10])
-                .addOption(id: "investigate_reporting", text: "INVESTIGATE - Verify numbers", shortDescription: "Investigating reports", effects: ["security": 3])
+                .addOption(id: "reward_workers", text: "REWARD - Bonuses for workers", shortDescription: "Rewarded workers", effects: ["treasury": -20, "stability": 10], archetype: .appease)
+                .addOption(id: "raise_quotas", text: "RAISE QUOTAS - Increase future targets", shortDescription: "Raised quotas", effects: ["stability": -5, "treasury": 10], archetype: .production)
+                .addOption(id: "investigate_reporting", text: "INVESTIGATE - Verify numbers", shortDescription: "Investigating reports", effects: ["security": 3], archetype: .investigate)
         }
 
         return builder.build()
@@ -4334,24 +4466,24 @@ class DocumentQueueService: ObservableObject {
         case "smooth":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "file", text: "FILE - Note successful transfer", shortDescription: "Filed", effects: [:])
+                .addOption(id: "file", text: "FILE - Note successful transfer", shortDescription: "Filed", effects: [:], archetype: .administrative)
         case "complaint":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "dismiss_complaint", text: "DISMISS - Operational necessity", shortDescription: "Dismissed complaint", effects: ["militaryLoyalty": -5, "standing": 2])
-                .addOption(id: "partial_restore", text: "PARTIAL RESTORE - Return some resources", shortDescription: "Partially restored", effects: ["treasury": -15, "militaryLoyalty": 3])
-                .addOption(id: "full_restore", text: "FULL RESTORE - Reverse reallocation", shortDescription: "Fully restored", effects: ["treasury": -30, "militaryLoyalty": 5, "standing": -3])
+                .addOption(id: "dismiss_complaint", text: "DISMISS - Operational necessity", shortDescription: "Dismissed complaint", effects: ["militaryLoyalty": -5, "standing": 2], archetype: .administrative)
+                .addOption(id: "partial_restore", text: "PARTIAL RESTORE - Return some resources", shortDescription: "Partially restored", effects: ["treasury": -15, "militaryLoyalty": 3], archetype: .allocate)
+                .addOption(id: "full_restore", text: "FULL RESTORE - Reverse reallocation", shortDescription: "Fully restored", effects: ["treasury": -30, "militaryLoyalty": 5, "standing": -3], archetype: .allocate)
         case "equipment_issues":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "repair_funds", text: "REPAIR - Allocate maintenance budget", shortDescription: "Funded repairs", effects: ["treasury": -20, "militaryLoyalty": 3])
-                .addOption(id: "source_replacement", text: "REPLACE - Source new equipment", shortDescription: "Sourced replacement", effects: ["treasury": -40, "militaryLoyalty": 5])
-                .addOption(id: "make_do", text: "MAKE DO - Use as available", shortDescription: "Use as-is", effects: ["militaryLoyalty": -3])
+                .addOption(id: "repair_funds", text: "REPAIR - Allocate maintenance budget", shortDescription: "Funded repairs", effects: ["treasury": -20, "militaryLoyalty": 3], archetype: .allocate)
+                .addOption(id: "source_replacement", text: "REPLACE - Source new equipment", shortDescription: "Sourced replacement", effects: ["treasury": -40, "militaryLoyalty": 5], archetype: .allocate)
+                .addOption(id: "make_do", text: "MAKE DO - Use as available", shortDescription: "Use as-is", effects: ["militaryLoyalty": -3], archetype: .administrative)
         default:
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "morale_boost", text: "BOOST MORALE - Extra rations and leave", shortDescription: "Boosted morale", effects: ["treasury": -10, "militaryLoyalty": 5])
-                .addOption(id: "ignore_morale", text: "IGNORE - Soldiers will adapt", shortDescription: "Ignored", effects: ["militaryLoyalty": -3])
+                .addOption(id: "morale_boost", text: "BOOST MORALE - Extra rations and leave", shortDescription: "Boosted morale", effects: ["treasury": -10, "militaryLoyalty": 5], archetype: .appease)
+                .addOption(id: "ignore_morale", text: "IGNORE - Soldiers will adapt", shortDescription: "Ignored", effects: ["militaryLoyalty": -3], archetype: .administrative)
         }
 
         return builder.build()
@@ -4413,25 +4545,25 @@ class DocumentQueueService: ObservableObject {
         case "incriminating":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "arrest_now", text: "ARREST - Detain immediately", shortDescription: "Arrested subject", effects: ["security": 10, "stability": -5])
-                .addOption(id: "continue_watching", text: "CONTINUE - Identify network first", shortDescription: "Continued surveillance", effects: ["security": 3, "network": 5])
+                .addOption(id: "arrest_now", text: "ARREST - Detain immediately", shortDescription: "Arrested subject", effects: ["security": 10, "stability": -5], archetype: .repress)
+                .addOption(id: "continue_watching", text: "CONTINUE - Identify network first", shortDescription: "Continued surveillance", effects: ["security": 3, "network": 5], archetype: .surveil)
         case "nothing":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "close_surveillance", text: "CLOSE - End operation", shortDescription: "Closed surveillance", effects: ["network": 5])
-                .addOption(id: "extend_period", text: "EXTEND - One more month", shortDescription: "Extended surveillance", effects: ["network": -5, "treasury": -10])
+                .addOption(id: "close_surveillance", text: "CLOSE - End operation", shortDescription: "Closed surveillance", effects: ["network": 5], archetype: .administrative)
+                .addOption(id: "extend_period", text: "EXTEND - One more month", shortDescription: "Extended surveillance", effects: ["network": -5, "treasury": -10], archetype: .surveil)
         case "cover_blown":
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "withdraw", text: "WITHDRAW - Pull surveillance team", shortDescription: "Withdrew team", effects: ["security": -3])
-                .addOption(id: "detain_subject", text: "DETAIN - Arrest before flight", shortDescription: "Detained subject", effects: ["security": 5, "stability": -5])
-                .addOption(id: "double_down", text: "OVERT SURVEILLANCE - Let them know we're watching", shortDescription: "Overt surveillance", effects: ["security": 3, "stability": -3])
+                .addOption(id: "withdraw", text: "WITHDRAW - Pull surveillance team", shortDescription: "Withdrew team", effects: ["security": -3], archetype: .administrative)
+                .addOption(id: "detain_subject", text: "DETAIN - Arrest before flight", shortDescription: "Detained subject", effects: ["security": 5, "stability": -5], archetype: .repress)
+                .addOption(id: "double_down", text: "OVERT SURVEILLANCE - Let them know we're watching", shortDescription: "Overt surveillance", effects: ["security": 3, "stability": -3], archetype: .surveil)
         default:
             builder = builder
                 .requiresDecision(true)
-                .addOption(id: "recruit", text: "RECRUIT - Initiate approach", shortDescription: "Initiated recruitment", effects: ["network": 10, "security": 5])
-                .addOption(id: "continue_observe", text: "OBSERVE - Monitor before approach", shortDescription: "Continued observation", effects: ["network": 3])
-                .addOption(id: "ignore", text: "IGNORE - Not worth the risk", shortDescription: "Ignored opportunity", effects: [:])
+                .addOption(id: "recruit", text: "RECRUIT - Initiate approach", shortDescription: "Initiated recruitment", effects: ["network": 10, "security": 5], archetype: .investigate)
+                .addOption(id: "continue_observe", text: "OBSERVE - Monitor before approach", shortDescription: "Continued observation", effects: ["network": 3], archetype: .surveil)
+                .addOption(id: "ignore", text: "IGNORE - Not worth the risk", shortDescription: "Ignored opportunity", effects: [:], archetype: .delay)
         }
 
         return builder.build()
@@ -4496,17 +4628,17 @@ class DocumentQueueService: ObservableObject {
             case "carried_out":
                 builder = builder
                     .requiresDecision(true)
-                    .addOption(id: "file_closed", text: "FILE - Case closed", shortDescription: "Filed closed", effects: [:])
+                    .addOption(id: "file_closed", text: "FILE - Case closed", shortDescription: "Filed closed", effects: [:], archetype: .administrative)
             case "complications":
                 builder = builder
                     .requiresDecision(true)
-                    .addOption(id: "deny_appeal", text: "DENY APPEAL - Proceed immediately", shortDescription: "Denied appeal", effects: ["stability": -5, "standing": 3])
-                    .addOption(id: "review_appeal", text: "REVIEW - Consider appeal", shortDescription: "Reviewing appeal", effects: ["stability": 3, "standing": -3])
+                    .addOption(id: "deny_appeal", text: "DENY APPEAL - Proceed immediately", shortDescription: "Denied appeal", effects: ["stability": -5, "standing": 3], archetype: .repress)
+                    .addOption(id: "review_appeal", text: "REVIEW - Consider appeal", shortDescription: "Reviewing appeal", effects: ["stability": 3, "standing": -3], archetype: .governance)
             default:
                 builder = builder
                     .requiresDecision(true)
-                    .addOption(id: "capitalize", text: "CAPITALIZE - Publicize further", shortDescription: "Publicized", effects: ["stability": -3, "militaryLoyalty": 5])
-                    .addOption(id: "note_effect", text: "NOTE - Record deterrent effect", shortDescription: "Noted effect", effects: [:])
+                    .addOption(id: "capitalize", text: "CAPITALIZE - Publicize further", shortDescription: "Publicized", effects: ["stability": -3, "militaryLoyalty": 5], archetype: .ideological)
+                    .addOption(id: "note_effect", text: "NOTE - Record deterrent effect", shortDescription: "Noted effect", effects: [:], archetype: .administrative)
             }
 
             return builder.build()
@@ -4557,19 +4689,19 @@ class DocumentQueueService: ObservableObject {
             case "progress":
                 builder = builder
                     .requiresDecision(true)
-                    .addOption(id: "continue_program", text: "CONTINUE - Maintain current program", shortDescription: "Continued program", effects: [:])
-                    .addOption(id: "accelerate", text: "ACCELERATE - Intensive sessions", shortDescription: "Accelerated program", effects: ["stability": -2])
+                    .addOption(id: "continue_program", text: "CONTINUE - Maintain current program", shortDescription: "Continued program", effects: [:], archetype: .ideological)
+                    .addOption(id: "accelerate", text: "ACCELERATE - Intensive sessions", shortDescription: "Accelerated program", effects: ["stability": -2], archetype: .repress)
             case "resistance":
                 builder = builder
                     .requiresDecision(true)
-                    .addOption(id: "extend_program", text: "EXTEND - Additional 6 months", shortDescription: "Extended program", effects: ["stability": 2])
-                    .addOption(id: "labor_camp", text: "LABOR ASSIGNMENT - Hard labor 2 years", shortDescription: "Assigned labor", effects: ["stability": -5, "security": 3])
-                    .addOption(id: "release_anyway", text: "RELEASE - Not worth resources", shortDescription: "Released", effects: ["security": -3, "stability": 3])
+                    .addOption(id: "extend_program", text: "EXTEND - Additional 6 months", shortDescription: "Extended program", effects: ["stability": 2], archetype: .ideological)
+                    .addOption(id: "labor_camp", text: "LABOR ASSIGNMENT - Hard labor 2 years", shortDescription: "Assigned labor", effects: ["stability": -5, "security": 3], archetype: .repress)
+                    .addOption(id: "release_anyway", text: "RELEASE - Not worth resources", shortDescription: "Released", effects: ["security": -3, "stability": 3], archetype: .appease)
             default:
                 builder = builder
                     .requiresDecision(true)
-                    .addOption(id: "approve_return", text: "APPROVE - Return to duty", shortDescription: "Approved return", effects: ["militaryLoyalty": 3])
-                    .addOption(id: "assign_monitoring", text: "APPROVE WITH MONITORING - Extended surveillance", shortDescription: "Approved with monitoring", effects: ["security": 2])
+                    .addOption(id: "approve_return", text: "APPROVE - Return to duty", shortDescription: "Approved return", effects: ["militaryLoyalty": 3], archetype: .personnel)
+                    .addOption(id: "assign_monitoring", text: "APPROVE WITH MONITORING - Extended surveillance", shortDescription: "Approved with monitoring", effects: ["security": 2], archetype: .surveil)
             }
 
             return builder.build()
@@ -4597,7 +4729,7 @@ class DocumentQueueService: ObservableObject {
             .inCategory(.personnel)
             .withBody(body)
             .requiresDecision(true)
-            .addOption(id: "acknowledge", text: "ACKNOWLEDGE", shortDescription: "Acknowledged", effects: [:])
+            .addOption(id: "acknowledge", text: "ACKNOWLEDGE", shortDescription: "Acknowledged", effects: [:], archetype: .administrative)
 
         if let parentId = parentId {
             builder = builder.asFollowUpTo(documentId: parentId, chainId: chainId, reason: "case_follow_up")
