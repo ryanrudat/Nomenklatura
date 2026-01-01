@@ -442,8 +442,15 @@ class GameEngine {
     }
 
     private func checkLossConditions(game: Game) -> GameEndCheck? {
+        // EARLY GAME PROTECTION: Don't trigger loss conditions in first 5 turns
+        // This gives players time to understand the game and recover from initial events
+        // Exception: Catastrophic failures (state collapse) can still end the game
+        let earlyGameProtection = game.turnNumber <= 5
+
         // LOSS: Patron turns on you (purge)
-        if game.patronFavor < 15 {
+        // Threshold lowered to 10 (from 15) to give more margin
+        // Early game protection applies - patron wouldn't act this fast
+        if !earlyGameProtection && game.patronFavor < 10 {
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
@@ -452,7 +459,8 @@ class GameEngine {
         }
 
         // LOSS: Standing collapses (dismissed)
-        if game.standing < 5 {
+        // Early game protection applies - takes time to be fully dismissed
+        if !earlyGameProtection && game.standing < 5 {
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
@@ -461,21 +469,27 @@ class GameEngine {
         }
 
         // LOSS: Rival threat maxed (rival coup)
-        if game.rivalThreat >= 95 {
-            return GameEndCheck(
-                gameOver: true,
-                result: .lost,
-                reason: "Your rivals have outmaneuvered you completely. At the next Politburo meeting, you find yourself facing accusations of counter-revolutionary activity. The vote is unanimous."
-            )
+        // Use BalanceConfig threshold - requires extreme rival threat
+        if game.rivalThreat >= BalanceConfig.assassinationRivalThreat {
+            // Also require low network (no protection) as per BalanceConfig
+            if game.network <= BalanceConfig.assassinationNetworkThreshold {
+                return GameEndCheck(
+                    gameOver: true,
+                    result: .lost,
+                    reason: "Your rivals have outmaneuvered you completely. At the next Politburo meeting, you find yourself facing accusations of counter-revolutionary activity. The vote is unanimous."
+                )
+            }
         }
 
         // LOSS: Multiple critical stats (state collapse)
+        // This is a catastrophic failure - NO early game protection
+        // Use stricter threshold (< 10 instead of < 15) for state collapse
         let criticalStats = [
             game.stability,
             game.popularSupport,
             game.foodSupply
         ]
-        let criticalCount = criticalStats.filter { $0 < 15 }.count
+        let criticalCount = criticalStats.filter { $0 < 10 }.count
         if criticalCount >= 2 {
             return GameEndCheck(
                 gameOver: true,
@@ -485,7 +499,10 @@ class GameEngine {
         }
 
         // LOSS: Military coup (if player at top and military loyalty too low)
-        if game.flags.contains("reached_general_secretary") && game.militaryLoyalty < 20 {
+        // Use BalanceConfig thresholds
+        if game.flags.contains("reached_general_secretary") &&
+           game.militaryLoyalty <= BalanceConfig.coupMilitaryLoyaltyThreshold &&
+           game.stability <= BalanceConfig.coupStabilityThreshold {
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
@@ -494,7 +511,10 @@ class GameEngine {
         }
 
         // LOSS: Popular revolution (if player at top and popular support too low)
-        if game.flags.contains("reached_general_secretary") && game.popularSupport < 15 {
+        // Use BalanceConfig thresholds - requires both low stability AND low support
+        if game.flags.contains("reached_general_secretary") &&
+           game.popularSupport <= BalanceConfig.revolutionPopularSupportThreshold &&
+           game.stability <= BalanceConfig.revolutionStabilityThreshold {
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,

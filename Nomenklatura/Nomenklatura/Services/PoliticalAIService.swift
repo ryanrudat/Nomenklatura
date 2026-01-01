@@ -101,10 +101,14 @@ class PoliticalAIService {
 
             case .targetRival:
                 // Generate a political event targeting a rival
+                // Check for deduplication - don't repeat the same investigation
                 if let targetId = gsAction.targetCharacterId {
-                    let event = generateRivalTargetingEvent(gs: gs, targetId: targetId, game: game)
-                    events.append(event)
-                    politicalLogger.info("GS targeting rival: \(targetId)")
+                    if let event = generateRivalTargetingEvent(gs: gs, targetId: targetId, game: game) {
+                        events.append(event)
+                        politicalLogger.info("GS targeting rival: \(targetId)")
+                    } else {
+                        politicalLogger.info("GS skipped targeting \(targetId) - already under investigation or cooldown active")
+                    }
                 }
 
             case .appointLoyalist:
@@ -138,8 +142,41 @@ class PoliticalAIService {
     }
 
     /// Generate event for GS targeting a rival
-    private func generateRivalTargetingEvent(gs: GameCharacter, targetId: String, game: Game) -> PoliticalEvent {
-        let targetName = game.characters.first { $0.templateId == targetId }?.name ?? "Unknown"
+    /// Returns nil if the target is already under investigation or was recently targeted (cooldown)
+    private func generateRivalTargetingEvent(gs: GameCharacter, targetId: String, game: Game) -> PoliticalEvent? {
+        // Find target character
+        guard let target = game.characters.first(where: { $0.templateId == targetId }) else {
+            return nil
+        }
+
+        // DEDUPLICATION: Check if target is already under investigation
+        if target.currentStatus == .underInvestigation {
+            politicalLogger.info("Target \(target.name) already under investigation - skipping")
+            return nil
+        }
+
+        // DEDUPLICATION: Check cooldown - prevent targeting same person within 3 turns
+        let cooldownKey = "gs_investigation_\(targetId)_turn"
+        if let lastTurnStr = game.variables[cooldownKey],
+           let lastTurn = Int(lastTurnStr),
+           game.turnNumber - lastTurn < 3 {
+            politicalLogger.info("Target \(target.name) investigation on cooldown until turn \(lastTurn + 3)")
+            return nil
+        }
+
+        // Record this action for cooldown tracking
+        game.variables[cooldownKey] = "\(game.turnNumber)"
+
+        // Put the target under investigation status
+        target.status = CharacterStatus.underInvestigation.rawValue
+
+        // Generate varied narratives based on context
+        let narratives = [
+            "The General Secretary has initiated an investigation into \(target.name). Whispers suggest this is politically motivated.",
+            "State security has opened a file on \(target.name) at the General Secretary's request. The charges remain unspecified.",
+            "\(target.name) has been called before the Internal Affairs Committee. The General Secretary's hand is evident in this sudden scrutiny.",
+            "Rumors circulate that \(target.name) is under investigation. The General Secretary denies involvement, but few believe it."
+        ]
 
         return PoliticalEvent(
             eventType: .politicalCrisis,
@@ -147,7 +184,7 @@ class PoliticalAIService {
             characterName: gs.name,
             slotId: nil,
             optionId: nil,
-            narrative: "The General Secretary has initiated an investigation into \(targetName). Whispers suggest this is politically motivated.",
+            narrative: narratives.randomElement()!,
             consequences: [],
             turn: game.turnNumber
         )
