@@ -212,6 +212,39 @@ enum FiveYearPlanPhase: String, Codable, CaseIterable {
     }
 }
 
+// MARK: - Five-Year Plan Targets
+
+/// Tracks specific targets for a Five-Year Plan
+struct FiveYearPlanTargets: Codable {
+    // Targets (what we're aiming for)
+    var gdpTarget: Int = 125           // Target GDP index
+    var industrialTarget: Int = 65     // Target industrial output
+    var agricultureTarget: Int = 55    // Target food supply
+    var treasuryTarget: Int = 60       // Target treasury level
+
+    // Starting values (baseline to measure from)
+    var startingGDP: Int = 100
+    var startingIndustrial: Int = 50
+    var startingAgriculture: Int = 45
+    var startingTreasury: Int = 55
+
+    /// Calculate overall progress as percentage (0-100+)
+    func overallProgress(gdp: Int, industrial: Int, agriculture: Int) -> Int {
+        let gdpProgress = progressPercent(current: gdp, start: startingGDP, target: gdpTarget)
+        let industrialProgress = progressPercent(current: industrial, start: startingIndustrial, target: industrialTarget)
+        let agricultureProgress = progressPercent(current: agriculture, start: startingAgriculture, target: agricultureTarget)
+
+        return (gdpProgress + industrialProgress + agricultureProgress) / 3
+    }
+
+    private func progressPercent(current: Int, start: Int, target: Int) -> Int {
+        let needed = target - start
+        guard needed > 0 else { return 100 }
+        let achieved = current - start
+        return max(0, (achieved * 100) / needed)
+    }
+}
+
 // MARK: - Economic Crisis Type
 
 enum EconomicCrisisType: String, Codable, CaseIterable {

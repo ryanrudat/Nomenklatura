@@ -358,6 +358,234 @@ class PolicyService {
                 faction.playerStanding = max(0, min(100, faction.playerStanding + modifier))
             }
         }
+
+        // Apply secondary cascade effects
+        applySecondaryCascadeEffects(game: game, newOption: newOption, previousOption: previousOption)
+    }
+
+    // MARK: - Secondary Cascade Effects
+
+    /// Apply cascading effects where one policy change affects related systems
+    private func applySecondaryCascadeEffects(
+        game: Game,
+        newOption: PolicyOption,
+        previousOption: PolicyOption?
+    ) {
+        let optionId = newOption.optionId
+
+        // 1. Economic policy cascades
+        applyEconomicPolicyCascades(game: game, optionId: optionId)
+
+        // 2. Political policy cascades
+        applyPoliticalPolicyCascades(game: game, optionId: optionId)
+
+        // 3. Military policy cascades
+        applyMilitaryPolicyCascades(game: game, optionId: optionId)
+
+        // 4. Cross-system cascades (policy interactions)
+        applyCrossSystemCascades(game: game, optionId: optionId)
+
+        // 5. Foreign relations cascades
+        applyForeignRelationsCascades(game: game, optionId: optionId)
+    }
+
+    /// Economic policy changes cascade to sectors and regional economies
+    private func applyEconomicPolicyCascades(game: Game, optionId: String) {
+        switch optionId {
+        // Central planning affects multiple sectors
+        case "central_quotas":
+            game.applySectorChange(.heavyIndustry, productionChange: 2, efficiencyChange: -2)
+            game.applySectorChange(.lightIndustry, productionChange: -2, efficiencyChange: -3)
+            game.applyInflationChange(-2)  // Price stability from controls
+
+        case "manager_autonomy":
+            game.applySectorChange(.lightIndustry, efficiencyChange: 3)
+            game.applySectorChange(.heavyIndustry, efficiencyChange: 1)
+            game.applyStat("popularSupport", change: 2)  // Consumer goods improve
+
+        // Private enterprise affects services and agriculture
+        case "private_prohibited":
+            game.applyStat("foodSupply", change: -5)
+            game.applySectorChange(.agriculture, productionChange: -5, moraleChange: -5)
+
+        case "small_plots":
+            game.applyStat("foodSupply", change: 5)
+            game.applySectorChange(.agriculture, productionChange: 5, moraleChange: 5)
+
+        case "licensed_businesses":
+            game.applyStat("treasury", change: 3)  // Tax revenue from private sector
+            game.applySectorChange(.lightIndustry, productionChange: 5)
+            game.applyInflationChange(2)  // More market activity
+
+        // Trade policy affects foreign relations and sectors
+        case "state_monopoly":
+            game.applyStat("internationalStanding", change: -3)
+            game.applySectorChange(.transport, productionChange: -3)
+
+        case "joint_ventures":
+            game.applyStat("internationalStanding", change: 5)
+            game.applySectorChange(.transport, productionChange: 3)
+            game.applySectorChange(.heavyIndustry, efficiencyChange: 3)  // Tech transfer
+
+        // Price controls cascade
+        case "full_control":
+            game.applyInflationChange(-5)
+            game.applySectorChange(.lightIndustry, productionChange: -5)  // Shortages
+            game.applyStat("popularSupport", change: -3)  // Queues and frustration
+
+        case "market_signals":
+            game.applyInflationChange(5)
+            game.applySectorChange(.lightIndustry, productionChange: 5)
+            game.applyStat("eliteLoyalty", change: -5)  // Ideological concern
+
+        default:
+            break
+        }
+    }
+
+    /// Political policy changes cascade to stability and factions
+    private func applyPoliticalPolicyCascades(game: Game, optionId: String) {
+        switch optionId {
+        // Leadership succession affects elite dynamics
+        case "gs_appointment":
+            game.applyStat("eliteLoyalty", change: 3)  // Elite power preserved
+            for faction in game.factions {
+                if faction.factionId == "old_guard" {
+                    faction.influence = min(100, faction.influence + 5)
+                }
+            }
+
+        case "free_elections":
+            game.applyStat("eliteLoyalty", change: -10)  // Elite power threatened
+            game.applyStat("popularSupport", change: 10)  // Democratic opening
+            game.applyStat("stability", change: -5)  // Uncertainty
+
+        // Security policies cascade
+        case "expanded_surveillance":
+            game.applyStat("stability", change: 5)
+            game.applyStat("popularSupport", change: -5)
+            game.applySectorChange(.defense, investmentChange: 5)
+
+        case "rule_of_law":
+            game.applyStat("internationalStanding", change: 10)
+            game.applyStat("stability", change: -3)  // Less control
+            game.applyStat("popularSupport", change: 8)
+
+        // Press freedom cascades
+        case "state_media_only":
+            game.applyStat("stability", change: 3)
+            game.applyStat("internationalStanding", change: -5)
+
+        case "limited_criticism":
+            game.applyStat("stability", change: -5)  // Some dissent tolerated
+            game.applyStat("popularSupport", change: 5)  // More trusted
+
+        default:
+            break
+        }
+    }
+
+    /// Military policy changes cascade to security and defense sectors
+    private func applyMilitaryPolicyCascades(game: Game, optionId: String) {
+        switch optionId {
+        case "political_officers":
+            game.applySectorChange(.defense, efficiencyChange: -3, moraleChange: -5)
+            game.applyStat("militaryLoyalty", change: 5)
+
+        case "professional_army":
+            game.applySectorChange(.defense, efficiencyChange: 5, moraleChange: 5)
+            game.applyStat("militaryLoyalty", change: -3)  // Less political control
+
+        case "mass_mobilization":
+            game.applyStat("treasury", change: -10)
+            game.applySectorChange(.defense, productionChange: 10)
+            game.applyStat("popularSupport", change: -5)  // Conscription burden
+
+        case "nuclear_priority":
+            game.applyStat("treasury", change: -15)
+            game.applyStat("internationalStanding", change: 5)  // Deterrence
+            game.applySectorChange(.energy, investmentChange: 10)
+
+        default:
+            break
+        }
+    }
+
+    /// Cross-system cascades where multiple policy areas interact
+    private func applyCrossSystemCascades(game: Game, optionId: String) {
+        // Check for policy synergies and conflicts
+        let hasMarketReforms = game.policySlot(withId: "private_enterprise")?.currentOptionId == "licensed_businesses"
+        let hasPriceControls = game.policySlot(withId: "price_controls")?.currentOptionId == "full_control"
+        let hasOpenTrade = game.policySlot(withId: "foreign_trade")?.currentOptionId == "joint_ventures"
+
+        // Policy conflict: Market reforms + Price controls = Chaos
+        if hasMarketReforms && hasPriceControls {
+            game.applyStat("stability", change: -3)
+            game.applyInflationChange(3)  // Black market premium
+            if !game.flags.contains("policy_contradiction_economic") {
+                game.flags.append("policy_contradiction_economic")
+            }
+        }
+
+        // Policy synergy: Market reforms + Open trade = Growth
+        if hasMarketReforms && hasOpenTrade {
+            game.applyStat("gdpIndex", change: 2)
+            game.applyStat("treasury", change: 2)
+            if !game.flags.contains("market_reform_synergy") {
+                game.flags.append("market_reform_synergy")
+            }
+        }
+
+        // Check for security vs. openness tradeoffs
+        let hasExpandedSurveillance = game.policySlot(withId: "internal_security")?.currentOptionId == "expanded_surveillance"
+        let hasFreePress = game.policySlot(withId: "press_freedom")?.currentOptionId == "independent_press"
+
+        if hasExpandedSurveillance && hasFreePress {
+            game.applyStat("stability", change: -5)  // Contradiction
+            game.applyStat("internationalStanding", change: -3)  // Hypocrisy visible
+        }
+    }
+
+    /// Foreign relations policy cascades affect diplomatic ties
+    private func applyForeignRelationsCascades(game: Game, optionId: String) {
+        switch optionId {
+        case "socialist_solidarity":
+            // Improve relations with socialist countries
+            for country in game.foreignCountries where country.politicalBloc == .socialist {
+                country.modifyRelationship(by: 5)
+            }
+            // Worsen with capitalists
+            for country in game.foreignCountries where country.politicalBloc == .capitalist {
+                country.modifyRelationship(by: -3)
+            }
+
+        case "peaceful_coexistence":
+            // Moderate improvement with everyone
+            for country in game.foreignCountries {
+                country.modifyRelationship(by: 2)
+            }
+            game.applyStat("internationalStanding", change: 5)
+
+        case "world_revolution":
+            // Socialist countries pleased, capitalists hostile
+            for country in game.foreignCountries where country.politicalBloc == .socialist {
+                country.modifyRelationship(by: 10)
+            }
+            for country in game.foreignCountries where country.politicalBloc == .capitalist {
+                country.modifyRelationship(by: -15)
+            }
+            game.applyStat("stability", change: 3)  // Ideological fervor
+
+        case "nationalist_focus":
+            // Mixed effects - USSR concerned, others neutral
+            if let sovietUnion = game.foreignCountries.first(where: { $0.countryId == "soviet_union" }) {
+                sovietUnion.modifyRelationship(by: -10)
+            }
+            game.applyStat("popularSupport", change: 5)  // Patriotic appeal
+
+        default:
+            break
+        }
     }
 
     // MARK: - Consequence Generation

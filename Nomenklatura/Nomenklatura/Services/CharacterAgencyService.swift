@@ -22,16 +22,26 @@ class CharacterAgencyService {
     /// Determine if any character should act this turn
     /// Returns a DynamicEvent if a character decides to act
     func evaluateCharacterActions(game: Game) -> DynamicEvent? {
+        // Helper to filter events by player position
+        func filterByPosition(_ event: DynamicEvent?) -> DynamicEvent? {
+            guard let event = event else { return nil }
+            guard event.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex) else {
+                npcLogger.debug("Event type \(event.eventType.rawValue) not appropriate for position \(game.currentPositionIndex), skipping")
+                return nil
+            }
+            return event
+        }
+
         // Check patron first (most important relationship)
         if let patron = game.patron {
-            if let action = evaluatePatronAction(patron, game: game) {
+            if let action = filterByPosition(evaluatePatronAction(patron, game: game)) {
                 return action
             }
         }
 
         // Check rival next
         if let rival = game.primaryRival {
-            if let action = evaluateRivalAction(rival, game: game) {
+            if let action = filterByPosition(evaluateRivalAction(rival, game: game)) {
                 return action
             }
         }
@@ -41,7 +51,7 @@ class CharacterAgencyService {
             char.isActive && !char.isPatron && !char.isRival && char.disposition >= 60
         }
         for ally in allies {
-            if let action = evaluateAllyAction(ally, game: game) {
+            if let action = filterByPosition(evaluateAllyAction(ally, game: game)) {
                 return action
             }
         }
@@ -51,7 +61,7 @@ class CharacterAgencyService {
             char.isActive && char.role == CharacterRole.contact.rawValue
         }
         for contact in contacts {
-            if let action = evaluateContactAction(contact, game: game) {
+            if let action = filterByPosition(evaluateContactAction(contact, game: game)) {
                 return action
             }
         }
@@ -66,7 +76,7 @@ class CharacterAgencyService {
             char.currentRole != .informant
         }
         for character in discoveredCharacters {
-            if let action = evaluateDiscoveredCharacterAction(character, game: game) {
+            if let action = filterByPosition(evaluateDiscoveredCharacterAction(character, game: game)) {
                 return action
             }
         }

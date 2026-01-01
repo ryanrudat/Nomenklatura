@@ -1395,12 +1395,8 @@ final class NewspaperGenerator {
     // MARK: - Helpers
 
     private func formatDate(for turnNumber: Int) -> String {
-        // Use Revolutionary Calendar - each turn = 2 weeks, date is consistent
-        let (year, month, day) = RevolutionaryCalendar.dateComponents(from: turnNumber)
-
-        // Newspaper format: "15 January, Year 43"
-        let monthName = RevolutionaryCalendar.poeticMonthNames[month - 1]
-        return "\(day) \(monthName), \(RevolutionaryCalendar.format(year))"
+        // Use Revolutionary Calendar with revolutionary month names
+        RevolutionaryCalendar.formatTurnFull(turnNumber)
     }
 
     private func weightedRandomSelection<T>(from items: [(T, Int)]) -> T {

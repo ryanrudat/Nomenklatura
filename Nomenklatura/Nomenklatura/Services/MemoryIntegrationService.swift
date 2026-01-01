@@ -342,12 +342,18 @@ final class MemoryIntegrationService {
         for character in game.characters where character.isActive && !character.isPatron && !character.isRival {
             // Check for strong grudge memories that might trigger action
             if let grudgeEvent = checkGrudgeAction(character: character, game: game) {
-                events.append(grudgeEvent)
+                // Filter by player position - ensure event is appropriate for their rank
+                if grudgeEvent.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex) {
+                    events.append(grudgeEvent)
+                }
             }
 
             // Check for gratitude memories that might trigger help
             if let gratitudeEvent = checkGratitudeAction(character: character, game: game) {
-                events.append(gratitudeEvent)
+                // Filter by player position - ensure event is appropriate for their rank
+                if gratitudeEvent.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex) {
+                    events.append(gratitudeEvent)
+                }
             }
 
             // Limit to 1 memory-driven event per turn

@@ -291,6 +291,78 @@ enum NPCGoalType: String, Codable, CaseIterable {
             return false
         }
     }
+
+    /// Minimum player position index required to receive events from this goal type
+    /// Ensures high-level diplomatic/military decisions don't reach junior officials
+    var minimumPositionIndex: Int {
+        switch self {
+        // Diplomatic goals require senior positions (Level 4+)
+        case .improveAllyRelations, .containCapitalistThreat, .defuseInternationalCrisis,
+             .advanceIdeologicalGoals, .proposeForeignPolicy, .negotiateTreaty:
+            return 4
+
+        // Trade/economic diplomacy slightly lower (Level 3+)
+        case .expandTradeNetwork:
+            return 3
+
+        // Military-political goals require senior positions (Level 4+)
+        case .ensurePartyCommand, .preventMilitaryCoup, .advanceMilitaryReform,
+             .purgeDisloyal:
+            return 4
+
+        // Other military goals (Level 3+)
+        case .conductPoliticalWork, .evaluateOfficerLoyalty, .enforcePartyDiscipline,
+             .buildCommissarNetwork:
+            return 3
+
+        // High-level security operations (Level 4+)
+        case .conductPurge, .protectRegime, .huntForeignSpies:
+            return 4
+
+        // Standard security work (Level 3+)
+        case .investigateCorruption, .expandSurveillance, .buildDossiers,
+             .eliminateRivals:
+            return 3
+
+        // Party apparatus high-level (Level 4+)
+        case .controlNomenklatura, .purgeDeviationists:
+            return 4
+
+        // Party apparatus mid-level (Level 3+)
+        case .enforcePropagandaLine, .conductUnitedFrontWork, .runPartySchool,
+             .maintainPartyDiscipline, .expandPartyInfluence, .buildCadreNetwork:
+            return 3
+
+        // State ministry coordination (Level 3+)
+        case .coordinateAcrossMinistries, .advanceMajorProject, .modernizeAdministration:
+            return 3
+
+        // Economic planning (Level 2+)
+        case .meetProductionQuotas, .exceedException, .expandIndustrialOutput,
+             .modernizeSector, .acquireResources, .protectBudgetAllocation,
+             .buildEconomicNetwork, .advanceEconomicReform:
+            return 2
+
+        // State ministry basic work (Level 2+)
+        case .achieveAdministrativeExcellence, .secureBudgetAllocation,
+             .implementStatePolicy, .auditSubordinateUnits, .buildBureaucraticNetwork:
+            return 2
+
+        // Espionage (affects anyone)
+        case .spyForForeignPower, .recruitAssets, .sabotageFromWithin, .avoidDetection:
+            return 1
+
+        // Personal ambition and relationships (Level 1+)
+        case .seekPromotion, .becomeTrackHead, .joinPolitburo, .protectPosition,
+             .destroyRival, .elevateAlly, .avengeBetrayal, .repayDebt,
+             .buildFaction, .accumulateWealth, .expandInfluence,
+             .implementReform, .maintainOrthodoxy, .purgeEnemies,
+             .serveTheParty, .defendPartyOrthodoxy, .rootOutTraitors, .strengthenTheState,
+             .avoidPurge, .clearName, .escapeDetention, .findProtector,
+             .protectPatron:
+            return 1
+        }
+    }
 }
 
 // MARK: - NPC Goal
