@@ -345,7 +345,7 @@ struct ScreenLabels: Codable {
     static var soviet: ScreenLabels {
         ScreenLabels(
             deskTitle: "The Desk",
-            deskSubtitle: "The Presidium",
+            deskSubtitle: "The Apparatus",
             ladderTitle: "The Ladder",
             dossierTitle: "The Dossier",
             ledgerTitle: "The Ledger",
@@ -434,7 +434,7 @@ class CampaignLoader {
             id: "coldwar",
             name: "Nomenklatura",
             era: "Cold War Era",
-            description: "Navigate the treacherous politics of the Presidium. Survive purges, outmaneuver rivals, position yourself for succession.",
+            description: "You are a cog in the Party machine. Survive purges, outmaneuver rivals, and climb the ranks of the nomenklatura toward ultimate power.",
             nationName: "The People's Socialist Republic",
             leaderTitle: "General Secretary",
             currencyName: "rubles",

@@ -16,10 +16,10 @@ struct CampaignSelectView: View {
     private let campaigns: [(id: String, name: String, era: String, description: String, startRole: String, available: Bool)] = [
         (
             id: "coldwar",
-            name: "The Presidium",
+            name: "The Apparatus",
             era: "",
-            description: "Navigate the treacherous politics of the Presidium. Survive purges, outmaneuver rivals, position yourself for succession.",
-            startRole: "Junior Presidium Member",
+            description: "You are a cog in the Party machine. Survive purges, outmaneuver rivals, and climb the ranks of the nomenklatura toward ultimate power.",
+            startRole: "Junior Party Official",
             available: true
         )
     ]
