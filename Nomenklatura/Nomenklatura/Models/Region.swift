@@ -2,7 +2,7 @@
 //  Region.swift
 //  Nomenklatura
 //
-//  Domestic zones of the United States of the People's Socialist Republic with secession mechanics
+//  Domestic zones of the People's Socialist Republic with secession mechanics
 //
 
 import Foundation
@@ -365,22 +365,21 @@ extension Region {
     static func createDefaultRegions() -> [Region] {
         var regions: [Region] = []
 
-        // ZONE 7: CAPITAL DISTRICT (Washington D.C.)
+        // ZONE 1: CAPITAL DISTRICT (The Capital)
         let capitalDistrict = Region(
-            regionId: "capital_district",
-            name: "Zone 7: Capital District",
+            regionId: "zone_1",
+            name: "Zone 1: Capital District",
             description: """
-            The beating heart of the United States of the People's Socialist Republic. Where \
-            once the Capitol dome stood as a symbol of bourgeois democracy, now the People's \
-            Congress meets in the renamed Hall of the Revolution. The White House serves as \
-            the General Secretary's residence, its rooms echoing with decisions that shape \
-            a continent.
+            The beating heart of the People's Socialist Republic. The capital city rises \
+            from the central plains—a modernist monument to revolutionary power. \
+            The Hall of the People dominates the skyline, its red star visible for miles. \
+            The General Secretary's residence, government ministries, and Party headquarters \
+            cluster in the Government Quarter.
 
-            Washington was transformed after the Second Revolution. The old monuments remain \
-            but serve new purposes—the Lincoln Memorial hosts Party rallies, the Mall fills \
-            with workers' parades on Revolution Day. New construction surrounds the old: \
-            massive housing blocks for government workers, Party headquarters with modernist \
-            angles, the imposing Bureau of People's Security watching from every corner.
+            The capital was transformed after the Revolution. The old colonial mansions \
+            now house workers' cultural centers. Massive housing blocks for government workers \
+            surround the central district. The Bureau of People's Security maintains its \
+            headquarters here, watching from every corner.
 
             Here the watchers are also watched. Every phone may be tapped, every conversation \
             noted. The privileged few shop in special Party stores while the masses wait in \
@@ -391,8 +390,8 @@ extension Region {
         )
         capitalDistrict.population = 4
         capitalDistrict.areaSize = 1
-        capitalDistrict.climate = "Humid subtropical with hot summers and mild winters"
-        capitalDistrict.terrain = "Potomac River valley, heavily urbanized"
+        capitalDistrict.climate = "Temperate continental with warm summers and cold winters"
+        capitalDistrict.terrain = "River valley, heavily urbanized"
         capitalDistrict.industrialCapacity = 40
         capitalDistrict.agriculturalOutput = 5
         capitalDistrict.naturalResources = 10
@@ -402,285 +401,270 @@ extension Region {
         capitalDistrict.popularLoyalty = 70
         capitalDistrict.militaryPresence = 80
         capitalDistrict.autonomyDesire = 5
-        capitalDistrict.yearsInUnion = 20
+        capitalDistrict.yearsInUnion = 43
         capitalDistrict.hasDistinctCulture = false
         capitalDistrict.hasDistinctLanguage = false
         regions.append(capitalDistrict)
 
-        // ZONE 1: NORTHEAST INDUSTRIAL ZONE
-        let northeast = Region(
-            regionId: "northeast",
-            name: "Zone 1: Northeast Industrial Zone",
+        // ZONE 2: INDUSTRIAL ZONE (Fitzgerald City)
+        let industrialZone = Region(
+            regionId: "zone_2",
+            name: "Zone 2: Industrial Zone",
             description: """
-            The cradle of the Second American Revolution. From Boston to Philadelphia, from \
-            the textile mills of New England to the shipyards of New York Harbor, this is \
-            where the workers first marched, where the unions first organized, where Hoover's \
-            troops first fired on American citizens—and where the Revolution fired back.
+            The furnace of the Revolution. Fitzgerald City and the surrounding industrial belt \
+            produce the steel, machinery, and weapons that power the socialist economy. \
+            Smokestacks paint the sky gray; the hammers never stop ringing.
 
-            The great cities here still bear the scars of the civil war. Bullet holes pock \
-            the facades of Wall Street, now home to the Central Planning Commission. The \
-            factories that once made capitalists rich now fulfill the People's quotas. Union \
-            halls that organized secret strikes are now official Party meeting places, their \
-            histories carefully curated.
+            This is where the workers first organized, where the unions first struck, where \
+            the revolutionary militias were armed. The great factories here still bear the \
+            scars of the civil war that brought the Party to power. The workers here are \
+            proud, organized, and know their worth.
 
-            The people here remember everything. They remember the Triangle Shirtwaist fire, \
-            the Bread and Roses strike, the March on Washington. They remember which side \
-            they chose and what it cost. The Party's hold is strong here, but it rests on \
-            genuine revolutionary history—and the workers remember that history includes \
-            holding leaders accountable.
+            The people here remember everything. They remember the old exploitation, the \
+            strikes, the uprising. They remember which side they chose and what it cost. \
+            The Party's hold is strong here, but it rests on genuine revolutionary history— \
+            and the workers remember that history includes holding leaders accountable.
             """,
             type: .industrial
         )
-        northeast.population = 45
-        northeast.areaSize = 6
-        northeast.climate = "Humid continental with cold winters and warm summers"
-        northeast.terrain = "Coastal cities, river valleys, rolling hills"
-        northeast.industrialCapacity = 90
-        northeast.agriculturalOutput = 25
-        northeast.naturalResources = 40
-        northeast.infrastructureQuality = 80
-        northeast.economicContribution = 28
-        northeast.partyControl = 80
-        northeast.popularLoyalty = 65
-        northeast.militaryPresence = 45
-        northeast.autonomyDesire = 15
-        northeast.yearsInUnion = 20
-        northeast.hasDistinctCulture = false
-        northeast.hasDistinctLanguage = false
-        northeast.historicalGrievances = ["Factory closures during reorganization", "Purge of Trotskyist elements after the Purges"]
-        regions.append(northeast)
+        industrialZone.population = 45
+        industrialZone.areaSize = 6
+        industrialZone.climate = "Continental with cold winters and mild summers"
+        industrialZone.terrain = "River valleys, industrial cities, coalfields"
+        industrialZone.industrialCapacity = 95
+        industrialZone.agriculturalOutput = 25
+        industrialZone.naturalResources = 70
+        industrialZone.infrastructureQuality = 80
+        industrialZone.economicContribution = 32
+        industrialZone.partyControl = 80
+        industrialZone.popularLoyalty = 65
+        industrialZone.militaryPresence = 45
+        industrialZone.autonomyDesire = 15
+        industrialZone.yearsInUnion = 43
+        industrialZone.hasDistinctCulture = false
+        industrialZone.hasDistinctLanguage = false
+        industrialZone.historicalGrievances = ["Factory closures during reorganization", "Purge of union dissidents"]
+        regions.append(industrialZone)
 
-        // ZONE 2: GREAT LAKES INDUSTRIAL ZONE
-        let greatLakes = Region(
-            regionId: "great_lakes",
-            name: "Zone 2: Great Lakes Zone",
+        // ZONE 3: AGRICULTURAL ZONE (The People's Proletarian Town)
+        let agriculturalZone = Region(
+            regionId: "zone_3",
+            name: "Zone 3: Agricultural Zone",
             description: """
-            The Arsenal of the Revolution. Detroit, Cleveland, Chicago, Milwaukee—these \
-            cities forged the weapons that won the civil war and now build the machines \
-            that power the socialist economy. The auto plants of Detroit were converted \
-            to tank production in '38; they never fully converted back.
+            The breadbasket of the Republic. From the wheat fields of the northern plains to \
+            the collective farms around The People's Proletarian Town, Zone 3 feeds the nation. What were once \
+            independent farms are now collective agricultural combines stretching to every horizon.
 
-            The United Auto Workers were the shock troops of the Revolution here. When \
-            the call came, assembly line workers became soldiers, foremen became officers, \
-            and the factories became fortresses. The Battle of Chicago decided the war's \
-            outcome—three weeks of street fighting that left the city scarred but firmly \
-            in revolutionary hands.
+            The plains came to the Revolution reluctantly. Farmers here valued independence \
+            above all—they mistrusted landowners but also mistrusted government. The promise \
+            of land redistribution eventually won most over, but collectivization remained \
+            bitter medicine. Many old farmers still mutter about the way things were.
 
-            Today the steel mills of Gary paint the sky orange, the foundries of Cleveland \
-            never stop pouring, and the assembly lines of Detroit roll out tractors for \
-            collective farms. The workers here are proud, organized, and know their worth. \
-            They also know that the Party needs them more than they need the Party—a fact \
-            that makes Zone leadership perpetually nervous.
-            """,
-            type: .industrial
-        )
-        greatLakes.population = 35
-        greatLakes.areaSize = 7
-        greatLakes.climate = "Humid continental with cold winters, lake-effect snow"
-        greatLakes.terrain = "Lakeshores, industrial cities, farmland"
-        greatLakes.industrialCapacity = 95
-        greatLakes.agriculturalOutput = 35
-        greatLakes.naturalResources = 70
-        greatLakes.infrastructureQuality = 75
-        greatLakes.economicContribution = 25
-        greatLakes.partyControl = 75
-        greatLakes.popularLoyalty = 60
-        greatLakes.militaryPresence = 40
-        greatLakes.autonomyDesire = 20
-        greatLakes.yearsInUnion = 20
-        greatLakes.hasDistinctCulture = false
-        greatLakes.hasDistinctLanguage = false
-        greatLakes.historicalGrievances = ["Battle of Chicago casualties", "post-war quota strikes suppressed"]
-        regions.append(greatLakes)
-
-        // ZONE 3: PACIFIC ZONE
-        let pacific = Region(
-            regionId: "pacific",
-            name: "Zone 3: Pacific Zone",
-            description: """
-            America's window to Asia and gateway to the Pacific. The ports of Seattle, \
-            Portland, San Francisco, and Los Angeles handle the Republic's trade with \
-            Asian allies and neutral nations. The shipyards here build the vessels that \
-            project socialist power across the ocean.
-
-            California came late to the Revolution—Hollywood moguls and agricultural \
-            barons resisted until the bitter end. The siege of Los Angeles lasted two \
-            months; San Francisco's waterfront workers rose from within. Now the studios \
-            produce socialist realism, the orange groves are collective farms, and the \
-            tech workshops of the Bay Area serve the Planning Commission's needs.
-
-            The Pacific Zone has always attracted dreamers and misfits, and that hasn't \
-            changed. Artists, writers, and dissidents cluster here, testing the boundaries \
-            of acceptable expression. The Party watches but sometimes looks away—creativity \
-            serves the Revolution too, even when it makes the censors uncomfortable.
-            """,
-            type: .coastal
-        )
-        pacific.population = 30
-        pacific.areaSize = 8
-        pacific.climate = "Mediterranean to marine, mild year-round"
-        pacific.terrain = "Coastal mountains, valleys, port cities"
-        pacific.industrialCapacity = 70
-        pacific.agriculturalOutput = 65
-        pacific.naturalResources = 50
-        pacific.infrastructureQuality = 75
-        pacific.economicContribution = 18
-        pacific.partyControl = 65
-        pacific.popularLoyalty = 55
-        pacific.militaryPresence = 55
-        pacific.autonomyDesire = 30
-        pacific.yearsInUnion = 20
-        pacific.hasDistinctCulture = true
-        pacific.hasDistinctLanguage = false
-        pacific.historicalGrievances = [
-            "Siege of Los Angeles",
-            "Internment of 'reactionary elements'",
-            "Suppression of Japanese-American communities",
-            "Hollywood purges"
-        ]
-        regions.append(pacific)
-
-        // ZONE 4: SOUTHERN ZONE
-        let southern = Region(
-            regionId: "southern",
-            name: "Zone 4: Southern Zone",
-            description: """
-            The most complicated zone in the Republic. The old Confederacy—already defeated \
-            once in American history—found itself on the wrong side again. Southern governors \
-            who called out the National Guard against workers' marches discovered that many \
-            of those guardsmen were workers too.
-
-            The Revolution here was as much about race as class. Black sharecroppers and \
-            white factory workers found common cause against the planter aristocracy. The \
-            old order fell, but its ghosts remain. Jim Crow is officially dead, but suspicion \
-            and resentment linger in both directions. The Party struggles to build a truly \
-            interracial socialism while managing generations of mistrust.
-
-            The South's economy has been transformed—collective farms replace plantations, \
-            new industries rise in the Sunbelt, and the old wealth has been redistributed \
-            (or fled to exile). But culture changes slower than economics. The accents, \
-            the food, the music, the religion—all persist despite official pressure. The \
-            South bends but does not break.
-            """,
-            type: .autonomous
-        )
-        southern.population = 40
-        southern.areaSize = 9
-        southern.climate = "Humid subtropical, hot summers, mild winters"
-        southern.terrain = "Coastal plains, piedmont, river deltas"
-        southern.industrialCapacity = 50
-        southern.agriculturalOutput = 80
-        southern.naturalResources = 55
-        southern.infrastructureQuality = 55
-        southern.economicContribution = 12
-        southern.partyControl = 60
-        southern.popularLoyalty = 45
-        southern.militaryPresence = 50
-        southern.autonomyDesire = 55
-        southern.yearsInUnion = 20
-        southern.hasDistinctCulture = true
-        southern.hasDistinctLanguage = false
-        southern.historicalGrievances = [
-            "Civil war destruction",
-            "Forced collectivization of farms",
-            "Suppression of religious institutions",
-            "Execution of 'counter-revolutionary' landowners"
-        ]
-        regions.append(southern)
-
-        // ZONE 5: PLAINS AGRICULTURAL ZONE
-        let plains = Region(
-            regionId: "plains",
-            name: "Zone 5: Plains Zone",
-            description: """
-            The breadbasket of the Republic. From the wheat fields of the Dakotas to the \
-            corn belt of Kansas and Nebraska, the Plains Zone feeds the nation. What were \
-            once family farms and corporate agribusiness operations are now collective \
-            farms and state agricultural combines stretching to every horizon.
-
-            The Plains came to the Revolution reluctantly. Farmers here valued independence \
-            above all—they mistrusted corporations but also mistrusted government. The \
-            promise of debt relief and land redistribution eventually won most over, but \
-            collectivization remained bitter medicine. Many old farmers still mutter about \
-            the way things were.
-
-            Distance defines life here. Towns are sparse, neighbors are far, and Washington \
+            Distance defines life here. Towns are sparse, neighbors are far, and the capital \
             feels like another planet. The Party presence is thin—there simply aren't enough \
             cadres to watch these endless fields. People mind their own business and expect \
             the state to do the same. When it doesn't, resentment grows like wheat in summer.
             """,
             type: .agricultural
         )
-        plains.population = 15
-        plains.areaSize = 10
-        plains.climate = "Continental, extreme temperature swings, tornadoes"
-        plains.terrain = "Vast prairies, river valleys, few cities"
-        plains.industrialCapacity = 25
-        plains.agriculturalOutput = 95
-        plains.naturalResources = 40
-        plains.infrastructureQuality = 50
-        plains.economicContribution = 10
-        plains.partyControl = 55
-        plains.popularLoyalty = 50
-        plains.militaryPresence = 25
-        plains.autonomyDesire = 45
-        plains.yearsInUnion = 20
-        plains.hasDistinctCulture = true
-        plains.hasDistinctLanguage = false
-        plains.historicalGrievances = [
+        agriculturalZone.population = 25
+        agriculturalZone.areaSize = 10
+        agriculturalZone.climate = "Continental, extreme temperature swings"
+        agriculturalZone.terrain = "Vast plains, river valleys, few cities"
+        agriculturalZone.industrialCapacity = 25
+        agriculturalZone.agriculturalOutput = 95
+        agriculturalZone.naturalResources = 40
+        agriculturalZone.infrastructureQuality = 50
+        agriculturalZone.economicContribution = 15
+        agriculturalZone.partyControl = 55
+        agriculturalZone.popularLoyalty = 50
+        agriculturalZone.militaryPresence = 25
+        agriculturalZone.autonomyDesire = 45
+        agriculturalZone.yearsInUnion = 43
+        agriculturalZone.hasDistinctCulture = true
+        agriculturalZone.hasDistinctLanguage = false
+        agriculturalZone.historicalGrievances = [
             "Forced collectivization",
             "Destruction of family farms",
-            "during the Purges grain requisitions",
+            "Grain requisitions during the crisis years",
             "Suppression of farm cooperatives"
         ]
-        regions.append(plains)
+        regions.append(agriculturalZone)
 
-        // ZONE 6: MOUNTAIN ZONE
-        let mountain = Region(
-            regionId: "mountain",
-            name: "Zone 6: Mountain Zone",
+        // ZONE 4: NORTHERN ZONE (Upton on Tye)
+        let northernZone = Region(
+            regionId: "zone_4",
+            name: "Zone 4: Northern Zone",
             description: """
-            The Republic's frontier. From the Rockies to the Sierra Nevada, from the copper \
-            mines of Montana to the uranium deposits of New Mexico, the Mountain Zone \
-            supplies the raw materials that keep the socialist economy running. It also \
-            provides a convenient place to send those who need to disappear.
+            The frozen frontier. Upton on Tye and the northern territories supply timber, minerals, \
+            and serve as the Republic's strategic buffer. The climate is harsh; the population \
+            sparse; the land unforgiving.
 
-            The Zone is vast and sparsely populated. Miners work the earth for coal, copper, \
-            gold, and uranium. Ranchers run collective cattle operations on ranges too dry \
-            for farming. Military bases dot the desert, testing weapons that will never be \
-            officially acknowledged. Prison labor camps—"rehabilitation centers"—occupy the \
-            most remote valleys.
+            The north was settled by pioneers, political exiles, and those seeking to escape \
+            the reach of any government. The Revolution brought little change to daily life— \
+            the struggle against nature overshadows political concerns. Mining towns dot the \
+            taiga; labor camps occupy the most remote valleys.
 
             The people here are tough, independent, and suspicious. Many fled here to escape \
             the old order; others fled here to escape the new one. The Party's reach is \
             limited by geography—there aren't enough roads, enough radios, enough eyes to \
-            watch these mountains. What happens in the high country often stays there.
+            watch these forests. What happens in the north often stays there.
             """,
             type: .extractive
         )
-        mountain.population = 12
-        mountain.areaSize = 10
-        mountain.climate = "High altitude continental, cold winters, mild summers"
-        mountain.terrain = "Mountains, high desert, canyons"
-        mountain.industrialCapacity = 45
-        mountain.agriculturalOutput = 20
-        mountain.naturalResources = 90
-        mountain.infrastructureQuality = 40
-        mountain.economicContribution = 10
-        mountain.partyControl = 55
-        mountain.popularLoyalty = 45
-        mountain.militaryPresence = 60
-        mountain.autonomyDesire = 50
-        mountain.yearsInUnion = 20
-        mountain.hasDistinctCulture = true
-        mountain.hasDistinctLanguage = false
-        mountain.historicalGrievances = [
+        northernZone.population = 8
+        northernZone.areaSize = 10
+        northernZone.climate = "Subarctic with long, severe winters"
+        northernZone.terrain = "Taiga forests, mountains, tundra"
+        northernZone.industrialCapacity = 35
+        northernZone.agriculturalOutput = 10
+        northernZone.naturalResources = 85
+        northernZone.infrastructureQuality = 35
+        northernZone.economicContribution = 8
+        northernZone.partyControl = 50
+        northernZone.popularLoyalty = 45
+        northernZone.militaryPresence = 55
+        northernZone.autonomyDesire = 50
+        northernZone.yearsInUnion = 43
+        northernZone.hasDistinctCulture = true
+        northernZone.hasDistinctLanguage = false
+        northernZone.historicalGrievances = [
             "Labor camp system",
-            "Displacement of ranchers",
-            "Nuclear testing on native lands",
-            "Water rights seizures"
+            "Displacement of indigenous peoples",
+            "Resource extraction without local benefit"
         ]
-        regions.append(mountain)
+        regions.append(northernZone)
+
+        // ZONE 5: COASTAL ZONE (Red Harbor)
+        let coastalZone = Region(
+            regionId: "zone_5",
+            name: "Zone 5: Coastal Zone",
+            description: """
+            The Republic's window to the world. Red Harbor and the coastal cities handle \
+            foreign trade with socialist allies and neutral nations. The shipyards here build \
+            the vessels that project socialist power across the seas.
+
+            The coast came to the Revolution through its workers—longshoremen, sailors, and \
+            shipyard laborers who seized the ports from within. Now the docks bustle with \
+            trade: machinery from the Soviet Union, grain exports to friendly nations, and \
+            the constant movement of a planned economy.
+
+            The Coastal Zone has always attracted dreamers and misfits. Artists, writers, and \
+            dissidents cluster here, testing the boundaries of acceptable expression. The Party \
+            watches but sometimes looks away—the zone's economic importance buys it some latitude.
+            """,
+            type: .coastal
+        )
+        coastalZone.population = 20
+        coastalZone.areaSize = 5
+        coastalZone.climate = "Maritime, mild year-round with frequent fog"
+        coastalZone.terrain = "Coastal plains, port cities, fishing villages"
+        coastalZone.industrialCapacity = 70
+        coastalZone.agriculturalOutput = 40
+        coastalZone.naturalResources = 45
+        coastalZone.infrastructureQuality = 75
+        coastalZone.economicContribution = 18
+        coastalZone.partyControl = 65
+        coastalZone.popularLoyalty = 55
+        coastalZone.militaryPresence = 60
+        coastalZone.autonomyDesire = 30
+        coastalZone.yearsInUnion = 43
+        coastalZone.hasDistinctCulture = true
+        coastalZone.hasDistinctLanguage = false
+        coastalZone.historicalGrievances = [
+            "Post-revolution property seizures",
+            "Suppression of merchant families",
+            "Cultural purges"
+        ]
+        regions.append(coastalZone)
+
+        // ZONE 6: MOUNTAIN ZONE (Highland)
+        let mountainZone = Region(
+            regionId: "zone_6",
+            name: "Zone 6: Mountain Zone",
+            description: """
+            The Republic's spine and its secrets. The mountain ranges supply coal, copper, \
+            iron, and uranium—the raw materials that keep the socialist economy running. \
+            Remote valleys hide military installations and "rehabilitation centers" where \
+            enemies of the people disappear.
+
+            Highland and the mining towns are rough, isolated, self-reliant. Miners work \
+            dangerous shifts deep underground. Ranchers run collective livestock operations \
+            on slopes too steep for farming. The military maintains bases that test weapons \
+            never officially acknowledged.
+
+            The mountains create natural fortresses and natural prisons. Some here chose \
+            isolation; others had it imposed. The Party's authority ends where the roads end— \
+            and roads end quickly in the mountains.
+            """,
+            type: .extractive
+        )
+        mountainZone.population = 12
+        mountainZone.areaSize = 8
+        mountainZone.climate = "Highland continental, cold winters, mild summers"
+        mountainZone.terrain = "Mountains, high plateaus, deep valleys"
+        mountainZone.industrialCapacity = 50
+        mountainZone.agriculturalOutput = 20
+        mountainZone.naturalResources = 90
+        mountainZone.infrastructureQuality = 40
+        mountainZone.economicContribution = 10
+        mountainZone.partyControl = 55
+        mountainZone.popularLoyalty = 45
+        mountainZone.militaryPresence = 65
+        mountainZone.autonomyDesire = 50
+        mountainZone.yearsInUnion = 43
+        mountainZone.hasDistinctCulture = true
+        mountainZone.hasDistinctLanguage = true
+        mountainZone.historicalGrievances = [
+            "Labor camp system",
+            "Displacement of mountain communities",
+            "Suppression of traditional practices",
+            "Resource extraction without compensation"
+        ]
+        regions.append(mountainZone)
+
+        // ZONE 7: BORDER ZONE (The Frontier)
+        let borderZone = Region(
+            regionId: "zone_7",
+            name: "Zone 7: Border Zone",
+            description: """
+            The frontier where ideologies meet. The Frontier and the border territories face \
+            the outside world—neutral neighbors, potential enemies, and constant tension. \
+            Military installations line the frontier; border guards patrol day and night.
+
+            The border zone is a place of contradictions. Official trade flows through customs \
+            posts; unofficial trade flows through smugglers' paths. Ideological broadcasts blast \
+            across the border in both directions. Refugees try to leave; agents try to enter.
+
+            The people here live in a permanent state of alertness. Some are true believers, \
+            manning the ramparts of socialism. Others are opportunists, profiting from the \
+            border's peculiar economy. Many simply wish to live in peace—a wish the frontier \
+            rarely grants.
+            """,
+            type: .border
+        )
+        borderZone.population = 15
+        borderZone.areaSize = 7
+        borderZone.climate = "Varied, temperate to continental"
+        borderZone.terrain = "Plains, forests, strategic passes"
+        borderZone.industrialCapacity = 40
+        borderZone.agriculturalOutput = 50
+        borderZone.naturalResources = 35
+        borderZone.infrastructureQuality = 60
+        borderZone.economicContribution = 8
+        borderZone.partyControl = 70
+        borderZone.popularLoyalty = 55
+        borderZone.militaryPresence = 85
+        borderZone.autonomyDesire = 35
+        borderZone.yearsInUnion = 43
+        borderZone.hasDistinctCulture = true
+        borderZone.hasDistinctLanguage = false
+        borderZone.historicalGrievances = [
+            "Forced population relocations",
+            "Military occupation of farmland",
+            "Restrictions on border crossings"
+        ]
+        regions.append(borderZone)
 
         return regions
     }
@@ -744,28 +728,28 @@ class RegionLoreProvider {
     }
 
     private func loadLore() {
-        lore["capital_district"] = createCapitalLore()
-        lore["northeast"] = createNortheastLore()
-        lore["great_lakes"] = createGreatLakesLore()
-        lore["pacific"] = createPacificLore()
-        lore["southern"] = createSouthernLore()
-        lore["plains"] = createPlainsLore()
-        lore["mountain"] = createMountainLore()
+        lore["zone_1"] = createCapitalLore()
+        lore["zone_2"] = createIndustrialLore()
+        lore["zone_3"] = createAgriculturalLore()
+        lore["zone_4"] = createNorthernLore()
+        lore["zone_5"] = createCoastalLore()
+        lore["zone_6"] = createMountainLore()
+        lore["zone_7"] = createBorderLore()
     }
 
     // MARK: - Capital District Lore
 
     private func createCapitalLore() -> RegionLore {
         return RegionLore(
-            regionId: "capital_district",
+            regionId: "zone_1",
             revolutionaryHistory: [
                 ZoneHistoricalEvent(
-                    id: "fall_washington",
-                    name: "The Fall of Washington",
+                    id: "fall_capital",
+                    name: "The Fall of the Old Capital",
                     era: "at the Revolution's end",
-                    description: "Revolutionary forces entered the capital after Hoover fled aboard USS Yorktown to Cuba.",
-                    officialNarrative: "The workers of America claimed their rightful seat of power. President Hoover, representative of the bourgeois class, fled rather than face the justice of the people.",
-                    hiddenTruth: "The 'orderly transition' involved three days of looting and score-settling. Wallace's operatives secured government files before burning the rest. Several hundred federal employees who didn't flee in time were 'processed.'",
+                    description: "Revolutionary forces entered the capital after the old government fled.",
+                    officialNarrative: "The workers claimed their rightful seat of power. The old regime fled rather than face the justice of the people.",
+                    hiddenTruth: "The 'orderly transition' involved three days of score-settling. Sensitive files were secured before the rest were burned. Several hundred officials who didn't flee in time were 'processed.'",
                     casualties: 2000,
                     keyFigures: ["wallace", "fitzgerald"],
                     isDiscoverable: true
@@ -774,8 +758,8 @@ class RegionLoreProvider {
                     id: "peoples_congress",
                     name: "First People's Congress",
                     era: "at the Revolution's end",
-                    description: "The People's Congress convened in the former Capitol Building, now the Hall of Revolution.",
-                    officialNarrative: "A new dawn for American democracy. The representatives of workers, farmers, and soldiers gathered to build a new society.",
+                    description: "The People's Congress convened in the former Parliament Building, now the Hall of the People.",
+                    officialNarrative: "A new dawn for democracy. The representatives of workers, farmers, and soldiers gathered to build a new society.",
                     hiddenTruth: "The 'elections' were tightly controlled. Dissenting candidates were intimidated or arrested. The Congress rubber-stamped decisions already made by the Central Committee.",
                     casualties: nil,
                     keyFigures: ["fitzgerald", "mitchell"],
@@ -788,24 +772,24 @@ class RegionLoreProvider {
                     name: "Chairman Robert Fitzgerald",
                     role: "First General Secretary",
                     fate: "Died mysteriously years later",
-                    description: "Father of Socialist America. His portrait hangs in every government building. His death remains officially unexplained.",
+                    description: "Father of Socialist Republic. His portrait hangs in every government building. His death remains officially unexplained.",
                     isRemembered: true
                 )
             ],
             localVillains: [
                 LocalFigure(
-                    id: "hoover_capital",
-                    name: "President Herbert Hoover",
-                    role: "Last Capitalist President",
-                    fate: "Exiled to Cuba, died in exile",
-                    description: "Symbol of the old order's failure. His name is used to frighten children: 'Behave, or Hoover will come back.'",
+                    id: "old_president",
+                    name: "The Last President",
+                    role: "Last Leader of the Old Regime",
+                    fate: "Died in exile",
+                    description: "Symbol of the old order's failure. His name is used to frighten children.",
                     isRemembered: true
                 ),
                 LocalFigure(
                     id: "blackwood_capital",
                     name: "Director Samuel Blackwood",
                     role: "First BPS Director",
-                    fate: "Died in car accident after the Purges",
+                    fate: "Died in accident after the Purges",
                     description: "Built the security apparatus. His methods were 'excessive' even by Party standards. His death was 'fortunate timing.'",
                     isRemembered: false
                 )
@@ -814,197 +798,79 @@ class RegionLoreProvider {
                 ZoneSecret(
                     id: "blackwood_files",
                     title: "Blackwood's Hidden Archive",
-                    content: "Before his death, Blackwood hid copies of his most sensitive files. They contain evidence of fabricated confessions, including details of the Trial of the Thirty-Six. The files are somewhere in the capital—in a dead drop, a safety deposit box, or a trusted friend's keeping. If found, they would expose the Purges as manufactured terror.",
-                    discoveryMethod: "Investigation of Blackwood's former associates, tracking pre-after the Purges BPS procedures",
+                    content: "Before his death, Blackwood hid copies of his most sensitive files. They contain evidence of fabricated confessions. If found, they would expose the Purges as manufactured terror.",
+                    discoveryMethod: "Investigation of Blackwood's former associates, tracking pre-Purge BPS procedures",
                     consequences: "Could delegitimize the entire security apparatus. Wallace would do anything to prevent their discovery."
                 ),
                 ZoneSecret(
                     id: "fitzgerald_medical",
                     title: "Fitzgerald's Medical Records",
-                    content: "Chairman Fitzgerald's medical records from March years later were sealed by order of the new General Secretary. They would show that Fitzgerald was ill but recovering—not dying—when he 'had a heart attack' on March 14. The attending physician, Dr. Petrov, was transferred to the Mountain Zone shortly after and has not been heard from since.",
-                    discoveryMethod: "Access to sealed medical archives, locating Dr. Petrov",
+                    content: "Chairman Fitzgerald's medical records were sealed by order of the new General Secretary. They would show that Fitzgerald was ill but recovering—not dying—when he 'had a heart attack.' The attending physician was transferred to the Northern Zone shortly after.",
+                    discoveryMethod: "Access to sealed medical archives, locating the physician",
                     consequences: "Would prove Fitzgerald was murdered. Would implicate Mitchell and Wallace."
                 )
             ],
             culturalNotes: [
-                "Revolution Day parades on the Mall draw millions. Attendance is 'voluntary' but noted.",
-                "The Smithsonian now houses the Museum of Capitalist Crimes alongside traditional exhibits.",
-                "The old Georgetown mansions are Party housing for senior officials. Proximity to the center equals power.",
-                "The Potomac still floods occasionally. The Party claims to have 'tamed nature.' Nature disagrees."
+                "Revolution Day parades draw millions. Attendance is 'voluntary' but noted.",
+                "The National Museum now houses exhibits on the crimes of the old regime.",
+                "The old aristocratic quarter is now Party housing for senior officials. Proximity to the center equals power.",
+                "The river still floods occasionally. The Party claims to have 'tamed nature.' Nature disagrees."
             ],
             undergroundActivity: [
-                "Small circles of ex-academics meet privately to discuss 'forbidden' philosophy.",
-                "Some old families maintain hidden shrines to the pre-Revolutionary order.",
+                "Small circles of former intellectuals meet privately to discuss 'forbidden' philosophy.",
+                "Some old families maintain hidden memories of the pre-Revolutionary order.",
                 "Diplomatic staff from foreign embassies are constantly watched—and sometimes recruited.",
                 "The black market for Western goods runs through diplomatic channels."
             ]
         )
     }
 
-    // MARK: - Northeast Lore
+    // MARK: - Industrial Zone Lore
 
-    private func createNortheastLore() -> RegionLore {
+    private func createIndustrialLore() -> RegionLore {
         return RegionLore(
-            regionId: "northeast",
+            regionId: "zone_2",
             revolutionaryHistory: [
                 ZoneHistoricalEvent(
-                    id: "boston_strike",
-                    name: "The Boston General Strike",
+                    id: "stahlgrad_strike",
+                    name: "The Great Strike",
                     era: "during the Revolution",
-                    description: "Elizabeth 'Red Betty' Warren led 200,000 workers in a three-week general strike that shut down the city.",
-                    officialNarrative: "The workers of Boston showed the nation the path forward. United, the proletariat is unstoppable.",
-                    hiddenTruth: "Red Betty Warren was later purged as a 'Trotskyist.' Her name has been erased from official histories. The Boston General Strike is now attributed to 'the workers' with no individual credit.",
+                    description: "Workers across the industrial belt walked out in a coordinated general strike that paralyzed the old regime's economy.",
+                    officialNarrative: "The workers showed the path forward. United, the proletariat is unstoppable.",
+                    hiddenTruth: "The strike's leaders were later purged as 'deviationists.' Their names have been erased from official histories.",
                     casualties: 47,
                     keyFigures: ["sheridan"],
                     isDiscoverable: true
                 ),
                 ZoneHistoricalEvent(
-                    id: "march_washington",
-                    name: "The March on Washington",
+                    id: "battle_foundry_city",
+                    name: "The Battle of Fitzgerald City",
                     era: "during the Revolution",
-                    description: "200,000 workers marched from industrial cities to Washington. The National Guard fired on marchers. 'Bloody Sunday' started the war.",
-                    officialNarrative: "The capitalist state revealed its true nature when it murdered peaceful workers. The Revolution was born in their blood.",
-                    hiddenTruth: "Some marchers were armed. The first shots may have come from either side—no one is certain. Fitzgerald led the Philadelphia column; his courage under fire became legend.",
-                    casualties: 200,
-                    keyFigures: ["fitzgerald", "mitchell"],
-                    isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "triangle_occupation",
-                    name: "The Triangle Factory Occupation",
-                    era: "during the Revolution",
-                    description: "Workers at the Triangle Shirtwaist Factory (rebuilt after the infamous fire) seized and held the plant for three weeks.",
-                    officialNarrative: "The workers reclaimed the site of capitalism's greatest crime and made it a fortress of revolution.",
-                    hiddenTruth: "The occupation was a media stunt. The real fighting was at the docks, where Sheridan's longshoremen held the harbor.",
-                    casualties: 12,
-                    keyFigures: ["sheridan"],
-                    isDiscoverable: false
-                )
-            ],
-            localHeroes: [
-                LocalFigure(
-                    id: "warren_northeast",
-                    name: "Elizabeth 'Red Betty' Warren",
-                    role: "Revolutionary Orator, Boston Strike Leader",
-                    fate: "Exiled to Mountain Zone during the Purges, status unknown",
-                    description: "The firebrand who shut down Boston. Her speeches still circulate as samizdat. Possessing them is dangerous.",
-                    isRemembered: false
-                ),
-                LocalFigure(
-                    id: "brennan_northeast",
-                    name: "Father Michael Brennan",
-                    role: "Revolutionary Priest",
-                    fate: "Executed during the Purges",
-                    description: "Catholic priest who joined the Revolution. Recruited young Eleanor Patterson. Denounced as a 'Vatican spy' during the Religious Roundup.",
-                    isRemembered: false
-                )
-            ],
-            localVillains: [
-                LocalFigure(
-                    id: "morgan_northeast",
-                    name: "J.P. Morgan III",
-                    role: "Wall Street Financier",
-                    fate: "Fled to London during the Revolution",
-                    description: "Symbol of the old financial aristocracy. His townhouse is now a workers' cultural center.",
-                    isRemembered: true
-                )
-            ],
-            hiddenTruths: [
-                ZoneSecret(
-                    id: "warren_alive",
-                    title: "Red Betty Lives",
-                    content: "Elizabeth Warren was not executed. She was exiled to a mining town in the Mountain Zone under an assumed name. She is now in her fifties, working as a schoolteacher. Some Party members know. They visit occasionally, seeking her blessing for their plans. Her speeches still circulate underground.",
-                    discoveryMethod: "Following the underground network of old Boston revolutionaries, questioning Mountain Zone miners",
-                    consequences: "Finding Warren alive would be a political earthquake. Her testimony about the original Revolution's ideals vs. current reality could inspire reform—or rebellion."
-                ),
-                ZoneSecret(
-                    id: "brennan_children",
-                    title: "The Brennan Orphans",
-                    content: "Father Brennan's three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages after his execution. Patterson has never learned what happened to them. Margaret is now a factory worker in the Great Lakes Zone. Michael Jr. died of illness in the orphanage. Thomas was adopted by a Party family and has risen to a mid-level position—he doesn't know his real father's identity.",
-                    discoveryMethod: "Orphanage records, Patterson's investigation if she ever has the courage",
-                    consequences: "If Patterson discovered Thomas Brennan's survival and current position, it could be used as leverage—or as an opportunity for redemption."
-                )
-            ],
-            culturalNotes: [
-                "Boston's Irish community maintains underground Catholic practice. The Party knows and tolerates it—within limits.",
-                "New York's old ethnic neighborhoods—Little Italy, Chinatown, Harlem—retain their character despite official 'integration' policies.",
-                "Philadelphia's revolutionary history makes it almost as politically sensitive as the capital.",
-                "The old Ivy League universities are now Party training academies. Harvard yard still has its charm, but the curriculum is different."
-            ],
-            undergroundActivity: [
-                "Samizdat copies of Red Betty Warren's speeches circulate among old revolutionaries.",
-                "Irish and Italian communities maintain unofficial Catholic networks.",
-                "Jewish cultural organizations operate semi-legally, carefully avoiding religious content.",
-                "Old union veterans remember different stories than the official histories tell."
-            ]
-        )
-    }
-
-    // MARK: - Great Lakes Lore
-
-    private func createGreatLakesLore() -> RegionLore {
-        return RegionLore(
-            regionId: "great_lakes",
-            revolutionaryHistory: [
-                ZoneHistoricalEvent(
-                    id: "battle_chicago",
-                    name: "The Battle of Chicago",
-                    era: "during the Revolution",
-                    description: "The most intense urban warfare of the Civil War. Three months of block-by-block fighting. 40,000+ dead on both sides.",
-                    officialNarrative: "The workers of Chicago, led by General Steele and the People's Army, liberated the city in a heroic struggle. The federal forces were broken; the Midwest was won.",
-                    hiddenTruth: "The fighting was brutal beyond official accounts. Both sides committed atrocities. General Steele refused to execute prisoners; his subordinates often did anyway. The Black workers' militias and white ethnic union forces fought side by side—a unity that terrified the old order and sometimes surprised both groups.",
+                    description: "The most intense urban warfare of the Civil War. Weeks of block-by-block fighting.",
+                    officialNarrative: "The workers, led by the People's Army, liberated the city in a heroic struggle.",
+                    hiddenTruth: "The fighting was brutal beyond official accounts. Both sides committed atrocities. The unity of the workers was real but fragile.",
                     casualties: 40000,
                     keyFigures: ["carter", "fletcher", "thompson", "bodine", "strickland"],
                     isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "siege_detroit",
-                    name: "The Siege of Detroit",
-                    era: "during the Revolution",
-                    description: "90-day winter siege. Auto workers held the city against National Guard encirclement until Soviet weapons arrived.",
-                    officialNarrative: "The workers of Detroit, birthplace of the auto industry, proved that the means of production belong to those who operate them.",
-                    hiddenTruth: "The siege was won with Soviet help—weapons, advisors, and supplies smuggled through Mexico. The official history minimizes this foreign assistance. Bodine saw the crates with Cyrillic writing. He's never told anyone.",
-                    casualties: 15000,
-                    keyFigures: ["bodine"],
-                    isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "gary_mutiny",
-                    name: "The Gary Steel Mutiny",
-                    era: "during the Revolution",
-                    description: "Workers at Gary Steel Works refused orders to execute captured federal prisoners.",
-                    officialNarrative: "Not officially remembered.",
-                    hiddenTruth: "The workers' refusal to commit atrocities is quietly celebrated in local memory. The Party doesn't discuss it because it raises uncomfortable questions about what happened elsewhere.",
-                    casualties: 0,
-                    keyFigures: [],
-                    isDiscoverable: true
                 )
             ],
             localHeroes: [
                 LocalFigure(
-                    id: "steele_greatlakes",
+                    id: "steele_industrial",
                     name: "General Marcus Steele",
-                    role: "Commander of Revolutionary Forces, Hero of Chicago",
-                    fate: "Executed during the Purges (Trial of the Thirty-Six)",
+                    role: "Commander of Revolutionary Forces",
+                    fate: "Executed during the Purges",
                     description: "The greatest military leader of the Revolution. Too popular, too independent. His execution haunts everyone who knew him.",
                     isRemembered: false
-                ),
-                LocalFigure(
-                    id: "reuther_greatlakes",
-                    name: "Walter Reuther",
-                    role: "UAW Leader",
-                    fate: "Died years later (plane crash, suspicious circumstances)",
-                    description: "Organized the Detroit auto plants. His death cleared the path for more 'reliable' union leadership.",
-                    isRemembered: true
                 )
             ],
             localVillains: [
                 LocalFigure(
-                    id: "ford_greatlakes",
-                    name: "Henry Ford II",
-                    role: "Auto Baron",
-                    fate: "Fled to Brazil at the Revolution's end",
-                    description: "His grandfather's anti-Semitism and anti-union violence made the Ford name synonymous with capitalist evil.",
+                    id: "industrial_baron",
+                    name: "The Factory Lords",
+                    role: "Industrial Magnates",
+                    fate: "Fled or executed",
+                    description: "The capitalist owners who exploited workers for generations. Their mansions are now workers' cultural centers.",
                     isRemembered: true
                 )
             ],
@@ -1012,254 +878,70 @@ class RegionLoreProvider {
                 ZoneSecret(
                     id: "steele_confession",
                     title: "Steele Never Confessed",
-                    content: "At the Trial of the Thirty-Six, General Steele was the only defendant who never signed a confession. Despite weeks of 'enhanced interrogation' supervised by Wallace and Edwards, he maintained his innocence until execution. The official transcripts were falsified to suggest otherwise. Steele's final words—'I die a socialist, not a traitor'—were never recorded.",
-                    discoveryMethod: "Original trial transcripts (if they exist), testimony from Edwards or Wallace",
-                    consequences: "Would prove the Trial was a sham. Would implicate Carter and Fletcher, who testified against Steele."
-                ),
-                ZoneSecret(
-                    id: "soviet_weapons",
-                    title: "The Soviet Arsenal",
-                    content: "The Revolution was won with significant Soviet military aid—weapons, ammunition, advisors. This assistance was channeled through Mexico to maintain the fiction of a purely American revolution. The Soviets expected payment in influence. That bill is still being collected.",
-                    discoveryMethod: "Bodine's memory, surviving weapons caches with Cyrillic markings, diplomatic archives",
-                    consequences: "Would undermine the narrative of American revolutionary independence. Would embarrass the Party's claims of self-reliance."
+                    content: "At the Trial of the Thirty-Six, General Steele was the only defendant who never signed a confession. Despite weeks of 'enhanced interrogation,' he maintained his innocence until execution. The official transcripts were falsified.",
+                    discoveryMethod: "Original trial transcripts (if they exist), testimony from surviving officials",
+                    consequences: "Would prove the Trial was a sham. Would implicate those who testified against Steele."
                 )
             ],
             culturalNotes: [
-                "Chicago's jazz and blues scene survived the Revolution. The Party considers it 'proletarian music.'",
-                "Polish, Irish, and Black communities in the industrial cities maintain distinct identities despite official melting-pot rhetoric.",
-                "The old ethnic union halls are now official Party buildings, but the same families often run them.",
-                "Detroit's auto plants still produce, but for tractors and trucks rather than consumer cars."
+                "The industrial cities maintain distinct working-class identities despite official melting-pot rhetoric.",
+                "The old union halls are now official Party buildings, but the same families often run them.",
+                "Factory towns still produce, but quotas drive everything."
             ],
             undergroundActivity: [
-                "Veterans of the Chicago battle maintain informal networks. They remember Steele differently than the official history.",
+                "Veterans of the civil war maintain informal networks. They remember events differently than official history.",
                 "Some union locals preserve pre-Revolution traditions that don't align with Party orthodoxy.",
-                "The Black churches that sustained workers during the Depression continue, carefully avoiding political sermons.",
-                "Old UAW members remember Reuther and whisper about his 'accident.'"
+                "Old workers remember the purged leaders and whisper about 'accidents.'"
             ]
         )
     }
 
-    // MARK: - Pacific Lore (abbreviated)
+    // MARK: - Agricultural Zone Lore
 
-    private func createPacificLore() -> RegionLore {
+    private func createAgriculturalLore() -> RegionLore {
         return RegionLore(
-            regionId: "pacific",
-            revolutionaryHistory: [
-                ZoneHistoricalEvent(
-                    id: "siege_la",
-                    name: "The Siege of Los Angeles",
-                    era: "during the Revolution",
-                    description: "Two-month siege before Hollywood and the agricultural barons surrendered.",
-                    officialNarrative: "The workers of California broke the last bastion of bourgeois culture.",
-                    hiddenTruth: "The siege included significant naval bombardment. Civilian casualties were higher than admitted. Many 'war criminals' were executed without trial.",
-                    casualties: 8000,
-                    keyFigures: [],
-                    isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "sf_rising",
-                    name: "The San Francisco Rising",
-                    era: "during the Revolution",
-                    description: "Waterfront workers seized the city from within while federal forces focused on Los Angeles.",
-                    officialNarrative: "The longshoremen of San Francisco opened the door to liberation.",
-                    hiddenTruth: nil,
-                    casualties: 3000,
-                    keyFigures: [],
-                    isDiscoverable: false
-                )
-            ],
-            localHeroes: [
-                LocalFigure(
-                    id: "bridges_pacific",
-                    name: "Harry Bridges",
-                    role: "Longshoremen's Union Leader",
-                    fate: "Died later (natural causes)",
-                    description: "Organized the Pacific Coast ports. A genuine hero remembered fondly.",
-                    isRemembered: true
-                )
-            ],
-            localVillains: [
-                LocalFigure(
-                    id: "hearst_pacific",
-                    name: "William Randolph Hearst",
-                    role: "Media Baron",
-                    fate: "Died in exile",
-                    description: "His newspapers opposed the Revolution. His castle at San Simeon is now a 'Museum of Capitalist Excess.'",
-                    isRemembered: true
-                )
-            ],
-            hiddenTruths: [
-                ZoneSecret(
-                    id: "japanese_internment",
-                    title: "The Second Internment",
-                    content: "During the Intervention War, Japanese-Americans were again interned—this time by the socialist government—as potential fifth columnists for Japan. The camps were in the Mountain Zone. Some never returned. This history is not taught.",
-                    discoveryMethod: "Mountain Zone records, surviving internees",
-                    consequences: "Would expose the Party's hypocrisy on racial equality."
-                )
-            ],
-            culturalNotes: [
-                "Hollywood now produces socialist realism. Some films are genuinely artistic; most are propaganda.",
-                "The Bay Area's counterculture has transformed into approved 'revolutionary creativity.'",
-                "California wine country produces for Party elites. Ordinary citizens drink domestic beer.",
-                "Asian-American communities maintain cultural traditions while carefully avoiding political connections to foreign powers."
-            ],
-            undergroundActivity: [
-                "Artists and writers push boundaries of acceptable expression.",
-                "Some Hollywood veterans maintain contacts with exile communities in Mexico.",
-                "The tech workshops in the Bay Area occasionally produce unauthorized innovations.",
-                "Japanese-American families quietly remember the Second Internment."
-            ]
-        )
-    }
-
-    // MARK: - Southern Lore
-
-    private func createSouthernLore() -> RegionLore {
-        return RegionLore(
-            regionId: "southern",
-            revolutionaryHistory: [
-                ZoneHistoricalEvent(
-                    id: "atlanta_liberation",
-                    name: "Liberation Day (Atlanta)",
-                    era: "during the Revolution",
-                    description: "Revolutionary forces entered Atlanta as the old order collapsed.",
-                    officialNarrative: "The South was liberated from the twin oppressions of capitalism and racism.",
-                    hiddenTruth: "The 'liberation' included significant score-settling. Both Black and white communities had old grievances. Some lynchings went the other direction for a few terrible weeks.",
-                    casualties: 5000,
-                    keyFigures: [],
-                    isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "birmingham_trial",
-                    name: "The Birmingham Confession",
-                    era: "at the Revolution's end",
-                    description: "Bull Connor, infamous sheriff, was put on public trial for crimes against Black citizens.",
-                    officialNarrative: "Revolutionary justice punished the oppressors and showed that a new day had come.",
-                    hiddenTruth: "The trial was a show. The verdict was predetermined. Some who testified against Connor were later purged themselves. Justice was selective.",
-                    casualties: nil,
-                    keyFigures: [],
-                    isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "sharecropper_uprising",
-                    name: "The Sharecropper Uprising",
-                    era: "during the Revolution",
-                    description: "Black and white sharecroppers united against the planter class across Alabama, Mississippi, and Georgia.",
-                    officialNarrative: "Class consciousness overcame racial division as workers recognized their common enemy.",
-                    hiddenTruth: "The unity was real but fragile. Old hatreds surfaced repeatedly. The Party exploited both groups' resentments. The planters were defeated, but racial healing was superficial.",
-                    casualties: 3000,
-                    keyFigures: [],
-                    isDiscoverable: true
-                )
-            ],
-            localHeroes: [
-                LocalFigure(
-                    id: "parks_southern",
-                    name: "Rosa Parks",
-                    role: "Labor and Civil Rights Organizer",
-                    fate: "Alive, low-profile position in Alabama",
-                    description: "Organized before the Revolution. Supported integration. Later questioned some Party policies. Now carefully apolitical.",
-                    isRemembered: true
-                )
-            ],
-            localVillains: [
-                LocalFigure(
-                    id: "talmadge_southern",
-                    name: "Eugene Talmadge",
-                    role: "Georgia Governor",
-                    fate: "Executed at the Revolution's end",
-                    description: "Symbol of Jim Crow resistance. His execution was broadcast on radio.",
-                    isRemembered: true
-                )
-            ],
-            hiddenTruths: [
-                ZoneSecret(
-                    id: "black_church_deal",
-                    title: "The Black Church Compromise",
-                    content: "During the Religious Roundup, Black churches were largely spared while white churches were aggressively suppressed. This was a deliberate Party decision—the Black church was too central to community organizing to destroy. The compromise was never acknowledged; officially, all religion was treated equally.",
-                    discoveryMethod: "Comparing arrest records, interviewing elderly ministers",
-                    consequences: "Would expose the Party's pragmatic hypocrisy on religion. Could be used by both religious advocates and anti-religious hardliners."
-                ),
-                ZoneSecret(
-                    id: "integration_limits",
-                    title: "The Segregation Continues",
-                    content: "Despite official integration, Southern housing, schooling, and social life remain largely segregated by 'voluntary choice' and economic factors the Party has never seriously addressed. The racial revolution was economic, not social. Most Black and white Southerners still live in separate worlds.",
-                    discoveryMethod: "Any honest observation of Southern life",
-                    consequences: "Would embarrass the Party's claims of racial progress. Could fuel both reformist and radical movements."
-                )
-            ],
-            culturalNotes: [
-                "Southern cooking, music, and hospitality survive despite official disapproval of 'regional sentiment.'",
-                "Black culture—blues, gospel, literature—flourishes as approved 'proletarian expression.'",
-                "White Southern culture is more suppressed, associated with the old order's racism.",
-                "The accent, the pace of life, the manners—the South remains the South."
-            ],
-            undergroundActivity: [
-                "White evangelical churches operate underground, remembering the Religious Roundup.",
-                "Old Confederate families maintain private memories of the Lost Cause (now twice-lost).",
-                "Some Black communities remember that the Revolution's promises remain unfulfilled.",
-                "The Klan is dead, but its children remember. Some have channeled resentment into the system; others wait."
-            ]
-        )
-    }
-
-    // MARK: - Plains Lore
-
-    private func createPlainsLore() -> RegionLore {
-        return RegionLore(
-            regionId: "plains",
+            regionId: "zone_3",
             revolutionaryHistory: [
                 ZoneHistoricalEvent(
                     id: "great_collectivization",
                     name: "The Great Collectivization",
-                    era: "during the early Purges",
-                    description: "Family farms were consolidated into collective agricultural operations across the Plains.",
-                    officialNarrative: "Scientific socialism came to American agriculture. The chaos of individual farming gave way to planned abundance.",
-                    hiddenTruth: "Collectivization was brutal. Farmers who resisted were labeled 'kulaks'—class enemies—and sent to camps. Families who had worked the land for generations lost everything. Some fought back; they lost. Armstrong survived by denouncing his neighbors.",
+                    era: "during the early years",
+                    description: "Family farms were consolidated into collective agricultural operations.",
+                    officialNarrative: "Scientific socialism came to agriculture. The chaos of individual farming gave way to planned abundance.",
+                    hiddenTruth: "Collectivization was brutal. Farmers who resisted were labeled 'class enemies' and sent to camps. Families who had worked the land for generations lost everything.",
                     casualties: nil,
                     keyFigures: ["armstrong", "erickson"],
                     isDiscoverable: true
                 ),
                 ZoneHistoricalEvent(
-                    id: "kansas_famine",
-                    name: "The Kansas Famine",
+                    id: "the_famine",
+                    name: "The Crisis Years Famine",
                     era: "during the Purges",
-                    description: "Thousands died when impossible quotas and forced collectivization collided with drought.",
+                    description: "Thousands died when impossible quotas collided with drought.",
                     officialNarrative: "Does not exist in official history.",
-                    hiddenTruth: "The famine killed thousands—Laura Erickson's brother among them. Kowalski's office produced statistics showing bumper crops while people starved. The dead were buried in unmarked graves. Their names are not remembered. The official population figures for during the Purges don't match the during the Purges numbers—but no one is allowed to notice.",
+                    hiddenTruth: "The famine killed thousands. Officials produced statistics showing bumper crops while people starved. The dead were buried in unmarked graves.",
                     casualties: 15000,
                     keyFigures: ["erickson", "kowalski"],
                     isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "dust_bowl_redemption",
-                    name: "The Dust Bowl Redemption",
-                    era: "after the Purges",
-                    description: "Party-directed conservation efforts began healing the land destroyed by capitalist farming.",
-                    officialNarrative: "Socialist science succeeded where capitalist greed had failed. The Plains were redeemed.",
-                    hiddenTruth: "The conservation programs were real and sometimes effective. But the same Party that caused the during the Purges famine claimed credit for healing the land. The farmers know both stories.",
-                    casualties: nil,
-                    keyFigures: [],
-                    isDiscoverable: false
                 )
             ],
             localHeroes: [
                 LocalFigure(
-                    id: "woody_plains",
-                    name: "Woody Guthrie",
+                    id: "folk_singer",
+                    name: "The People's Poet",
                     role: "Folk Singer",
                     fate: "Alive, official cultural figure",
-                    description: "His songs celebrated workers and criticized the old order. He's now an approved artist, but some of his earlier, angrier songs are no longer performed.",
+                    description: "Songs celebrated workers and criticized the old order. Now an approved artist, but some earlier, angrier songs are no longer performed.",
                     isRemembered: true
                 )
             ],
             localVillains: [
                 LocalFigure(
-                    id: "kulaks_plains",
+                    id: "kulak_class",
                     name: "The Kulak Class",
                     role: "Wealthy Farmers",
                     fate: "Exiled or executed",
-                    description: "Not individuals but a class enemy. Anyone who resisted collectivization could be labeled a kulak. The definition was flexible—dangerously so.",
+                    description: "Not individuals but a class enemy. Anyone who resisted collectivization could be labeled a kulak.",
                     isRemembered: true
                 )
             ],
@@ -1267,67 +949,54 @@ class RegionLoreProvider {
                 ZoneSecret(
                     id: "famine_records",
                     title: "The Real Numbers",
-                    content: "Somewhere in the State Planning Commission, original data from the during the Purges harvest survives—the numbers Kowalski suppressed, showing crop failures, starvation, and death. Laura Erickson has spent years trying to find them. Anthony Carpenter knows they exist. If they surfaced, they would prove the Party caused a famine and covered it up.",
-                    discoveryMethod: "Access to Planning Commission archives, cooperation from Carpenter or Erickson",
-                    consequences: "Would be politically devastating. Would implicate Kowalski directly. Could fuel demands for reform—or rebellion."
+                    content: "Somewhere in the State Planning Commission, original data survives—the numbers that were suppressed, showing crop failures, starvation, and death. If they surfaced, they would prove the Party caused a famine and covered it up.",
+                    discoveryMethod: "Access to Planning Commission archives, cooperation from key officials",
+                    consequences: "Would be politically devastating. Could fuel demands for reform—or rebellion."
                 ),
                 ZoneSecret(
-                    id: "hidden_harvests_plains",
+                    id: "hidden_harvests",
                     title: "The Underground Grain",
-                    content: "Governor Armstrong runs a systematic underreporting scheme. Farmers hide portion of their harvests from the official count. The 'hidden' grain is distributed locally to prevent the starvation that official quotas would cause. It's technically theft from the state. It's also why people don't starve.",
-                    discoveryMethod: "Spending time with Plains farmers, gaining Armstrong's trust",
-                    consequences: "Could be used to destroy Armstrong—or to build an alliance. The farmers would protect him fiercely."
+                    content: "Local governors run systematic underreporting schemes. Farmers hide portions of their harvests from the official count. The 'hidden' grain is distributed locally to prevent starvation. It's technically theft from the state. It's also why people don't starve.",
+                    discoveryMethod: "Spending time with farmers, gaining local trust",
+                    consequences: "Could be used to destroy officials—or to build alliances. The farmers would protect their protectors fiercely."
                 )
             ],
             culturalNotes: [
                 "The farming communities remember their family land with grief. The collectives bear numbers, not names.",
-                "Church attendance is officially discouraged but quietly maintained—especially among older farmers.",
-                "The vast distances create de facto autonomy. Party cadres are sparse; neighbors watch out for each other.",
-                "Folk music traditions continue, carefully avoiding political content."
+                "Religious practice is officially discouraged but quietly maintained—especially among older farmers.",
+                "The vast distances create de facto autonomy. Party cadres are sparse; neighbors watch out for each other."
             ],
             undergroundActivity: [
                 "Farmers maintain informal networks to protect each other from quota enforcers.",
-                "Some families still visit the unmarked graves of the during the Purges dead.",
-                "Underground church services happen in farmhouses far from any road.",
-                "The hidden harvest system operates with tacit local BPS approval—they live here too."
+                "Some families still visit the unmarked graves of the famine dead.",
+                "Underground religious services happen in farmhouses far from any road."
             ]
         )
     }
 
-    // MARK: - Mountain Lore
+    // MARK: - Northern Zone Lore
 
-    private func createMountainLore() -> RegionLore {
+    private func createNorthernLore() -> RegionLore {
         return RegionLore(
-            regionId: "mountain",
+            regionId: "zone_4",
             revolutionaryHistory: [
                 ZoneHistoricalEvent(
-                    id: "camp_system",
-                    name: "Establishment of the Camp System",
+                    id: "camp_system_north",
+                    name: "Establishment of the Northern Camps",
                     era: "shortly after the Revolution",
-                    description: "Political prisoners and 'class enemies' were sent to labor camps throughout the Mountain Zone.",
+                    description: "Political prisoners and 'class enemies' were sent to labor camps throughout the Northern Zone.",
                     officialNarrative: "Rehabilitation through labor. Enemies of the people contribute to socialist construction.",
-                    hiddenTruth: "The camps are death sentences for many. Uranium mining, hard labor, brutal conditions. Some survive; many don't. The exact numbers are classified. Estimates range from 50,000 to 200,000 currently incarcerated.",
+                    hiddenTruth: "The camps are death sentences for many. Hard labor, brutal conditions. Some survive; many don't.",
                     casualties: nil,
                     keyFigures: ["wallace"],
-                    isDiscoverable: true
-                ),
-                ZoneHistoricalEvent(
-                    id: "uranium_project",
-                    name: "The Manhattan Project (Socialist Version)",
-                    era: "after the Purges",
-                    description: "The Republic developed its own atomic weapons using Mountain Zone uranium and captured German scientists.",
-                    officialNarrative: "Socialist science achieved what capitalism could not—an atomic deterrent to protect the Revolution.",
-                    hiddenTruth: "The project used prison labor for the most dangerous mining. Thousands died of radiation exposure. Their sacrifice is not acknowledged.",
-                    casualties: 5000,
-                    keyFigures: [],
                     isDiscoverable: true
                 )
             ],
             localHeroes: [
                 LocalFigure(
-                    id: "warren_mountain",
-                    name: "Elizabeth 'Red Betty' Warren",
-                    role: "Exiled Revolutionary",
+                    id: "warren_north",
+                    name: "The Exiled Revolutionary",
+                    role: "Former Revolutionary Leader",
                     fate: "Alive under assumed name",
                     description: "Lives in a mining town as a schoolteacher. Some know who she really is. She waits.",
                     isRemembered: false
@@ -1339,7 +1008,7 @@ class RegionLoreProvider {
                     name: "The Camp Commanders",
                     role: "Labor Camp Administration",
                     fate: "Various",
-                    description: "Anonymous by design. Their faces are not recorded. Their names are classified. They do what the system requires.",
+                    description: "Anonymous by design. Their faces are not recorded. Their names are classified.",
                     isRemembered: false
                 )
             ],
@@ -1347,30 +1016,209 @@ class RegionLoreProvider {
                 ZoneSecret(
                     id: "camp_deaths",
                     title: "The Real Body Count",
-                    content: "The labor camps have killed tens of thousands. The official records list 'transfers' and 'releases' that never happened. Mass graves dot the remote valleys. The uranium mines are especially deadly—radiation sickness kills slowly. Some camps have mortality rates above 30% annually.",
+                    content: "The labor camps have killed tens of thousands. The official records list 'transfers' and 'releases' that never happened. Mass graves dot the remote valleys.",
                     discoveryMethod: "Testimony from released prisoners, accessing classified camp records",
-                    consequences: "Would expose the camp system as mass murder. Would fuel international condemnation. Would force the Party to either reform or double down."
-                ),
-                ZoneSecret(
-                    id: "dr_petrov",
-                    title: "Dr. Petrov's Location",
-                    content: "Dr. Petrov, the physician who treated Chairman Fitzgerald in his final days, was 'transferred' to a Mountain Zone medical facility in years later. He is alive, working in Camp 17's infirmary. He knows what really happened to Fitzgerald. He has been waiting for someone to ask.",
-                    discoveryMethod: "Tracing medical personnel transfers, locating Camp 17",
-                    consequences: "Petrov's testimony could prove Fitzgerald was murdered. Wallace knows where he is—and that he's still alive."
+                    consequences: "Would expose the camp system as mass murder. Would force the Party to either reform or double down."
                 )
             ],
             culturalNotes: [
                 "The mining towns are rough, isolated, self-reliant. Party authority ends at the town limits.",
-                "Native American communities exist in uneasy relationship with the state. Some reservations have semi-autonomous status.",
-                "The vast distances create spaces where people can disappear—willingly or not.",
-                "Mormon communities in Utah maintain their faith more openly than most religious groups, through careful negotiation with authorities."
+                "Indigenous communities exist in uneasy relationship with the state.",
+                "The vast distances create spaces where people can disappear—willingly or not."
             ],
             undergroundActivity: [
                 "Released prisoners form informal networks, sharing information about who didn't come out.",
                 "Some camps have internal resistance—work slowdowns, information smuggling.",
-                "Red Betty Warren maintains contact with old comrades through careful channels.",
-                "Native American communities preserve traditions the Party has tried to eliminate.",
-                "Mormon networks extend across zone boundaries, providing mutual aid."
+                "Indigenous communities preserve traditions the Party has tried to eliminate."
+            ]
+        )
+    }
+
+    // MARK: - Coastal Zone Lore
+
+    private func createCoastalLore() -> RegionLore {
+        return RegionLore(
+            regionId: "zone_5",
+            revolutionaryHistory: [
+                ZoneHistoricalEvent(
+                    id: "harbor_rising",
+                    name: "The Harbor Rising",
+                    era: "during the Revolution",
+                    description: "Waterfront workers seized the port cities from within.",
+                    officialNarrative: "The longshoremen opened the door to liberation.",
+                    hiddenTruth: nil,
+                    casualties: 3000,
+                    keyFigures: [],
+                    isDiscoverable: false
+                )
+            ],
+            localHeroes: [
+                LocalFigure(
+                    id: "harbor_leader",
+                    name: "The Harbor Leader",
+                    role: "Longshoremen's Union Leader",
+                    fate: "Died (natural causes)",
+                    description: "Organized the coastal ports. A genuine hero remembered fondly.",
+                    isRemembered: true
+                )
+            ],
+            localVillains: [
+                LocalFigure(
+                    id: "shipping_magnates",
+                    name: "The Shipping Magnates",
+                    role: "Maritime Capitalists",
+                    fate: "Fled or exiled",
+                    description: "The old shipping families who controlled trade. Their mansions are now workers' rest homes.",
+                    isRemembered: true
+                )
+            ],
+            hiddenTruths: [
+                ZoneSecret(
+                    id: "smuggling_networks",
+                    title: "The Shadow Trade",
+                    content: "Despite official controls, extensive smuggling networks operate through the ports. Some Party officials take cuts. Some use the networks to move people—dissidents out, agents in.",
+                    discoveryMethod: "Working with port officials, following suspicious shipments",
+                    consequences: "Could expose corruption—or provide useful leverage and connections."
+                )
+            ],
+            culturalNotes: [
+                "The port cities maintain cosmopolitan traditions despite official nationalism.",
+                "Sailors bring news and goods from the outside world.",
+                "The arts scene pushes boundaries of acceptable expression."
+            ],
+            undergroundActivity: [
+                "Artists and writers push boundaries.",
+                "Some maintain contacts with exile communities abroad.",
+                "Smuggling networks operate with varying degrees of official tolerance."
+            ]
+        )
+    }
+
+    // MARK: - Mountain Zone Lore
+
+    private func createMountainLore() -> RegionLore {
+        return RegionLore(
+            regionId: "zone_6",
+            revolutionaryHistory: [
+                ZoneHistoricalEvent(
+                    id: "camp_system_mountain",
+                    name: "The Mountain Camps",
+                    era: "shortly after the Revolution",
+                    description: "The most remote camps were established in mountain valleys, far from prying eyes.",
+                    officialNarrative: "Rehabilitation facilities for enemies of the people.",
+                    hiddenTruth: "The mountain camps are the worst. Uranium mining, hard labor in extreme conditions. Mortality rates are highest here.",
+                    casualties: 5000,
+                    keyFigures: [],
+                    isDiscoverable: true
+                ),
+                ZoneHistoricalEvent(
+                    id: "nuclear_project",
+                    name: "The Special Project",
+                    era: "post-Revolution",
+                    description: "The Republic developed atomic capabilities using mountain zone resources.",
+                    officialNarrative: "Socialist science achieved what capitalism could not—a deterrent to protect the Revolution.",
+                    hiddenTruth: "The project used prison labor for the most dangerous mining. Thousands died of radiation exposure. Their sacrifice is not acknowledged.",
+                    casualties: 5000,
+                    keyFigures: [],
+                    isDiscoverable: true
+                )
+            ],
+            localHeroes: [],
+            localVillains: [
+                LocalFigure(
+                    id: "mountain_commanders",
+                    name: "The Mountain Camp Commanders",
+                    role: "Labor Camp Administration",
+                    fate: "Various",
+                    description: "Anonymous by design. The worst assignments go here.",
+                    isRemembered: false
+                )
+            ],
+            hiddenTruths: [
+                ZoneSecret(
+                    id: "radiation_deaths",
+                    title: "The Uranium Miners",
+                    content: "Prisoners forced to mine uranium without protection died by the thousands. The symptoms—hair loss, bleeding, slow death—were classified as 'industrial accidents.'",
+                    discoveryMethod: "Medical records, testimony from survivors (rare)",
+                    consequences: "Would expose the human cost of the nuclear program."
+                ),
+                ZoneSecret(
+                    id: "hidden_witness",
+                    title: "The Hidden Witness",
+                    content: "A physician who treated Chairman Fitzgerald in his final days was 'transferred' to a mountain medical facility. He knows what really happened. He has been waiting for someone to ask.",
+                    discoveryMethod: "Tracing medical personnel transfers, locating the facility",
+                    consequences: "His testimony could prove Fitzgerald was murdered."
+                )
+            ],
+            culturalNotes: [
+                "The mining towns are rough, isolated, self-reliant.",
+                "Mountain communities maintain traditions despite official pressure.",
+                "The vast distances create spaces beyond Party control."
+            ],
+            undergroundActivity: [
+                "Released prisoners form networks.",
+                "Some camps have internal resistance.",
+                "Mountain communities preserve forbidden traditions."
+            ]
+        )
+    }
+
+    // MARK: - Border Zone Lore
+
+    private func createBorderLore() -> RegionLore {
+        return RegionLore(
+            regionId: "zone_7",
+            revolutionaryHistory: [
+                ZoneHistoricalEvent(
+                    id: "border_war",
+                    name: "The Border Consolidation",
+                    era: "during the Revolution",
+                    description: "Revolutionary forces secured the borders against intervention.",
+                    officialNarrative: "The defenders of the Revolution held the line against capitalist aggression.",
+                    hiddenTruth: "Some communities were forcibly relocated. Suspected collaborators were dealt with harshly.",
+                    casualties: 2000,
+                    keyFigures: [],
+                    isDiscoverable: true
+                )
+            ],
+            localHeroes: [
+                LocalFigure(
+                    id: "border_commander",
+                    name: "The Border Hero",
+                    role: "Revolutionary Commander",
+                    fate: "Died in service",
+                    description: "Defended the frontier during the dark days. Officially honored, genuinely respected.",
+                    isRemembered: true
+                )
+            ],
+            localVillains: [
+                LocalFigure(
+                    id: "collaborators",
+                    name: "The Collaborators",
+                    role: "Those who aided foreign powers",
+                    fate: "Executed or exiled",
+                    description: "Some communities are still tainted by association with those who helped the enemy.",
+                    isRemembered: true
+                )
+            ],
+            hiddenTruths: [
+                ZoneSecret(
+                    id: "border_trade",
+                    title: "The Grey Economy",
+                    content: "Extensive unofficial trade crosses the border. Some officials profit; some look the other way; some actively facilitate. The official economy couldn't function without it.",
+                    discoveryMethod: "Working with border officials, following suspicious transactions",
+                    consequences: "Could expose corruption—or provide useful economic flexibility."
+                )
+            ],
+            culturalNotes: [
+                "Border communities maintain connections across the line despite official restrictions.",
+                "Military culture dominates many towns.",
+                "Smuggling is an open secret."
+            ],
+            undergroundActivity: [
+                "Cross-border family connections persist.",
+                "Smuggling networks operate with varying degrees of tolerance.",
+                "Some communities maintain forbidden contacts with the outside world."
             ]
         )
     }

@@ -2,7 +2,7 @@
 //  CodexView.swift
 //  Nomenklatura
 //
-//  The Codex - encyclopedia of PSRA lore
+//  The Codex - encyclopedia of PSR lore
 //
 
 import SwiftUI
@@ -30,7 +30,7 @@ struct CodexView: View {
                 // Header with optional world and congress buttons
                 ScreenHeader(
                     title: "THE CODEX",
-                    subtitle: "Encyclopedia of the PSRA",
+                    subtitle: "Encyclopedia of the PSR",
                     showWorldButton: onWorldTap != nil,
                     onWorldTap: onWorldTap,
                     showCongressButton: onCongressTap != nil,

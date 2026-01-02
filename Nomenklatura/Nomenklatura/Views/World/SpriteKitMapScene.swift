@@ -144,7 +144,7 @@ class WorldMapScene: SKScene {
 
         regionNodes[region.id] = borderNode
 
-        // Special gold glow for PSRA
+        // Special gold glow for PSR
         if region.politicalAlignment == .homeland {
             let glowNode = SKShapeNode(path: path)
             glowNode.fillColor = .clear
@@ -247,14 +247,10 @@ class WorldMapScene: SKScene {
             return SKColor(red: 0.80, green: 0.36, blue: 0.36, alpha: 1.0)  // Indian red
         case .capitalist:
             return SKColor(red: 0.25, green: 0.41, blue: 0.88, alpha: 1.0)  // Royal blue
-        case .fascist:
-            return SKColor(red: 0.36, green: 0.23, blue: 0.10, alpha: 1.0)  // Brown
-        case .pacificHostile:
-            return SKColor(red: 0.55, green: 0.27, blue: 0.07, alpha: 1.0)  // Saddle brown
+        case .nonAligned:
+            return SKColor(red: 0.27, green: 0.55, blue: 0.27, alpha: 1.0)  // Forest green
         case .neutral:
             return SKColor(red: 0.41, green: 0.41, blue: 0.41, alpha: 1.0)  // Dim gray
-        case .occupied:
-            return SKColor(red: 0.50, green: 0.0, blue: 0.0, alpha: 0.8)  // Maroon
         case .ocean:
             return SKColor(red: 0.11, green: 0.24, blue: 0.35, alpha: 1.0)  // Navy
         case .unclaimed:
@@ -270,14 +266,10 @@ class WorldMapScene: SKScene {
             return SKColor(red: 0.55, green: 0.0, blue: 0.0, alpha: 1.0)  // Dark red
         case .capitalist:
             return SKColor(red: 0.0, green: 0.0, blue: 0.5, alpha: 1.0)  // Navy
-        case .fascist:
-            return SKColor(red: 0.2, green: 0.1, blue: 0.05, alpha: 1.0)  // Dark brown
-        case .pacificHostile:
-            return SKColor(red: 0.4, green: 0.2, blue: 0.0, alpha: 1.0)  // Dark brown
+        case .nonAligned:
+            return SKColor(red: 0.13, green: 0.37, blue: 0.13, alpha: 1.0)  // Dark green
         case .neutral:
             return SKColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0)  // Dark gray
-        case .occupied:
-            return SKColor(red: 0.4, green: 0.0, blue: 0.0, alpha: 1.0)  // Dark maroon
         case .ocean:
             return .clear
         case .unclaimed:
@@ -290,10 +282,8 @@ class WorldMapScene: SKScene {
         case .homeland: return 5
         case .socialistAlly: return 3
         case .capitalist: return 3
-        case .fascist: return 3
-        case .pacificHostile: return 3
+        case .nonAligned: return 3
         case .neutral: return 2
-        case .occupied: return 4
         case .ocean: return -10
         case .unclaimed: return 1
         }
@@ -451,12 +441,11 @@ class WorldMapScene: SKScene {
 
         // Legend items
         let items: [(String, SKColor)] = [
-            ("PSRA", SKColor(red: 0.55, green: 0.0, blue: 0.0, alpha: 1.0)),
+            ("PSR", SKColor(red: 0.55, green: 0.0, blue: 0.0, alpha: 1.0)),
             ("Socialist Ally", SKColor(red: 0.80, green: 0.36, blue: 0.36, alpha: 1.0)),
             ("Capitalist", SKColor(red: 0.25, green: 0.41, blue: 0.88, alpha: 1.0)),
-            ("Fascist", SKColor(red: 0.36, green: 0.23, blue: 0.10, alpha: 1.0)),
-            ("Neutral", SKColor(red: 0.41, green: 0.41, blue: 0.41, alpha: 1.0)),
-            ("Occupied", SKColor(red: 0.50, green: 0.0, blue: 0.0, alpha: 0.8))
+            ("Non-Aligned", SKColor(red: 0.27, green: 0.55, blue: 0.27, alpha: 1.0)),
+            ("Neutral", SKColor(red: 0.41, green: 0.41, blue: 0.41, alpha: 1.0))
         ]
 
         for (index, item) in items.enumerated() {

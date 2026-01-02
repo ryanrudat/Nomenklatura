@@ -156,12 +156,12 @@ struct NationDossiersSection: View {
     @Environment(\.theme) var theme
     @State private var selectedNation: NationIdentifier?
 
-    // Foreign nations in the PSRA alternate history
+    // Foreign nations in the PSR world (real 1950s)
     private let nations = [
         ("soviet_union", "Soviet Union", "Revolutionary Ally", "socialist"),
-        ("germany", "Germany", "Socialist Republic", "socialist"),
-        ("cuba", "Cuba", "Government-in-Exile", "hostile"),
-        ("canada", "Canada", "Lost Provinces Enemy", "hostile"),
+        ("china", "China", "Fellow Revolutionary", "socialist"),
+        ("united_states", "United States", "Capitalist Superpower", "hostile"),
+        ("united_kingdom", "United Kingdom", "Former Colonial Power", "hostile"),
         ("united_kingdom", "United Kingdom", "Imperial Adversary", "capitalist"),
         ("france", "France", "Unstable Republic", "capitalist"),
         ("japan", "Japan", "Pacific Occupier", "hostile"),

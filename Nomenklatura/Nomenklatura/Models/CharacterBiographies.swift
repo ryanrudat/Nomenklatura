@@ -138,11 +138,11 @@ class CharacterBiographyProvider {
             fullName: "Harold James Mitchell",
             aliases: ["Comrade Secretary", "The Gray Man"],
             ageCategory: "middle-aged",
-            birthPlace: "Philadelphia, Pennsylvania",
+            birthPlace: "Fitzgerald City, Zone 2",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Philadelphia Public Schools",
+                    institution: "Fitzgerald City Public Schools",
                     years: "pre-Revolution",
                     degree: nil,
                     notes: "Left school at 14 to work in the factories"
@@ -161,13 +161,13 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "before the Revolution", position: "Factory Worker", location: "Philadelphia", significance: "First exposure to labor organizing"),
-                BiographyCareerEvent(era: "during the Depression", position: "Union Shop Steward", location: "Philadelphia", significance: "Began organizing activities"),
-                BiographyCareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Northeast Region", significance: "Rose to prominence under Fitzgerald's patronage"),
-                BiographyCareerEvent(era: "during the Revolution", position: "Revolutionary Militia Commander", location: "Philadelphia", significance: "Led workers' militia during March on Washington"),
-                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Labor", location: "Washington, DC", significance: "First government position after Revolution"),
-                BiographyCareerEvent(era: "during the Purges", position: "Commissar of Heavy Industry", location: "Washington, DC", significance: "Oversaw wartime production"),
-                BiographyCareerEvent(era: "years later", position: "General Secretary", location: "Washington, DC", significance: "Succeeded Fitzgerald under mysterious circumstances")
+                BiographyCareerEvent(era: "before the Revolution", position: "Factory Worker", location: "Fitzgerald City", significance: "First exposure to labor organizing"),
+                BiographyCareerEvent(era: "during the Depression", position: "Union Shop Steward", location: "Fitzgerald City", significance: "Began organizing activities"),
+                BiographyCareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Zone 2", significance: "Rose to prominence under Fitzgerald's patronage"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Revolutionary Militia Commander", location: "Fitzgerald City", significance: "Led workers' militia during March on the Capital"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Labor", location: "The Capital", significance: "First government position after Revolution"),
+                BiographyCareerEvent(era: "during the Purges", position: "Commissar of Heavy Industry", location: "The Capital", significance: "Oversaw wartime production"),
+                BiographyCareerEvent(era: "years later", position: "General Secretary", location: "The Capital", significance: "Succeeded Fitzgerald under mysterious circumstances")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -183,7 +183,7 @@ class CharacterBiographyProvider {
                     relation: "Mother",
                     status: "Deceased",
                     occupation: "Seamstress",
-                    notes: "Irish immigrant. Died during the Civil War, caught in crossfire in Philadelphia.",
+                    notes: "Immigrant worker. Died during the Civil War, caught in crossfire in Fitzgerald City.",
                     isSecret: false
                 ),
                 spouse: FamilyMember(
@@ -210,7 +210,7 @@ class CharacterBiographyProvider {
                         relation: "Brother",
                         status: "Deceased",
                         occupation: "Steel Worker",
-                        notes: "Killed at the Battle of Chicago. A genuine martyr.",
+                        notes: "Killed at the Battle of Fitzgerald City. A genuine martyr.",
                         isSecret: false
                     )
                 ],
@@ -227,13 +227,13 @@ class CharacterBiographyProvider {
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
                 recruitedBy: "Chairman Robert Fitzgerald",
-                civilWarRole: "Philadelphia Workers' Militia Commander; secured the city during the March on Washington",
+                civilWarRole: "Fitzgerald City Workers' Militia Commander; secured the city during the March on the Capital",
                 purgeExperience: "Signed death warrants for 47 people, including wife's cousins. Protected by Fitzgerald until Fitzgerald died.",
                 keyMoments: [
                     HistoricalMoment(
                         era: "during the Revolution",
-                        event: "The March on Washington",
-                        impact: "Led the Philadelphia column. Fitzgerald trusted him with the rear guard.",
+                        event: "The March on the Capital",
+                        impact: "Led the Fitzgerald City column. Fitzgerald trusted him with the rear guard.",
                         witnesses: ["carter", "wallace", "henderson"]
                     ),
                     HistoricalMoment(
@@ -254,7 +254,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "mitchell_wife_suicide",
                     title: "Eleanor's Suicide",
-                    fullContent: "Eleanor Mitchell did not die of 'illness' during the Purges. She hanged herself in their apartment after discovering that Harold had personally signed the death warrants for her cousins, the Kowalski family members accused in the Midwest Conspiracy. She left a note that Wallace confiscated. The note is in Wallace's private files. Harold found her body. He has never forgiven himself, but he has never stopped signing warrants either.",
+                    fullContent: "Eleanor Mitchell did not die of 'illness' during the Purges. She hanged herself in their apartment after discovering that Harold had personally signed the death warrants for her cousins, the Kowalski family members accused in the Zone 3 Conspiracy. She left a note that Wallace confiscated. The note is in Wallace's private files. Harold found her body. He has never forgiven himself, but he has never stopped signing warrants either.",
                     discoveryDifficulty: 8,
                     evidenceLocations: ["Wallace's private vault", "Dr. Petrov's medical records (sealed)", "The apartment building superintendent's memory"],
                     potentialConsequences: "If exposed, would shatter Mitchell's image as the 'Gray Man' who does what's necessary without emotion. His son would have confirmation of his suspicions. Political rivals could use it to paint him as unstable.",
@@ -305,29 +305,29 @@ class CharacterBiographyProvider {
             fullName: "Samuel Aaron Wallace",
             aliases: ["Director", "The Old Man", "The Shadow"],
             ageCategory: "elderly",
-            birthPlace: "New York City (Lower East Side)",
+            birthPlace: "Red Harbor, Zone 5",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Public School 97, Manhattan",
+                    institution: "Harbor District Public School, Red Harbor",
                     years: "pre-Revolution",
                     degree: nil,
-                    notes: "Immigrant education. Learned English as second language."
+                    notes: "Immigrant education. Learned the national language as second language."
                 ),
                 EducationEntry(
-                    institution: "City College of New York",
+                    institution: "Red Harbor City College",
                     years: "pre-Revolution",
                     degree: "Incomplete (left for the war)",
                     notes: "Studied law. Too poor to continue after father's death."
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "before the Revolution", position: "Factory Worker", location: "New York", significance: "Radicalized by working conditions"),
-                BiographyCareerEvent(era: "during the Depression", position: "Communist Party Organizer", location: "New York", significance: "Joined the underground movement"),
+                BiographyCareerEvent(era: "before the Revolution", position: "Factory Worker", location: "Red Harbor", significance: "Radicalized by working conditions"),
+                BiographyCareerEvent(era: "during the Depression", position: "Communist Party Organizer", location: "Red Harbor", significance: "Joined the underground movement"),
                 BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Intelligence", location: "Nationwide", significance: "Built the first revolutionary spy networks"),
                 BiographyCareerEvent(era: "during the Revolution", position: "Security Chief, Revolutionary Forces", location: "Mobile", significance: "Ran counter-intelligence during Civil War"),
-                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Director, Bureau of Public Safety", location: "Washington, DC", significance: "Second to Blackwood"),
-                BiographyCareerEvent(era: "during the Purges", position: "Director, Bureau of Public Safety", location: "Washington, DC", significance: "Succeeded Blackwood (whom he destroyed)")
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Director, Bureau of People's Security", location: "The Capital", significance: "Second to Blackwood"),
+                BiographyCareerEvent(era: "during the Purges", position: "Director, Bureau of People's Security", location: "The Capital", significance: "Succeeded Blackwood (whom he destroyed)")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -335,7 +335,7 @@ class CharacterBiographyProvider {
                     relation: "Father",
                     status: "Deceased",
                     occupation: "Tailor",
-                    notes: "Jewish immigrant from Poland. Died of influenza. Changed family name to Wallace for assimilation.",
+                    notes: "Immigrant from Eastern Europe. Died of influenza. Changed family name to Wallace for assimilation.",
                     isSecret: false
                 ),
                 mother: FamilyMember(
@@ -360,7 +360,7 @@ class CharacterBiographyProvider {
                         relation: "Son",
                         status: "Deceased",
                         occupation: "Soldier",
-                        notes: "Killed in the Intervention War, fighting Canadian forces in the Pacific Northwest. His death broke something in Wallace.",
+                        notes: "Killed in the Border War, fighting foreign forces in Zone 7. His death broke something in Wallace.",
                         isSecret: false
                     )
                 ],
@@ -370,7 +370,7 @@ class CharacterBiographyProvider {
                         relation: "Sister",
                         status: "Alive",
                         occupation: "School Administrator",
-                        notes: "Lives in the Great Lakes Zone. They exchange letters on holidays. She is the only family he has left.",
+                        notes: "Lives in Zone 2. They exchange letters on holidays. She is the only family he has left.",
                         isSecret: false
                     )
                 ],
@@ -386,8 +386,8 @@ class CharacterBiographyProvider {
             ),
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
-                recruitedBy: "Earl Browder (CPUSA)",
-                civilWarRole: "Built and ran the revolutionary intelligence apparatus. Identified and neutralized federal infiltrators. Saved the Revolution through information warfare.",
+                recruitedBy: "Underground party organizers",
+                civilWarRole: "Built and ran the revolutionary intelligence apparatus. Identified and neutralized government infiltrators. Saved the Revolution through information warfare.",
                 purgeExperience: "Ran the Purges under Blackwood, then destroyed Blackwood and took his place. Has personally overseen thousands of interrogations. Has never tortured anyone himself—he has people for that.",
                 keyMoments: [
                     HistoricalMoment(
@@ -424,7 +424,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "wallace_son_sacrifice",
                     title: "David's Assignment",
-                    fullContent: "Wallace's son David was assigned to a suicide mission in the Pacific Northwest—an assault on a fortified Canadian position that command knew was hopeless. Wallace could have intervened. He had the power. He chose not to, because pulling his son from danger would have looked like favoritism. David died, and Wallace has never forgiven himself. He keeps his son's last letter in his desk drawer.",
+                    fullContent: "Wallace's son David was assigned to a suicide mission in Zone 7—an assault on a fortified position that command knew was hopeless. Wallace could have intervened. He had the power. He chose not to, because pulling his son from danger would have looked like favoritism. David died, and Wallace has never forgiven himself. He keeps his son's last letter in his desk drawer.",
                     discoveryDifficulty: 6,
                     evidenceLocations: ["Military records (classified)", "David's letters (in Wallace's possession)", "The surviving members of David's unit"],
                     potentialConsequences: "Humanizing. Would make Wallace vulnerable if used against him. Could also create sympathy if revealed carefully.",
@@ -463,16 +463,16 @@ class CharacterBiographyProvider {
         return CharacterBiography(
             id: "carter",
             fullName: "Raymond Elijah Carter",
-            aliases: ["The General", "Old Ray", "The Lion of Chicago"],
+            aliases: ["The General", "Old Ray", "The Lion of Fitzgerald City"],
             ageCategory: "middle-aged",
-            birthPlace: "Macon, Georgia",
+            birthPlace: "Zone 3, Agricultural Region",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Segregated Public Schools, Macon",
+                    institution: "Rural Public Schools, Zone 3",
                     years: "pre-Revolution",
                     degree: nil,
-                    notes: "Education ended at 14. Jim Crow South limited opportunities."
+                    notes: "Education ended at 14. Limited opportunities in the agricultural region."
                 ),
                 EducationEntry(
                     institution: "Army Correspondence Courses",
@@ -482,21 +482,21 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "before the Revolution", position: "Sharecropper", location: "Georgia", significance: "Worked the fields until he was 18"),
-                BiographyCareerEvent(era: "during the Depression", position: "Railroad Worker", location: "Chicago", significance: "Migrated north. Joined the Brotherhood."),
-                BiographyCareerEvent(era: "during the Depression", position: "Labor Organizer", location: "Chicago", significance: "Organized Black workers despite threats"),
-                BiographyCareerEvent(era: "during the Revolution", position: "Militia Commander", location: "Chicago", significance: "Led workers' militia in the Battle of Chicago"),
+                BiographyCareerEvent(era: "before the Revolution", position: "Farm Laborer", location: "Zone 3", significance: "Worked the fields until he was 18"),
+                BiographyCareerEvent(era: "during the Depression", position: "Railroad Worker", location: "Fitzgerald City", significance: "Migrated to the industrial zone. Joined the Brotherhood."),
+                BiographyCareerEvent(era: "during the Depression", position: "Labor Organizer", location: "Fitzgerald City", significance: "Organized workers despite threats"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Militia Commander", location: "Fitzgerald City", significance: "Led workers' militia in the Battle of Fitzgerald City"),
                 BiographyCareerEvent(era: "at the Revolution's end", position: "General, People's Army", location: "Various", significance: "Commander of the 3rd Revolutionary Corps"),
-                BiographyCareerEvent(era: "after the Purges", position: "Deputy Commander, Armed Forces", location: "Washington, DC", significance: "Second-highest military position"),
-                BiographyCareerEvent(era: "present day", position: "Deputy General Secretary", location: "Washington, DC", significance: "Moved into civilian leadership")
+                BiographyCareerEvent(era: "after the Purges", position: "Deputy Commander, Armed Forces", location: "The Capital", significance: "Second-highest military position"),
+                BiographyCareerEvent(era: "present day", position: "Deputy General Secretary", location: "The Capital", significance: "Moved into civilian leadership")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
                     name: "Elijah Carter",
                     relation: "Father",
                     status: "Deceased",
-                    occupation: "Sharecropper",
-                    notes: "Lynched by a white mob for 'disrespecting' a landlord. Raymond was sixteen.",
+                    occupation: "Farm Laborer",
+                    notes: "Killed by a mob for 'disrespecting' a landlord. Raymond was sixteen.",
                     isSecret: false
                 ),
                 mother: FamilyMember(
@@ -529,7 +529,7 @@ class CharacterBiographyProvider {
                         relation: "Daughter",
                         status: "Alive",
                         occupation: "Doctor",
-                        notes: "Named after Raymond's mother. Works in the Great Lakes Zone. Rarely visits.",
+                        notes: "Named after Raymond's mother. Works in Zone 2. Rarely visits.",
                         isSecret: false
                     )
                 ],
@@ -539,7 +539,7 @@ class CharacterBiographyProvider {
                         relation: "Brother",
                         status: "Deceased",
                         occupation: "Worker",
-                        notes: "Killed at Chicago. Raymond held him as he died.",
+                        notes: "Killed at the Battle of Fitzgerald City. Raymond held him as he died.",
                         isSecret: false
                     )
                 ],
@@ -551,29 +551,29 @@ class CharacterBiographyProvider {
                 fears: ["Failing his soldiers again", "His son dying in war", "Being remembered as a politician rather than a soldier"],
                 desires: ["Peace (genuine)", "His son's safety", "To stop fighting someday"],
                 habits: ["Rises at 5am", "Exercises despite age", "Writes letters to his dead wife"],
-                beliefs: ["The Revolution liberated Black Americans", "Violence is sometimes necessary", "He has killed enough"]
+                beliefs: ["The Revolution liberated the workers", "Violence is sometimes necessary", "He has killed enough"]
             ),
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
-                recruitedBy: "Chicago IWW organizers",
-                civilWarRole: "Commander, Black Workers' Militia. Led the defense of South Side Chicago for 90 days. Won the battle that broke the federal forces in the Midwest.",
+                recruitedBy: "Industrial union organizers",
+                civilWarRole: "Commander, Workers' Militia. Led the defense of Fitzgerald City for 90 days. Won the battle that broke the old regime's forces in the industrial heartland.",
                 purgeExperience: "Testified at the Trial of the Thirty-Six—against General Steele, his former commander. He has never forgiven himself.",
                 keyMoments: [
                     HistoricalMoment(
                         era: "before the Revolution",
-                        event: "Father's Lynching",
+                        event: "Father's Murder",
                         impact: "Made Raymond a revolutionary. He swore the system would pay.",
                         witnesses: []
                     ),
                     HistoricalMoment(
                         era: "during the Revolution",
-                        event: "The Battle of Chicago",
-                        impact: "90 days of street-to-street fighting. Lost his brother. Won the Midwest. Became a legend.",
+                        event: "The Battle of Fitzgerald City",
+                        impact: "90 days of street-to-street fighting. Lost his brother. Won the industrial zone. Became a legend.",
                         witnesses: ["fletcher", "thompson", "bodine"]
                     ),
                     HistoricalMoment(
                         era: "during the Revolution",
-                        event: "The Retreat at Pittsburgh",
+                        event: "The Retreat at Highland",
                         impact: "Ordered retreating soldiers shot to prevent a rout. Saved the battle. Killed his own men.",
                         witnesses: ["fletcher"]
                     ),
@@ -588,10 +588,10 @@ class CharacterBiographyProvider {
             darkSecrets: [
                 DarkSecret(
                     id: "carter_shooting_retreat",
-                    title: "The Pittsburgh Decimation",
-                    fullContent: "During the Battle of Pittsburgh, Carter's forces were retreating in disorder. Federal troops were pursuing. To stop the rout, Carter ordered his officers to shoot any man who ran. Seventeen soldiers died by their own side's bullets. The line held. The battle was won. Carter has never admitted this in public. The soldiers who witnessed it are mostly dead. Fletcher knows. They never speak of it.",
+                    title: "The Highland Decimation",
+                    fullContent: "During the Battle of Highland, Carter's forces were retreating in disorder. Enemy troops were pursuing. To stop the rout, Carter ordered his officers to shoot any man who ran. Seventeen soldiers died by their own side's bullets. The line held. The battle was won. Carter has never admitted this in public. The soldiers who witnessed it are mostly dead. Fletcher knows. They never speak of it.",
                     discoveryDifficulty: 7,
-                    evidenceLocations: ["Fletcher's memory", "Survivors from the Pittsburgh campaign", "Carter's unpublished memoirs (if they exist)"],
+                    evidenceLocations: ["Fletcher's memory", "Survivors from the Highland campaign", "Carter's unpublished memoirs (if they exist)"],
                     potentialConsequences: "Would complicate Carter's image as a beloved military leader. Some would understand; others would call it murder.",
                     whoKnows: ["fletcher"],
                     canBeUsedFor: ["blackmail", "leverage"]
@@ -615,7 +615,7 @@ class CharacterBiographyProvider {
                     isPublic: false
                 ),
                 CharacterQuote(
-                    quote: "The Revolution gave my people dignity. That's worth dying for. Whether it was worth killing for—I'm less sure.",
+                    quote: "The Revolution gave the workers dignity. That's worth dying for. Whether it was worth killing for—I'm less sure.",
                     context: "Private reflection, late at night",
                     era: nil,
                     isPublic: false
@@ -627,8 +627,8 @@ class CharacterBiographyProvider {
                     isPublic: false
                 )
             ],
-            physicalDescription: "Tall and powerfully built despite his fifty-plus years. Dark skin weathered by campaigns and sun. Gray at the temples now, giving him a distinguished air. Scars on his hands and one on his cheek from Chicago street fighting. Moves like a soldier still—purposeful, economical. Dress uniform immaculate; informal dress slightly rumpled. Eyes that have seen death and given it.",
-            psychologicalProfile: "Carter is a soldier who became a politician because the Revolution needed him. He is most comfortable with troops, least comfortable in the Standing Committee. He genuinely believes the Revolution liberated Black Americans from Jim Crow tyranny, and that belief justifies much—but not everything. The Pittsburgh shootings haunt him. The Steele testimony destroys his sleep. He leads because he must, not because he wants to. He respects Mitchell as a necessary man. He fears Wallace because Wallace knows too much. He hopes his son will find a way to serve without becoming what he became. He is tired of war, tired of politics, tired of pretending the system is what they promised it would be. But he cannot stop serving—the Revolution made him, and he owes it everything."
+            physicalDescription: "Tall and powerfully built despite his fifty-plus years. Weathered by campaigns and sun. Gray at the temples now, giving him a distinguished air. Scars on his hands and one on his cheek from Fitzgerald City street fighting. Moves like a soldier still—purposeful, economical. Dress uniform immaculate; informal dress slightly rumpled. Eyes that have seen death and given it.",
+            psychologicalProfile: "Carter is a soldier who became a politician because the Revolution needed him. He is most comfortable with troops, least comfortable in the Standing Committee. He genuinely believes the Revolution liberated the workers from tyranny, and that belief justifies much—but not everything. The Highland shootings haunt him. The Steele testimony destroys his sleep. He leads because he must, not because he wants to. He respects Mitchell as a necessary man. He fears Wallace because Wallace knows too much. He hopes his son will find a way to serve without becoming what he became. He is tired of war, tired of politics, tired of pretending the system is what they promised it would be. But he cannot stop serving—the Revolution made him, and he owes it everything."
         )
     }
 
@@ -640,14 +640,14 @@ class CharacterBiographyProvider {
             fullName: "Eleanor Frances Patterson",
             aliases: ["Comrade Patterson", "The Iron Lady", "Ellie (childhood only)"],
             ageCategory: "middle-aged",
-            birthPlace: "Boston, Massachusetts",
+            birthPlace: "Red Harbor, Zone 5",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Boston Public Schools",
+                    institution: "Red Harbor Public Schools",
                     years: "pre-Revolution",
                     degree: nil,
-                    notes: "Irish Catholic school. Excelled academically."
+                    notes: "Working-class school. Excelled academically."
                 ),
                 EducationEntry(
                     institution: "Workers' Academy",
@@ -657,11 +657,11 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Boston", significance: "Recruited by Father Brennan (later denounced)"),
-                BiographyCareerEvent(era: "during the Depression", position: "Party Secretary, Boston District", location: "Boston", significance: "Rose rapidly through Youth League"),
-                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Education", location: "Washington, DC", significance: "First government position"),
-                BiographyCareerEvent(era: "during the Purges", position: "Commissar of Education", location: "Washington, DC", significance: "Oversaw ideological curriculum"),
-                BiographyCareerEvent(era: "years later", position: "Second Secretary", location: "Washington, DC", significance: "Number two in Party hierarchy")
+                BiographyCareerEvent(era: "during the Depression", position: "Youth League Organizer", location: "Red Harbor", significance: "Recruited by Father Brennan (later denounced)"),
+                BiographyCareerEvent(era: "during the Depression", position: "Party Secretary, Harbor District", location: "Red Harbor", significance: "Rose rapidly through Youth League"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissar of Education", location: "The Capital", significance: "First government position"),
+                BiographyCareerEvent(era: "during the Purges", position: "Commissar of Education", location: "The Capital", significance: "Oversaw ideological curriculum"),
+                BiographyCareerEvent(era: "years later", position: "Second Secretary", location: "The Capital", significance: "Number two in Party hierarchy")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -669,7 +669,7 @@ class CharacterBiographyProvider {
                     relation: "Father",
                     status: "Deceased",
                     occupation: "Longshoreman",
-                    notes: "Killed in the March on Washington. A genuine martyr.",
+                    notes: "Killed in the March on the Capital. A genuine martyr.",
                     isSecret: false
                 ),
                 mother: FamilyMember(
@@ -688,7 +688,7 @@ class CharacterBiographyProvider {
                         relation: "Brother",
                         status: "Alive",
                         occupation: "Factory Manager",
-                        notes: "Lives in the Northeast Zone. They exchange Christmas cards. Nothing more.",
+                        notes: "Lives in Zone 5. They exchange holiday cards. Nothing more.",
                         isSecret: false
                     )
                 ],
@@ -705,18 +705,18 @@ class CharacterBiographyProvider {
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
                 recruitedBy: "Father Brennan (denounced during the Purges)",
-                civilWarRole: "Youth League organizer in Boston. Kept the young people motivated during the siege.",
+                civilWarRole: "Youth League organizer in Red Harbor. Kept the young people motivated during the siege.",
                 purgeExperience: "Denounced her mentor, Father Brennan, to survive. His children were sent to orphanages. She has never seen them again.",
                 keyMoments: [
                     HistoricalMoment(
                         era: "during the Purges",
                         event: "The Brennan Denunciation",
-                        impact: "Testified that Father Brennan was a Vatican spy. He wasn't. His execution saved her career.",
+                        impact: "Testified that Father Brennan was a foreign spy. He wasn't. His execution saved her career.",
                         witnesses: ["wallace"]
                     ),
                     HistoricalMoment(
                         era: "during the Revolution",
-                        event: "The Boston Siege",
+                        event: "The Harbor Siege",
                         impact: "Organized youth support during Red Betty Warren's strike. Learned how to inspire crowds.",
                         witnesses: []
                     )
@@ -726,7 +726,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "patterson_brennan",
                     title: "The Brennan Lie",
-                    fullContent: "Father Michael Brennan was a Catholic priest who secretly joined the revolutionary movement. He recruited young Eleanor Patterson, taught her to read Marx, gave her purpose. During the Religious Roundup during the Purges, Eleanor was pressured to denounce him as a Vatican agent. She did. She testified to conversations that never happened, meetings that never occurred. Brennan was executed. His three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages. Eleanor never learned what happened to them. She has spent ten years trying not to find out. She collects poetry because Brennan taught her to love it. She never reads religious poetry—it hurts too much.",
+                    fullContent: "Father Michael Brennan was a priest who secretly joined the revolutionary movement. He recruited young Eleanor Patterson, taught her to read Marx, gave her purpose. During the Religious Roundup during the Purges, Eleanor was pressured to denounce him as a foreign agent. She did. She testified to conversations that never happened, meetings that never occurred. Brennan was executed. His three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages. Eleanor never learned what happened to them. She has spent ten years trying not to find out. She collects poetry because Brennan taught her to love it. She never reads religious poetry—it hurts too much.",
                     discoveryDifficulty: 7,
                     evidenceLocations: ["Wallace's files on the Brennan case", "The orphanage records", "Surviving parishioners from Brennan's church"],
                     potentialConsequences: "Would expose Patterson as someone who destroyed an innocent man to save herself. The Brennan children, if found, could testify to their father's character.",
@@ -767,28 +767,28 @@ class CharacterBiographyProvider {
             fullName: "Stefan Adam Kowalski",
             aliases: ["Director Kowalski", "The Calculator"],
             ageCategory: "middle-aged",
-            birthPlace: "Pittsburgh, Pennsylvania",
+            birthPlace: "Fitzgerald City, Zone 2",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Pittsburgh Public Schools",
+                    institution: "Fitzgerald City Public Schools",
                     years: "pre-Revolution",
                     degree: nil,
-                    notes: "Polish immigrant community school. Showed mathematical talent."
+                    notes: "Immigrant community school. Showed mathematical talent."
                 ),
                 EducationEntry(
-                    institution: "University of Chicago",
+                    institution: "Workers' University",
                     years: "pre-Revolution",
                     degree: "Bachelor of Science, Economics",
                     notes: "Pre-purge university. Genuinely talented at mathematics."
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "during the Depression", position: "Junior Economist", location: "Pittsburgh", significance: "First post-graduation job"),
+                BiographyCareerEvent(era: "during the Depression", position: "Junior Economist", location: "Fitzgerald City", significance: "First post-graduation job"),
                 BiographyCareerEvent(era: "during the Revolution", position: "Statistical Analyst, Revolutionary Forces", location: "Mobile", significance: "Produced numbers that helped the cause"),
-                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissioner of Statistics", location: "Washington, DC", significance: "Rose through planning apparatus"),
-                BiographyCareerEvent(era: "after the Purges", position: "Commissioner of Economic Statistics", location: "Washington, DC", significance: "Controlled the numbers"),
-                BiographyCareerEvent(era: "present day", position: "Chairman, State Planning Commission", location: "Washington, DC", significance: "Apex of economic power")
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Deputy Commissioner of Statistics", location: "The Capital", significance: "Rose through planning apparatus"),
+                BiographyCareerEvent(era: "after the Purges", position: "Commissioner of Economic Statistics", location: "The Capital", significance: "Controlled the numbers"),
+                BiographyCareerEvent(era: "present day", position: "Chairman, State Planning Commission", location: "The Capital", significance: "Apex of economic power")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -804,7 +804,7 @@ class CharacterBiographyProvider {
                     relation: "Mother",
                     status: "Alive",
                     occupation: "Retired",
-                    notes: "Lives in a state apartment in Pittsburgh. Stefan sends money. Rarely visits.",
+                    notes: "Lives in a state apartment in Fitzgerald City. Stefan sends money. Rarely visits.",
                     isSecret: false
                 ),
                 spouse: FamilyMember(
@@ -821,7 +821,7 @@ class CharacterBiographyProvider {
                         relation: "Daughter",
                         status: "Alive",
                         occupation: "Student",
-                        notes: "At the Party Academy in Washington. Stefan loves her genuinely—perhaps the only person he does.",
+                        notes: "At the Party Academy in The Capital. Stefan loves her genuinely—perhaps the only person he does.",
                         isSecret: false
                     )
                 ],
@@ -844,8 +844,8 @@ class CharacterBiographyProvider {
                 keyMoments: [
                     HistoricalMoment(
                         era: "during the Purges",
-                        event: "The Kansas Famine Statistics",
-                        impact: "Produced numbers showing no famine in Kansas. People were dying; his reports showed bumper harvests. He knew.",
+                        event: "The Zone 3 Famine Statistics",
+                        impact: "Produced numbers showing no famine in Zone 3. People were dying; his reports showed bumper harvests. He knew.",
                         witnesses: ["erickson", "carpenter"]
                     )
                 ]
@@ -853,11 +853,11 @@ class CharacterBiographyProvider {
             darkSecrets: [
                 DarkSecret(
                     id: "kowalski_famine",
-                    title: "The Kansas Numbers",
-                    fullContent: "During the Kansas Famine during the Purges, Kowalski's office produced agricultural statistics showing record grain production in the Plains Zone. In reality, collectivization quotas were killing people. Thousands died while his reports showed success. He knew. He produced the numbers anyway because the alternative was being accused of 'spreading defeatism.' Laura Erickson's brother was one of those who died. If she ever sees the original data Kowalski suppressed, she will know he helped kill her family.",
+                    title: "The Zone 3 Numbers",
+                    fullContent: "During the Zone 3 Famine during the Purges, Kowalski's office produced agricultural statistics showing record grain production in the Agricultural Zone. In reality, collectivization quotas were killing people. Thousands died while his reports showed success. He knew. He produced the numbers anyway because the alternative was being accused of 'spreading defeatism.' Laura Erickson's brother was one of those who died. If she ever sees the original data Kowalski suppressed, she will know he helped kill her family.",
                     discoveryDifficulty: 6,
-                    evidenceLocations: ["Original data files (if they still exist)", "Erickson's private research", "Surviving witnesses from the Plains Zone"],
-                    potentialConsequences: "Would expose Kowalski as complicit in mass death. Would make him an enemy of Erickson and anyone who lost family in Kansas.",
+                    evidenceLocations: ["Original data files (if they still exist)", "Erickson's private research", "Surviving witnesses from Zone 3"],
+                    potentialConsequences: "Would expose Kowalski as complicit in mass death. Would make him an enemy of Erickson and anyone who lost family in the famine.",
                     whoKnows: ["carpenter"],
                     canBeUsedFor: ["blackmail", "alliance with those seeking justice", "destruction"]
                 )
@@ -881,7 +881,7 @@ class CharacterBiographyProvider {
         )
     }
 
-    // MARK: - Henderson Biography (abbreviated for space)
+    // MARK: - Henderson Biography
 
     private func createHendersonBiography() -> CharacterBiography {
         return CharacterBiography(
@@ -889,11 +889,11 @@ class CharacterBiographyProvider {
             fullName: "William Joseph Henderson",
             aliases: ["Comrade Henderson", "The Idealist", "True Bill"],
             ageCategory: "middle-aged",
-            birthPlace: "Minneapolis, Minnesota",
+            birthPlace: "The People's Proletarian Town, Zone 3",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Minneapolis Public Schools",
+                    institution: "Rural Public Schools",
                     years: "pre-Revolution",
                     degree: nil,
                     notes: "Working-class education"
@@ -906,9 +906,9 @@ class CharacterBiographyProvider {
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "during the Depression", position: "Union Organizer", location: "Minneapolis", significance: "Organized grain workers"),
-                BiographyCareerEvent(era: "at the Revolution's end", position: "Commissar of Labor Relations", location: "Washington, DC", significance: "Champion of workers' rights"),
-                BiographyCareerEvent(era: "present day", position: "Commissar of Agriculture", location: "Washington, DC", significance: "Fights for realistic quotas")
+                BiographyCareerEvent(era: "during the Depression", position: "Union Organizer", location: "The People's Proletarian Town", significance: "Organized grain workers"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "Commissar of Labor Relations", location: "The Capital", significance: "Champion of workers' rights"),
+                BiographyCareerEvent(era: "present day", position: "Commissar of Agriculture", location: "The Capital", significance: "Fights for realistic quotas")
             ],
             familyTree: FamilyTree(
                 father: nil,
@@ -944,8 +944,8 @@ class CharacterBiographyProvider {
             ),
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
-                recruitedBy: "IWW organizers",
-                civilWarRole: "Organized supply lines and worker support in the upper Midwest",
+                recruitedBy: "Union organizers",
+                civilWarRole: "Organized supply lines and worker support in the agricultural region",
                 purgeExperience: "Survived by being too useful and too genuinely beloved. Even Wallace hesitated to touch him.",
                 keyMoments: []
             ),
@@ -974,7 +974,7 @@ class CharacterBiographyProvider {
         )
     }
 
-    // MARK: - Edwards Biography (abbreviated)
+    // MARK: - Edwards Biography
 
     private func createEdwardsBiography() -> CharacterBiography {
         return CharacterBiography(
@@ -982,21 +982,21 @@ class CharacterBiographyProvider {
             fullName: "Edward Thomas Williams (now Edwards)",
             aliases: ["Colonel Edwards", "The Ghost", "Williams (dead name)"],
             ageCategory: "middle-aged",
-            birthPlace: "Baltimore, Maryland",
+            birthPlace: "Red Harbor, Zone 5",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Baltimore Streets",
+                    institution: "Harbor District Streets",
                     years: "pre-Revolution",
                     degree: nil,
                     notes: "Mostly self-taught. Learned to survive."
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Courier", location: "Baltimore", significance: "Ran messages between cells"),
-                BiographyCareerEvent(era: "during the Revolution", position: "Field Agent", location: "Behind Federal Lines", significance: "Sabotage and assassination"),
-                BiographyCareerEvent(era: "at the Revolution's end", position: "BPS Officer", location: "Washington, DC", significance: "Wallace's protégé"),
-                BiographyCareerEvent(era: "present day", position: "First Deputy Director", location: "Washington, DC", significance: "Wallace's likely successor")
+                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Courier", location: "Red Harbor", significance: "Ran messages between cells"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Field Agent", location: "Behind Enemy Lines", significance: "Sabotage and assassination"),
+                BiographyCareerEvent(era: "at the Revolution's end", position: "BPS Officer", location: "The Capital", significance: "Wallace's protégé"),
+                BiographyCareerEvent(era: "present day", position: "First Deputy Director", location: "The Capital", significance: "Wallace's likely successor")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -1023,7 +1023,7 @@ class CharacterBiographyProvider {
                         relation: "Sister",
                         status: "Alive",
                         occupation: "Unknown",
-                        notes: "Lives in the Great Lakes Zone under a different name. Edwards has not contacted her in 15 years.",
+                        notes: "Lives in Zone 2 under a different name. Edwards has not contacted her in 15 years.",
                         isSecret: true
                     )
                 ],
@@ -1039,8 +1039,8 @@ class CharacterBiographyProvider {
             ),
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "during the Depression",
-                recruitedBy: "Baltimore underground",
-                civilWarRole: "Field operative behind federal lines. Sabotage, assassination, intelligence.",
+                recruitedBy: "Harbor underground",
+                civilWarRole: "Field operative behind enemy lines. Sabotage, assassination, intelligence.",
                 purgeExperience: "Present at the Steele interrogation. Held the lamp. Helped break heroes.",
                 keyMoments: [
                     HistoricalMoment(
@@ -1061,9 +1061,9 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "edwards_sister",
                     title: "The Hidden Sister",
-                    fullContent: "Edwards has a sister, Sarah, living under an assumed name in the Great Lakes Zone. He has not contacted her in 15 years to protect her from his work. If enemies discovered her location, she could be used as leverage—or eliminated as a message. He would do almost anything to keep her safe.",
+                    fullContent: "Edwards has a sister, Sarah, living under an assumed name in Zone 2. He has not contacted her in 15 years to protect her from his work. If enemies discovered her location, she could be used as leverage—or eliminated as a message. He would do almost anything to keep her safe.",
                     discoveryDifficulty: 8,
-                    evidenceLocations: ["Pre-revolution Baltimore records", "Edwards' personal effects (hidden photograph)", "Great Lakes Zone identity registries"],
+                    evidenceLocations: ["Pre-revolution Harbor records", "Edwards' personal effects (hidden photograph)", "Zone 2 identity registries"],
                     potentialConsequences: "Could be used to blackmail Edwards or force his compliance. If exposed, his sister's life would be in danger.",
                     whoKnows: ["wallace"],
                     canBeUsedFor: ["blackmail", "leverage", "alliance"]
@@ -1073,7 +1073,7 @@ class CharacterBiographyProvider {
                     title: "The Cell Executions",
                     fullContent: "During the Revolution, Edwards executed three members of his own cell on Wallace's orders. One was almost certainly innocent—the real informer was discovered later, already dead. Edwards changed his name afterward. He still sees the innocent man's face in his dreams.",
                     discoveryDifficulty: 7,
-                    evidenceLocations: ["Wallace's personal records", "Baltimore underground archives (if they survived)", "Edwards' pre-revolution identity documents"],
+                    evidenceLocations: ["Wallace's personal records", "Harbor underground archives (if they survived)", "Edwards' pre-revolution identity documents"],
                     potentialConsequences: "Would undermine Edwards' reputation for precision and judgment. Could be used to question Wallace's leadership if framed as an innocent man's murder.",
                     whoKnows: ["wallace"],
                     canBeUsedFor: ["exposure", "leverage", "discrediting"]
@@ -1092,7 +1092,7 @@ class CharacterBiographyProvider {
         )
     }
 
-    // MARK: - Fletcher Biography (abbreviated)
+    // MARK: - Fletcher Biography
 
     private func createFletcherBiography() -> CharacterBiography {
         return CharacterBiography(
@@ -1100,21 +1100,21 @@ class CharacterBiographyProvider {
             fullName: "James Arthur Fletcher",
             aliases: ["General Fletcher", "The Commissar"],
             ageCategory: "middle-aged",
-            birthPlace: "Columbus, Ohio",
+            birthPlace: "Fitzgerald City, Zone 2",
             isDeceased: false,
             education: [
                 EducationEntry(
-                    institution: "Columbus Public Schools",
+                    institution: "Fitzgerald City Public Schools",
                     years: "pre-Revolution",
                     degree: nil,
                     notes: "Middle-class education—not working-class as he claims"
                 )
             ],
             careerTimeline: [
-                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Organizer", location: "Ohio", significance: "Joined the movement"),
-                BiographyCareerEvent(era: "during the Revolution", position: "Political Commissar", location: "Chicago", significance: "Attached to Steele's forces"),
-                BiographyCareerEvent(era: "during the Purges", position: "Deputy Head, Political Directorate", location: "Washington, DC", significance: "Rose after Steele's fall"),
-                BiographyCareerEvent(era: "present day", position: "Head, Political Directorate", location: "Washington, DC", significance: "Controls army ideology")
+                BiographyCareerEvent(era: "during the Depression", position: "Revolutionary Organizer", location: "Zone 2", significance: "Joined the movement"),
+                BiographyCareerEvent(era: "during the Revolution", position: "Political Commissar", location: "Fitzgerald City", significance: "Attached to Steele's forces"),
+                BiographyCareerEvent(era: "during the Purges", position: "Deputy Head, Political Directorate", location: "The Capital", significance: "Rose after Steele's fall"),
+                BiographyCareerEvent(era: "present day", position: "Head, Political Directorate", location: "The Capital", significance: "Controls army ideology")
             ],
             familyTree: FamilyTree(
                 father: FamilyMember(
@@ -1165,7 +1165,7 @@ class CharacterBiographyProvider {
             revolutionaryHistory: RevolutionaryHistory(
                 joinedMovement: "before the Revolution",
                 recruitedBy: "Ideological conversion (not hardship)",
-                civilWarRole: "Political commissar at Chicago. Held the line when others wavered.",
+                civilWarRole: "Political commissar at Fitzgerald City. Held the line when others wavered.",
                 purgeExperience: "Testified against Steele. His mentor. His friend. His guilt.",
                 keyMoments: []
             ),
@@ -1175,7 +1175,7 @@ class CharacterBiographyProvider {
                     title: "The Middle-Class Commissar",
                     fullContent: "Fletcher claims working-class origins—a railroad worker's son who knew hardship. The truth is his father was a railroad supervisor, his mother a schoolteacher. The family had a piano. He learned revolutionary theory from books, not from hunger. His entire political identity is built on a fabricated biography.",
                     discoveryDifficulty: 6,
-                    evidenceLocations: ["Columbus public records", "Ohio school archives", "Railroad company employment records", "Fletcher family property deeds"],
+                    evidenceLocations: ["Fitzgerald City public records", "Zone 2 school archives", "Railroad company employment records", "Fletcher family property deeds"],
                     potentialConsequences: "Would destroy Fletcher's credibility as a 'true worker' and undermine his authority in the Political Directorate. His rivals would use this to paint him as a fraud and class traitor.",
                     whoKnows: [],
                     canBeUsedFor: ["exposure", "blackmail", "discrediting", "political destruction"]
@@ -1193,7 +1193,7 @@ class CharacterBiographyProvider {
             ],
             quotations: [
                 CharacterQuote(
-                    quote: "At Chicago, the commissars held the line. That's what political officers do. We hold the line.",
+                    quote: "At Fitzgerald City, the commissars held the line. That's what political officers do. We hold the line.",
                     context: "Address to young officers",
                     era: "in recent years",
                     isPublic: true

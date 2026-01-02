@@ -3,6 +3,7 @@
 //  Nomenklatura
 //
 //  Geographic data structures for world map rendering
+//  The PSR is a fictional nation on a fictional continent; all other powers are real circa 1950/1951
 //
 
 import Foundation
@@ -34,13 +35,11 @@ struct MapRegion: Codable, Identifiable {
 
     /// Political alignment determines map color
     enum PoliticalAlignment: String, Codable {
-        case homeland       // PSRA - deep red with gold border
-        case socialistAlly  // USSR, Germany - red tones
-        case capitalist     // UK, Canada, France, Cuba - blue tones
-        case fascist        // Italy, Spain - brown tones
-        case pacificHostile // Japan - distinct hostile color
-        case neutral        // Mexico, China - gray
-        case occupied       // Territories under occupation (Hawaii, E. Alaska)
+        case homeland       // PSR - deep red with gold border
+        case socialistAlly  // USSR, Eastern Bloc - red tones
+        case capitalist     // USA, Western Europe - blue tones
+        case nonAligned     // India, Yugoslavia, Egypt - green tones
+        case neutral        // Uncommitted nations - gray
         case ocean          // Ocean areas
         case unclaimed      // Unclaimed/minor territories
     }
@@ -130,93 +129,84 @@ enum MapProjection: String, Codable {
 
 // MARK: - World Map Data
 
-/// Static world map data for the alternate 1950s
-struct AlternateWorldMap {
+/// Static world map data for the 1950s world with fictional PSR
+struct WorldMapData {
 
-    /// All map regions for the alternate history world
+    /// All map regions for the world circa 1950/1951
+    /// The PSR is a fictional nation on a fictional continent; all others are real
     static func loadRegions() -> [MapRegion] {
         return [
-            // PSRA - The People's Socialist Republic of America
-            createPSRA(),
+            // The People's Socialist Republic (Player's Homeland)
+            createPSR(),
 
-            // Socialist Allies
+            // Socialist Bloc (Real Nations)
             createSovietUnion(),
-            createGermany(),
-
-            // Hostile Capitalist Powers
-            createCanada(),
-            createUnitedKingdom(),
-            createFrance(),
-            createCuba(),
-
-            // Fascist Powers
-            createItaly(),
-            createSpain(),
-
-            // Pacific Theater
-            createJapan(),
-            createHawaii(),
-
-            // Neutral Powers
-            createMexico(),
+            createPoland(),
+            createCzechoslovakia(),
             createChina(),
 
-            // Occupied Territories
-            createEasternAlaska(),
+            // Western Powers (Real Nations)
+            createUnitedStates(),
+            createUnitedKingdom(),
+            createFrance(),
+            createWestGermany(),
+            createJapan(),
+
+            // Non-Aligned Nations (Real Nations)
+            createIndia(),
+            createYugoslavia(),
+            createEgypt(),
+            createMexico(),
 
             // Oceans
             createAtlanticOcean(),
-            createPacificOcean()
+            createPacificOcean(),
+            createIndianOcean()
         ]
     }
 
-    // MARK: - PSRA (Player Homeland)
+    // MARK: - PSR (Player Homeland - Fictional)
 
-    private static func createPSRA() -> MapRegion {
-        // Continental US + British Columbia + Alberta (seized 1941-42)
-        // Simplified polygon for the combined territory
+    /// The People's Socialist Republic - a fictional nation on a fictional continent
+    /// Geographically positioned in the southern hemisphere, distinct from all real landmasses
+    private static func createPSR() -> MapRegion {
+        // Fictional continent in the southern Atlantic/Indian Ocean region
+        // Large enough to be significant, isolated enough to be independent
         let points: [CGPoint] = [
-            // Pacific Northwest (including seized BC)
-            CGPoint(x: 0.12, y: 0.28),  // Northern BC
-            CGPoint(x: 0.14, y: 0.32),  // Southern BC
-            CGPoint(x: 0.12, y: 0.36),  // Washington
-            CGPoint(x: 0.10, y: 0.42),  // Oregon
-            CGPoint(x: 0.08, y: 0.50),  // California coast
-            CGPoint(x: 0.10, y: 0.56),  // Southern California
-            // Southwest
-            CGPoint(x: 0.14, y: 0.54),  // Arizona
-            CGPoint(x: 0.18, y: 0.56),  // New Mexico
-            CGPoint(x: 0.20, y: 0.54),  // Texas panhandle
-            CGPoint(x: 0.24, y: 0.58),  // Texas coast
-            // Gulf Coast & Southeast
-            CGPoint(x: 0.28, y: 0.56),  // Louisiana
-            CGPoint(x: 0.32, y: 0.54),  // Mississippi/Alabama
-            CGPoint(x: 0.36, y: 0.50),  // Florida panhandle
-            CGPoint(x: 0.38, y: 0.54),  // Florida
-            // East Coast
-            CGPoint(x: 0.36, y: 0.46),  // Georgia
-            CGPoint(x: 0.34, y: 0.42),  // Carolinas
-            CGPoint(x: 0.36, y: 0.38),  // Virginia
-            CGPoint(x: 0.38, y: 0.36),  // Mid-Atlantic
-            CGPoint(x: 0.36, y: 0.32),  // New England
-            CGPoint(x: 0.34, y: 0.30),  // Maine
-            // Northern Border (with Canada)
-            CGPoint(x: 0.30, y: 0.28),  // Great Lakes
-            CGPoint(x: 0.24, y: 0.28),  // Upper Midwest
-            CGPoint(x: 0.18, y: 0.26),  // Northern Plains
-            CGPoint(x: 0.16, y: 0.24),  // Montana
-            // Alberta (seized territory)
-            CGPoint(x: 0.16, y: 0.22),  // Alberta south
-            CGPoint(x: 0.14, y: 0.20),  // Alberta north
+            // Northwestern coast
+            CGPoint(x: 0.30, y: 0.55),
+            CGPoint(x: 0.28, y: 0.58),
+            CGPoint(x: 0.26, y: 0.62),
+            // Western coast
+            CGPoint(x: 0.25, y: 0.66),
+            CGPoint(x: 0.26, y: 0.70),
+            // Southwestern coast
+            CGPoint(x: 0.28, y: 0.73),
+            CGPoint(x: 0.32, y: 0.75),
+            // Southern coast
+            CGPoint(x: 0.38, y: 0.76),
+            CGPoint(x: 0.44, y: 0.74),
+            // Southeastern coast
+            CGPoint(x: 0.48, y: 0.71),
+            CGPoint(x: 0.50, y: 0.67),
+            // Eastern coast
+            CGPoint(x: 0.49, y: 0.62),
+            CGPoint(x: 0.47, y: 0.58),
+            // Northeastern coast
+            CGPoint(x: 0.44, y: 0.55),
+            CGPoint(x: 0.40, y: 0.53),
+            // Northern coast
+            CGPoint(x: 0.35, y: 0.52),
+            CGPoint(x: 0.32, y: 0.53),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.22, y: 0.40)
-        let bounds = CGRect(x: 0.08, y: 0.20, width: 0.32, height: 0.38)
+        let centroid = CGPoint(x: 0.38, y: 0.64)
+        let bounds = CGRect(x: 0.25, y: 0.52, width: 0.25, height: 0.24)
 
         return MapRegion(
-            id: "psra",
-            displayName: "P.S.R.A.",
+            id: "psr",
+            displayName: "P.S.R.",
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
@@ -227,31 +217,31 @@ struct AlternateWorldMap {
     // MARK: - Soviet Union
 
     private static func createSovietUnion() -> MapRegion {
-        // USSR including Eastern Alaska
+        // USSR spanning Eastern Europe to the Pacific
         let points: [CGPoint] = [
             // Eastern Europe
-            CGPoint(x: 0.50, y: 0.26),
-            CGPoint(x: 0.54, y: 0.22),
-            CGPoint(x: 0.60, y: 0.20),
-            CGPoint(x: 0.70, y: 0.18),
-            CGPoint(x: 0.80, y: 0.16),
+            CGPoint(x: 0.52, y: 0.26),
+            CGPoint(x: 0.56, y: 0.22),
+            CGPoint(x: 0.62, y: 0.20),
+            CGPoint(x: 0.72, y: 0.18),
+            CGPoint(x: 0.82, y: 0.16),
             // Siberia
-            CGPoint(x: 0.88, y: 0.18),
-            CGPoint(x: 0.92, y: 0.22),
-            CGPoint(x: 0.94, y: 0.28),
+            CGPoint(x: 0.90, y: 0.18),
+            CGPoint(x: 0.94, y: 0.22),
+            CGPoint(x: 0.96, y: 0.28),
             // Pacific coast
-            CGPoint(x: 0.92, y: 0.34),
-            CGPoint(x: 0.88, y: 0.36),
+            CGPoint(x: 0.94, y: 0.34),
+            CGPoint(x: 0.90, y: 0.36),
             // Central Asia
-            CGPoint(x: 0.70, y: 0.38),
-            CGPoint(x: 0.60, y: 0.36),
-            CGPoint(x: 0.54, y: 0.34),
-            CGPoint(x: 0.50, y: 0.30),
+            CGPoint(x: 0.72, y: 0.38),
+            CGPoint(x: 0.62, y: 0.36),
+            CGPoint(x: 0.56, y: 0.34),
+            CGPoint(x: 0.52, y: 0.30),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.70, y: 0.28)
-        let bounds = CGRect(x: 0.50, y: 0.16, width: 0.44, height: 0.22)
+        let centroid = CGPoint(x: 0.72, y: 0.28)
+        let bounds = CGRect(x: 0.52, y: 0.16, width: 0.44, height: 0.22)
 
         return MapRegion(
             id: "soviet_union",
@@ -263,25 +253,25 @@ struct AlternateWorldMap {
         )
     }
 
-    // MARK: - Germany (Socialist Republic)
+    // MARK: - Poland
 
-    private static func createGermany() -> MapRegion {
+    private static func createPoland() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.48, y: 0.32),
-            CGPoint(x: 0.50, y: 0.30),
-            CGPoint(x: 0.52, y: 0.32),
-            CGPoint(x: 0.52, y: 0.36),
-            CGPoint(x: 0.50, y: 0.38),
-            CGPoint(x: 0.48, y: 0.36),
+            CGPoint(x: 0.50, y: 0.28),
+            CGPoint(x: 0.52, y: 0.26),
+            CGPoint(x: 0.54, y: 0.28),
+            CGPoint(x: 0.54, y: 0.32),
+            CGPoint(x: 0.52, y: 0.34),
+            CGPoint(x: 0.50, y: 0.32),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.50, y: 0.34)
-        let bounds = CGRect(x: 0.48, y: 0.30, width: 0.04, height: 0.08)
+        let centroid = CGPoint(x: 0.52, y: 0.30)
+        let bounds = CGRect(x: 0.50, y: 0.26, width: 0.04, height: 0.08)
 
         return MapRegion(
-            id: "germany",
-            displayName: "Germany",
+            id: "poland",
+            displayName: "Poland",
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
@@ -289,29 +279,96 @@ struct AlternateWorldMap {
         )
     }
 
-    // MARK: - Canada (Lost BC & Alberta)
+    // MARK: - Czechoslovakia
 
-    private static func createCanada() -> MapRegion {
-        // Canada minus BC and Alberta
+    private static func createCzechoslovakia() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.16, y: 0.16),  // Manitoba
-            CGPoint(x: 0.20, y: 0.12),  // Hudson Bay
-            CGPoint(x: 0.28, y: 0.10),  // Quebec
-            CGPoint(x: 0.34, y: 0.16),  // Maritimes
-            CGPoint(x: 0.32, y: 0.22),  // Quebec south
-            CGPoint(x: 0.28, y: 0.26),  // Ontario
-            CGPoint(x: 0.22, y: 0.24),  // Great Lakes
-            CGPoint(x: 0.18, y: 0.22),  // Manitoba south
-            CGPoint(x: 0.16, y: 0.20),  // Saskatchewan
+            CGPoint(x: 0.49, y: 0.32),
+            CGPoint(x: 0.52, y: 0.31),
+            CGPoint(x: 0.53, y: 0.34),
+            CGPoint(x: 0.51, y: 0.36),
+            CGPoint(x: 0.48, y: 0.35),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.26, y: 0.18)
-        let bounds = CGRect(x: 0.16, y: 0.10, width: 0.18, height: 0.16)
+        let centroid = CGPoint(x: 0.50, y: 0.34)
+        let bounds = CGRect(x: 0.48, y: 0.31, width: 0.05, height: 0.05)
 
         return MapRegion(
-            id: "canada",
-            displayName: "Canada",
+            id: "czechoslovakia",
+            displayName: "Czechoslovakia",
+            polygons: [polygon],
+            centroid: centroid,
+            bounds: bounds,
+            politicalAlignment: .socialistAlly
+        )
+    }
+
+    // MARK: - China
+
+    private static func createChina() -> MapRegion {
+        let points: [CGPoint] = [
+            CGPoint(x: 0.74, y: 0.38),
+            CGPoint(x: 0.84, y: 0.36),
+            CGPoint(x: 0.88, y: 0.42),
+            CGPoint(x: 0.86, y: 0.52),
+            CGPoint(x: 0.78, y: 0.54),
+            CGPoint(x: 0.72, y: 0.50),
+            CGPoint(x: 0.70, y: 0.44),
+        ]
+
+        let polygon = MapPolygon(points: points)
+        let centroid = CGPoint(x: 0.79, y: 0.45)
+        let bounds = CGRect(x: 0.70, y: 0.36, width: 0.18, height: 0.18)
+
+        return MapRegion(
+            id: "china",
+            displayName: "China",
+            polygons: [polygon],
+            centroid: centroid,
+            bounds: bounds,
+            politicalAlignment: .socialistAlly
+        )
+    }
+
+    // MARK: - United States
+
+    private static func createUnitedStates() -> MapRegion {
+        // Continental USA
+        let points: [CGPoint] = [
+            // Pacific Northwest
+            CGPoint(x: 0.08, y: 0.30),
+            CGPoint(x: 0.10, y: 0.34),
+            CGPoint(x: 0.08, y: 0.40),
+            // California
+            CGPoint(x: 0.06, y: 0.44),
+            // Southwest
+            CGPoint(x: 0.10, y: 0.46),
+            CGPoint(x: 0.14, y: 0.46),
+            // Gulf Coast
+            CGPoint(x: 0.18, y: 0.48),
+            CGPoint(x: 0.22, y: 0.46),
+            // Florida
+            CGPoint(x: 0.24, y: 0.48),
+            CGPoint(x: 0.22, y: 0.44),
+            // East Coast
+            CGPoint(x: 0.24, y: 0.38),
+            CGPoint(x: 0.22, y: 0.32),
+            // New England
+            CGPoint(x: 0.24, y: 0.30),
+            // Northern Border
+            CGPoint(x: 0.20, y: 0.28),
+            CGPoint(x: 0.14, y: 0.28),
+            CGPoint(x: 0.10, y: 0.28),
+        ]
+
+        let polygon = MapPolygon(points: points)
+        let centroid = CGPoint(x: 0.15, y: 0.38)
+        let bounds = CGRect(x: 0.06, y: 0.28, width: 0.18, height: 0.20)
+
+        return MapRegion(
+            id: "united_states",
+            displayName: "United States",
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
@@ -323,16 +380,16 @@ struct AlternateWorldMap {
 
     private static func createUnitedKingdom() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.44, y: 0.28),
-            CGPoint(x: 0.46, y: 0.26),
+            CGPoint(x: 0.44, y: 0.26),
+            CGPoint(x: 0.46, y: 0.24),
+            CGPoint(x: 0.47, y: 0.28),
             CGPoint(x: 0.46, y: 0.32),
-            CGPoint(x: 0.44, y: 0.34),
-            CGPoint(x: 0.42, y: 0.32),
+            CGPoint(x: 0.44, y: 0.30),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.44, y: 0.30)
-        let bounds = CGRect(x: 0.42, y: 0.26, width: 0.04, height: 0.08)
+        let centroid = CGPoint(x: 0.45, y: 0.28)
+        let bounds = CGRect(x: 0.44, y: 0.24, width: 0.03, height: 0.08)
 
         return MapRegion(
             id: "united_kingdom",
@@ -348,16 +405,16 @@ struct AlternateWorldMap {
 
     private static func createFrance() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.44, y: 0.36),
-            CGPoint(x: 0.48, y: 0.34),
-            CGPoint(x: 0.48, y: 0.40),
-            CGPoint(x: 0.44, y: 0.42),
+            CGPoint(x: 0.44, y: 0.34),
+            CGPoint(x: 0.48, y: 0.32),
+            CGPoint(x: 0.49, y: 0.38),
+            CGPoint(x: 0.46, y: 0.42),
             CGPoint(x: 0.42, y: 0.38),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.45, y: 0.38)
-        let bounds = CGRect(x: 0.42, y: 0.34, width: 0.06, height: 0.08)
+        let centroid = CGPoint(x: 0.46, y: 0.37)
+        let bounds = CGRect(x: 0.42, y: 0.32, width: 0.07, height: 0.10)
 
         return MapRegion(
             id: "france",
@@ -369,23 +426,24 @@ struct AlternateWorldMap {
         )
     }
 
-    // MARK: - Cuba (Government-in-Exile)
+    // MARK: - West Germany
 
-    private static func createCuba() -> MapRegion {
+    private static func createWestGermany() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.26, y: 0.54),
-            CGPoint(x: 0.30, y: 0.52),
-            CGPoint(x: 0.30, y: 0.54),
-            CGPoint(x: 0.26, y: 0.56),
+            CGPoint(x: 0.48, y: 0.30),
+            CGPoint(x: 0.50, y: 0.28),
+            CGPoint(x: 0.51, y: 0.32),
+            CGPoint(x: 0.50, y: 0.36),
+            CGPoint(x: 0.48, y: 0.34),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.28, y: 0.54)
-        let bounds = CGRect(x: 0.26, y: 0.52, width: 0.04, height: 0.04)
+        let centroid = CGPoint(x: 0.49, y: 0.32)
+        let bounds = CGRect(x: 0.48, y: 0.28, width: 0.03, height: 0.08)
 
         return MapRegion(
-            id: "cuba",
-            displayName: "Cuba",
+            id: "west_germany",
+            displayName: "W. Germany",
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
@@ -393,69 +451,20 @@ struct AlternateWorldMap {
         )
     }
 
-    // MARK: - Italy (Fascist)
-
-    private static func createItaly() -> MapRegion {
-        let points: [CGPoint] = [
-            CGPoint(x: 0.50, y: 0.40),
-            CGPoint(x: 0.52, y: 0.42),
-            CGPoint(x: 0.50, y: 0.50),
-            CGPoint(x: 0.48, y: 0.48),
-            CGPoint(x: 0.48, y: 0.42),
-        ]
-
-        let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.50, y: 0.45)
-        let bounds = CGRect(x: 0.48, y: 0.40, width: 0.04, height: 0.10)
-
-        return MapRegion(
-            id: "italy",
-            displayName: "Italy",
-            polygons: [polygon],
-            centroid: centroid,
-            bounds: bounds,
-            politicalAlignment: .fascist
-        )
-    }
-
-    // MARK: - Spain (Fascist)
-
-    private static func createSpain() -> MapRegion {
-        let points: [CGPoint] = [
-            CGPoint(x: 0.40, y: 0.42),
-            CGPoint(x: 0.44, y: 0.42),
-            CGPoint(x: 0.44, y: 0.48),
-            CGPoint(x: 0.40, y: 0.48),
-        ]
-
-        let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.42, y: 0.45)
-        let bounds = CGRect(x: 0.40, y: 0.42, width: 0.04, height: 0.06)
-
-        return MapRegion(
-            id: "spain",
-            displayName: "Spain",
-            polygons: [polygon],
-            centroid: centroid,
-            bounds: bounds,
-            politicalAlignment: .fascist
-        )
-    }
-
     // MARK: - Japan
 
     private static func createJapan() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.88, y: 0.38),
-            CGPoint(x: 0.92, y: 0.36),
-            CGPoint(x: 0.92, y: 0.44),
-            CGPoint(x: 0.88, y: 0.46),
-            CGPoint(x: 0.86, y: 0.42),
+            CGPoint(x: 0.90, y: 0.38),
+            CGPoint(x: 0.94, y: 0.36),
+            CGPoint(x: 0.94, y: 0.44),
+            CGPoint(x: 0.90, y: 0.46),
+            CGPoint(x: 0.88, y: 0.42),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.90, y: 0.41)
-        let bounds = CGRect(x: 0.86, y: 0.36, width: 0.06, height: 0.10)
+        let centroid = CGPoint(x: 0.91, y: 0.41)
+        let bounds = CGRect(x: 0.88, y: 0.36, width: 0.06, height: 0.10)
 
         return MapRegion(
             id: "japan",
@@ -463,51 +472,101 @@ struct AlternateWorldMap {
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
-            politicalAlignment: .pacificHostile
+            politicalAlignment: .capitalist
         )
     }
 
-    // MARK: - Hawaii (Japanese Occupied)
+    // MARK: - India
 
-    private static func createHawaii() -> MapRegion {
+    private static func createIndia() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.02, y: 0.48),
-            CGPoint(x: 0.04, y: 0.46),
-            CGPoint(x: 0.06, y: 0.48),
-            CGPoint(x: 0.04, y: 0.50),
+            CGPoint(x: 0.66, y: 0.42),
+            CGPoint(x: 0.72, y: 0.40),
+            CGPoint(x: 0.74, y: 0.48),
+            CGPoint(x: 0.70, y: 0.56),
+            CGPoint(x: 0.66, y: 0.52),
+            CGPoint(x: 0.64, y: 0.46),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.04, y: 0.48)
-        let bounds = CGRect(x: 0.02, y: 0.46, width: 0.04, height: 0.04)
+        let centroid = CGPoint(x: 0.69, y: 0.48)
+        let bounds = CGRect(x: 0.64, y: 0.40, width: 0.10, height: 0.16)
 
         return MapRegion(
-            id: "hawaii",
-            displayName: "Hawaii",
+            id: "india",
+            displayName: "India",
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
-            politicalAlignment: .occupied,
-            isOccupied: true,
-            controlledBy: "japan"
+            politicalAlignment: .nonAligned
         )
     }
 
-    // MARK: - Mexico (Neutral)
+    // MARK: - Yugoslavia
 
-    private static func createMexico() -> MapRegion {
+    private static func createYugoslavia() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.10, y: 0.56),
-            CGPoint(x: 0.18, y: 0.58),
-            CGPoint(x: 0.22, y: 0.62),
-            CGPoint(x: 0.18, y: 0.68),
-            CGPoint(x: 0.12, y: 0.66),
-            CGPoint(x: 0.08, y: 0.60),
+            CGPoint(x: 0.50, y: 0.38),
+            CGPoint(x: 0.54, y: 0.36),
+            CGPoint(x: 0.55, y: 0.40),
+            CGPoint(x: 0.52, y: 0.43),
+            CGPoint(x: 0.49, y: 0.41),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.15, y: 0.62)
-        let bounds = CGRect(x: 0.08, y: 0.56, width: 0.14, height: 0.12)
+        let centroid = CGPoint(x: 0.52, y: 0.40)
+        let bounds = CGRect(x: 0.49, y: 0.36, width: 0.06, height: 0.07)
+
+        return MapRegion(
+            id: "yugoslavia",
+            displayName: "Yugoslavia",
+            polygons: [polygon],
+            centroid: centroid,
+            bounds: bounds,
+            politicalAlignment: .nonAligned
+        )
+    }
+
+    // MARK: - Egypt
+
+    private static func createEgypt() -> MapRegion {
+        let points: [CGPoint] = [
+            CGPoint(x: 0.54, y: 0.46),
+            CGPoint(x: 0.58, y: 0.44),
+            CGPoint(x: 0.60, y: 0.50),
+            CGPoint(x: 0.56, y: 0.54),
+            CGPoint(x: 0.52, y: 0.50),
+        ]
+
+        let polygon = MapPolygon(points: points)
+        let centroid = CGPoint(x: 0.56, y: 0.49)
+        let bounds = CGRect(x: 0.52, y: 0.44, width: 0.08, height: 0.10)
+
+        return MapRegion(
+            id: "egypt",
+            displayName: "Egypt",
+            polygons: [polygon],
+            centroid: centroid,
+            bounds: bounds,
+            politicalAlignment: .nonAligned
+        )
+    }
+
+    // MARK: - Mexico
+
+    private static func createMexico() -> MapRegion {
+        let points: [CGPoint] = [
+            CGPoint(x: 0.06, y: 0.44),
+            CGPoint(x: 0.12, y: 0.46),
+            CGPoint(x: 0.16, y: 0.50),
+            CGPoint(x: 0.12, y: 0.56),
+            CGPoint(x: 0.06, y: 0.54),
+            CGPoint(x: 0.04, y: 0.48),
+        ]
+
+        let polygon = MapPolygon(points: points)
+        let centroid = CGPoint(x: 0.10, y: 0.50)
+        let bounds = CGRect(x: 0.04, y: 0.44, width: 0.12, height: 0.12)
 
         return MapRegion(
             id: "mexico",
@@ -515,60 +574,7 @@ struct AlternateWorldMap {
             polygons: [polygon],
             centroid: centroid,
             bounds: bounds,
-            politicalAlignment: .neutral
-        )
-    }
-
-    // MARK: - China (Contested)
-
-    private static func createChina() -> MapRegion {
-        let points: [CGPoint] = [
-            CGPoint(x: 0.72, y: 0.40),
-            CGPoint(x: 0.82, y: 0.38),
-            CGPoint(x: 0.86, y: 0.44),
-            CGPoint(x: 0.84, y: 0.54),
-            CGPoint(x: 0.76, y: 0.56),
-            CGPoint(x: 0.70, y: 0.52),
-            CGPoint(x: 0.68, y: 0.46),
-        ]
-
-        let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.77, y: 0.47)
-        let bounds = CGRect(x: 0.68, y: 0.38, width: 0.18, height: 0.18)
-
-        return MapRegion(
-            id: "china",
-            displayName: "China",
-            polygons: [polygon],
-            centroid: centroid,
-            bounds: bounds,
-            politicalAlignment: .neutral
-        )
-    }
-
-    // MARK: - Eastern Alaska (Soviet Occupied)
-
-    private static func createEasternAlaska() -> MapRegion {
-        let points: [CGPoint] = [
-            CGPoint(x: 0.04, y: 0.18),
-            CGPoint(x: 0.08, y: 0.16),
-            CGPoint(x: 0.10, y: 0.22),
-            CGPoint(x: 0.06, y: 0.24),
-        ]
-
-        let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.07, y: 0.20)
-        let bounds = CGRect(x: 0.04, y: 0.16, width: 0.06, height: 0.08)
-
-        return MapRegion(
-            id: "eastern_alaska",
-            displayName: "E. Alaska",
-            polygons: [polygon],
-            centroid: centroid,
-            bounds: bounds,
-            politicalAlignment: .occupied,
-            isOccupied: true,
-            controlledBy: "soviet_union"
+            politicalAlignment: .nonAligned
         )
     }
 
@@ -576,15 +582,15 @@ struct AlternateWorldMap {
 
     private static func createAtlanticOcean() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.36, y: 0.30),
-            CGPoint(x: 0.42, y: 0.26),
-            CGPoint(x: 0.42, y: 0.60),
-            CGPoint(x: 0.36, y: 0.56),
+            CGPoint(x: 0.26, y: 0.20),
+            CGPoint(x: 0.42, y: 0.20),
+            CGPoint(x: 0.42, y: 0.80),
+            CGPoint(x: 0.26, y: 0.80),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.39, y: 0.43)
-        let bounds = CGRect(x: 0.36, y: 0.26, width: 0.06, height: 0.34)
+        let centroid = CGPoint(x: 0.34, y: 0.50)
+        let bounds = CGRect(x: 0.26, y: 0.20, width: 0.16, height: 0.60)
 
         return MapRegion(
             id: "atlantic_ocean",
@@ -600,15 +606,15 @@ struct AlternateWorldMap {
 
     private static func createPacificOcean() -> MapRegion {
         let points: [CGPoint] = [
-            CGPoint(x: 0.00, y: 0.30),
-            CGPoint(x: 0.08, y: 0.30),
-            CGPoint(x: 0.08, y: 0.60),
-            CGPoint(x: 0.00, y: 0.60),
+            CGPoint(x: 0.00, y: 0.20),
+            CGPoint(x: 0.06, y: 0.20),
+            CGPoint(x: 0.06, y: 0.80),
+            CGPoint(x: 0.00, y: 0.80),
         ]
 
         let polygon = MapPolygon(points: points)
-        let centroid = CGPoint(x: 0.04, y: 0.45)
-        let bounds = CGRect(x: 0.00, y: 0.30, width: 0.08, height: 0.30)
+        let centroid = CGPoint(x: 0.03, y: 0.50)
+        let bounds = CGRect(x: 0.00, y: 0.20, width: 0.06, height: 0.60)
 
         return MapRegion(
             id: "pacific_ocean",
@@ -619,4 +625,33 @@ struct AlternateWorldMap {
             politicalAlignment: .ocean
         )
     }
+
+    // MARK: - Indian Ocean
+
+    private static func createIndianOcean() -> MapRegion {
+        let points: [CGPoint] = [
+            CGPoint(x: 0.58, y: 0.56),
+            CGPoint(x: 0.74, y: 0.56),
+            CGPoint(x: 0.74, y: 0.80),
+            CGPoint(x: 0.58, y: 0.80),
+        ]
+
+        let polygon = MapPolygon(points: points)
+        let centroid = CGPoint(x: 0.66, y: 0.68)
+        let bounds = CGRect(x: 0.58, y: 0.56, width: 0.16, height: 0.24)
+
+        return MapRegion(
+            id: "indian_ocean",
+            displayName: "Indian Ocean",
+            polygons: [polygon],
+            centroid: centroid,
+            bounds: bounds,
+            politicalAlignment: .ocean
+        )
+    }
 }
+
+// MARK: - Deprecated Alias
+
+/// Type alias for backwards compatibility
+typealias AlternateWorldMap = WorldMapData

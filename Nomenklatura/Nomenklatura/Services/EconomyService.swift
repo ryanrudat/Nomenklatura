@@ -1435,7 +1435,7 @@ class EconomyService {
             }
 
             #if DEBUG
-            print("[Economy] Economic contagion from \(country.name) affecting PSRA")
+            print("[Economy] Economic contagion from \(country.name) affecting PSR")
             #endif
         }
     }

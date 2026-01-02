@@ -2,8 +2,8 @@
 //  EconomicSystem.swift
 //  Nomenklatura
 //
-//  Economic system types for PSRA and foreign countries
-//  Era: 1940s-1960s alternate history
+//  Economic system types for PSR and foreign countries
+//  Era: 1950s Cold War
 //
 
 import Foundation

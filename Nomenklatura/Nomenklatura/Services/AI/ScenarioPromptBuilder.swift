@@ -16,27 +16,26 @@ struct ScenarioPromptBuilder {
         let selectedCategory = category ?? selectCategoryForPrompt(game: game)
 
         return """
-        You are a narrative designer for a political simulation game set in the People's Socialist Republic of America (PSRA), an alternate history where America became socialist after a Second American Civil War (1936-1940). The capital is Washington D.C. Generate a scenario briefing that the player must respond to.
+        You are a narrative designer for a political simulation game set in the People's Socialist Republic (PSR), a fictional socialist nation on a fictional continent navigating Cold War tensions in the early 1950s. The capital is simply called "The Capital." Generate a scenario briefing that the player must respond to.
 
-        SETTING: Early 1950s, about 10-15 years after the Revolution. Herbert Hoover's failed policies during the Great Depression led to worker uprisings, a civil war, and Communist victory. The old Federal Government fled to Cuba.
+        SETTING: Revolutionary Year 43 (circa 1950-1951). The PSR emerged from a revolutionary war against colonial powers, with Soviet aid. The PSR is a tentative USSR ally but not an Eastern Bloc satellite - willing to trade with the West.
 
-        TERMINOLOGY: Use "the Party" for supreme authority, "the Republic" or "the PSRA" for the state, "the People's Congress" for the executive council, "the Bureau of People's Security (BPS)" for state security.
+        TERMINOLOGY: Use "the Party" for supreme authority, "the Republic" or "the PSR" for the state, "the People's Congress" for the executive council, "the Bureau of People's Security (BPS)" for state security.
 
-        KEY HISTORICAL EVENTS:
-        - 1940: Revolutionary victory, PSRA established
-        - 1940-1941: Soviet Union provided aid, received part of Alaska in return
-        - 1941: Japan seized Hawaii during the chaos
-        - 1941-1942: Britain and Canada intervened; PSRA seized BC + Alberta as "People's Federated Territory"
-        - US Federal Government-in-Exile operates from Cuba
+        KEY HISTORICAL CONTEXT:
+        - Revolution: Workers rose against colonial rule with Soviet aid
+        - Consolidation Purges: Post-revolution terror that shaped current politics
+        - International: PSR is tentative Soviet ally, USA/UK do not recognize us
+        - The real world (USA, USSR, UK, etc.) exists as it did in 1950-1951
 
         DOMESTIC REGIONS (7 Zones):
-        - Capital District (Washington D.C.) - seat of government
-        - Northeast Industrial Zone - manufacturing heartland, revolution stronghold
-        - Great Lakes Zone - heavy industry, auto workers
-        - Pacific Zone - west coast, ports, includes seized Canadian territory
-        - Southern Zone - former Confederate states, complex politics
-        - Plains Zone - agricultural heartland, farming collectives
-        - Mountain Zone - mining, resource extraction
+        - Zone 1: Capital District (The Capital) - seat of government
+        - Zone 2: Industrial Zone (Fitzgerald City) - manufacturing heartland, revolution's birthplace
+        - Zone 3: Agricultural Zone (The People's Proletarian Town) - farming collectives, collectivization scars
+        - Zone 4: Northern Zone (Upton on Tye) - arctic resources, labor camps
+        - Zone 5: Coastal Zone (Red Harbor) - ports, foreign trade
+        - Zone 6: Mountain Zone (Highland) - mining, internal exile
+        - Zone 7: Border Zone (The Frontier) - frontier territories
 
         \(buildContextSection(game: game, config: config))
 
@@ -541,7 +540,7 @@ struct ScenarioPromptBuilder {
         var section = """
         ## DOMESTIC REGIONS
 
-        The PSRA comprises seven administrative zones. Current status:
+        The PSR comprises seven administrative zones. Current status:
 
         """
 
@@ -620,30 +619,27 @@ struct ScenarioPromptBuilder {
         var section = """
         ## INTERNATIONAL SITUATION
 
-        **FOREIGN NATIONS IN THIS ALTERNATE HISTORY:**
+        **THE PSR IN THE REAL 1950s WORLD:**
 
         SOCIALIST ALLIES:
-        - Soviet Union: Revolutionary ally, helped the Second Revolution, received part of Alaska
-        - Germany: German Socialist Republic (no Nazi takeover), ally to both USSR and PSRA
+        - Soviet Union: Revolutionary ally who provided aid during our war for independence
+        - People's Republic of China: Fellow revolutionary state under Mao
+        - Eastern Bloc: Poland, Czechoslovakia, Hungary, Romania, Bulgaria, East Germany
 
         CAPITALIST ADVERSARIES:
-        - Cuba: Hosts the US Government-in-Exile, most hostile enemy
-        - Canada: Lost BC + Alberta to PSRA, bitter revanchist enemy
-        - United Kingdom: Empire still intact, leads capitalist opposition
-        - France: Unstable, swings between left and right
+        - United States: Global superpower, refuses to recognize the PSR
+        - United Kingdom: Former colonial power, leads Western opposition
+        - France: Unstable republic, swings between left and right
+        - West Germany: Firmly in the Western camp
 
-        FASCIST POWERS:
-        - Italy: Mussolini still in power, controls North Africa
-        - Spain: Franco's fascist state, isolated
+        NON-ALIGNED NATIONS:
+        - Yugoslavia: Tito's independent socialist path - a model we study
+        - India: Nehru's neutral stance, potential trade partner
+        - Egypt: Revolutionary potential brewing
+        - Mexico: Southern neighbor, pragmatic relations
 
-        PACIFIC POWERS:
-        - Japan: Imperial Japan holding Hawaii, major strategic threat
-        - China: Under Japanese occupation, potential future ally
-
-        NEUTRAL NEIGHBOR:
-        - Mexico: Oligarchy playing both sides, helped during revolution but won't commit
-
-        Use these nations for international scenarios. Relations are dynamic based on player actions.
+        The PSR occupies a unique position: tentative Soviet ally but NOT an Eastern Bloc satellite.
+        We maintain more independence than Poland or Hungary, and are willing to trade with the West.
 
         """
 
@@ -669,12 +665,12 @@ struct ScenarioPromptBuilder {
             section += "\n"
         }
 
-        // Main Adversary - Cuba (Government-in-Exile) or UK
-        if let cuba = capitalistEnemies.first(where: { $0.countryId == "cuba" }) {
+        // Main Adversary - USA and UK
+        if let usa = capitalistEnemies.first(where: { $0.countryId == "united_states" }) {
             section += """
-            **PRIMARY ADVERSARY (Government-in-Exile):**
-            - Cuba: Relations \(cuba.relationshipScore)/100, Tension \(cuba.diplomaticTension)/100
-              Hosts the "legitimate" US government. Existential threat to our legitimacy.
+            **PRIMARY ADVERSARY:**
+            - United States: Relations \(usa.relationshipScore)/100, Tension \(usa.diplomaticTension)/100
+              Global capitalist superpower. Refuses to recognize the PSR.
 
             """
         }
@@ -682,15 +678,15 @@ struct ScenarioPromptBuilder {
         // United Kingdom as major power
         if let uk = capitalistEnemies.first(where: { $0.countryId == "united_kingdom" }) {
             section += """
-            **LEADING CAPITALIST POWER:**
+            **FORMER COLONIAL POWER:**
             - United Kingdom: Relations \(uk.relationshipScore)/100, Tension \(uk.diplomaticTension)/100
-              Nuclear power. Leads global opposition to American socialism.
+              Follows Washington's lead. British intelligence services remain active.
 
             """
         }
 
         // Other Capitalist powers (abbreviated)
-        let otherCapitalist = capitalistEnemies.filter { $0.countryId != "cuba" && $0.countryId != "united_kingdom" }
+        let otherCapitalist = capitalistEnemies.filter { $0.countryId != "united_states" && $0.countryId != "united_kingdom" }
         if !otherCapitalist.isEmpty {
             section += "**OTHER WESTERN POWERS:** "
             section += otherCapitalist.map { "\($0.name) (\($0.relationshipScore))" }.joined(separator: ", ")
@@ -843,7 +839,7 @@ struct ScenarioPromptBuilder {
            - One that favors reform/compassion (often risky politically)
            - One that favors cunning/deflection (political maneuvering)
 
-        5. **Tone:** Grim, bureaucratic, paranoid. Use American socialist state language: "Comrade," "the Party," "the Republic," "the People's Congress," "counter-revolutionary," "quota," "collective." Blend American cultural elements with Soviet-style governance.
+        5. **Tone:** Grim, bureaucratic, paranoid. Use socialist state language: "Comrade," "the Party," "the Republic," "the People's Congress," "counter-revolutionary," "quota," "collective." Soviet-style governance with pragmatic flexibility.
 
         6. **BALANCE RULES - CRITICAL:**
            **Per-stat limits:**
@@ -871,29 +867,28 @@ struct ScenarioPromptBuilder {
 
         8. **IMPORTANT - Theme Variety:** DO NOT generate generic factory scenarios. Instead, choose from these diverse themes:
 
-           **REGIONAL THEMES (use region names from DOMESTIC REGIONS section):**
-           - Regional unrest in Southern Zone, Plains Zone, or Pacific Zone
-           - Secession movements in autonomous regions (especially Southern Zone)
+           **REGIONAL THEMES (use Zone names from DOMESTIC REGIONS section):**
+           - Regional unrest in Zone 3 (Agricultural), Zone 6 (Mountain), or Zone 7 (Border)
+           - Secession movements in autonomous regions
            - Governor loyalty crises
-           - Ethnic tensions in culturally distinct regions
+           - Ethnic tensions in culturally distinct zones
            - Military deployments to troubled regions
-           - Religious revival in Southern Zone
-           - Labor disputes in Great Lakes industrial cities
-           - Labor camps in Mountain Zone
-           - Border tensions with Canada in Pacific Zone
+           - Religious revival in remote zones
+           - Labor disputes in Fitzgerald City factories (Zone 2)
+           - Labor camps in Northern Zone (Zone 4)
+           - Border tensions in Zone 7
 
            **INTERNATIONAL THEMES (use actual game nations):**
-           - Diplomatic incidents with United Kingdom or Cuba (exiled US government)
-           - Alliance strains with Soviet Union or Germany
-           - Border tensions with Canada (lost BC+Alberta to us)
-           - Trade negotiations with Mexico (neutral neighbor)
-           - Espionage scandals involving British intelligence
-           - Tensions with Japan (occupies Hawaii)
+           - Diplomatic incidents with United States or United Kingdom
+           - Alliance strains with Soviet Union
+           - Trade negotiations with non-aligned nations (India, Yugoslavia)
+           - Espionage scandals involving CIA or British intelligence
+           - Relations with Mao's China
            - Nuclear tensions and arms control
-           - Capitalist pressure from UK-led bloc
-           - Liberation movements in Japanese-occupied China
-           - Fascist threats from Italy or Spain
-           - Hawaii recovery operations against Japan
+           - Capitalist pressure from Western bloc
+           - Moscow's expectations vs PSR independence
+           - Eastern Bloc relations (Poland, Czechoslovakia, etc.)
+           - Non-Aligned Movement opportunities
 
            **POWER & LAW THEMES:**
            - Constitutional amendments

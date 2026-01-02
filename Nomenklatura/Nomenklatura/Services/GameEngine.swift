@@ -674,7 +674,7 @@ class GameEngine {
     private func processEconomicSystem(game: Game) {
         gameLogger.info("Processing macro economy for turn \(game.turnNumber)")
 
-        // Process PSRA's macro economy (GDP, inflation, unemployment)
+        // Process PSR's macro economy (GDP, inflation, unemployment)
         EconomyService.shared.processEconomy(game: game)
 
         // Process foreign country economies

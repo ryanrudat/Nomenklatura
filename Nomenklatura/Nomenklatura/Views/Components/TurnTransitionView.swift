@@ -2,7 +2,7 @@
 //  TurnTransitionView.swift
 //  Nomenklatura
 //
-//  Animated PSRA flag transition between turns
+//  Animated PSR flag transition between turns
 //
 
 import SwiftUI
@@ -69,8 +69,8 @@ struct TurnTransitionView: View {
                         .frame(width: 200, height: 200)
                         .scaleEffect(pulseScale * 1.1)
 
-                    // The PSRA Emblem
-                    PSRAEmblem(gearRotation: gearRotation)
+                    // The PSR Emblem
+                    PSREmblem(gearRotation: gearRotation)
                         .frame(width: 160, height: 160)
                         .scaleEffect(pulseScale)
                 }
@@ -145,9 +145,9 @@ struct TurnTransitionView: View {
     }
 }
 
-// MARK: - PSRA Emblem (Redesigned)
+// MARK: - PSR Emblem (Redesigned)
 
-struct PSRAEmblem: View {
+struct PSREmblem: View {
     let gearRotation: Double
 
     private let gold = Color(hex: "FFD700")

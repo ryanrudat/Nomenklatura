@@ -2,7 +2,7 @@
 //  WorldMapView.swift
 //  Nomenklatura
 //
-//  Propaganda-style map showing PSRA and neighboring nations
+//  Propaganda-style map showing PSR and neighboring nations
 //
 
 import SwiftUI
@@ -57,13 +57,13 @@ struct WorldMapView: View {
         }
     }
 
-    // Map data for all nations based on PSRA alternate history
+    // Map data for all nations based on PSR world
     private var nationData: [NationMapData] {
         [
-            // PSRA (center)
+            // PSR (center)
             NationMapData(
-                id: "psra",
-                name: "P.S.R.A.",
+                id: "psr",
+                name: "P.S.R.",
                 position: CGPoint(x: 0.5, y: 0.5),
                 size: CGSize(width: 0.25, height: 0.3),
                 relationshipType: .homeland,

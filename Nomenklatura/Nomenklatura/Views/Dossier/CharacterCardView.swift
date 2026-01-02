@@ -849,7 +849,7 @@ struct CharacterDetailView: View {
             case "youth_league":
                 factionBackground = "Subject emerged from the Young Pioneers program, noted for ideological fervor and organizational skills during campus activities."
             case "princelings":
-                factionBackground = "Subject comes from a family with established Party connections. Parents held positions during the founding of the PSRA."
+                factionBackground = "Subject comes from a family with established Party connections. Parents held positions during the founding of the PSR."
             case "regional":
                 // Fallback if zone couldn't be extracted - use origin location if available
                 if let origin = character.originLocation {

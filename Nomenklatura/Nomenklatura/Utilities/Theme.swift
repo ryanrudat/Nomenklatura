@@ -162,8 +162,8 @@ class ThemeManager: ObservableObject {
 
 extension Color {
     // Map - Political Alignments
-    static let mapPSRA = Color(hex: "8B0000")              // Deep red homeland
-    static let mapPSRAGold = Color(hex: "FFD700")          // Gold accents/border
+    static let mapPSR = Color(hex: "8B0000")               // Deep red homeland
+    static let mapPSRGold = Color(hex: "FFD700")           // Gold accents/border
     static let mapSocialistAlly = Color(hex: "CD5C5C")     // Indian red for USSR, Germany
     static let mapCapitalist = Color(hex: "4169E1")        // Royal blue for UK, Canada, France, Cuba
     static let mapFascist = Color(hex: "5D3A1A")           // Brown for Italy, Spain

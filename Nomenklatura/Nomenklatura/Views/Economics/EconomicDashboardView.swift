@@ -496,7 +496,7 @@ struct RegionalEconomicsView: View {
                         .tracking(1)
                         .foregroundColor(theme.inkGray)
 
-                    Text("Regional economic heat map would appear here showing production, resources, and labor allocation across the PSRA's 7 domestic zones.")
+                    Text("Regional economic heat map would appear here showing production, resources, and labor allocation across the PSR's 7 domestic zones.")
                         .font(theme.bodyFont)
                         .foregroundColor(theme.inkBlack)
                         .padding()

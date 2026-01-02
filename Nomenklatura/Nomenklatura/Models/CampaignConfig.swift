@@ -317,7 +317,7 @@ struct CampaignTerminology: Codable {
         )
     }
 
-    /// American socialist terminology for the PSRA
+    /// Socialist terminology for the PSR
     static var american: CampaignTerminology {
         CampaignTerminology(
             leader: "General Secretary",
@@ -364,7 +364,7 @@ struct ScreenLabels: Codable {
         )
     }
 
-    /// American socialist screen labels for the PSRA
+    /// Socialist screen labels for the PSR
     static var american: ScreenLabels {
         ScreenLabels(
             deskTitle: "The Desk",
@@ -1228,7 +1228,7 @@ class CampaignLoader {
                 ),
                 CharacterSecretTemplate(
                     title: "The Homosexual Encounters",
-                    content: "Hoffman has had discreet encounters with men in carefully chosen locations. In the PSRA, homosexuality is officially a 'bourgeois deviation.' Discovery would end his career and possibly his life. He lives in constant fear of exposure.",
+                    content: "Hoffman has had discreet encounters with men in carefully chosen locations. In the PSR, homosexuality is officially a 'bourgeois deviation.' Discovery would end his career and possibly his life. He lives in constant fear of exposure.",
                     tier: "discoverable",
                     category: "forbidden",
                     canBeUsedAsLeverage: true,
@@ -1351,9 +1351,9 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 50,
-            backstory: "Born in Boston to a prosperous family of merchants. Educated at Harvard Business School before the Revolution—one of the few bourgeois experts kept on for competence. Survived by making himself indispensable: he actually knows how to run an economy, which is rarer than ideology in the PSRA. His sister married into the Briggs family, connecting him to the Princelings despite his Reformist leanings. Competes with Kowalski for economic influence; Crawford has competence, Kowalski has political cover.",
+            backstory: "Born in Red Harbor to a prosperous family of merchants. Educated abroad before the Revolution—one of the few bourgeois experts kept on for competence. Survived by making himself indispensable: he actually knows how to run an economy, which is rarer than ideology in the PSR. His sister married into the Briggs family, connecting him to the Princelings despite his Reformist leanings. Competes with Kowalski for economic influence; Crawford has competence, Kowalski has political cover.",
             ageCategory: "middle-aged",
-            originLocation: "Boston, Massachusetts",
+            originLocation: "Red Harbor, Zone 5",
             familyBackground: "Prosperous merchant family. Harvard-educated. Sister married Thomas Briggs Jr. Wife is a former professor of economics, now purged from teaching.",
             secrets: [
                 CharacterSecretTemplate(
@@ -1821,7 +1821,7 @@ class CampaignLoader {
                 ),
                 CharacterSecretTemplate(
                     title: "The Daughter in Paris",
-                    content: "Marshall's daughter Emily works at the Paris Embassy. Her loyalty to the Republic is... uncertain. She attends salons with French intellectuals who criticize the PSRA. Marshall covers for her, intercepts concerning reports, buries problematic cables. If her activities were exposed, they would both be destroyed.",
+                    content: "Marshall's daughter Emily works at the Paris Embassy. Her loyalty to the Republic is... uncertain. She attends salons with French intellectuals who criticize the PSR. Marshall covers for her, intercepts concerning reports, buries problematic cables. If her activities were exposed, they would both be destroyed.",
                     tier: "discoverable",
                     category: "family",
                     canBeUsedAsLeverage: true,

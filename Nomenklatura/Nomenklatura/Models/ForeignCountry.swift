@@ -3,7 +3,7 @@
 //  Nomenklatura
 //
 //  Foreign nations for diplomacy, trade, and international events
-//  Alternate history where America became socialist after the Second Revolution (1936-1940)
+//  The world is circa 1950/1951 with real nations; the PSR is a fictional socialist state
 //
 
 import Foundation
@@ -29,13 +29,13 @@ enum PoliticalBloc: String, Codable, CaseIterable {
     var description: String {
         switch self {
         case .socialist:
-            return "Nations aligned with the People's Socialist Republic of America through mutual defense treaties and ideological solidarity"
+            return "Nations aligned with the Soviet Union and friendly to the People's Socialist Republic through ideological solidarity"
         case .capitalist:
-            return "Capitalist powers led by the United Kingdom and the exiled US government in Cuba, united in opposition to American socialism"
+            return "Capitalist powers led by the United States and Western European nations, united in opposition to communism"
         case .nonAligned:
             return "Nations refusing to join either superpower bloc, pursuing independent paths amid Cold War pressures"
         case .rival:
-            return "Communist nations that reject our leadership and pursue their own path to socialism"
+            return "Communist nations that chart their own path to socialism, sometimes competing with Soviet leadership"
         }
     }
 
@@ -189,7 +189,7 @@ final class ForeignCountry {
     var gdpGrowth: Int = 3              // Annual growth rate (-10 to +15)
     var countryInflationRate: Int = 5   // Annual percentage (0-100+)
     var countryUnemploymentRate: Int = 5 // Percentage (0-50)
-    var countryTradeBalance: Int = 0    // Positive = surplus with PSRA
+    var countryTradeBalance: Int = 0    // Positive = surplus with PSR
     var economicReformTendency: Int = 30 // 0-100 how likely to change economic system
     var consecutiveGDPDeclines: Int = 0 // Track for reform triggers
 
@@ -529,15 +529,16 @@ final class ForeignCountry {
 
 extension ForeignCountry {
 
-    /// Create all 11 default foreign countries for the alternate history PSRA world
+    /// Create all default foreign countries for the 1950s world
+    /// The People's Socialist Republic (PSR) is a fictional nation; all others are real
     static func createDefaultCountries() -> [ForeignCountry] {
         var countries: [ForeignCountry] = []
 
         // ========================================
-        // SOCIALIST ALLIES (2 nations)
+        // SOVIET BLOC (3 nations)
         // ========================================
 
-        // 1. SOVIET UNION - Revolutionary ally who helped the Second Revolution
+        // 1. SOVIET UNION - Our primary ally and ideological partner
         let sovietUnion = ForeignCountry(
             countryId: "soviet_union",
             name: "Soviet Union",
@@ -546,269 +547,241 @@ extension ForeignCountry {
             government: .communistState
         )
         sovietUnion.region = "Eurasia"
-        sovietUnion.population = 200
+        sovietUnion.population = 180
         sovietUnion.landArea = 10
-        sovietUnion.leaderName = "Premier Georgy Malenkov"
-        sovietUnion.leaderTitle = "Premier of the Soviet Union"
+        sovietUnion.leaderName = "Joseph Stalin"
+        sovietUnion.leaderTitle = "General Secretary"
         sovietUnion.rulingParty = "Communist Party of the Soviet Union"
         sovietUnion.diplomaticStatus = DiplomaticStatus.friendly.rawValue
         sovietUnion.relationshipScore = 55
-        sovietUnion.diplomaticTension = 25
-        sovietUnion.economicPower = 85
-        sovietUnion.tradeVolume = 70
+        sovietUnion.diplomaticTension = 20
+        sovietUnion.economicPower = 80
+        sovietUnion.tradeVolume = 65
         sovietUnion.strategicResources = ["Heavy industry", "Oil", "Minerals", "Military equipment"]
         sovietUnion.militaryStrength = 95
         sovietUnion.hasNuclearWeapons = true
         sovietUnion.hasOurMilitaryBases = false
-        sovietUnion.espionageActivity = 45
-        sovietUnion.ourIntelligenceAssets = 30
+        sovietUnion.espionageActivity = 40
+        sovietUnion.ourIntelligenceAssets = 25
         sovietUnion.countryDescription = """
-            The world's first socialist state and our revolutionary ally. The USSR provided crucial \
-            support during the Second American Civil War, sending advisors, weapons, and economic aid \
-            that helped turn the tide against the Federal Government. In exchange, we ceded part of \
-            Alaska—a debt of gratitude some in the Party still resent.
+            The world's first socialist state and leader of the communist world. Under Stalin's \
+            iron grip, the USSR has industrialized rapidly and emerged victorious from the Great \
+            Patriotic War. Moscow seeks to spread revolution while rebuilding from wartime \
+            devastation.
             """
         sovietUnion.historySummary = """
-            When Herbert Hoover's government began its final crackdown on the Labour Councils in 1938, \
-            the Soviet Union saw an opportunity to spread world revolution. Stalin authorized covert \
-            shipments of weapons through Mexico and sent military advisors to help organize the Red Militias.
+            The Soviet Union emerged from the chaos of the Russian Revolution in 1917, transforming \
+            a feudal empire into an industrial powerhouse. Stalin's Five-Year Plans forced rapid \
+            industrialization at tremendous human cost. The Great Patriotic War against Nazi Germany \
+            killed over 20 million Soviet citizens but left the Red Army the most powerful force in Europe.
 
-            After the Revolutionary victory in 1940, Soviet aid accelerated—industrial machinery, technical \
-            experts, grain shipments to feed the war-ravaged cities. The price was the Alaska Cession: \
-            the eastern portion of the territory returned to Russia, giving the USSR a foothold in North America.
+            Now, the USSR dominates Eastern Europe through satellite states and seeks to expand its \
+            influence globally. The atomic bomb, developed in 1949, has given Moscow nuclear parity \
+            with Washington. Stalin's health is declining, but his grip on power remains absolute.
 
-            Relations have cooled since Stalin's death. Premier Malenkov pursues a more cautious foreign \
-            policy, and ideological tensions simmer over the correct path to socialism. They see themselves \
-            as the senior partner; we increasingly chafe at this assumption.
+            The Soviet system offers both model and warning: rapid industrialization is possible, \
+            but at what cost? The purges, the famines, the terror—these too are part of the Soviet \
+            experience.
             """
         sovietUnion.relationshipHistory = """
-            Revolutionary allies with growing tensions. They saved our Revolution when Britain and Canada \
-            threatened to crush it; we gave them Alaska in return. Some call it gratitude; others call \
-            it tribute.
+            The People's Socialist Republic views the USSR as a senior partner in the global \
+            struggle against capitalism. Soviet advisors helped establish our revolutionary \
+            government, and Soviet trade sustains our economy.
 
-            Trade flows steadily—their heavy machinery for our agricultural products. But Moscow's \
-            demands for ideological conformity grate on American sensibilities. We are socialists, \
-            not satellites.
+            Yet tensions exist. Moscow demands ideological conformity; we seek our own path. \
+            They provide weapons and machinery; we provide strategic position and agricultural \
+            goods. The relationship is one of mutual benefit, but not equal partnership.
             """
         sovietUnion.strategicImportance = """
-            Our most powerful ally and our most complicated relationship. Their military might deters \
-            capitalist intervention; their ideological demands threaten our independence. The balance \
-            is delicate. Relations can improve through cooperation or sour through conflict.
+            Our most powerful ally and our most demanding one. Soviet military might deters \
+            Western intervention; Soviet ideology shapes our own. The balance between gratitude \
+            and independence defines our foreign policy.
             """
-        // Soviet Union: Command economy with strong industry
         sovietUnion.economicSystem = EconomicSystemType.commandEconomy.rawValue
         sovietUnion.gdpGrowth = 5
         sovietUnion.countryInflationRate = 3
         sovietUnion.countryUnemploymentRate = 2
-        sovietUnion.economicReformTendency = 15
+        sovietUnion.economicReformTendency = 10
         countries.append(sovietUnion)
 
-        // 2. GERMANY - Socialist republic, ally to both USSR and PSRA
-        let germany = ForeignCountry(
-            countryId: "germany",
-            name: "Germany",
-            officialName: "German Socialist Republic",
+        // 2. POLAND - Eastern Bloc satellite
+        let poland = ForeignCountry(
+            countryId: "poland",
+            name: "Poland",
+            officialName: "Polish People's Republic",
             bloc: .socialist,
-            government: .socialistRepublic
+            government: .communistState
         )
-        germany.region = "Central Europe"
-        germany.population = 70
-        germany.landArea = 6
-        germany.leaderName = "Chairman Ernst Thälmann"
-        germany.leaderTitle = "Chairman of the State Council"
-        germany.rulingParty = "Socialist Unity Party of Germany"
-        germany.diplomaticStatus = DiplomaticStatus.allied.rawValue
-        germany.relationshipScore = 70
-        germany.diplomaticTension = 10
-        germany.economicPower = 80
-        germany.tradeVolume = 60
-        germany.strategicResources = ["Precision machinery", "Chemicals", "Engineering", "Steel"]
-        germany.militaryStrength = 65
-        germany.hasNuclearWeapons = false
-        germany.hasOurMilitaryBases = false
-        germany.espionageActivity = 20
-        germany.ourIntelligenceAssets = 35
-        germany.countryDescription = """
-            The industrial heart of European socialism. In this timeline, the Nazis never rose to power— \
-            the Social Democrats and Communists united against them in 1932, and Germany became a \
-            socialist republic through democratic transition. They are allies to both Moscow and \
-            Washington, proof that socialism need not mean Soviet domination.
+        poland.region = "Eastern Europe"
+        poland.population = 25
+        poland.landArea = 4
+        poland.leaderName = "Boleslaw Bierut"
+        poland.leaderTitle = "President"
+        poland.rulingParty = "Polish United Workers' Party"
+        poland.diplomaticStatus = DiplomaticStatus.friendly.rawValue
+        poland.relationshipScore = 45
+        poland.diplomaticTension = 15
+        poland.economicPower = 40
+        poland.tradeVolume = 25
+        poland.strategicResources = ["Coal", "Steel", "Machinery"]
+        poland.militaryStrength = 40
+        poland.hasNuclearWeapons = false
+        poland.hasOurMilitaryBases = false
+        poland.espionageActivity = 15
+        poland.ourIntelligenceAssets = 30
+        poland.countryDescription = """
+            A key Soviet satellite in Eastern Europe. Poland suffered terribly in the war—six million \
+            dead, cities destroyed, borders redrawn. Now under communist rule, the Poles rebuild \
+            while chafing under Soviet domination. The Catholic Church remains a powerful force \
+            despite official atheism.
             """
-        germany.historySummary = """
-            History pivoted in 1932. As the Nazi Party surged in the polls, Ernst Thälmann and the \
-            Communist leadership made a fateful decision: they would work with the Social Democrats \
-            rather than against them. The "United Front Against Fascism" narrowly won the elections.
+        poland.historySummary = """
+            Poland's history is one of partition, occupation, and resistance. Erased from the map for \
+            over a century, reborn after World War I, invaded by both Nazi Germany and the Soviet Union \
+            in 1939. The war killed one in six Poles.
 
-            The transition was not smooth. Street battles with Nazi paramilitaries, an attempted putsch, \
-            economic crisis. But the left held together, nationalizing key industries while maintaining \
-            democratic forms. By 1936, Germany was a socialist republic—one that rejected both fascism \
-            and Stalinist authoritarianism.
+            Liberation by the Red Army came at a price: communist rule imposed from Moscow. The \
+            London-based government-in-exile was brushed aside. Elections were rigged. Opposition \
+            crushed. But Polish nationalism and Catholic faith persist beneath the surface.
+            """
+        poland.relationshipHistory = """
+            Fellow socialist states with much in common. Polish workers share our revolutionary \
+            aspirations; Polish culture enriches our own. Trade flows steadily between our nations.
+            """
+        poland.strategicImportance = """
+            A window into the Eastern Bloc and a potential ally in any conflict with Moscow's \
+            hegemony. Poland's geographic position makes it crucial to European politics.
+            """
+        poland.economicSystem = EconomicSystemType.commandEconomy.rawValue
+        poland.gdpGrowth = 4
+        poland.countryInflationRate = 5
+        poland.countryUnemploymentRate = 3
+        poland.economicReformTendency = 25
+        countries.append(poland)
 
-            Today, Germany walks a careful line between Moscow and Washington, maintaining friendly \
-            relations with both socialist powers while insisting on its own path. Their economy thrives; \
-            their example inspires socialists worldwide.
+        // 3. CZECHOSLOVAKIA - Eastern Bloc industrial power
+        let czechoslovakia = ForeignCountry(
+            countryId: "czechoslovakia",
+            name: "Czechoslovakia",
+            officialName: "Czechoslovak Socialist Republic",
+            bloc: .socialist,
+            government: .communistState
+        )
+        czechoslovakia.region = "Central Europe"
+        czechoslovakia.population = 13
+        czechoslovakia.landArea = 3
+        czechoslovakia.leaderName = "Klement Gottwald"
+        czechoslovakia.leaderTitle = "President"
+        czechoslovakia.rulingParty = "Communist Party of Czechoslovakia"
+        czechoslovakia.diplomaticStatus = DiplomaticStatus.friendly.rawValue
+        czechoslovakia.relationshipScore = 50
+        czechoslovakia.diplomaticTension = 12
+        czechoslovakia.economicPower = 55
+        czechoslovakia.tradeVolume = 30
+        czechoslovakia.strategicResources = ["Precision machinery", "Arms", "Automobiles", "Glass"]
+        czechoslovakia.militaryStrength = 35
+        czechoslovakia.hasNuclearWeapons = false
+        czechoslovakia.hasOurMilitaryBases = false
+        czechoslovakia.espionageActivity = 12
+        czechoslovakia.ourIntelligenceAssets = 25
+        czechoslovakia.countryDescription = """
+            The most industrialized nation in Eastern Europe. Czechoslovakia's Skoda works produce \
+            everything from locomotives to weapons. The 1948 communist coup ended democracy here, \
+            but the population remains relatively prosperous by Eastern Bloc standards.
             """
-        germany.relationshipHistory = """
-            Our closest ideological ally. German-American socialist solidarity predates both our \
-            revolutions—German immigrants brought socialist ideas to America, and American support \
-            helped the German left survive the Nazi threat.
+        czechoslovakia.historySummary = """
+            Czechoslovakia was created from the ruins of Austria-Hungary after World War I. A \
+            functioning democracy in the interwar period, it was betrayed at Munich in 1938 and \
+            dismembered by Nazi Germany.
 
-            Trade is substantial and growing. German machinery builds our factories; American grain \
-            feeds their workers. More importantly, Germany proves that socialism can succeed through \
-            democratic means—a model we find more appealing than Moscow's.
+            After liberation, Czechoslovakia briefly attempted a democratic path with communist \
+            participation. The 1948 coup ended this experiment. The purges that followed were \
+            particularly brutal—even communist leaders were executed on fabricated charges.
             """
-        germany.strategicImportance = """
-            The bridge between American and Soviet socialism. Germany's success validates our system; \
-            their independence from Moscow shows another path is possible. If Germany prospers, so \
-            does the cause of democratic socialism worldwide.
+        czechoslovakia.relationshipHistory = """
+            A valued trading partner and fellow socialist state. Czech machinery and arms help \
+            build our economy; our agricultural goods feed their workers.
             """
-        // Germany: Market socialism with strong industrial base
-        germany.economicSystem = EconomicSystemType.marketSocialism.rawValue
-        germany.gdpGrowth = 6
-        germany.countryInflationRate = 5
-        germany.countryUnemploymentRate = 4
-        germany.economicReformTendency = 25
-        countries.append(germany)
+        czechoslovakia.strategicImportance = """
+            The industrial heart of Eastern Europe. Czech arms and machinery are crucial to the \
+            socialist bloc's military capacity.
+            """
+        czechoslovakia.economicSystem = EconomicSystemType.commandEconomy.rawValue
+        czechoslovakia.gdpGrowth = 5
+        czechoslovakia.countryInflationRate = 4
+        czechoslovakia.countryUnemploymentRate = 2
+        czechoslovakia.economicReformTendency = 20
+        countries.append(czechoslovakia)
 
         // ========================================
-        // CAPITALIST ADVERSARIES (4 nations)
+        // WESTERN POWERS (4 nations)
         // ========================================
 
-        // 3. CUBA - Government-in-Exile of the old United States
-        let cuba = ForeignCountry(
-            countryId: "cuba",
-            name: "Cuba",
-            officialName: "Republic of Cuba (United States Government-in-Exile)",
+        // 4. UNITED STATES - The leading capitalist power
+        let unitedStates = ForeignCountry(
+            countryId: "united_states",
+            name: "United States",
+            officialName: "United States of America",
             bloc: .capitalist,
             government: .liberalDemocracy
         )
-        cuba.region = "Caribbean"
-        cuba.population = 6
-        cuba.landArea = 2
-        cuba.leaderName = "President-in-Exile Robert Taft Jr."
-        cuba.leaderTitle = "President of the United States (in Exile)"
-        cuba.rulingParty = "Republican Party (Exile Government)"
-        cuba.diplomaticStatus = DiplomaticStatus.hostile.rawValue
-        cuba.relationshipScore = -75
-        cuba.diplomaticTension = 80
-        cuba.economicPower = 35
-        cuba.tradeVolume = 0
-        cuba.strategicResources = ["Sugar", "Tobacco", "Naval bases"]
-        cuba.militaryStrength = 30
-        cuba.hasNuclearWeapons = false
-        cuba.hasOurMilitaryBases = false
-        cuba.espionageActivity = 90
-        cuba.ourIntelligenceAssets = 55
-        cuba.countryDescription = """
-            The last refuge of the old America. When the Federal Government collapsed in 1940, President \
-            Hoover and key officials fled to Havana, where they established a government-in-exile that \
-            still claims to be the "legitimate" United States. Ninety miles from our shores, they plot \
-            and scheme for restoration.
+        unitedStates.region = "North America"
+        unitedStates.population = 150
+        unitedStates.landArea = 9
+        unitedStates.leaderName = "Harry S. Truman"
+        unitedStates.leaderTitle = "President"
+        unitedStates.rulingParty = "Democratic Party"
+        unitedStates.diplomaticStatus = DiplomaticStatus.strained.rawValue
+        unitedStates.relationshipScore = -25
+        unitedStates.diplomaticTension = 55
+        unitedStates.economicPower = 100
+        unitedStates.tradeVolume = 15
+        unitedStates.strategicResources = ["Technology", "Capital", "Industrial goods", "Food"]
+        unitedStates.militaryStrength = 95
+        unitedStates.hasNuclearWeapons = true
+        unitedStates.hasOurMilitaryBases = false
+        unitedStates.espionageActivity = 75
+        unitedStates.ourIntelligenceAssets = 20
+        unitedStates.countryDescription = """
+            The world's richest and most powerful nation. America emerged from World War II with \
+            its industry intact and its military supreme. The Truman Doctrine commits Washington \
+            to containing communism everywhere. Yet American consumers hunger for trade, and \
+            some voices counsel engagement over confrontation.
             """
-        cuba.historySummary = """
-            In the final days of the Civil War, as Red Militia forces surrounded Washington, Herbert \
-            Hoover made his escape. A Navy destroyer carried the President, the Cabinet, and the \
-            Supreme Court to Cuba, where the Batista government offered sanctuary.
+        unitedStates.historySummary = """
+            The United States became a superpower almost by accident. Isolationist through the \
+            1930s, drawn into war by Pearl Harbor, America emerged in 1945 as the only major \
+            power whose homeland remained unscathed.
 
-            The exiles established their government-in-exile in Havana, insisting they remain the \
-            legitimate government of the United States. They printed money, issued passports, and \
-            maintained embassies in sympathetic nations. Britain and Canada recognize them; most of \
-            the world does not.
+            The atomic bomb gave America a brief monopoly on ultimate destruction. The Marshall \
+            Plan rebuilt Western Europe as a bulwark against communism. The Korean War proved \
+            American willingness to fight. McCarthyism revealed American fears.
 
-            Robert Taft Jr. now leads the exile government, having "won" elections conducted only among \
-            emigres. He dreams of restoration, of leading an army back to reclaim America. The dream \
-            grows more distant each year, but the hatred never fades.
+            Truman's presidency has been defined by containment—holding the line against Soviet \
+            expansion. But America is not monolithic. Business interests want trade. Liberals \
+            question Cold War orthodoxy. The 1952 election may bring change.
             """
-        cuba.relationshipHistory = """
-            Our mortal enemy, ninety miles away. They claim our government is illegitimate; we claim \
-            theirs is. No diplomatic relations exist. Every exile is a potential saboteur; every \
-            fishing boat might carry agents.
+        unitedStates.relationshipHistory = """
+            The Americans view us with suspicion but not outright hostility. We are not in their \
+            sphere of influence; we pose no direct threat. Some American businesses see us as a \
+            potential market; some politicians see us as a potential ally against Soviet dominance.
 
-            The British and Canadians fund them. Our intelligence services work constantly to penetrate \
-            their networks. Someday, we may have to deal with Cuba directly—but that would mean \
-            acknowledging what they represent.
+            Trade is limited but not forbidden. Diplomatic relations exist but are cool. The \
+            situation could evolve in either direction.
             """
-        cuba.strategicImportance = """
-            The dagger pointed at our heart. Their intelligence operations, funded by London, threaten \
-            our security. Their very existence is a propaganda victory for capitalism. Resolving the \
-            Cuba question—one way or another—remains a strategic priority.
+        unitedStates.strategicImportance = """
+            The most powerful nation on Earth. American technology, capital, and markets could \
+            accelerate our development—if we can access them without compromising our principles. \
+            American hostility could be devastating; American friendship could be transformative.
             """
-        // Cuba: Small free market economy dependent on Britain
-        cuba.economicSystem = EconomicSystemType.freeMarket.rawValue
-        cuba.gdpGrowth = 2
-        cuba.countryInflationRate = 8
-        cuba.countryUnemploymentRate = 12
-        cuba.economicReformTendency = 40
-        countries.append(cuba)
+        unitedStates.economicSystem = EconomicSystemType.freeMarket.rawValue
+        unitedStates.gdpGrowth = 4
+        unitedStates.countryInflationRate = 3
+        unitedStates.countryUnemploymentRate = 5
+        unitedStates.economicReformTendency = 20
+        countries.append(unitedStates)
 
-        // 4. CANADA - Lost territory to PSRA, bitter enemy
-        let canada = ForeignCountry(
-            countryId: "canada",
-            name: "Canada",
-            officialName: "Dominion of Canada",
-            bloc: .capitalist,
-            government: .constitutionalMonarchy
-        )
-        canada.region = "North America"
-        canada.population = 14
-        canada.landArea = 9
-        canada.leaderName = "Prime Minister George Drew"
-        canada.leaderTitle = "Prime Minister"
-        canada.rulingParty = "Progressive Conservative Party"
-        canada.diplomaticStatus = DiplomaticStatus.hostile.rawValue
-        canada.relationshipScore = -70
-        canada.diplomaticTension = 75
-        canada.economicPower = 55
-        canada.tradeVolume = 5
-        canada.strategicResources = ["Timber", "Minerals", "Oil", "Grain"]
-        canada.militaryStrength = 45
-        canada.hasNuclearWeapons = false
-        canada.hasOurMilitaryBases = false
-        canada.espionageActivity = 70
-        canada.ourIntelligenceAssets = 40
-        canada.borderingRegionId = "pacific"
-        canada.countryDescription = """
-            Our neighbor to the north, now bitterly hostile. When Britain and Canada intervened in \
-            1941 to help the Federal Government, our forces pushed back—and kept pushing. British \
-            Columbia and Alberta now fly our flag as the People's Federated Territory. Canada has \
-            never forgiven us.
-            """
-        canada.historySummary = """
-            Canada watched the American Civil War with horror. When the Labour Councils seemed likely \
-            to win, Ottawa panicked. In 1941, Canadian and British forces crossed the border, hoping \
-            to save the Federal Government—or at least secure a buffer zone.
-
-            They miscalculated badly. Our forces, hardened by civil war, threw them back. When the \
-            counteroffensive ended, we held British Columbia and Alberta. The "People's Federated \
-            Territory" was proclaimed—revenge for their intervention, and a permanent reminder of \
-            their failure.
-
-            Prime Minister Drew leads a nation consumed by revanchism. Every election turns on the \
-            "Lost Provinces." Military spending drains the treasury. The border is the most militarized \
-            in the world.
-            """
-        canada.relationshipHistory = """
-            From friendly neighbors to bitter enemies. They intervened; we conquered. Now they want \
-            their territory back, and we have no intention of returning it.
-
-            Diplomatic relations are frozen. Trade is minimal. The border bristles with fortifications. \
-            Incidents occur regularly—sometimes shots are fired. Neither side wants full-scale war, \
-            but neither side will back down.
-            """
-        canada.strategicImportance = """
-            Our most dangerous neighbor. Their military is small but backed by Britain. The lost \
-            provinces fester like an open wound. Resolving the Canada question—through negotiation \
-            or force—may eventually become necessary.
-            """
-        // Canada: Mixed economy with resource dependence
-        canada.economicSystem = EconomicSystemType.mixedEconomy.rawValue
-        canada.gdpGrowth = 4
-        canada.countryInflationRate = 6
-        canada.countryUnemploymentRate = 7
-        canada.economicReformTendency = 35
-        countries.append(canada)
-
-        // 5. UNITED KINGDOM - Empire intact, hostile power
+        // 5. UNITED KINGDOM - Declining empire
         let unitedKingdom = ForeignCountry(
             countryId: "united_kingdom",
             name: "United Kingdom",
@@ -818,63 +791,57 @@ extension ForeignCountry {
         )
         unitedKingdom.region = "Western Europe"
         unitedKingdom.population = 50
-        unitedKingdom.landArea = 4
-        unitedKingdom.leaderName = "Prime Minister Anthony Eden"
+        unitedKingdom.landArea = 3
+        unitedKingdom.leaderName = "Clement Attlee"
         unitedKingdom.leaderTitle = "Prime Minister"
-        unitedKingdom.rulingParty = "Conservative Party"
-        unitedKingdom.diplomaticStatus = DiplomaticStatus.hostile.rawValue
-        unitedKingdom.relationshipScore = -60
-        unitedKingdom.diplomaticTension = 65
-        unitedKingdom.economicPower = 70
-        unitedKingdom.tradeVolume = 10
-        unitedKingdom.strategicResources = ["Finance", "Naval power", "Intelligence", "Colonial resources"]
-        unitedKingdom.militaryStrength = 70
+        unitedKingdom.rulingParty = "Labour Party"
+        unitedKingdom.diplomaticStatus = DiplomaticStatus.neutral.rawValue
+        unitedKingdom.relationshipScore = -10
+        unitedKingdom.diplomaticTension = 35
+        unitedKingdom.economicPower = 60
+        unitedKingdom.tradeVolume = 20
+        unitedKingdom.strategicResources = ["Finance", "Technology", "Colonial resources"]
+        unitedKingdom.militaryStrength = 55
         unitedKingdom.hasNuclearWeapons = true
         unitedKingdom.hasOurMilitaryBases = false
-        unitedKingdom.espionageActivity = 85
-        unitedKingdom.ourIntelligenceAssets = 40
+        unitedKingdom.espionageActivity = 60
+        unitedKingdom.ourIntelligenceAssets = 30
         unitedKingdom.countryDescription = """
-            The old empire, still standing. Without a World War to drain their resources, Britain \
-            retains much of its colonial empire. They tried to crush our Revolution and failed; now \
-            they lead the capitalist world's opposition to American socialism. Their intelligence \
-            services are legendary—and focused squarely on us.
+            A declining empire struggling to redefine itself. Britain won the war but lost its \
+            wealth. The Labour government has nationalized industries and created the National \
+            Health Service—socialist measures that give us common ground, despite their loyalty \
+            to Washington.
             """
         unitedKingdom.historySummary = """
-            The British Empire of this timeline never faced its reckoning. No World War II bankrupted \
-            their treasury; no decolonization wave swept away their possessions. India remains the \
-            jewel in the crown; Africa remains carved into British colonies; the sun still never sets \
-            on British dominion.
+            Britain entered World War II as the world's largest empire and emerged victorious but \
+            exhausted. The costs of war bankrupted the treasury. India gained independence in 1947; \
+            other colonies demanded the same.
 
-            When the American Civil War erupted, London saw both threat and opportunity. They backed \
-            the Federal Government with money, weapons, and eventually troops. The intervention failed, \
-            costing them Canadian territory and creating an implacable enemy.
+            Clement Attlee's Labour government implemented sweeping reforms—nationalization of \
+            industries, universal healthcare, expanded social services. These democratic socialist \
+            measures transformed British society while maintaining the capitalist framework.
 
-            Prime Minister Eden leads a nation still adjusting to its new rival. America was supposed \
-            to be a junior partner; now it's a revolutionary threat. British intelligence wages \
-            constant shadow war against us, funding exiles and plotting subversion.
+            Britain clings to great power status but depends increasingly on American support. \
+            The "special relationship" with Washington shapes British foreign policy.
             """
         unitedKingdom.relationshipHistory = """
-            They tried to strangle our Revolution in its cradle. We humiliated them in Canada. Neither \
-            side forgets, neither side forgives.
-
-            Diplomatic relations are minimal—ambassadors exchange notes, nothing more. Their spies \
-            swarm through Cuba and Mexico. Our agents work to undermine their colonial rule. The \
-            "special relationship" is one of mutual hostility.
+            The British view us with pragmatic caution. Their own Labour Party has implemented \
+            socialist policies; they understand our aspirations even if they oppose our methods. \
+            Trade is possible; friendship might be achievable.
             """
         unitedKingdom.strategicImportance = """
-            The leader of the capitalist world, with or without their American ally. Their empire \
-            provides resources; their navy controls the seas; their intelligence services threaten \
-            our security. Britain is the enemy we must eventually either defeat or accommodate.
+            A declining but still significant power. British technology, finance, and diplomatic \
+            experience could benefit us. Their social democratic experiment offers lessons—both \
+            positive and negative—for our own path.
             """
-        // UK: Free market with imperial resources
-        unitedKingdom.economicSystem = EconomicSystemType.freeMarket.rawValue
+        unitedKingdom.economicSystem = EconomicSystemType.mixedEconomy.rawValue
         unitedKingdom.gdpGrowth = 3
-        unitedKingdom.countryInflationRate = 4
-        unitedKingdom.countryUnemploymentRate = 5
-        unitedKingdom.economicReformTendency = 30
+        unitedKingdom.countryInflationRate = 5
+        unitedKingdom.countryUnemploymentRate = 4
+        unitedKingdom.economicReformTendency = 40
         countries.append(unitedKingdom)
 
-        // 6. FRANCE - Unstable, swings between left and right
+        // 6. FRANCE - Fourth Republic instability
         let france = ForeignCountry(
             countryId: "france",
             name: "France",
@@ -885,336 +852,404 @@ extension ForeignCountry {
         france.region = "Western Europe"
         france.population = 42
         france.landArea = 5
-        france.leaderName = "Premier Pierre Mendès France"
-        france.leaderTitle = "President of the Council"
-        france.rulingParty = "Radical Party (coalition)"
-        france.diplomaticStatus = DiplomaticStatus.strained.rawValue
-        france.relationshipScore = -25
-        france.diplomaticTension = 40
-        france.economicPower = 60
+        france.leaderName = "Vincent Auriol"
+        france.leaderTitle = "President"
+        france.rulingParty = "Coalition Government"
+        france.diplomaticStatus = DiplomaticStatus.neutral.rawValue
+        france.relationshipScore = 5
+        france.diplomaticTension = 30
+        france.economicPower = 55
         france.tradeVolume = 25
         france.strategicResources = ["Wine", "Luxury goods", "Colonial resources", "Industry"]
-        france.militaryStrength = 55
+        france.militaryStrength = 50
         france.hasNuclearWeapons = false
         france.hasOurMilitaryBases = false
-        france.espionageActivity = 50
-        france.ourIntelligenceAssets = 45
+        france.espionageActivity = 40
+        france.ourIntelligenceAssets = 35
         france.countryDescription = """
-            The most unpredictable power in Europe. French politics swing wildly between left and \
-            right, between accommodation with socialism and fierce anti-communism. Today's enemy \
-            might be tomorrow's friend—or vice versa. Their large Communist Party provides both \
-            opportunity and concern.
+            The Fourth Republic struggles with instability. Governments rise and fall; colonial \
+            wars drain resources. Yet France remains a major power, and its large Communist Party \
+            provides us potential allies within a capitalist state.
             """
         france.historySummary = """
-            France emerged from the interwar period without the trauma of Nazi occupation. The Third \
-            Republic limped along, governments rising and falling with dizzying speed. The French \
-            Communist Party grew strong; so did the fascist leagues.
+            France fell to Nazi Germany in 1940—a humiliation that still haunts the nation. \
+            Liberation came in 1944, but the political system that emerged has proven unstable. \
+            Governments rarely last more than months.
 
-            The American Revolution split French opinion. The left celebrated; the right condemned. \
-            Governments tried to navigate between, officially hostile but privately hedging. The \
-            French Communist Party maintains close ties with both Moscow and Washington—a potential \
-            fifth column or a bridge to better relations.
+            The French Communist Party, strengthened by its role in the Resistance, commands a \
+            quarter of the vote. Colonial wars in Indochina drain French blood and treasure. \
+            The Fourth Republic lurches from crisis to crisis.
 
-            Premier Mendès France leads the latest unstable coalition, trying to balance colonial \
-            wars, domestic unrest, and international pressures. France could fall to the left \
-            tomorrow—or to the right.
+            Yet French culture, French industry, and French diplomacy remain influential. Paris \
+            is still Paris. French intellectuals debate socialism with sophistication and passion.
             """
         france.relationshipHistory = """
-            Complicated. Official relations are strained but not frozen. Trade continues. French \
-            intellectuals debate our system endlessly; French communists look to us for inspiration.
-
-            The French government fears we might support their colonial subjects; we fear they might \
-            join British intervention. Neither side trusts the other, but neither side wants to \
-            force a choice—yet.
+            France is the most promising Western power for improved relations. French communists \
+            maintain ties with us; French socialists share some of our goals. Trade flows more \
+            freely than with most capitalist nations.
             """
         france.strategicImportance = """
-            The swing state of Europe. If France goes socialist, the capitalist bloc fractures. If \
-            France goes fascist, we face another enemy. French politics bear constant watching; \
-            French communists deserve constant cultivation.
+            A potential bridge between East and West. France's instability creates opportunities; \
+            its Communist Party provides allies. If France tilted toward socialism, European \
+            politics would transform.
             """
-        // France: Mixed economy with colonial strain
         france.economicSystem = EconomicSystemType.mixedEconomy.rawValue
-        france.gdpGrowth = 3
+        france.gdpGrowth = 4
         france.countryInflationRate = 8
-        france.countryUnemploymentRate = 8
-        france.economicReformTendency = 55
+        france.countryUnemploymentRate = 6
+        france.economicReformTendency = 50
         countries.append(france)
 
-        // ========================================
-        // FASCIST POWERS (2 nations)
-        // ========================================
-
-        // 7. ITALY - Fascist state controlling North Africa
-        let italy = ForeignCountry(
-            countryId: "italy",
-            name: "Italy",
-            officialName: "Italian Social Republic",
-            bloc: .nonAligned,
-            government: .authoritarianRepublic
+        // 7. WEST GERMANY - Divided nation under occupation
+        let westGermany = ForeignCountry(
+            countryId: "west_germany",
+            name: "West Germany",
+            officialName: "Federal Republic of Germany",
+            bloc: .capitalist,
+            government: .liberalDemocracy
         )
-        italy.region = "Southern Europe"
-        italy.population = 47
-        italy.landArea = 5
-        italy.leaderName = "Duce Benito Mussolini"
-        italy.leaderTitle = "Head of Government"
-        italy.rulingParty = "National Fascist Party"
-        italy.diplomaticStatus = DiplomaticStatus.hostile.rawValue
-        italy.relationshipScore = -55
-        italy.diplomaticTension = 50
-        italy.economicPower = 50
-        italy.tradeVolume = 5
-        italy.strategicResources = ["Mediterranean access", "Colonial resources", "Industry"]
-        italy.militaryStrength = 55
-        italy.hasNuclearWeapons = false
-        italy.hasOurMilitaryBases = false
-        italy.espionageActivity = 40
-        italy.ourIntelligenceAssets = 35
-        italy.countryDescription = """
-            Fascism's original home, still standing. Without a World War to destroy him, Mussolini \
-            remains in power, his regime controlling Italy and much of North Africa. The fascist \
-            state represents everything we oppose—yet they oppose the British Empire too, creating \
-            strange potential alignments.
+        westGermany.region = "Central Europe"
+        westGermany.population = 50
+        westGermany.landArea = 4
+        westGermany.leaderName = "Konrad Adenauer"
+        westGermany.leaderTitle = "Chancellor"
+        westGermany.rulingParty = "Christian Democratic Union"
+        westGermany.diplomaticStatus = DiplomaticStatus.strained.rawValue
+        westGermany.relationshipScore = -20
+        westGermany.diplomaticTension = 45
+        westGermany.economicPower = 50
+        westGermany.tradeVolume = 10
+        westGermany.strategicResources = ["Machinery", "Chemicals", "Steel", "Engineering"]
+        westGermany.militaryStrength = 25
+        westGermany.hasNuclearWeapons = false
+        westGermany.hasOurMilitaryBases = false
+        westGermany.espionageActivity = 35
+        westGermany.ourIntelligenceAssets = 20
+        westGermany.countryDescription = """
+            The western half of divided Germany, occupied by American, British, and French forces. \
+            Under Adenauer's conservative leadership, West Germany is rebuilding rapidly—the \
+            "economic miracle" has begun. Anti-communist sentiment runs deep.
             """
-        italy.historySummary = """
-            Mussolini's March on Rome in 1922 brought fascism to power in Italy. Without the disasters \
-            of World War II to discredit his regime, he remains Il Duce, aging but still commanding.
+        westGermany.historySummary = """
+            Germany's defeat in 1945 left the nation divided and occupied. The western zones, \
+            combined in 1949, became the Federal Republic. Adenauer leads a pro-Western government \
+            firmly aligned with Washington.
 
-            Italy expanded into Africa throughout the 1930s—Ethiopia fell in 1936, and Italian forces \
-            pushed into British-held territories during the chaos of the American Civil War. North \
-            Africa from Libya to Ethiopia now flies the Italian tricolor.
-
-            The regime is brutal but pragmatic. Mussolini hates communism but hates British imperialism \
-            too. Italy trades with whoever pays, spies on everyone, and trusts no one. The Duce grows \
-            old; succession looms; the fascist experiment's future remains uncertain.
+            The economic miracle is transforming West Germany into an industrial powerhouse once \
+            more. American aid and German efficiency drive growth. But the division of Germany \
+            remains an open wound.
             """
-        italy.relationshipHistory = """
-            Ideological enemies but not at war. Mussolini's anti-communism is genuine, but so is his \
-            resentment of British dominance. Italian intelligence cooperates with British services \
-            against us—but also competes with them in the Mediterranean.
-
-            No formal relations exist. Some trade flows through intermediaries. Italian communists, \
-            suppressed but not destroyed, maintain underground contact with our agents.
+        westGermany.relationshipHistory = """
+            Relations are cool. West Germany is firmly in the American orbit, suspicious of all \
+            communist states. Trade is minimal. Diplomatic contact is formal at best.
             """
-        italy.strategicImportance = """
-            A fascist power that might be turned against our enemies. Italy's Mediterranean position \
-            threatens British shipping; their African colonies drain British resources. The enemy of \
-            our enemy is not our friend—but might be useful.
+        westGermany.strategicImportance = """
+            The front line of the Cold War in Europe. West Germany's rearmament—now being \
+            discussed—would transform European security. Their industry could be valuable \
+            if relations ever improve.
             """
-        // Italy: Fascist crony capitalism with inefficiency
-        italy.economicSystem = EconomicSystemType.cronyCapitalism.rawValue
-        italy.gdpGrowth = 2
-        italy.countryInflationRate = 10
-        italy.countryUnemploymentRate = 12
-        italy.economicReformTendency = 25
-        countries.append(italy)
-
-        // 8. SPAIN - Traditional fascist state
-        let spain = ForeignCountry(
-            countryId: "spain",
-            name: "Spain",
-            officialName: "Spanish State",
-            bloc: .nonAligned,
-            government: .authoritarianRepublic
-        )
-        spain.region = "Southwestern Europe"
-        spain.population = 28
-        spain.landArea = 4
-        spain.leaderName = "Caudillo Francisco Franco"
-        spain.leaderTitle = "Head of State"
-        spain.rulingParty = "Movimiento Nacional"
-        spain.diplomaticStatus = DiplomaticStatus.hostile.rawValue
-        spain.relationshipScore = -50
-        spain.diplomaticTension = 45
-        spain.economicPower = 35
-        spain.tradeVolume = 5
-        spain.strategicResources = ["Strategic position", "Minerals", "Agriculture"]
-        spain.militaryStrength = 45
-        spain.hasNuclearWeapons = false
-        spain.hasOurMilitaryBases = false
-        spain.espionageActivity = 35
-        spain.ourIntelligenceAssets = 30
-        spain.countryDescription = """
-            Franco's Spain—victorious in civil war, isolated in peace. The Spanish Civil War of \
-            1936-1939 ended in Nationalist victory, establishing a fascist state that survives \
-            through repression and international isolation. They hate us; we supported the Republic \
-            they destroyed.
-            """
-        spain.historySummary = """
-            The Spanish Civil War was a rehearsal for greater conflicts. Franco's Nationalists, backed \
-            by Italy and Germany, defeated the Republican forces we supported with volunteers and weapons. \
-            The International Brigades included many American communists who would later fight in our \
-            own revolution.
-
-            Franco's victory in 1939 established a regime of terror. Republicans were shot by the \
-            thousands; survivors fled or hid. The regime aligned with fascist Italy but kept its \
-            distance from the British-led order.
-
-            Today, Spain remains isolated—too fascist for the British, too anti-communist for us. \
-            Franco grows old, his regime ossifying. What comes after remains unclear, but Spanish \
-            exiles in our territory dream of liberation.
-            """
-        spain.relationshipHistory = """
-            Blood enemies. We backed the Republic; they killed it. Spanish refugees, including many \
-            who fought in our own Revolution, live in our territory, plotting return.
-
-            No diplomatic relations. No trade. Spanish fascists shelter Cuban exiles; we shelter \
-            Spanish republicans. The hatred runs deep.
-            """
-        spain.strategicImportance = """
-            A secondary enemy, but one with strategic position. Spain controls access to the \
-            Mediterranean; Spanish Morocco borders important shipping lanes. When Franco falls— \
-            and he will—Spain could go either direction. We should be ready.
-            """
-        // Spain: Isolated crony capitalism, economically weak
-        spain.economicSystem = EconomicSystemType.cronyCapitalism.rawValue
-        spain.gdpGrowth = 1
-        spain.countryInflationRate = 12
-        spain.countryUnemploymentRate = 15
-        spain.economicReformTendency = 35
-        countries.append(spain)
+        westGermany.economicSystem = EconomicSystemType.freeMarket.rawValue
+        westGermany.gdpGrowth = 8
+        westGermany.countryInflationRate = 4
+        westGermany.countryUnemploymentRate = 8
+        westGermany.economicReformTendency = 25
+        countries.append(westGermany)
 
         // ========================================
-        // PACIFIC POWERS (2 nations)
+        // NON-ALIGNED NATIONS (4 nations)
         // ========================================
 
-        // 9. JAPAN - Imperial power holding Hawaii
-        let japan = ForeignCountry(
-            countryId: "japan",
-            name: "Japan",
-            officialName: "Empire of Japan",
+        // 8. INDIA - Newly independent, non-aligned leader
+        let india = ForeignCountry(
+            countryId: "india",
+            name: "India",
+            officialName: "Republic of India",
             bloc: .nonAligned,
-            government: .absoluteMonarchy
+            government: .liberalDemocracy
         )
-        japan.region = "Pacific"
-        japan.population = 85
-        japan.landArea = 6
-        japan.leaderName = "Prime Minister Nobusuke Kishi"
-        japan.leaderTitle = "Prime Minister"
-        japan.rulingParty = "Imperial Rule Assistance Association"
-        japan.diplomaticStatus = DiplomaticStatus.hostile.rawValue
-        japan.relationshipScore = -65
-        japan.diplomaticTension = 70
-        japan.economicPower = 65
-        japan.tradeVolume = 5
-        japan.strategicResources = ["Industrial capacity", "Naval power", "Hawaii", "China resources"]
-        japan.militaryStrength = 80
-        japan.hasNuclearWeapons = false
-        japan.hasOurMilitaryBases = false
-        japan.espionageActivity = 60
-        japan.ourIntelligenceAssets = 35
-        japan.borderingRegionId = "pacific"
-        japan.countryDescription = """
-            The rising sun that never set. While America tore itself apart in civil war, Imperial \
-            Japan seized Hawaii and expanded across Asia. They hold our islands hostage; their \
-            empire stretches from Manchuria to the mid-Pacific. Someday, we must take back what \
-            they stole.
+        india.region = "South Asia"
+        india.population = 360
+        india.landArea = 7
+        india.leaderName = "Jawaharlal Nehru"
+        india.leaderTitle = "Prime Minister"
+        india.rulingParty = "Indian National Congress"
+        india.diplomaticStatus = DiplomaticStatus.friendly.rawValue
+        india.relationshipScore = 35
+        india.diplomaticTension = 15
+        india.economicPower = 35
+        india.tradeVolume = 30
+        india.strategicResources = ["Tea", "Cotton", "Jute", "Minerals", "Manpower"]
+        india.militaryStrength = 45
+        india.hasNuclearWeapons = false
+        india.hasOurMilitaryBases = false
+        india.espionageActivity = 15
+        india.ourIntelligenceAssets = 25
+        india.countryDescription = """
+            The world's largest democracy, newly independent from British rule. Nehru leads a \
+            nation of enormous potential and enormous challenges. India refuses to align with \
+            either superpower bloc, charting its own course as a leader of the developing world.
             """
-        japan.historySummary = """
-            Japan watched the American Civil War with predatory interest. When it became clear the \
-            Federal Government would fall, the Imperial Navy moved. In December 1941, Japanese forces \
-            occupied Hawaii—presented as "protection" of Japanese-American residents, in reality a \
-            strategic grab.
+        india.historySummary = """
+            India won independence through Gandhi's non-violent resistance—a moral victory that \
+            inspired colonized peoples everywhere. Partition in 1947 created Pakistan and caused \
+            massive bloodshed, but India emerged as a democratic republic.
 
-            The new PSRA government, exhausted from civil war and facing British-Canadian intervention, \
-            could not respond. Hawaii remains under Japanese occupation, its American population \
-            subjected to increasingly harsh rule.
-
-            Japan's empire now spans East Asia. China groans under occupation; Korea and Manchuria \
-            fuel Japanese industry; Southeast Asia provides resources. The Empire is vast, brutal, \
-            and directly controls territory we consider ours.
+            Nehru combines Western-educated sophistication with deep roots in Indian tradition. \
+            His socialist economic policies and non-aligned foreign policy offer a third way \
+            between Washington and Moscow. India's voice carries moral weight.
             """
-        japan.relationshipHistory = """
-            They stole Hawaii when we were weak. We have never recognized their occupation; they \
-            have never recognized our government. The state of war that never formally began has \
-            never formally ended.
-
-            Japanese-American citizens in Hawaii face persecution. Our intelligence services work \
-            to support resistance; their secret police hunt our agents. Someday, there will be a \
-            reckoning.
+        india.relationshipHistory = """
+            India is a natural friend. Nehru's socialism aligns with our principles; his \
+            non-alignment protects our interests. Trade is growing. Cultural exchanges \
+            flourish. India may become our most important partner outside the Soviet bloc.
             """
-        japan.strategicImportance = """
-            The enemy across the Pacific. They hold Hawaii—American territory, American citizens, \
-            American honor. Liberating Hawaii is a national priority that events have not yet \
-            permitted. When we are strong enough, the reckoning will come.
+        india.strategicImportance = """
+            The leader of the non-aligned world. India's friendship legitimizes our position; \
+            their example of democratic socialism offers alternatives to Soviet orthodoxy. \
+            A strong India-PSR relationship could reshape global politics.
             """
-        // Japan: Militarist crony capitalism with imperial expansion
-        japan.economicSystem = EconomicSystemType.cronyCapitalism.rawValue
-        japan.gdpGrowth = 4
-        japan.countryInflationRate = 8
-        japan.countryUnemploymentRate = 6
-        japan.economicReformTendency = 20
-        countries.append(japan)
+        india.economicSystem = EconomicSystemType.mixedEconomy.rawValue
+        india.gdpGrowth = 3
+        india.countryInflationRate = 6
+        india.countryUnemploymentRate = 10
+        india.economicReformTendency = 35
+        countries.append(india)
 
-        // 10. CHINA - Under Japanese occupation, status uncertain
+        // 9. YUGOSLAVIA - Independent communist
+        let yugoslavia = ForeignCountry(
+            countryId: "yugoslavia",
+            name: "Yugoslavia",
+            officialName: "Federal People's Republic of Yugoslavia",
+            bloc: .nonAligned,
+            government: .communistState
+        )
+        yugoslavia.region = "Southern Europe"
+        yugoslavia.population = 17
+        yugoslavia.landArea = 4
+        yugoslavia.leaderName = "Josip Broz Tito"
+        yugoslavia.leaderTitle = "President"
+        yugoslavia.rulingParty = "Communist League of Yugoslavia"
+        yugoslavia.diplomaticStatus = DiplomaticStatus.friendly.rawValue
+        yugoslavia.relationshipScore = 40
+        yugoslavia.diplomaticTension = 18
+        yugoslavia.economicPower = 35
+        yugoslavia.tradeVolume = 20
+        yugoslavia.strategicResources = ["Minerals", "Agriculture", "Strategic position"]
+        yugoslavia.militaryStrength = 45
+        yugoslavia.hasNuclearWeapons = false
+        yugoslavia.hasOurMilitaryBases = false
+        yugoslavia.espionageActivity = 25
+        yugoslavia.ourIntelligenceAssets = 30
+        yugoslavia.countryDescription = """
+            A communist state that defied Moscow. Tito's break with Stalin in 1948 proved that \
+            socialist nations need not follow Soviet dictates. Yugoslavia experiments with \
+            worker self-management and independent foreign policy.
+            """
+        yugoslavia.historySummary = """
+            Yugoslavia liberated itself from Nazi occupation through partisan warfare—the only \
+            Eastern European nation that didn't require Soviet troops. This gave Tito the \
+            independence to challenge Stalin's demands for subservience.
+
+            The 1948 split nearly led to war. Soviet pressure failed. Yugoslavia survived as \
+            an independent communist state, developing its own model of socialism with worker \
+            councils and market elements. The West, eager to support any crack in the Eastern \
+            Bloc, provides economic aid.
+            """
+        yugoslavia.relationshipHistory = """
+            Yugoslavia offers a model for independent socialism. Their worker self-management \
+            experiments interest our reformers; their defiance of Moscow inspires our \
+            nationalists. Trade and cultural exchange flourish.
+            """
+        yugoslavia.strategicImportance = """
+            Proof that communism need not mean Soviet control. Yugoslavia's example strengthens \
+            our own independence from Moscow. Their experiments with worker management may \
+            point toward socialism's future.
+            """
+        yugoslavia.economicSystem = EconomicSystemType.marketSocialism.rawValue
+        yugoslavia.gdpGrowth = 5
+        yugoslavia.countryInflationRate = 8
+        yugoslavia.countryUnemploymentRate = 6
+        yugoslavia.economicReformTendency = 45
+        countries.append(yugoslavia)
+
+        // 10. EGYPT - Arab nationalism rising
+        let egypt = ForeignCountry(
+            countryId: "egypt",
+            name: "Egypt",
+            officialName: "Kingdom of Egypt",
+            bloc: .nonAligned,
+            government: .constitutionalMonarchy
+        )
+        egypt.region = "North Africa"
+        egypt.population = 21
+        egypt.landArea = 4
+        egypt.leaderName = "King Farouk I"
+        egypt.leaderTitle = "King"
+        egypt.rulingParty = "Wafd Party (opposition growing)"
+        egypt.diplomaticStatus = DiplomaticStatus.neutral.rawValue
+        egypt.relationshipScore = 15
+        egypt.diplomaticTension = 25
+        egypt.economicPower = 30
+        egypt.tradeVolume = 15
+        egypt.strategicResources = ["Cotton", "Suez Canal", "Strategic position"]
+        egypt.militaryStrength = 35
+        egypt.hasNuclearWeapons = false
+        egypt.hasOurMilitaryBases = false
+        egypt.espionageActivity = 20
+        egypt.ourIntelligenceAssets = 20
+        egypt.countryDescription = """
+            A kingdom in ferment. King Farouk's corruption has lost him popular support. The \
+            army grows restless. Arab nationalism rises. Egypt controls the Suez Canal, making \
+            it strategically vital. Change is coming—the only question is its direction.
+            """
+        egypt.historySummary = """
+            Egypt gained nominal independence from Britain in 1922, but British troops remained \
+            to protect the Suez Canal. King Farouk's regime has proven corrupt and ineffective. \
+            The 1948 war against Israel ended in humiliating defeat.
+
+            Young army officers plot revolution. Arab nationalism demands real independence. \
+            The Suez Canal—Britain's lifeline to Asia—makes Egypt too important to ignore.
+            """
+        egypt.relationshipHistory = """
+            Egypt is ripe for change. We maintain diplomatic relations with the monarchy while \
+            cultivating contacts among nationalists and leftists. When revolution comes—and it \
+            will—we should be positioned to benefit.
+            """
+        egypt.strategicImportance = """
+            The Suez Canal makes Egypt vital to world trade. Egyptian nationalism could \
+            challenge Western imperialism throughout the Arab world. The right relationship \
+            with Egypt's future leaders could transform our position in the Middle East.
+            """
+        egypt.economicSystem = EconomicSystemType.cronyCapitalism.rawValue
+        egypt.gdpGrowth = 2
+        egypt.countryInflationRate = 10
+        egypt.countryUnemploymentRate = 15
+        egypt.economicReformTendency = 60
+        countries.append(egypt)
+
+        // 11. CHINA - Revolutionary transformation
         let china = ForeignCountry(
             countryId: "china",
             name: "China",
-            officialName: "Republic of China (contested)",
-            bloc: .nonAligned,
-            government: .authoritarianRepublic
+            officialName: "People's Republic of China",
+            bloc: .socialist,
+            government: .communistState
         )
         china.region = "East Asia"
-        china.population = 450
+        china.population = 550
         china.landArea = 9
-        china.leaderName = "Generalissimo Chiang Kai-shek"
-        china.leaderTitle = "President (in resistance)"
-        china.rulingParty = "Kuomintang (fragmented)"
-        china.diplomaticStatus = DiplomaticStatus.neutral.rawValue
-        china.relationshipScore = 15
-        china.diplomaticTension = 35
-        china.economicPower = 25
-        china.tradeVolume = 10
-        china.strategicResources = ["Population", "Resources", "Strategic position"]
-        china.militaryStrength = 40
+        china.leaderName = "Mao Zedong"
+        china.leaderTitle = "Chairman"
+        china.rulingParty = "Communist Party of China"
+        china.diplomaticStatus = DiplomaticStatus.friendly.rawValue
+        china.relationshipScore = 45
+        china.diplomaticTension = 20
+        china.economicPower = 30
+        china.tradeVolume = 20
+        china.strategicResources = ["Population", "Agricultural potential", "Strategic position"]
+        china.militaryStrength = 70
         china.hasNuclearWeapons = false
         china.hasOurMilitaryBases = false
         china.espionageActivity = 25
-        china.ourIntelligenceAssets = 30
+        china.ourIntelligenceAssets = 15
         china.countryDescription = """
-            The sleeping giant, bound in chains. Japan's invasion of China continues, with the \
-            Kuomintang government retreated to the interior and communist guerrillas fighting in \
-            the north. China's fate remains undecided—whoever helps liberate them may shape the \
-            future of Asia.
+            A revolutionary giant awakening. Mao's communists won the civil war in 1949, \
+            establishing the People's Republic. Now they remake the world's most populous \
+            nation according to Marxist-Leninist principles. The Korean War demonstrates \
+            China's willingness to fight.
             """
         china.historySummary = """
-            Japan's full invasion of China began in 1937 and has never truly ended. The Kuomintang \
-            government retreated to Chongqing; the Chinese Communist Party fights guerrilla war in \
-            the north; Japanese forces control the coast and major cities.
+            China's "century of humiliation" ended with Mao's victory in 1949. The Communist \
+            Party, forged in the Long March and tempered by war with Japan, finally defeated \
+            Chiang Kai-shek's Nationalists.
 
-            The Chinese resistance continues, but neither the Nationalists nor the Communists can \
-            expel Japan alone. Both factions have approached us for aid; both view us as potential \
-            allies against Tokyo.
+            The new government faces enormous challenges: a devastated economy, illiteracy, \
+            feudal social structures, and hostile encirclement. Land reform proceeds with \
+            revolutionary violence. The Korean War pits Chinese "volunteers" against American \
+            forces.
 
-            Chiang Kai-shek leads what remains of the Nationalist government, corrupt and ineffective \
-            but still claiming to represent China. Mao Zedong's communists grow stronger in the \
-            countryside. When Japan falls, the two factions will likely turn on each other.
+            China seeks to learn from Soviet experience while developing its own path. The \
+            relationship with Moscow is close but not without tension. Two communist giants \
+            share a long border—and potentially competing interests.
             """
         china.relationshipHistory = """
-            Potential allies against a common enemy. Chinese Nationalists and Communists both seek \
-            our support; we provide what we can without provoking Japan into wider conflict.
-
-            Our relationship with Chinese communists is complicated by Moscow's involvement. The \
-            Soviets support Mao; we maintain contacts with both factions. China's liberation \
-            could create a powerful ally—or a new rival.
+            We share revolutionary heritage and ideological commitment. Chinese experience \
+            offers lessons in peasant mobilization and people's war. Trade is limited by \
+            geography and development, but political solidarity is strong.
             """
         china.strategicImportance = """
-            The key to Asia. Whoever helps free China from Japan will have enormous influence over \
-            its future. Chinese communists might become allies; Chinese nationalists might become \
-            enemies. The situation is fluid, the stakes enormous.
+            The sleeping giant has awakened. China's transformation will shape the 21st century. \
+            Their revolutionary energy inspires; their enormous population and territory make \
+            them a future superpower. Our relationship with China may prove as important as \
+            our relationship with Moscow.
             """
-        // China: Fragmented economy under occupation
-        china.economicSystem = EconomicSystemType.cronyCapitalism.rawValue
-        china.gdpGrowth = -2
-        china.countryInflationRate = 25
-        china.countryUnemploymentRate = 20
-        china.economicReformTendency = 70  // High tendency due to instability
+        china.economicSystem = EconomicSystemType.commandEconomy.rawValue
+        china.gdpGrowth = 4
+        china.countryInflationRate = 15
+        china.countryUnemploymentRate = 8
+        china.economicReformTendency = 15
         countries.append(china)
 
         // ========================================
-        // NEIGHBORS (1 nation)
+        // ADDITIONAL REGIONAL POWERS (2 nations)
         // ========================================
 
-        // 11. MEXICO - Oligarchy playing both sides
+        // 12. JAPAN - Occupied and rebuilding
+        let japan = ForeignCountry(
+            countryId: "japan",
+            name: "Japan",
+            officialName: "Japan",
+            bloc: .capitalist,
+            government: .constitutionalMonarchy
+        )
+        japan.region = "Pacific"
+        japan.population = 84
+        japan.landArea = 3
+        japan.leaderName = "Shigeru Yoshida"
+        japan.leaderTitle = "Prime Minister"
+        japan.rulingParty = "Liberal Party"
+        japan.diplomaticStatus = DiplomaticStatus.strained.rawValue
+        japan.relationshipScore = -30
+        japan.diplomaticTension = 40
+        japan.economicPower = 35
+        japan.tradeVolume = 5
+        japan.strategicResources = ["Industrial capacity", "Technology potential", "Labor"]
+        japan.militaryStrength = 20
+        japan.hasNuclearWeapons = false
+        japan.hasOurMilitaryBases = false
+        japan.espionageActivity = 25
+        japan.ourIntelligenceAssets = 15
+        japan.countryDescription = """
+            A defeated empire under American occupation. Japan's military was destroyed; its \
+            cities were firebombed; two suffered atomic attack. Now, under MacArthur's \
+            guidance, Japan rebuilds as a pacifist democracy aligned with Washington.
+            """
+        japan.historySummary = """
+            Imperial Japan's aggressive expansion ended in catastrophic defeat. The atomic \
+            bombings of Hiroshima and Nagasaki brought surrender. American occupation \
+            followed—demilitarization, democratization, and economic reform.
+
+            The 1947 constitution renounces war forever. American bases dot the islands. \
+            Japanese industry, redirected from weapons to consumer goods, begins its \
+            remarkable recovery. The Korean War brings orders and economic stimulus.
+            """
+        japan.relationshipHistory = """
+            Japan is firmly in the American orbit. Their wartime militarism makes many \
+            in our country suspicious. Diplomatic relations are minimal. Trade is negligible.
+            """
+        japan.strategicImportance = """
+            Japan's industrial potential is enormous. Their technological capacity could \
+            benefit us if relations ever improve. For now, they serve American interests \
+            in the Pacific.
+            """
+        japan.economicSystem = EconomicSystemType.freeMarket.rawValue
+        japan.gdpGrowth = 7
+        japan.countryInflationRate = 5
+        japan.countryUnemploymentRate = 6
+        japan.economicReformTendency = 30
+        countries.append(japan)
+
+        // 13. MEXICO - Revolutionary legacy, pragmatic present
         let mexico = ForeignCountry(
             countryId: "mexico",
             name: "Mexico",
@@ -1225,61 +1260,52 @@ extension ForeignCountry {
         mexico.region = "North America"
         mexico.population = 28
         mexico.landArea = 5
-        mexico.leaderName = "President Miguel Alemán Valdés"
+        mexico.leaderName = "Miguel Alemán Valdés"
         mexico.leaderTitle = "President"
         mexico.rulingParty = "Institutional Revolutionary Party"
-        mexico.diplomaticStatus = DiplomaticStatus.neutral.rawValue
-        mexico.relationshipScore = 10
-        mexico.diplomaticTension = 30
+        mexico.diplomaticStatus = DiplomaticStatus.friendly.rawValue
+        mexico.relationshipScore = 30
+        mexico.diplomaticTension = 18
         mexico.economicPower = 40
-        mexico.tradeVolume = 45
-        mexico.strategicResources = ["Oil", "Silver", "Agricultural products", "Strategic position"]
-        mexico.militaryStrength = 35
+        mexico.tradeVolume = 35
+        mexico.strategicResources = ["Oil", "Silver", "Agricultural products"]
+        mexico.militaryStrength = 30
         mexico.hasNuclearWeapons = false
         mexico.hasOurMilitaryBases = false
-        mexico.espionageActivity = 35
-        mexico.ourIntelligenceAssets = 45
-        mexico.borderingRegionId = "southern"
+        mexico.espionageActivity = 20
+        mexico.ourIntelligenceAssets = 30
         mexico.countryDescription = """
-            Our southern neighbor walks a careful line. Mexico is neither socialist nor fully \
-            capitalist—a one-party state run by an oligarchy that mouths revolutionary rhetoric \
-            while maintaining capitalist structures. They helped us during the Civil War but \
-            refuse to commit fully to either bloc.
+            A revolutionary nation that has made peace with pragmatism. Mexico's own revolution \
+            predates the Soviet one. The PRI rules as a permanent "revolutionary" party while \
+            maintaining capitalist structures. Oil nationalization in 1938 proved Mexico's \
+            independence from Washington.
             """
         mexico.historySummary = """
-            Mexico's own revolution, decades before ours, created a unique system—the PRI rules as \
-            a permanent revolutionary party that has made peace with capitalism while maintaining \
-            socialist theater. Land reform proceeded, then stalled. Nationalization occurred, then \
-            stopped.
+            The Mexican Revolution (1910-1920) transformed the nation. Land reform, labor rights, \
+            and nationalist economic policy emerged from a decade of bloody conflict. The \
+            Institutional Revolutionary Party (PRI) has ruled since 1929, incorporating \
+            revolutionary rhetoric into single-party stability.
 
-            During our Civil War, Mexico provided crucial support—Soviet weapons flowed through Mexican \
-            ports; our agents organized in Mexican cities. President Cárdenas sympathized with our \
-            cause. But his successors have been more cautious.
-
-            President Alemán leads a government focused on development and stability, not revolution. \
-            Mexico trades with us and with our enemies, plays all sides, commits to none. They fear \
-            both our expansion and British revenge.
+            President Cárdenas's 1938 oil nationalization defied American and British companies, \
+            establishing Mexican sovereignty over its resources. Current president Alemán has \
+            tilted toward business interests and American investment, but revolutionary \
+            tradition constrains complete alignment with Washington.
             """
         mexico.relationshipHistory = """
-            Helpful neighbors who refuse to become allies. They aided our Revolution but will not \
-            join our bloc. We share a long border and longer history; they remember the wars of \
-            the 19th century and keep their distance.
-
-            Trade flows freely. Diplomatic relations are correct. Mexican intelligence watches us \
-            carefully; our agents operate with some freedom in their territory. The relationship \
-            is useful but not warm.
+            Mexico is a natural friend—revolutionary heritage, oil nationalization, and resistance \
+            to American dominance give us common ground. Trade flows freely. Cultural exchange \
+            flourishes. Mexico provides us a window to Latin America.
             """
         mexico.strategicImportance = """
-            Our most important neutral neighbor. Mexico's cooperation—or opposition—shapes our \
-            strategic position. If they joined the capitalist bloc, we would face enemies on \
-            two land borders. Keeping Mexico neutral, or better, is essential.
+            Our most important partner in the Americas. Mexican oil helps fuel our economy. \
+            Mexican diplomatic cover helps protect our interests. A strong Mexico-PSR relationship \
+            demonstrates that socialism need not mean isolation.
             """
-        // Mexico: Mixed economy with state oil sector
         mexico.economicSystem = EconomicSystemType.mixedEconomy.rawValue
-        mexico.gdpGrowth = 4
+        mexico.gdpGrowth = 5
         mexico.countryInflationRate = 7
-        mexico.countryUnemploymentRate = 10
-        mexico.economicReformTendency = 40
+        mexico.countryUnemploymentRate = 8
+        mexico.economicReformTendency = 35
         countries.append(mexico)
 
         return countries

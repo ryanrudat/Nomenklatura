@@ -276,13 +276,13 @@ struct NationInfo {
 
     static func forId(_ id: String) -> NationInfo {
         switch id {
-        case "psra":
+        case "psr":
             return NationInfo(
-                name: "P.S.R.A.",
+                name: "P.S.R.",
                 color: Color(hex: "8B0000"),
                 relationshipDescription: "The Homeland",
                 governmentType: "People's Socialist Republic",
-                intelligenceBrief: "The People's Socialist Republic of America leads the socialist world toward inevitable victory."
+                intelligenceBrief: "The People's Socialist Republic navigates Cold War tensions, building socialism while maintaining independence from Moscow."
             )
         case "soviet_union":
             return NationInfo(
@@ -290,39 +290,31 @@ struct NationInfo {
                 color: Color(hex: "CD5C5C"),
                 relationshipDescription: "Revolutionary Ally",
                 governmentType: "Union of Soviet Socialist Republics",
-                intelligenceBrief: "The USSR provided crucial aid during our Revolution and received part of Alaska in return. Relations are complicated by Moscow's expectations of ideological conformity."
+                intelligenceBrief: "The USSR provided crucial aid during our Revolution. Relations are complicated by Moscow's expectations of ideological conformity. We are allies, not satellites."
             )
-        case "germany":
+        case "china":
             return NationInfo(
-                name: "GERMANY",
+                name: "CHINA",
                 color: Color(hex: "CD5C5C"),
-                relationshipDescription: "Socialist Ally",
-                governmentType: "German Socialist Republic",
-                intelligenceBrief: "In this timeline, the Nazis never rose to power. Social Democrats and Communists united, proving socialism need not mean Soviet domination."
+                relationshipDescription: "Fellow Revolutionary",
+                governmentType: "People's Republic of China",
+                intelligenceBrief: "Mao's revolutionary victory in 1949 created another socialist ally. Both we and China owe much to Soviet aid, yet both seek independent paths."
             )
-        case "cuba":
+        case "united_states":
             return NationInfo(
-                name: "CUBA",
-                color: Color(hex: "8B0000"),
-                relationshipDescription: "Government-in-Exile",
-                governmentType: "Republic (Hosts US Federal Government)",
-                intelligenceBrief: "The old Federal Government fled here after the Revolution. President-in-Exile claims to lead the 'legitimate' United States. Cuban intelligence operations threaten PSRA security."
-            )
-        case "canada":
-            return NationInfo(
-                name: "CANADA",
+                name: "UNITED STATES",
                 color: Color(hex: "4169E1"),
-                relationshipDescription: "Hostile Neighbor",
-                governmentType: "Dominion (British Commonwealth)",
-                intelligenceBrief: "Lost British Columbia and Alberta to the PSRA during the Intervention War. Canadian politics are consumed by revanchism—'the Lost Provinces' dominate every election."
+                relationshipDescription: "Capitalist Superpower",
+                governmentType: "Federal Republic",
+                intelligenceBrief: "The global capitalist superpower refuses to recognize the PSR. Washington leads Western opposition and CIA operations probe constantly for weakness."
             )
         case "united_kingdom":
             return NationInfo(
                 name: "UNITED KINGDOM",
                 color: Color(hex: "4169E1"),
-                relationshipDescription: "Imperial Adversary",
+                relationshipDescription: "Former Colonial Power",
                 governmentType: "Constitutional Monarchy",
-                intelligenceBrief: "Without World War II to drain their resources, Britain retains much of its colonial empire. They tried to crush the Revolution and failed."
+                intelligenceBrief: "The former colonial power follows Washington's lead but maintains more flexibility. British intelligence services are skilled and persistent enemies."
             )
         case "france":
             return NationInfo(
@@ -332,29 +324,53 @@ struct NationInfo {
                 governmentType: "Republic (Volatile)",
                 intelligenceBrief: "The most unpredictable power in Europe. French politics swing between left and right. A large Communist Party provides both opportunity and concern."
             )
+        case "west_germany":
+            return NationInfo(
+                name: "WEST GERMANY",
+                color: Color(hex: "4169E1"),
+                relationshipDescription: "Western Ally",
+                governmentType: "Federal Republic",
+                intelligenceBrief: "The Bundesrepublik follows the American line on non-recognition. German industrial expertise would be valuable; German politics make cooperation impossible."
+            )
         case "japan":
             return NationInfo(
                 name: "JAPAN",
-                color: Color(hex: "8B0000"),
-                relationshipDescription: "Pacific Occupier",
-                governmentType: "Empire",
-                intelligenceBrief: "Seized Hawaii during the chaos of our civil war. The Empire controls Korea, Manchuria, parts of China, and American Hawaii. Liberating Hawaii is a national priority."
+                color: Color(hex: "4169E1"),
+                relationshipDescription: "American Ally",
+                governmentType: "Constitutional Monarchy",
+                intelligenceBrief: "Defeated in WWII and rebuilt under American occupation. Japan follows American policy on recognition and is firmly in the Western camp."
             )
-        case "hawaii":
+        case "yugoslavia":
             return NationInfo(
-                name: "HAWAII",
-                color: Color(hex: "8B0000"),
-                relationshipDescription: "Occupied Territory",
-                governmentType: "Japanese Military Administration",
-                intelligenceBrief: "American territory under Japanese occupation since 1941. Our citizens live under foreign rule. Liberation remains a core PSRA objective."
+                name: "YUGOSLAVIA",
+                color: Color(hex: "808080"),
+                relationshipDescription: "Independent Socialist",
+                governmentType: "Socialist Federal Republic",
+                intelligenceBrief: "Tito's break with Stalin in 1948 proved socialism need not mean Soviet domination. We study Yugoslavia's model with great interest."
+            )
+        case "india":
+            return NationInfo(
+                name: "INDIA",
+                color: Color(hex: "808080"),
+                relationshipDescription: "Non-Aligned Giant",
+                governmentType: "Federal Republic",
+                intelligenceBrief: "Nehru's India maintains friendly relations with both East and West. We seek Indian recognition and trade, offering an alternative to Cold War alignment."
             )
         case "mexico":
             return NationInfo(
                 name: "MEXICO",
                 color: Color(hex: "808080"),
-                relationshipDescription: "Neutral Neighbor",
+                relationshipDescription: "Pragmatic Neighbor",
                 governmentType: "One-Party Republic",
-                intelligenceBrief: "Neither socialist nor fully capitalist. Soviet weapons flowed through Mexican ports during the civil war. Keeping Mexico neutral is a strategic priority."
+                intelligenceBrief: "Mexico walks a careful line between Cold War blocs. They have aided us when useful but will not join our bloc. We share a long border and must maintain working relations."
+            )
+        case "egypt":
+            return NationInfo(
+                name: "EGYPT",
+                color: Color(hex: "808080"),
+                relationshipDescription: "Revolutionary Potential",
+                governmentType: "Constitutional Monarchy",
+                intelligenceBrief: "The corrupt monarchy of King Farouk teeters. Military officers plot; the masses grow restless. Revolution may come to Cairo."
             )
         default:
             return NationInfo(

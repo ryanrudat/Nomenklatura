@@ -226,7 +226,7 @@ struct PlayerIDCard: View {
                         Spacer()
 
                         // Official seal
-                        CircularSeal(text: "PSRA", size: 32)
+                        CircularSeal(text: "PSR", size: 32)
                     }
 
                     Spacer()
