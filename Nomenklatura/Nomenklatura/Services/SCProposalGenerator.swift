@@ -26,13 +26,24 @@ struct SCProposalGenerator {
 
         var results: [SCProposalResult] = []
 
+        // DEDUPLICATION: Track proposal titles generated this turn to prevent duplicates
+        var proposedTitlesThisTurn: Set<String> = []
+
+        // DEDUPLICATION: Get existing pending proposal titles to avoid duplicating
+        let existingPendingTitles = Set(committee.pendingAgenda.map { $0.title })
+
         for memberId in committee.memberIds {
             guard let member = game.characters.first(where: { $0.templateId == memberId && $0.isAlive }),
                   shouldProposeThisTurn(member: member, committee: committee, game: game) else {
                 continue
             }
 
-            if let proposal = generateProposal(for: member, committee: committee, game: game) {
+            if let proposal = generateProposal(
+                for: member,
+                committee: committee,
+                game: game,
+                excludedTitles: proposedTitlesThisTurn.union(existingPendingTitles)
+            ) {
                 // Submit to committee agenda
                 StandingCommitteeService.shared.submitAgendaItem(
                     to: committee,
@@ -50,6 +61,9 @@ struct SCProposalGenerator {
                     proposal: proposal,
                     turnSubmitted: game.turnNumber
                 ))
+
+                // Track this proposal to prevent duplicates from other NPCs this turn
+                proposedTitlesThisTurn.insert(proposal.title)
 
                 proposalLogger.info("\(member.name) proposed: \(proposal.title)")
             }
@@ -102,33 +116,38 @@ struct SCProposalGenerator {
     }
 
     /// Generate a proposal based on character's situation
-    private static func generateProposal(for member: GameCharacter, committee: StandingCommittee, game: Game) -> ProposalContent? {
+    private static func generateProposal(
+        for member: GameCharacter,
+        committee: StandingCommittee,
+        game: Game,
+        excludedTitles: Set<String> = []
+    ) -> ProposalContent? {
         // Priority order for proposal generation:
 
         // 1. Crisis response (if stability < 30)
         if game.stability < 30 {
-            if let crisis = generateCrisisProposal(member: member, game: game) {
+            if let crisis = generateCrisisProposal(member: member, game: game, excludedTitles: excludedTitles) {
                 return crisis
             }
         }
 
         // 2. Faction protection (if faction losing)
-        if let factionProposal = generateFactionProtectionProposal(member: member, game: game) {
+        if let factionProposal = generateFactionProtectionProposal(member: member, game: game, excludedTitles: excludedTitles) {
             return factionProposal
         }
 
         // 3. Goal advancement (active NPC goals)
-        if let goalProposal = generateGoalDrivenProposal(member: member, game: game) {
+        if let goalProposal = generateGoalDrivenProposal(member: member, game: game, excludedTitles: excludedTitles) {
             return goalProposal
         }
 
         // 4. Opportunistic (random beneficial proposal)
-        return generateOpportunisticProposal(member: member, game: game)
+        return generateOpportunisticProposal(member: member, game: game, excludedTitles: excludedTitles)
     }
 
     // MARK: - Crisis Proposals
 
-    private static func generateCrisisProposal(member: GameCharacter, game: Game) -> ProposalContent? {
+    private static func generateCrisisProposal(member: GameCharacter, game: Game, excludedTitles: Set<String> = []) -> ProposalContent? {
         let crisisTypes: [(condition: Bool, generator: () -> ProposalContent?)] = [
             // Economic crisis
             (game.industrialOutput < 40, {
@@ -176,14 +195,19 @@ struct SCProposalGenerator {
             })
         ]
 
-        // Find applicable crisis and generate proposal
+        // Find applicable crisis proposals and filter out already proposed titles
         let applicable = crisisTypes.filter { $0.condition }
-        return applicable.randomElement()?.generator()
+        for item in applicable.shuffled() {
+            if let proposal = item.generator(), !excludedTitles.contains(proposal.title) {
+                return proposal
+            }
+        }
+        return nil
     }
 
     // MARK: - Faction Protection Proposals
 
-    private static func generateFactionProtectionProposal(member: GameCharacter, game: Game) -> ProposalContent? {
+    private static func generateFactionProtectionProposal(member: GameCharacter, game: Game, excludedTitles: Set<String> = []) -> ProposalContent? {
         guard let factionId = member.factionId,
               let faction = game.factions.first(where: { $0.factionId == factionId }),
               faction.power < 45 else {
@@ -269,21 +293,25 @@ struct SCProposalGenerator {
             )
         ]
 
-        return proposals.randomElement()
+        // Filter out already proposed titles
+        let availableProposals = proposals.filter { !excludedTitles.contains($0.title) }
+        return availableProposals.randomElement()
     }
 
     // MARK: - Goal-Driven Proposals
 
-    private static func generateGoalDrivenProposal(member: GameCharacter, game: Game) -> ProposalContent? {
+    private static func generateGoalDrivenProposal(member: GameCharacter, game: Game, excludedTitles: Set<String> = []) -> ProposalContent? {
         // Check member's active goals
         let goals = member.npcGoals.filter { $0.isActive }
 
         for goal in goals {
+            var proposal: ProposalContent? = nil
+
             switch goal.goalType {
             case .seekPromotion:
                 // Propose personnel changes that could benefit them
                 if let rivalId = findRivalInPath(member: member, game: game) {
-                    return ProposalContent(
+                    proposal = ProposalContent(
                         title: "Personnel Review Initiative",
                         description: "\(member.name) proposes a comprehensive review of leadership positions to ensure the most capable cadres are in key roles.",
                         category: .personnel,
@@ -296,7 +324,7 @@ struct SCProposalGenerator {
 
             case .destroyRival:
                 if let targetId = goal.targetCharacterId {
-                    return ProposalContent(
+                    proposal = ProposalContent(
                         title: "Anti-Corruption Investigation",
                         description: "\(member.name) proposes investigating irregularities in certain administrative units.",
                         category: .security,
@@ -308,7 +336,7 @@ struct SCProposalGenerator {
                 }
 
             case .expandInfluence:
-                return ProposalContent(
+                proposal = ProposalContent(
                     title: "Organizational Restructuring",
                     description: "\(member.name) proposes reorganizing certain departments to improve efficiency.",
                     category: .personnel,
@@ -318,17 +346,55 @@ struct SCProposalGenerator {
                 )
 
             case .protectPosition:
-                return ProposalContent(
-                    title: "Strengthen Institutional Safeguards",
-                    description: "\(member.name) proposes measures to protect institutional stability and continuity.",
-                    category: .policy,
-                    priority: .important,
-                    proposalType: .institutionalReform,
-                    effects: ["stability": 3]
-                )
+                // Multiple varied proposals for position protection to avoid duplicate spam
+                let protectPositionProposals = [
+                    ProposalContent(
+                        title: "Strengthen Institutional Safeguards",
+                        description: "\(member.name) proposes measures to protect institutional stability and continuity.",
+                        category: .policy,
+                        priority: .important,
+                        proposalType: .institutionalReform,
+                        effects: ["stability": 3]
+                    ),
+                    ProposalContent(
+                        title: "Tenure Protection Guidelines",
+                        description: "\(member.name) proposes clarifying tenure protections for senior cadres to ensure institutional memory.",
+                        category: .personnel,
+                        priority: .routine,
+                        proposalType: .personnelChange,
+                        effects: ["eliteLoyalty": 2]
+                    ),
+                    ProposalContent(
+                        title: "Leadership Continuity Framework",
+                        description: "\(member.name) proposes establishing guidelines to ensure stable leadership transitions.",
+                        category: .policy,
+                        priority: .routine,
+                        proposalType: .institutionalReform,
+                        effects: ["stability": 2]
+                    ),
+                    ProposalContent(
+                        title: "Administrative Stability Review",
+                        description: "\(member.name) proposes reviewing administrative procedures to prevent destabilizing changes.",
+                        category: .policy,
+                        priority: .routine,
+                        proposalType: .policyReview,
+                        effects: ["stability": 1]
+                    ),
+                    ProposalContent(
+                        title: "Succession Planning Initiative",
+                        description: "\(member.name) proposes establishing clearer succession guidelines for key positions.",
+                        category: .personnel,
+                        priority: .routine,
+                        proposalType: .personnelChange,
+                        effects: ["eliteLoyalty": 1, "stability": 1]
+                    )
+                ]
+                // Pick a random proposal that isn't already excluded
+                let available = protectPositionProposals.filter { !excludedTitles.contains($0.title) }
+                proposal = available.randomElement()
 
             case .implementReform:
-                return ProposalContent(
+                proposal = ProposalContent(
                     title: "Reform Implementation Acceleration",
                     description: "\(member.name) proposes accelerating ongoing reform initiatives.",
                     category: .policy,
@@ -338,7 +404,7 @@ struct SCProposalGenerator {
                 )
 
             case .purgeEnemies:
-                return ProposalContent(
+                proposal = ProposalContent(
                     title: "Party Discipline Enforcement",
                     description: "\(member.name) proposes strengthening discipline inspection and accountability mechanisms.",
                     category: .security,
@@ -350,6 +416,11 @@ struct SCProposalGenerator {
             default:
                 continue
             }
+
+            // Check if proposal is valid and not already excluded
+            if let p = proposal, !excludedTitles.contains(p.title) {
+                return p
+            }
         }
 
         return nil
@@ -357,7 +428,7 @@ struct SCProposalGenerator {
 
     // MARK: - Opportunistic Proposals
 
-    private static func generateOpportunisticProposal(member: GameCharacter, game: Game) -> ProposalContent? {
+    private static func generateOpportunisticProposal(member: GameCharacter, game: Game, excludedTitles: Set<String> = []) -> ProposalContent? {
         // Generate based on current game state opportunities
         var opportunities: [ProposalContent] = []
 
@@ -417,7 +488,9 @@ struct SCProposalGenerator {
             )
         ])
 
-        return opportunities.randomElement()
+        // Filter out already proposed titles
+        let availableOpportunities = opportunities.filter { !excludedTitles.contains($0.title) }
+        return availableOpportunities.randomElement()
     }
 
     // MARK: - Helper Methods
