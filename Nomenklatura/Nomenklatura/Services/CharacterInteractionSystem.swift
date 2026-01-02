@@ -1914,13 +1914,13 @@ class CharacterInteractionSystem {
                 successNarratives: [
                     "\(character.name) will contribute to agricultural development in the Plains Zone.",
                     "'For health reasons,' the announcement says. \(character.name) departs within the hour.",
-                    "A one-way ticket to Alaska. \(character.name)'s career in Washington is over."
+                    "A one-way ticket to the Northern Reaches. \(character.name)'s career in the Capital is over."
                 ],
                 failureNarratives: [
                     "\(character.name) has too many allies. The exile order is quietly shelved.",
                     "The People's Congress finds your reasoning 'insufficient.' \(character.name) remains."
                 ],
-                flavorText: "Not death, but close enough. Alaska is very cold this time of year.",
+                flavorText: "Not death, but close enough. The Northern Reaches are very cold this time of year.",
                 minPositionIndex: 6
             ))
 

@@ -448,7 +448,7 @@ struct ReactionsSection: View {
         switch stance {
         case .approve:
             let approvals = [
-                "The zones will benefit from this. Washington finally understands our needs.",
+                "The zones will benefit from this. The Capital finally understands our needs.",
                 "This acknowledges the reality on the ground. The regions are grateful.",
                 "Local conditions matter. This decision reflects that wisdom.",
                 "The center cannot manage everything. This is appropriate delegation."
@@ -457,7 +457,7 @@ struct ReactionsSection: View {
 
         case .disapprove:
             let disapprovals = [
-                "Washington does not understand conditions here. This will fail in the zones.",
+                "The Capital does not understand conditions here. This will fail in the zones.",
                 "Another decree from the capital that ignores local realities.",
                 "The regions bear the burden while the center makes decisions.",
                 "We who implement these policies see what the Standing Committee cannot."

@@ -221,7 +221,7 @@ struct NewspaperConfig: Codable, Sendable {
     static var psra: NewspaperConfig {
         NewspaperConfig(
             publicationName: "The People's Voice",
-            masthead: "Organ of the Central Committee of the Communist Party of America",
+            masthead: "Organ of the Central Committee of the Communist Party",
             dateFormat: "MMMM d, yyyy",
             currency: "dollars",
             leaderTitle: "Comrade General Secretary"

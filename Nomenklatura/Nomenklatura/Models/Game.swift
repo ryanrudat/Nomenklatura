@@ -417,13 +417,13 @@ enum GameStatus: String, Codable, CaseIterable {
 
 enum CareerTrack: String, Codable, CaseIterable, Sendable {
     case shared     // Positions before branching (Party Official, Junior Politburo) and after merging (Deputy Gen Sec, Gen Sec)
-    case capital    // Central apparatus in Washington - ministries, Politburo politics
+    case capital    // Central apparatus in the Capital - ministries, Politburo politics
     case regional   // Provincial/Republic governance - regional first secretaries
 
     var displayName: String {
         switch self {
         case .shared: return "Party"
-        case .capital: return "Washington"
+        case .capital: return "The Capital"
         case .regional: return "Provincial"
         }
     }
@@ -433,7 +433,7 @@ enum CareerTrack: String, Codable, CaseIterable, Sendable {
         case .shared:
             return "The common path all Party members travel"
         case .capital:
-            return "The halls of power in Washington - ministries, committees, and Politburo intrigue"
+            return "The halls of power in the Capital - ministries, committees, and Politburo intrigue"
         case .regional:
             return "The distant zones and territories - where you build your own power base"
         }

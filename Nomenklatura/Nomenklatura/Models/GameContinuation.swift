@@ -230,7 +230,7 @@ struct RehabilitationEvent: Codable {
     static func generateNarrative(turnsImprisoned: Int, reason: String) -> String {
         let years = turnsImprisoned / 6 + 1
         let narratives = [
-            "After \(years) years, the errors in your case have been acknowledged. You return to Washington, older and wiser, with scores to settle.",
+            "After \(years) years, the errors in your case have been acknowledged. You return to the Capital, older and wiser, with scores to settle.",
             "The regime has changed. Those who imprisoned you are themselves now under suspicion. You have been quietly rehabilitated.",
             "\"Mistakes were made.\" With these words, your suffering is dismissed - but your return to power begins.",
             "The Party, in its wisdom, has determined that the charges against you were fabricated. Your name is cleared, though the years cannot be returned."
@@ -275,7 +275,7 @@ enum GameOverReason: String, Codable {
         case .overthrown:
             return "The Politburo has voted. You are stripped of all positions and expelled from the Party. Your political life is over."
         case .exiledPermanently:
-            return "You are sent far from Washington, to a place from which there is no return. The capital forgets you."
+            return "You are sent far from the Capital, to a place from which there is no return. The Capital forgets you."
         case .resigned:
             return "You have chosen to step away from the game of power. Perhaps this is the wisest move of all."
         }

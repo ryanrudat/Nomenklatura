@@ -409,7 +409,7 @@ class CharacterDeathSystem {
     }
 
     private func generateExileText(character: GameCharacter, tone: DeathTone) -> (String, String) {
-        let destinations = ["the Mountain Zone", "a remote collective farm in the Plains", "the Northern Territories", "Alaska"]
+        let destinations = ["Highland", "a remote collective farm in the Plains", "Upton on Tye", "the Northern Reaches"]
         let destination = destinations.randomElement()!
 
         switch tone {

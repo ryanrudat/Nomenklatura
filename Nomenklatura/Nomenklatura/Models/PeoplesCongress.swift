@@ -198,7 +198,7 @@ extension CongressSession {
     var newspaperHeadline: String {
         switch currentType {
         case .annual:
-            return "PEOPLE'S CONGRESS CONVENES IN WASHINGTON"
+            return "PEOPLE'S CONGRESS CONVENES IN THE CAPITAL"
         case .emergency:
             return "EMERGENCY SESSION OF PEOPLE'S CONGRESS CALLED"
         case .constitutional:

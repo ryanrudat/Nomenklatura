@@ -228,7 +228,7 @@ private struct HeroHeadlineSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Dateline
                 HStack(spacing: 8) {
-                    Text("WASHINGTON —")
+                    Text("THE CAPITAL —")
                         .font(.system(size: 12, weight: .bold))
                         .tracking(1)
                         .foregroundColor(NewspaperColors.red)

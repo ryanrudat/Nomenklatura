@@ -23,7 +23,7 @@ enum GameOverType: String, Codable, CaseIterable {
 
     // State Dissolution
     case territorialDisintegration // Multiple regions secede, union collapses
-    case capitalFalls              // Washington falls to rebels or foreign power
+    case capitalFalls              // The Capital falls to rebels or foreign power
     case foreignInvasion           // Military defeat by foreign power
 
     // Nuclear Catastrophe
@@ -71,11 +71,11 @@ enum GameOverType: String, Codable, CaseIterable {
         case .corruptionExposed:
             return "The evidence was undeniable. Your corruption was laid bare for all to see. The Party makes examples of such betrayals."
         case .militaryCoup:
-            return "The generals decided they could rule better than the Party. Tanks rolled through Washington, and the old guard was swept away in a night."
+            return "The generals decided they could rule better than the Party. Tanks rolled through the Capital, and the old guard was swept away in a night."
         case .territorialDisintegration:
             return "The union has fallen apart. Region after region declared independence until nothing remained but a rump state. The socialist experiment has ended."
         case .capitalFalls:
-            return "Washington has fallen. Whether to rebels or invaders, the heart of the state has stopped beating. There is nothing left to rule."
+            return "The Capital has fallen. Whether to rebels or invaders, the heart of the state has stopped beating. There is nothing left to rule."
         case .foreignInvasion:
             return "The armies of the enemy have prevailed. The People's Socialist Republic exists no more, its leaders fled or captured."
         case .nuclearWar:
@@ -289,7 +289,7 @@ class GameOverChecker {
                 return createGameOver(
                     type: .capitalFalls,
                     game: game,
-                    cause: "Washington has fallen to rebel forces"
+                    cause: "The Capital has fallen to rebel forces"
                 )
             }
         }

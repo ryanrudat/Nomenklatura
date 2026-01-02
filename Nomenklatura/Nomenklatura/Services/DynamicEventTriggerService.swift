@@ -1176,7 +1176,7 @@ class DynamicEventTriggerService {
             eventType: .worldNews,
             priority: .elevated,
             title: session.newspaperHeadline,
-            briefText: "The People's Congress has convened in Washington. \(session.delegatesPresent) delegates have assembled from all zones to affirm Party policies and demonstrate the unity of the socialist state.\n\nAs a rising official, your attendance may be expected.",
+            briefText: "The People's Congress has convened in the Capital. \(session.delegatesPresent) delegates have assembled from all zones to affirm Party policies and demonstrate the unity of the socialist state.\n\nAs a rising official, your attendance may be expected.",
             turnGenerated: game.turnNumber,
             isUrgent: false,
             responseOptions: [

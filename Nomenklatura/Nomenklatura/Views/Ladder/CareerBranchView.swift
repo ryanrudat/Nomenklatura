@@ -176,7 +176,7 @@ private struct PathCard: View {
     private var flavorText: String {
         switch track {
         case .capital:
-            return "Return to the center. Navigate the intrigues of Washington. Power is close, but so are your enemies."
+            return "Return to the center. Navigate the intrigues of the Capital. Power is close, but so are your enemies."
         case .regional:
             return "Take a distant posting. Build your own power base far from prying eyes. Prove yourself worthy of recall."
         case .shared:

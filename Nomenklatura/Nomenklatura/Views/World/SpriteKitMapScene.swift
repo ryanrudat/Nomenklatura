@@ -319,7 +319,7 @@ class WorldMapScene: SKScene {
         addChild(title)
 
         // Subtitle
-        let subtitle = SKLabelNode(text: "PEOPLE'S SOCIALIST REPUBLIC OF AMERICA")
+        let subtitle = SKLabelNode(text: "THE PEOPLE'S SOCIALIST REPUBLIC")
         subtitle.fontName = "Helvetica"
         subtitle.fontSize = 9
         subtitle.fontColor = SKColor(red: 0.4, green: 0.4, blue: 0.4, alpha: 1.0)

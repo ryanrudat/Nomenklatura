@@ -9,13 +9,11 @@ import SwiftUI
 import SwiftData
 
 enum WorldSubTab: String, CaseIterable {
-    case map
     case embassy
     case economics
 
     var title: String {
         switch self {
-        case .map: return "Map"
         case .embassy: return "Embassy"
         case .economics: return "Economics"
         }
@@ -23,7 +21,6 @@ enum WorldSubTab: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .map: return "map.fill"
         case .embassy: return "building.columns.fill"
         case .economics: return "chart.bar.fill"
         }
@@ -31,7 +28,6 @@ enum WorldSubTab: String, CaseIterable {
 
     var description: String {
         switch self {
-        case .map: return "Strategic overview of the continent"
         case .embassy: return "Diplomatic intelligence center"
         case .economics: return "Economic command dashboard"
         }
@@ -41,7 +37,7 @@ enum WorldSubTab: String, CaseIterable {
 struct WorldTabView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
-    @State private var selectedSubTab: WorldSubTab = .map
+    @State private var selectedSubTab: WorldSubTab = .embassy
     @State private var showingBriefing: Bool = false
 
     private var accessLevel: AccessLevel {
@@ -64,8 +60,6 @@ struct WorldTabView: View {
                 // Content based on selected sub-tab
                 Group {
                     switch selectedSubTab {
-                    case .map:
-                        SpriteKitMapView(game: game)
                     case .embassy:
                         EmbassyPortalView(game: game)
                     case .economics:

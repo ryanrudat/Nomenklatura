@@ -463,7 +463,7 @@ class CampaignLoader {
                 FactionConfig(id: "princelings", name: "Princelings", description: "Red aristocracy - descendants of revolutionary heroes.", startingPower: 70, startingPlayerStanding: 45),
                 FactionConfig(id: "reformists", name: "Reformists", description: "Pragmatists who believe in progress through careful change.", startingPower: 50, startingPlayerStanding: 55),
                 FactionConfig(id: "old_guard", name: "Proletariat Union", description: "The labor unions that sparked the Revolution and guard its ideals.", startingPower: 65, startingPlayerStanding: 40),
-                FactionConfig(id: "regional", name: "People's Provincial Administration", description: "Zone governors and Labour Council networks - power built far from Washington.", startingPower: 60, startingPlayerStanding: 50)
+                FactionConfig(id: "regional", name: "People's Provincial Administration", description: "Zone governors and Labour Council networks - power built far from the Capital.", startingPower: 60, startingPlayerStanding: 50)
             ],
             ladder: createExpandedLadder(),
             startingCharacters: createStartingCharacters(),
@@ -831,7 +831,7 @@ class CampaignLoader {
         positions.append(LadderPosition(
             index: 2, track: .regional, expandedTrack: .regional,
             title: "Provincial Party Secretary",
-            description: "Assigned to a distant zone. Far from Washington's intrigues, but here you can build your own power base.",
+            description: "Assigned to a distant zone. Far from the Capital's intrigues, but here you can build your own power base.",
             requiredStanding: 35,
             maxHolders: 10, unlockedActions: ["manage_region", "meet_quotas", "local_appointments"],
             requiredAffinityScore: 10
@@ -840,7 +840,7 @@ class CampaignLoader {
         positions.append(LadderPosition(
             index: 3, track: .regional, expandedTrack: .regional,
             title: "Provincial First Secretary",
-            description: "You run an entire zone. Success here proves your worth to Washington; failure means obscurity—or worse.",
+            description: "You run an entire zone. Success here proves your worth to the Capital; failure means obscurity—or worse.",
             requiredStanding: 55, requiredNetwork: 25,
             maxHolders: 5, unlockedActions: ["regional_policy", "request_resources", "report_to_capital"],
             requiredAffinityScore: 20
@@ -849,7 +849,7 @@ class CampaignLoader {
         positions.append(LadderPosition(
             index: 4, track: .regional, expandedTrack: .regional,
             title: "Republic First Secretary",
-            description: "Leader of an entire territory. Almost independent if you're careful—but Washington is always watching.",
+            description: "Leader of an entire territory. Almost independent if you're careful—but the Capital is always watching.",
             requiredStanding: 75, requiredNetwork: 45,
             requiredFactionSupport: ["regional": 55],
             maxHolders: 2, unlockedActions: ["republic_policy", "nationalities_policy", "regional_economy_control"],
@@ -900,7 +900,7 @@ class CampaignLoader {
             positionIndex: 8,
             positionTrack: "shared",
             personality: CharacterPersonality(ambitious: 30, paranoid: 70, ruthless: 60, competent: 50, loyal: 20, corrupt: 40),
-            speechPattern: "Speaks slowly, deliberately, choosing each word with care. Heavy pauses between sentences. Uses party jargon naturally—'dialectical necessities,' 'the collective wisdom.' References the Second Revolution as if he marched on Washington himself. When displeased, grows quieter, not louder. 'Comrade... I wonder if you understand what you are asking.' Never directly threatens. The threat is always implied.",
+            speechPattern: "Speaks slowly, deliberately, choosing each word with care. Heavy pauses between sentences. Uses party jargon naturally—'dialectical necessities,' 'the collective wisdom.' References the Second Revolution as if he marched on the Capital himself. When displeased, grows quieter, not louder. 'Comrade... I wonder if you understand what you are asking.' Never directly threatens. The threat is always implied.",
             factionId: "youth_league",
             isPatron: false,
             isRival: false,
@@ -1156,7 +1156,7 @@ class CampaignLoader {
             positionIndex: 5,
             positionTrack: "partyApparatus",
             personality: CharacterPersonality(ambitious: 50, paranoid: 30, ruthless: 20, competent: 60, loyal: 70, corrupt: 20),
-            speechPattern: "Genuinely passionate about ideology. Quotes Revolutionary founders with reverence—and actually means it. 'As the union leaders wrote during the March on Washington...' Speaks with warmth when discussing socialist theory. Gets animated, gestures with his hands. Naive about political maneuvering—believes the best in people until proven wrong. 'Surely, comrade, you must see the dialectical necessity?' One of the last true believers.",
+            speechPattern: "Genuinely passionate about ideology. Quotes Revolutionary founders with reverence—and actually means it. 'As the union leaders wrote during the March on the Capital...' Speaks with warmth when discussing socialist theory. Gets animated, gestures with his hands. Naive about political maneuvering—believes the best in people until proven wrong. 'Surely, comrade, you must see the dialectical necessity?' One of the last true believers.",
             factionId: "youth_league",
             isPatron: false,
             isRival: false,
@@ -1207,7 +1207,7 @@ class CampaignLoader {
             positionIndex: 5,
             positionTrack: "partyApparatus",
             personality: CharacterPersonality(ambitious: 65, paranoid: 55, ruthless: 50, competent: 70, loyal: 55, corrupt: 45),
-            speechPattern: "Speaks with a slight Midwestern accent despite decades in Washington. Formal, correct, precise. 'The organizational question must be addressed systematically.' Keeps detailed files on everyone—claims it's for 'proper personnel management.' Straightens papers compulsively. 'Order must be maintained.' Never jokes. Suspects humor is a form of ideological deviation.",
+            speechPattern: "Speaks with a slight Midwestern accent despite decades in the Capital. Formal, correct, precise. 'The organizational question must be addressed systematically.' Keeps detailed files on everyone—claims it's for 'proper personnel management.' Straightens papers compulsively. 'Order must be maintained.' Never jokes. Suspects humor is a form of ideological deviation.",
             factionId: "youth_league",
             isPatron: false,
             isRival: false,
@@ -1873,10 +1873,10 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 50,
-            backstory: "Born in New York City, son of a union organizer and a teacher. Rose through Youth League ranks on intelligence and ambition. Studied at the Party Academy, then spent a decade in various foreign postings—Mexico, Cuba, the Soviet Union. Learned diplomacy in Moscow, where he survived three leadership transitions. Returned to Washington years after the Purges, positioned as Marshall's eventual successor. He knows Marshall has secrets; he's not above using them when the time is right. Patient as a spider, with a web of contacts across every embassy.",
+            backstory: "Born in New York City, son of a union organizer and a teacher. Rose through Youth League ranks on intelligence and ambition. Studied at the Party Academy, then spent a decade in various foreign postings—Mexico, Cuba, the Soviet Union. Learned diplomacy in Moscow, where he survived three leadership transitions. Returned to the Capital years after the Purges, positioned as Marshall's eventual successor. He knows Marshall has secrets; he's not above using them when the time is right. Patient as a spider, with a web of contacts across every embassy.",
             ageCategory: "middle-aged",
             originLocation: "New York City",
-            familyBackground: "Working-class family with revolutionary credentials. Father died in the March on Washington—genuine martyr status. Mother still alive, proud of her son's rise. Married to a Party functionary; the marriage is practical rather than romantic. Two children in the Youth League.",
+            familyBackground: "Working-class family with revolutionary credentials. Father died in the March on the Capital—genuine martyr status. Mother still alive, proud of her son's rise. Married to a Party functionary; the marriage is practical rather than romantic. Two children in the Youth League.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Moscow Contacts",
@@ -1927,7 +1927,7 @@ class CampaignLoader {
             backstory: "Born in Philadelphia to a middle-class family. Studied in Paris before the Revolution on a scholarship—those years shaped him more than he admits. Joined the revolutionary movement before the Revolution, recruited by Fitzgerald personally during a lecture tour. During the Civil War, served as a courier between American revolutionaries and European socialist parties. After the Revolution, spent fifteen years in various European capitals—London, Paris, Rome. Knows the capitalist world intimately. Constantly accused (quietly) of being too Western, too cosmopolitan, insufficiently revolutionary. The accusations sting because they're partly true.",
             ageCategory: "middle-aged",
             originLocation: "Philadelphia, Pennsylvania",
-            familyBackground: "Middle-class family. Father was an accountant; mother a music teacher. Both died during the Intervention War—collateral damage from British bombing of Philadelphia harbor. Roberts was in London at the time. The guilt has never faded. Married to a French-American woman he met in Paris; she finds Washington provincial.",
+            familyBackground: "Middle-class family. Father was an accountant; mother a music teacher. Both died during the Intervention War—collateral damage from British bombing of Philadelphia harbor. Roberts was in London at the time. The guilt has never faded. Married to a French-American woman he met in Paris; she finds the Capital provincial.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Paris Years",
@@ -1975,10 +1975,10 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 60,
-            backstory: "Born in Baltimore to an English immigrant mother and American father. Grew up speaking both accents. Worked as a labor organizer in the docks before the Revolution. During the Civil War, served as liaison to sympathetic British trade unionists—smuggling money and supplies. After the Revolution, sent to London as a reward for his connections. Has been there ever since. More British than American now. Genuinely loves the country he's supposed to be infiltrating. Returns to Washington as rarely as possible.",
+            backstory: "Born in Baltimore to an English immigrant mother and American father. Grew up speaking both accents. Worked as a labor organizer in the docks before the Revolution. During the Civil War, served as liaison to sympathetic British trade unionists—smuggling money and supplies. After the Revolution, sent to London as a reward for his connections. Has been there ever since. More British than American now. Genuinely loves the country he's supposed to be infiltrating. Returns to the Capital as rarely as possible.",
             ageCategory: "elderly",
             originLocation: "Baltimore, Maryland",
-            familyBackground: "Half-English heritage. Mother returned to England after the Revolution; Lawrence visits her secretly. Father died in the Intervention War—killed by British forces. The irony haunts him. Married to an American diplomat's daughter; she lives in Washington and they rarely see each other.",
+            familyBackground: "Half-English heritage. Mother returned to England after the Revolution; Lawrence visits her secretly. Father died in the Intervention War—killed by British forces. The irony haunts him. Married to an American diplomat's daughter; she lives in the Capital and they rarely see each other.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "Mother in England",
@@ -2004,7 +2004,7 @@ class CampaignLoader {
                     targetCharacterId: "roberts",
                     targetCharacterName: "Kenneth Roberts",
                     relationshipType: "ally",
-                    description: "Fellow cosmopolitans. Roberts understands Lawrence's situation better than anyone in Washington. They correspond frequently, commiserating about the provincialism of the capital.",
+                    description: "Fellow cosmopolitans. Roberts understands Lawrence's situation better than anyone in the Capital. They correspond frequently, commiserating about the provincialism of the capital.",
                     sentiment: 65,
                     historicalOrigin: "Foreign Affairs ministry"
                 )
@@ -2080,11 +2080,11 @@ class CampaignLoader {
             backstory: "Born in Cleveland, son of steelworkers. Joined the Communist Party USA before the Depression, studied Marxism with religious intensity. Traveled to Moscow before the Revolution for training at the International Lenin School—the experience shaped him permanently. During the Revolution, served as liaison to Soviet 'advisors' who brought weapons and expertise. The Soviets made him. He knows this. After the Revolution, spent a decade in various Party positions before Moscow posting in recent years. The pressure is immense: navigate between American interests and Soviet expectations while serving two masters who don't always agree.",
             ageCategory: "middle-aged",
             originLocation: "Cleveland, Ohio",
-            familyBackground: "Working-class family, old CPUSA connections. Father was a Party member who died in the Siege of Detroit. Mother survives in a Washington apartment Chambers pays for. Married to a Soviet-trained Party cadre; their relationship is ideological as much as romantic. No children—Moscow advised against it.",
+            familyBackground: "Working-class family, old CPUSA connections. Father was a Party member who died in the Siege of Detroit. Mother survives in a the Capital apartment Chambers pays for. Married to a Soviet-trained Party cadre; their relationship is ideological as much as romantic. No children—Moscow advised against it.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Soviet Handler",
-                    content: "Chambers reports to Soviet intelligence as well as the Ministry of Foreign Affairs. He receives instructions from Moscow that sometimes conflict with Washington's directives. He has always chosen Moscow. If this became known, he would be executed for treason—even though he believes he's serving the Revolution's true interests.",
+                    content: "Chambers reports to Soviet intelligence as well as the Ministry of Foreign Affairs. He receives instructions from Moscow that sometimes conflict with the Capital's directives. He has always chosen Moscow. If this became known, he would be executed for treason—even though he believes he's serving the Revolution's true interests.",
                     tier: "discoverable",
                     category: "crime",
                     canBeUsedAsLeverage: true,
@@ -2135,7 +2135,7 @@ class CampaignLoader {
             backstory: "Born Stefan Kowalski in 1912 to a working-class Polish-American family in Pittsburgh's steel district. His father died in a mill accident when Stefan was fifteen; he swore never to work with his hands. Studied economics at the University of Chicago (before it was purged), showing genuine mathematical talent. Rose rapidly after the Revolution by producing the statistics the Party wanted to hear—if reality disagreed with the Plan, adjust reality. Married Anna Briggs (distant cousin of Commissar Briggs's line) during the early Purges for political connections; the marriage is loveless and both know it. Developed expensive tastes that his salary cannot support. Skims from the Treasury—a small percentage here, an accounting irregularity there. Wallace knows. Wallace always knows.",
             ageCategory: "middle-aged",
             originLocation: "Pittsburgh, Pennsylvania",
-            familyBackground: "Polish-American working-class family. Father killed in steel mill accident. Married into the Briggs family (minor branch) for connections. One daughter, Katya, attends the Party school in Washington.",
+            familyBackground: "Polish-American working-class family. Father killed in steel mill accident. Married into the Briggs family (minor branch) for connections. One daughter, Katya, attends the Party school in the Capital.",
             secrets: [
                 CharacterSecretTemplate(
                     title: "The Skimming",
@@ -2575,9 +2575,9 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 60,
-            backstory: "Born David Spencer in Washington, DC—a child of the Revolution, too young to remember the old world. Father was a mid-level Party official; mother a schoolteacher. Grew up on revolutionary stories and Youth League camps. Joined the army at eighteen, served during the Intervention War. Saw combat against Canadian forces in the Pacific Northwest. Returned idealistic rather than broken—rare in veterans. Bellows noticed him, saw the genuine faith, the ability to inspire troops. Rising fast through the Political Directorate. Still believes the Revolution was good, the system can be reformed, the future can be bright. His superiors find his optimism useful and slightly embarrassing.",
+            backstory: "Born David Spencer in the Capital, DC—a child of the Revolution, too young to remember the old world. Father was a mid-level Party official; mother a schoolteacher. Grew up on revolutionary stories and Youth League camps. Joined the army at eighteen, served during the Intervention War. Saw combat against Canadian forces in the Pacific Northwest. Returned idealistic rather than broken—rare in veterans. Bellows noticed him, saw the genuine faith, the ability to inspire troops. Rising fast through the Political Directorate. Still believes the Revolution was good, the system can be reformed, the future can be bright. His superiors find his optimism useful and slightly embarrassing.",
             ageCategory: "very young",
-            originLocation: "Washington, DC",
+            originLocation: "the Capital, DC",
             familyBackground: "Party family, born after the Revolution. Father works in the Ministry of Culture; mother teaches at a Party school. Married to his childhood sweetheart; expecting their first child. The future seems bright. He has never known hunger, never known fear of the state. This innocence is both his strength and his blind spot.",
             secrets: [
                 CharacterSecretTemplate(
@@ -2633,12 +2633,12 @@ class CampaignLoader {
             positionIndex: 4,
             positionTrack: "regional",
             personality: CharacterPersonality(ambitious: 55, paranoid: 40, ruthless: 45, competent: 65, loyal: 60, corrupt: 45),
-            speechPattern: "Speaks with the measured patience of someone far from the capital. 'Washington does not understand our situation here.' Protective of his zone. 'The Northeast workers have their own character.' Practical concerns dominate. 'The manufacturing quotas are unrealistic for our conditions.' Enjoys his relative autonomy. 'Out here, I am the Party.'",
+            speechPattern: "Speaks with the measured patience of someone far from the capital. 'the Capital does not understand our situation here.' Protective of his zone. 'The Northeast workers have their own character.' Practical concerns dominate. 'The manufacturing quotas are unrealistic for our conditions.' Enjoys his relative autonomy. 'Out here, I am the Party.'",
             factionId: "regional",
             isPatron: false,
             isRival: false,
             startingDisposition: 55,
-            backstory: "Born in Boston's Irish-American community. Father was a longshoreman and union organizer; mother worked in a textile mill. Joined the revolutionary movement during the Depression, organized the Boston docks during the General Strike. Fought in the Civil War, led dock workers' militias in harbor defense. After the Revolution, returned to the Northeast as a Party official. Rose to Governor by knowing every factory, every union hall, every neighborhood in his zone. Prefers his regional power to the snake pit of Washington. The Northeast runs smoothly because Sheridan knows his people—and they know him.",
+            backstory: "Born in Boston's Irish-American community. Father was a longshoreman and union organizer; mother worked in a textile mill. Joined the revolutionary movement during the Depression, organized the Boston docks during the General Strike. Fought in the Civil War, led dock workers' militias in harbor defense. After the Revolution, returned to the Northeast as a Party official. Rose to Governor by knowing every factory, every union hall, every neighborhood in his zone. Prefers his regional power to the snake pit of the Capital. The Northeast runs smoothly because Sheridan knows his people—and they know him.",
             ageCategory: "middle-aged",
             originLocation: "Boston, Massachusetts",
             familyBackground: "Irish-American working-class family. Father died in a dock accident during the Revolution. Mother still lives in South Boston, goes to Mass every Sunday—Sheridan pretends not to know. Married to a former textile worker; four children scattered across the zone in various positions. The family is his power base.",
@@ -2654,7 +2654,7 @@ class CampaignLoader {
                 ),
                 CharacterSecretTemplate(
                     title: "The Quota Adjustments",
-                    content: "Sheridan quietly adjusts production quotas to be more realistic before they reach factory floors. He reports the official numbers to Washington while managing actual production at sustainable levels. This systematic falsification keeps his zone functioning—and would destroy him if discovered.",
+                    content: "Sheridan quietly adjusts production quotas to be more realistic before they reach factory floors. He reports the official numbers to the Capital while managing actual production at sustainable levels. This systematic falsification keeps his zone functioning—and would destroy him if discovered.",
                     tier: "discoverable",
                     category: "corruption",
                     canBeUsedAsLeverage: true,
@@ -2667,7 +2667,7 @@ class CampaignLoader {
                     targetCharacterId: "bodine",
                     targetCharacterName: "Samuel Bodine",
                     relationshipType: "ally",
-                    description: "Fellow regional governors who understand each other's challenges. They share information, coordinate production, and occasionally cover for each other's quota adjustments. Regional solidarity against Washington's unrealistic demands.",
+                    description: "Fellow regional governors who understand each other's challenges. They share information, coordinate production, and occasionally cover for each other's quota adjustments. Regional solidarity against the Capital's unrealistic demands.",
                     sentiment: 65,
                     historicalOrigin: "Regional governors' meetings"
                 )
@@ -2735,14 +2735,14 @@ class CampaignLoader {
             positionIndex: 3,
             positionTrack: "regional",
             personality: CharacterPersonality(ambitious: 75, paranoid: 50, ruthless: 55, competent: 60, loyal: 55, corrupt: 60),
-            speechPattern: "Speaks with the hunger of someone trying to get back to the capital. 'This zone assignment is temporary. I have proven myself.' Constantly references his connections in Washington. 'When I spoke to Comrade Patterson last month...' Works hard to exceed quotas. 'The Center will notice us.' Treats his zone as a stepping stone—and everyone knows it.",
+            speechPattern: "Speaks with the hunger of someone trying to get back to the capital. 'This zone assignment is temporary. I have proven myself.' Constantly references his connections in the Capital. 'When I spoke to Comrade Patterson last month...' Works hard to exceed quotas. 'The Center will notice us.' Treats his zone as a stepping stone—and everyone knows it.",
             factionId: "regional",
             isPatron: false,
             isRival: false,
             startingDisposition: 50,
-            backstory: "Born in Washington, DC, son of a Party functionary. Never worked with his hands, never fought in the war. Rose through the Youth League on political connections and genuine administrative talent. Assigned to the Southern Zone years after the Purges—officially a promotion, actually a exile from the capital's power games. Sees the South as a stepping stone back to Washington. Works his zone hard, squeezing quotas from former Confederate territory that still resents the Revolution. The Black and white populations of the South are his tools; he uses both without understanding either. Competent but disconnected from the people he governs.",
+            backstory: "Born in the Capital, DC, son of a Party functionary. Never worked with his hands, never fought in the war. Rose through the Youth League on political connections and genuine administrative talent. Assigned to the Southern Zone years after the Purges—officially a promotion, actually a exile from the capital's power games. Sees the South as a stepping stone back to the Capital. Works his zone hard, squeezing quotas from former Confederate territory that still resents the Revolution. The Black and white populations of the South are his tools; he uses both without understanding either. Competent but disconnected from the people he governs.",
             ageCategory: "young",
-            originLocation: "Washington, DC",
+            originLocation: "the Capital, DC",
             familyBackground: "Party nobility. Father was a Fitzgerald-era Central Committee member who died in the Purges—not as a victim, but from stress. Mother remarried another official. Lincoln grew up in the capital's political hothouse, learning intrigue before he learned to drive. Married to a minister's daughter; no children yet. His wife hates the South and makes no secret of it.",
             secrets: [
                 CharacterSecretTemplate(
@@ -2769,7 +2769,7 @@ class CampaignLoader {
                     targetCharacterId: "patterson",
                     targetCharacterName: "Eleanor Patterson",
                     relationshipType: "ally",
-                    description: "Lincoln cultivates Patterson as his connection to the capital. She finds him useful for managing the South; he hopes she'll bring him back to Washington. A transactional relationship disguised as mentorship.",
+                    description: "Lincoln cultivates Patterson as his connection to the capital. She finds him useful for managing the South; he hopes she'll bring him back to the Capital. A transactional relationship disguised as mentorship.",
                     sentiment: 60,
                     historicalOrigin: "Youth League networks"
                 )
@@ -2786,12 +2786,12 @@ class CampaignLoader {
             positionIndex: 3,
             positionTrack: "regional",
             personality: CharacterPersonality(ambitious: 50, paranoid: 35, ruthless: 40, competent: 75, loyal: 65, corrupt: 35),
-            speechPattern: "Speaks with the pride of someone who runs a showcase industrial region. 'The steel we produce built this Republic.' Knows every factory manager by name. 'Comrade Peterson at Furnace Three has exceeded quota again.' More interested in production than politics. 'Let Washington play their games. We make steel.' Hands like a worker despite years behind a desk.",
+            speechPattern: "Speaks with the pride of someone who runs a showcase industrial region. 'The steel we produce built this Republic.' Knows every factory manager by name. 'Comrade Peterson at Furnace Three has exceeded quota again.' More interested in production than politics. 'Let the Capital play their games. We make steel.' Hands like a worker despite years behind a desk.",
             factionId: "regional",
             isPatron: false,
             isRival: false,
             startingDisposition: 60,
-            backstory: "Born in Detroit, son of autoworkers. Started working the line at Ford when he was sixteen. Was there during the Siege of Detroit—saw Soviet weapons turn the tide, saw friends die in the winter fighting. After the Revolution, became a factory manager, then a zone administrator. The Great Lakes Zone is his life's work: the arsenal of the Republic. Knows every major plant, every production line, every bottleneck. Cares about making things, not about politics. Washington can play its games; Bodine makes steel. The simplest, most honest man at his level in the entire system—which makes him unusual and slightly suspect.",
+            backstory: "Born in Detroit, son of autoworkers. Started working the line at Ford when he was sixteen. Was there during the Siege of Detroit—saw Soviet weapons turn the tide, saw friends die in the winter fighting. After the Revolution, became a factory manager, then a zone administrator. The Great Lakes Zone is his life's work: the arsenal of the Republic. Knows every major plant, every production line, every bottleneck. Cares about making things, not about politics. the Capital can play its games; Bodine makes steel. The simplest, most honest man at his level in the entire system—which makes him unusual and slightly suspect.",
             ageCategory: "middle-aged",
             originLocation: "Detroit, Michigan",
             familyBackground: "Working-class autoworker family. Father died at the Siege of Detroit—a true martyr. Mother moved to Cleveland; Bodine visits when he can. Married to a factory nurse; five children, all working in the zone's industries. The Bodine family makes steel—it's what they do.",
@@ -2820,7 +2820,7 @@ class CampaignLoader {
                     targetCharacterId: "sheridan",
                     targetCharacterName: "James Sheridan",
                     relationshipType: "ally",
-                    description: "Fellow regional governors, both focused on making their zones work. They share a contempt for Washington's political games and a commitment to keeping their workers fed and their factories running. Industrial solidarity.",
+                    description: "Fellow regional governors, both focused on making their zones work. They share a contempt for the Capital's political games and a commitment to keeping their workers fed and their factories running. Industrial solidarity.",
                     sentiment: 70,
                     historicalOrigin: "Regional governors' coordination"
                 ),
@@ -2854,9 +2854,9 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 50,
-            backstory: "Born in Washington, DC. A child of the Revolution who never knew the old world. Father was a BPS clerk; mother a typist. Raised on stories of counter-revolutionary threats lurking everywhere. Joined the security services straight from the Youth League, eager to protect the Revolution from its enemies. Assigned to internal investigations—looking for traitors among Party members. Genuinely believes enemies are everywhere. Ambitious in the dangerous way of young men who haven't learned what the work really means. Strickland likes him; Edwards finds him concerning.",
+            backstory: "Born in the Capital, DC. A child of the Revolution who never knew the old world. Father was a BPS clerk; mother a typist. Raised on stories of counter-revolutionary threats lurking everywhere. Joined the security services straight from the Youth League, eager to protect the Revolution from its enemies. Assigned to internal investigations—looking for traitors among Party members. Genuinely believes enemies are everywhere. Ambitious in the dangerous way of young men who haven't learned what the work really means. Strickland likes him; Edwards finds him concerning.",
             ageCategory: "very young",
-            originLocation: "Washington, DC",
+            originLocation: "the Capital, DC",
             familyBackground: "Lower Party family. Parents are functionaries, not important but loyal. Only child, doted upon. Never experienced hardship, never questioned the system. The perfect product of revolutionary education. Unmarried—too focused on career advancement. Lives in a small apartment near BPS headquarters.",
             secrets: [
                 CharacterSecretTemplate(

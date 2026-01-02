@@ -565,7 +565,7 @@ class ConsequenceEngine {
 
                 \(consequence.description)
 
-                The distant zones and territories feel the effects of decisions made in Washington. \
+                The distant zones and territories feel the effects of decisions made in the Capital. \
                 Not all of them appreciate the attention.
                 """
 

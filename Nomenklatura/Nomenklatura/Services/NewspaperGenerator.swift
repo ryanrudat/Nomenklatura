@@ -467,7 +467,7 @@ final class NewspaperGenerator {
             HeadlineStory(
                 headline: "MILITARY PARADE CELEBRATES REVOLUTIONARY HERITAGE",
                 subheadline: "Modern Equipment on Display",
-                body: "Crowds gathered in Washington to witness the annual parade showcasing the strength of the People's Army. The display underscored the nation's commitment to defending socialist achievements.",
+                body: "Crowds gathered in the Capital to witness the annual parade showcasing the strength of the People's Army. The display underscored the nation's commitment to defending socialist achievements.",
                 category: .military
             )
         ]

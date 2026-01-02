@@ -236,7 +236,7 @@ extension PlayerFactionConfig {
             id: "old_guard",
             name: "Proletariat Union",
             subtitle: "Ideological Guardians",
-            description: "You rose through the labor unions that sparked the Revolution. While others chase economic miracles, you remember why we marched on Washington. The workers trust you, but progress may pass you by.",
+            description: "You rose through the labor unions that sparked the Revolution. While others chase economic miracles, you remember why we marched on the Capital. The workers trust you, but progress may pass you by.",
             historicalBasis: "Based on the industrial unions that organized the Second Revolution and maintain ideological purity.",
             statBonuses: [
                 "reputationLoyal": 10
@@ -277,7 +277,7 @@ extension PlayerFactionConfig {
             id: "regional",
             name: "People's Provincial Administration",
             subtitle: "State Governors' Network",
-            description: "You built your career far from Washington, cultivating a loyal network through the Zone administrations. When you arrived in the corridors of power, you brought an army of supporters. But capital elites view you as an outsider with 'provincial thinking.'",
+            description: "You built your career far from the Capital, cultivating a loyal network through the Zone administrations. When you arrived in the corridors of power, you brought an army of supporters. But Capital elites view you as an outsider with 'provincial thinking.'",
             historicalBasis: "Based on the Labour Councils that governed sympathetic states during the Revolution and now control the Zones.",
             statBonuses: [
                 "network": 30,
