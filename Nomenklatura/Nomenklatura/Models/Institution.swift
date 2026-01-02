@@ -24,7 +24,7 @@ enum Institution: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .presidium: return "The Presidium"
+        case .presidium: return "The Standing Committee"
         case .congress: return "People's Congress"
         case .military: return "The Military"
         case .security: return "State Security"
@@ -37,7 +37,7 @@ enum Institution: String, Codable, CaseIterable, Identifiable {
 
     var shortName: String {
         switch self {
-        case .presidium: return "Presidium"
+        case .presidium: return "Committee"
         case .congress: return "Congress"
         case .military: return "Military"
         case .security: return "BPS"

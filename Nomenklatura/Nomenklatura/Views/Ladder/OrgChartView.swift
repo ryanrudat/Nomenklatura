@@ -274,11 +274,11 @@ struct OrgChartView: View {
         }
     }
 
-    // MARK: - Entry Section (Junior Presidium & Party Official)
+    // MARK: - Entry Section (Junior Party Official)
 
     private var entrySection: some View {
         VStack(spacing: 0) {
-            // Index 1: Junior Presidium Member
+            // Index 1: Junior Party Official
             if let junior = getPosition(index: 1, track: .shared) {
                 SharedPositionNode(
                     position: junior,

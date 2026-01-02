@@ -103,9 +103,9 @@ final class SamizdatGenerator {
             )
         } else if game.eliteLoyalty < 40 {
             return HeadlineStory(
-                headline: "PRESIDIUM FRACTURES BEHIND CLOSED DOORS",
+                headline: "STANDING COMMITTEE FRACTURES BEHIND CLOSED DOORS",
                 subheadline: "Faction infighting threatens Party unity",
-                body: "Sources close to the leadership describe intense power struggles within the Presidium. Public unity masks private warfare. Elite cohesion currently estimated at: \(game.eliteLoyalty)%.",
+                body: "Sources close to the leadership describe intense power struggles within the Standing Committee. Public unity masks private warfare. Elite cohesion currently estimated at: \(game.eliteLoyalty)%.",
                 category: .political
             )
         } else {

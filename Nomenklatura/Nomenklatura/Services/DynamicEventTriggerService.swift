@@ -154,7 +154,7 @@ class DynamicEventTriggerService {
 
         let texts = [
             "\(patron.name) summons you to their office with unusual warmth.\n\n\"Your loyalty has not gone unnoticed, Comrade. A position on the Foreign Affairs Committee has opened. I have recommended you for consideration.\"",
-            "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Presidium meeting. Do not disappoint me.\"",
+            "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Standing Committee meeting. Do not disappoint me.\"",
             "\(patron.name) pulls you aside after the morning briefing.\n\n\"Director Kowalski is retiring. His position could be yours, if you play your cards right. I will support your candidacy.\""
         ]
 
@@ -390,7 +390,7 @@ class DynamicEventTriggerService {
             ),
             (
                 title: "A Small Favor",
-                text: "\(ally.name) slips into step beside you.\n\n\"I hear you have contacts at the printing office. There's a report that needs to be... adjusted before it reaches the Presidium. Nothing major. Just smoothing out some unfortunate statistics.\"",
+                text: "\(ally.name) slips into step beside you.\n\n\"I hear you have contacts at the printing office. There's a report that needs to be... adjusted before it reaches the Standing Committee. Nothing major. Just smoothing out some unfortunate statistics.\"",
                 helpEffect: ["network": 6, "corruptionEvidence": 3]
             ),
             (

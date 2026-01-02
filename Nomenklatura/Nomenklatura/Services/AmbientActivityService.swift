@@ -248,7 +248,7 @@ final class AmbientActivityService {
         case .writing:
             return [
                 "drafting a policy proposal",
-                "composing a report for the Presidium",
+                "composing a report for the Standing Committee",
                 "writing a position paper",
                 "preparing a speech"
             ].randomElement()!

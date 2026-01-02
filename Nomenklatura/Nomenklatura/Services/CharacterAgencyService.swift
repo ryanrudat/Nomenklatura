@@ -374,7 +374,7 @@ class CharacterAgencyService {
     private func generatePatronOpportunity(_ patron: GameCharacter, game: Game) -> DynamicEvent {
         let texts = [
             "\(patron.name) summons you with unusual warmth.\n\n\"Your loyalty has not gone unnoticed, Comrade. A position on the Foreign Affairs Committee has opened. I have recommended you.\"",
-            "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Presidium meeting.\"",
+            "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Standing Committee meeting.\"",
             "\(patron.name) pulls you aside after the morning briefing.\n\n\"Director Kowalski is retiring. His position could be yours, if you play your cards right. I will support your candidacy.\""
         ]
 

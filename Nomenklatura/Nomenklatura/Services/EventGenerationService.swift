@@ -85,7 +85,7 @@ final class EventGenerationService {
             ),
             (
                 title: "A Gift from Your Patron",
-                text: "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Presidium meeting. Do not disappoint me.\"",
+                text: "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Standing Committee meeting. Do not disappoint me.\"",
                 effects: ["standing": 8, "patronFavor": 3]
             ),
             (
@@ -158,7 +158,7 @@ final class EventGenerationService {
 
         let directives = [
             "The situation with \(crisisArea) is unacceptable. The General Secretary expects results. I am assigning you to handle this personally. Failure is not an option.",
-            "We face a crisis in \(crisisArea). The Presidium is watching. I need you to take charge and resolve this before it spirals further.",
+            "We face a crisis in \(crisisArea). The Standing Committee is watching. I need you to take charge and resolve this before it spirals further.",
             "There are those who would use the problems with \(crisisArea) to undermine our position. You must act decisively to prevent this."
         ]
 

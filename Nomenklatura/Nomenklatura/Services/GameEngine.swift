@@ -1215,39 +1215,54 @@ class GameEngine {
         // Check for character fate events
         checkCharacterFates(game: game)
 
-        // Autonomous NPC actions - evaluate organically, not every turn
-        // (Skip early turns to let player settle in)
-        guard game.turnNumber > 2 else { return }
+        // Autonomous NPC actions - NPCs should ALWAYS be doing something for immersive gameplay
+        // (Skip only the very first turn to let player read the intro)
+        guard game.turnNumber > 1 else { return }
 
-        // Natural pacing: NPCs don't always act - some turns are quiet
-        // Base 40% chance of any autonomous action, modified by game tension
-        let tensionBonus = (100 - game.stability) / 100  // More unstable = more NPC activity
-        let rivalBonus = game.rivalThreat > 50 ? 10 : 0   // High rival threat increases activity
-        let baseChance = 40 + tensionBonus + rivalBonus
+        // IMMERSIVE DESIGN: The world is alive. NPCs are always scheming, maneuvering, and acting.
+        // We evaluate ALL three action systems each turn to ensure the player feels the political
+        // ecosystem is dynamic and responsive. Each system has its own internal probability gates.
 
-        guard Int.random(in: 1...100) <= baseChance else { return }
+        var npcActionsThisTurn: [DynamicEvent] = []
 
-        // Rotate which type of action is evaluated each turn for variety
-        // This prevents mechanical "check everything" feel
-        let actionType = game.turnNumber % 3
+        // 1. Character agency - patron/rival/ally direct actions (high priority relationships)
+        if let characterEvent = CharacterAgencyService.shared.evaluateCharacterActions(game: game) {
+            npcActionsThisTurn.append(characterEvent)
+        }
 
-        switch actionType {
-        case 0:
-            // Character agency turn - patron/rival/ally may act
-            if let characterEvent = CharacterAgencyService.shared.evaluateCharacterActions(game: game) {
-                game.queueDynamicEvent(characterEvent)
-            }
-        case 1:
-            // Goal-driven turn - NPCs pursue their ambitions
-            let goalEvents = GoalDrivenAgencyService.shared.evaluateGoalDrivenActions(game: game)
-            if let event = goalEvents.first {
-                game.queueDynamicEvent(event)
-            }
-        default:
-            // Memory-driven turn - grudges and gratitude surface
-            let memoryEvents = MemoryIntegrationService.shared.evaluateMemoryDrivenActions(game: game)
-            if let event = memoryEvents.first {
-                game.queueDynamicEvent(event)
+        // 2. Goal-driven agency - NPCs pursuing their ambitions (career advancement, rivalry, etc.)
+        let goalEvents = GoalDrivenAgencyService.shared.evaluateGoalDrivenActions(game: game)
+        npcActionsThisTurn.append(contentsOf: goalEvents.prefix(2)) // Up to 2 goal events
+
+        // 3. Memory-driven agency - grudges, gratitude, and past interactions surfacing
+        let memoryEvents = MemoryIntegrationService.shared.evaluateMemoryDrivenActions(game: game)
+        npcActionsThisTurn.append(contentsOf: memoryEvents.prefix(1)) // Up to 1 memory event
+
+        // Queue up to 3 NPC events per turn (prevents overwhelming but ensures activity)
+        for event in npcActionsThisTurn.prefix(3) {
+            game.queueDynamicEvent(event)
+        }
+
+        // Log NPC activities to the Journal for player visibility
+        logNPCActivitiesToJournal(events: npcActionsThisTurn, game: game)
+    }
+
+    /// Log significant NPC autonomous actions to the player's journal
+    private func logNPCActivitiesToJournal(events: [DynamicEvent], game: Game) {
+        // Only log if there were meaningful NPC actions this turn
+        guard !events.isEmpty else { return }
+
+        // Create a summary of NPC activity for the journal
+        for event in events.prefix(2) { // Log up to 2 entries per turn
+            // Try to find the initiating character by name (since ID is UUID, not templateId)
+            if let characterName = event.initiatingCharacterName,
+               let character = game.characters.first(where: { $0.name == characterName }) {
+                JournalService.shared.onNPCActivity(
+                    character: character,
+                    activitySummary: event.title,
+                    details: event.briefText,
+                    game: game
+                )
             }
         }
     }

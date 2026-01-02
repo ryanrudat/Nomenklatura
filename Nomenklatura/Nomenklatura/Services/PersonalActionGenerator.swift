@@ -123,7 +123,7 @@ final class PersonalActionGenerator {
                 flavorText: "A loyal dog at the master's heel—but dogs can bite.",
                 successNarratives: [
                     "Your speech praising \(patron.name)'s wisdom is noted approvingly.",
-                    "\(patron.name) acknowledges your support with a nod at the Presidium.",
+                    "\(patron.name) acknowledges your support with a nod at the Standing Committee.",
                     "Word reaches \(patron.name) of your unwavering loyalty."
                 ]
             ))
@@ -686,7 +686,7 @@ final class PersonalActionGenerator {
             actions.append(PersonalAction(
                 id: "expose_rival_crisis",
                 category: .undermineRivals,
-                title: "Expose \(rival.name) at Presidium",
+                title: "Expose \(rival.name) at Standing Committee",
                 description: "Use accumulated evidence to publicly challenge \(rival.name)'s position.",
                 costAP: 2,
                 riskLevel: .high,
@@ -696,7 +696,7 @@ final class PersonalActionGenerator {
                 flavorText: "Strike when the iron is hot.",
                 successNarratives: [
                     "Your accusations land. \(rival.name) is on the defensive.",
-                    "The Presidium erupts. Your evidence is damning.",
+                    "The Standing Committee erupts. Your evidence is damning.",
                     "\(rival.name)'s allies begin to distance themselves."
                 ],
                 failureNarratives: [

@@ -299,7 +299,7 @@ extension Law {
         let collectiveLeadership = Law(
             lawId: "collective_leadership",
             name: "Collective Leadership Principle",
-            description: "Major state decisions require consensus of the Presidium. No single individual may act unilaterally on matters of war, peace, or constitutional change.",
+            description: "Major state decisions require consensus of the Standing Committee. No single individual may act unilaterally on matters of war, peace, or constitutional change.",
             category: .institutional
         )
         collectiveLeadership.beneficiaries = ["youth_league", "princelings"]  // Prevents any one faction from dominating
@@ -308,7 +308,7 @@ extension Law {
         let appointmentApproval = Law(
             lawId: "appointment_approval",
             name: "Appointment Confirmation Process",
-            description: "Senior appointments to ministerial and regional leadership positions require approval by the Standing Committee of the Presidium.",
+            description: "Senior appointments to ministerial and regional leadership positions require approval by the Standing Committee.",
             category: .institutional
         )
         appointmentApproval.beneficiaries = ["youth_league"]  // Merit-based appointments help meritocrats

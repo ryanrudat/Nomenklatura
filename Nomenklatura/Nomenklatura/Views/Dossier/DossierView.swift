@@ -292,7 +292,18 @@ struct DossierView: View {
     @ViewBuilder
     private var journalContent: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Saved Notes section (from JournalEntries)
+            // Political Activity section (NPC and Committee activity)
+            PoliticalActivityView(game: game)
+
+            // Divider
+            if hasPoliticalActivity {
+                Rectangle()
+                    .fill(theme.borderTan)
+                    .frame(height: 2)
+                    .padding(.vertical, 8)
+            }
+
+            // Saved Notes section (from JournalEntries - user curated)
             SavedNotesView(game: game)
 
             // Divider between sections
@@ -307,16 +318,222 @@ struct DossierView: View {
             DecisionJournalView(game: game)
         }
     }
+
+    private var hasPoliticalActivity: Bool {
+        game.journalEntries.contains { $0.category == .npcActivity || $0.category == .committeeActivity }
+    }
 }
 
-// MARK: - Saved Notes View (JournalEntries)
+// MARK: - Political Activity View (NPC Maneuvering & Committee Business)
+
+struct PoliticalActivityView: View {
+    let game: Game
+    @Environment(\.theme) var theme
+
+    /// Filter to only NPC activity and committee entries
+    private var politicalEntries: [JournalEntry] {
+        game.journalEntries
+            .filter { $0.category == .npcActivity || $0.category == .committeeActivity }
+            .sorted { $0.turnDiscovered > $1.turnDiscovered }
+    }
+
+    /// Group by turn for timeline feel
+    private var groupedByTurn: [(Int, [JournalEntry])] {
+        let grouped = Dictionary(grouping: politicalEntries) { $0.turnDiscovered }
+        return grouped.sorted { $0.key > $1.key } // Most recent first
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: "figure.walk")
+                        .foregroundColor(theme.accentGold)
+                    Text("POLITICAL ACTIVITY")
+                        .font(theme.labelFont)
+                        .tracking(1)
+                        .foregroundColor(theme.inkBlack)
+
+                    Spacer()
+
+                    // Unread count for political entries
+                    let unreadCount = politicalEntries.filter { !$0.isRead }.count
+                    if unreadCount > 0 {
+                        Text("\(unreadCount) NEW")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(theme.stampRed)
+                            .clipShape(Capsule())
+                    }
+                }
+
+                Text("NPCs are constantly maneuvering - watch their moves")
+                    .font(theme.tagFont)
+                    .italic()
+                    .foregroundColor(theme.inkGray)
+            }
+            .padding(.bottom, 8)
+
+            if politicalEntries.isEmpty {
+                // Empty state
+                VStack(spacing: 12) {
+                    Image(systemName: "person.3.sequence.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(theme.inkLight)
+
+                    Text("No political activity recorded yet")
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkGray)
+
+                    Text("As NPCs pursue their goals and the Committee deliberates, their activities will appear here.")
+                        .font(theme.tagFont)
+                        .foregroundColor(theme.inkLight)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                // Activity timeline grouped by turn
+                ForEach(groupedByTurn.prefix(5), id: \.0) { turn, entries in
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Turn header
+                        Text("TURN \(turn)")
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .tracking(1)
+                            .foregroundColor(theme.inkLight)
+                            .padding(.top, 4)
+
+                        // Activity cards for this turn
+                        ForEach(entries) { entry in
+                            PoliticalActivityCard(entry: entry, game: game)
+                        }
+                    }
+                }
+
+                // Show more if there are more entries
+                if groupedByTurn.count > 5 {
+                    Text("+ \(groupedByTurn.count - 5) more turns...")
+                        .font(theme.tagFont)
+                        .foregroundColor(theme.inkLight)
+                        .padding(.top, 8)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Political Activity Card
+
+struct PoliticalActivityCard: View {
+    let entry: JournalEntry
+    let game: Game
+    @Environment(\.theme) var theme
+    @State private var isExpanded = false
+
+    private var accentColor: Color {
+        switch entry.category {
+        case .npcActivity: return theme.accentGold
+        case .committeeActivity: return Color(hex: "2196F3") // Blue for committee
+        default: return theme.inkGray
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                    if isExpanded && !entry.isRead {
+                        game.markJournalEntryRead(id: entry.id)
+                    }
+                }
+            } label: {
+                HStack(alignment: .top, spacing: 10) {
+                    // Category icon
+                    Image(systemName: entry.category.iconName)
+                        .font(.system(size: 14))
+                        .foregroundColor(accentColor)
+                        .frame(width: 20)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        // Title
+                        Text(entry.title)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(theme.inkBlack)
+                            .multilineTextAlignment(.leading)
+
+                        // Category label
+                        Text(entry.category.displayName)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(accentColor)
+                    }
+
+                    Spacer()
+
+                    // Unread indicator
+                    if !entry.isRead {
+                        Circle()
+                            .fill(theme.stampRed)
+                            .frame(width: 8, height: 8)
+                    }
+
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(theme.inkGray)
+                }
+            }
+            .buttonStyle(.plain)
+
+            // Expanded content
+            if isExpanded {
+                Text(entry.content)
+                    .font(theme.bodyFontSmall)
+                    .foregroundColor(theme.inkGray)
+                    .padding(.top, 8)
+                    .padding(.leading, 30)
+
+                // Related character link if available
+                if let characterId = entry.relatedCharacterId,
+                   let character = game.characters.first(where: { $0.templateId == characterId }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 10))
+                        Text(character.name)
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(theme.accentGold)
+                    .padding(.top, 6)
+                    .padding(.leading, 30)
+                }
+            }
+        }
+        .padding(12)
+        .background(theme.parchment)
+        .overlay(
+            Rectangle()
+                .stroke(entry.isRead ? theme.borderTan : accentColor.opacity(0.5), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Saved Notes View (JournalEntries - excluding auto-generated political activity)
 
 struct SavedNotesView: View {
     let game: Game
     @Environment(\.theme) var theme
 
+    /// Filter out NPC activity and committee entries (shown in PoliticalActivityView)
     private var sortedEntries: [JournalEntry] {
-        game.journalEntries.sorted { $0.turnDiscovered > $1.turnDiscovered }
+        game.journalEntries
+            .filter { $0.category != .npcActivity && $0.category != .committeeActivity }
+            .sorted { $0.turnDiscovered > $1.turnDiscovered }
+    }
+
+    private var unreadCount: Int {
+        sortedEntries.filter { !$0.isRead }.count
     }
 
     var body: some View {
@@ -333,9 +550,9 @@ struct SavedNotesView: View {
 
                     Spacer()
 
-                    // Unread count badge
-                    if game.unreadJournalCount > 0 {
-                        Text("\(game.unreadJournalCount) NEW")
+                    // Unread count badge (only for non-political entries)
+                    if unreadCount > 0 {
+                        Text("\(unreadCount) NEW")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
@@ -345,7 +562,7 @@ struct SavedNotesView: View {
                     }
                 }
 
-                Text("Information you've noted for later reference")
+                Text("Intelligence and insights you've collected")
                     .font(theme.tagFont)
                     .italic()
                     .foregroundColor(theme.inkGray)

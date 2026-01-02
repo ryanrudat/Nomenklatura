@@ -104,7 +104,7 @@ Stat Low:          #C62828 (Red - values below 40)
 ┌─────────────────────────────────────────────────────────────────┐
 │                    CAMPAIGN SELECT                               │
 │  • Choose historical era/campaign                                │
-│  • Currently: "The Presidium" (Cold War)                        │
+│  • Currently: "The Apparatus" (Cold War)                        │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼

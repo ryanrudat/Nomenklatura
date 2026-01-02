@@ -18,6 +18,8 @@ enum JournalCategory: String, Codable, CaseIterable {
     case secretIntelligence     // Information from network/leaks
     case historicalRecord       // Declassified historical information
     case lawChange              // Law modification or proposal
+    case npcActivity            // NPC autonomous actions and initiatives
+    case committeeActivity      // Standing Committee proposals and agenda items
 
     var displayName: String {
         switch self {
@@ -29,6 +31,8 @@ enum JournalCategory: String, Codable, CaseIterable {
         case .secretIntelligence: return "Secret Intelligence"
         case .historicalRecord: return "Historical Record"
         case .lawChange: return "Legislative Matter"
+        case .npcActivity: return "Political Maneuvering"
+        case .committeeActivity: return "Committee Business"
         }
     }
 
@@ -42,6 +46,8 @@ enum JournalCategory: String, Codable, CaseIterable {
         case .secretIntelligence: return "eye.fill"
         case .historicalRecord: return "book.closed.fill"
         case .lawChange: return "scroll.fill"
+        case .npcActivity: return "figure.walk"
+        case .committeeActivity: return "building.columns.fill"
         }
     }
 }

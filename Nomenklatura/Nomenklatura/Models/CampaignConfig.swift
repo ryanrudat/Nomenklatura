@@ -336,7 +336,7 @@ struct CampaignTerminology: Codable {
 
 struct ScreenLabels: Codable {
     var deskTitle: String         // "The Desk" / "The Office"
-    var deskSubtitle: String      // "The Presidium" / "Standing Committee"
+    var deskSubtitle: String      // "The Apparatus" / "Standing Committee"
     var ladderTitle: String       // "The Ladder" / "Party Hierarchy"
     var dossierTitle: String      // "The Dossier" / "Personnel Files"
     var ledgerTitle: String       // "The Ledger" / "State of Affairs"
@@ -483,7 +483,7 @@ class CampaignLoader {
             PersonalAction(id: "public_praise_patron", category: .securePosition, title: "Publicly praise your patron", description: "Give a speech crediting Wallace for recent successes.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["patronFavor": 8, "standing": -3], isLocked: false, lockReason: nil),
             PersonalAction(id: "prepare_dossier", category: .securePosition, title: "Prepare defensive dossier", description: "Compile evidence of your loyalty and achievements.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["network": 2], isLocked: false, lockReason: nil),
             PersonalAction(id: "propose_promotion", category: .makeYourPlay, title: "Propose yourself for Department Head", description: "Request promotion when a vacancy opens.", costAP: 2, riskLevel: .medium, requirements: ActionRequirements(minStanding: 65, minPatronFavor: 60, vacancyRequired: true), effects: ["standing": 10], isLocked: true, lockReason: "Requires Standing 65+, Patron Favor 60+, and a vacancy"),
-            PersonalAction(id: "challenge_rival", category: .makeYourPlay, title: "Challenge Kovacs at Presidium", description: "Publicly expose his failures and demand his removal.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 70, minNetwork: 50, requiredFlags: ["kovacs_weakness_known"]), effects: ["rivalThreat": -30, "standing": 15, "reputationRuthless": 10], isLocked: true, lockReason: "Requires Standing 70+, Network 50+, and intelligence on Kovacs"),
+            PersonalAction(id: "challenge_rival", category: .makeYourPlay, title: "Challenge Kovacs at Standing Committee", description: "Publicly expose his failures and demand his removal.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 70, minNetwork: 50, requiredFlags: ["kovacs_weakness_known"]), effects: ["rivalThreat": -30, "standing": 15, "reputationRuthless": 10], isLocked: true, lockReason: "Requires Standing 70+, Network 50+, and intelligence on Kovacs"),
             PersonalAction(id: "begin_coup", category: .makeYourPlay, title: "Begin coup preparations", description: "Sound out military leaders about removing the General Secretary.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 85, minNetwork: 70, requiredFactionSupport: ["princelings": 70]), effects: ["network": -20], isLocked: true, lockReason: "Requires Standing 85+, Network 70+, Princeling support 70+")
         ]
     }
@@ -505,10 +505,10 @@ class CampaignLoader {
 
         positions.append(LadderPosition(
             index: 1, track: .shared, expandedTrack: .shared,
-            title: "Junior Presidium Member",
+            title: "Junior Party Official",
             description: "You have a seat at the table, but little influence. Your work will be noticed—your path forward branches from here.",
             requiredStanding: 15, maxHolders: 10,
-            unlockedActions: ["attend_presidium", "vote_policy"],
+            unlockedActions: ["attend_committee", "vote_policy"],
             canBranchTo: ["partyApparatus_2", "stateMinistry_2", "securityServices_2", "foreignAffairs_2", "economicPlanning_2", "militaryPolitical_2"]
         ))
 
@@ -2148,7 +2148,7 @@ class CampaignLoader {
                 ),
                 CharacterSecretTemplate(
                     title: "The Falsified Statistics",
-                    content: "The production figures Kowalski reports to the Presidium are systematically inflated. Every Five-Year Plan he oversees is built on lies. The real economic situation is far worse than official numbers suggest. If the truth emerged, the entire planning apparatus would be discredited—and Kowalski with it.",
+                    content: "The production figures Kowalski reports to the Standing Committee are systematically inflated. Every Five-Year Plan he oversees is built on lies. The real economic situation is far worse than official numbers suggest. If the truth emerged, the entire planning apparatus would be discredited—and Kowalski with it.",
                     tier: "discoverable",
                     category: "crime",
                     canBeUsedAsLeverage: true,

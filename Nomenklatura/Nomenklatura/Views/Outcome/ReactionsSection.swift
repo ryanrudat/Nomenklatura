@@ -460,7 +460,7 @@ struct ReactionsSection: View {
                 "Washington does not understand conditions here. This will fail in the zones.",
                 "Another decree from the capital that ignores local realities.",
                 "The regions bear the burden while the center makes decisions.",
-                "We who implement these policies see what the Presidium cannot."
+                "We who implement these policies see what the Standing Committee cannot."
             ]
             return (disapprovals.randomElement()!, .disapproval)
 
@@ -576,7 +576,7 @@ struct ReactionsSection: View {
 
         case .appease, .reform, .negotiate:
             if isPositive {
-                return ("A measured approach. The Presidium notes your diplomatic skill.", .approval)
+                return ("A measured approach. The Standing Committee notes your diplomatic skill.", .approval)
             } else {
                 return ("Softness can be mistaken for weakness, Comrade. Remember that.", .disapproval)
             }

@@ -198,6 +198,63 @@ final class JournalService: ObservableObject {
         )
     }
 
+    /// Called when an NPC takes autonomous action (political maneuvering)
+    func onNPCActivity(character: GameCharacter, activitySummary: String, details: String, game: Game) {
+        // Don't log minor activities or player-initiated events
+        guard !activitySummary.isEmpty else { return }
+
+        // Determine importance based on character's role
+        var importance = 4
+        if character.isPatron { importance = 7 }
+        else if character.isRival { importance = 6 }
+        else if character.disposition >= 60 { importance = 5 } // Allies
+
+        addEntry(
+            to: game,
+            category: .npcActivity,
+            title: "\(character.name) Makes a Move",
+            content: details.isEmpty ? "Reports indicate \(character.name) has been active in political circles. The nature of their activities bears watching." : details,
+            relatedCharacterId: character.templateId,
+            importance: importance
+        )
+    }
+
+    /// Called when a Standing Committee proposal is submitted
+    func onCommitteeProposal(sponsor: GameCharacter, proposalTitle: String, description: String, isPlayerOverlap: Bool, game: Game) {
+        var content = "\(sponsor.name) has submitted a proposal to the Standing Committee: \"\(proposalTitle)\""
+
+        if isPlayerOverlap {
+            content += "\n\n⚠️ NOTE: This proposal may affect or conflict with your own agenda items."
+        }
+
+        if !description.isEmpty {
+            content += "\n\nDetails: \(description)"
+        }
+
+        addEntry(
+            to: game,
+            category: .committeeActivity,
+            title: "Committee Proposal: \(proposalTitle)",
+            content: content,
+            relatedCharacterId: sponsor.templateId,
+            importance: isPlayerOverlap ? 8 : 6
+        )
+    }
+
+    /// Called when a Standing Committee decision is made
+    func onCommitteeDecision(itemTitle: String, outcome: String, playerInvolved: Bool, game: Game) {
+        var importance = 5
+        if playerInvolved { importance = 8 }
+
+        addEntry(
+            to: game,
+            category: .committeeActivity,
+            title: "Committee Decision: \(itemTitle)",
+            content: "The Standing Committee has reached a decision on \"\(itemTitle)\": \(outcome)",
+            importance: importance
+        )
+    }
+
     // MARK: - Toast Management
 
     private func showToast(for entry: JournalEntry) {

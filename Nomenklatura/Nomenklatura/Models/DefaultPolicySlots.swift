@@ -38,7 +38,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "leadership_collective_vote",
                 name: "Collective Vote",
-                description: "The Presidium votes collectively on major decisions. No single member can dominate.",
+                description: "The Standing Committee votes collectively on major decisions. No single member can dominate.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     eliteLoyaltyModifier: 10,
@@ -53,7 +53,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "leadership_gs_decides",
                 name: "General Secretary Decides",
-                description: "The General Secretary has final authority on all major decisions. The Presidium advises but does not constrain.",
+                description: "The General Secretary has final authority on all major decisions. The Standing Committee advises but does not constrain.",
                 effects: PolicyEffects(
                     stabilityModifier: -5,
                     eliteLoyaltyModifier: -15,
@@ -85,7 +85,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "leadership_elders_veto",
                 name: "Elder's Veto",
-                description: "Senior members of the Presidium can veto any decision. Protects the old guard's interests.",
+                description: "Senior members of the Standing Committee can veto any decision. Protects the old guard's interests.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     eliteLoyaltyModifier: 15,
@@ -101,7 +101,7 @@ extension PolicySlot {
         let leadershipSlot = PolicySlot(
             slotId: "presidium_leadership_selection",
             name: "Leadership Selection",
-            description: "How decisions are made within the Presidium and who has final authority.",
+            description: "How decisions are made within the Standing Committee and who has final authority.",
             institution: .presidium,
             category: .institutional,
             options: leadershipOptions,
@@ -191,8 +191,8 @@ extension PolicySlot {
         let emergencyOptions = [
             PolicyOption(
                 id: "emergency_presidium_approval",
-                name: "Presidium Approval Required",
-                description: "Emergency powers require approval from the full Presidium before activation.",
+                name: "Committee Approval Required",
+                description: "Emergency powers require approval from the full Standing Committee before activation.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     eliteLoyaltyModifier: 10
@@ -206,7 +206,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "emergency_gs_unilateral",
                 name: "GS Unilateral Action",
-                description: "The General Secretary can declare emergencies and act without Presidium approval.",
+                description: "The General Secretary can declare emergencies and act without Standing Committee approval.",
                 effects: PolicyEffects(
                     stabilityModifier: -10,
                     eliteLoyaltyModifier: -15,
@@ -280,8 +280,8 @@ extension PolicySlot {
             ),
             PolicyOption(
                 id: "succession_presidium_election",
-                name: "Presidium Election",
-                description: "The Presidium elects a new General Secretary from among its members.",
+                name: "Committee Election",
+                description: "The Standing Committee elects a new General Secretary from among its members.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     eliteLoyaltyModifier: 10,
@@ -309,7 +309,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "succession_gs_designates",
                 name: "GS Designates Successor",
-                description: "The sitting General Secretary names their own successor, who is then confirmed by the Presidium.",
+                description: "The sitting General Secretary names their own successor, who is then confirmed by the Standing Committee.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     eliteLoyaltyModifier: -10,
@@ -492,7 +492,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "congress_rubber_stamp",
                 name: "Rubber Stamp",
-                description: "The Congress approves all proposals from the Presidium without substantive debate.",
+                description: "The Congress approves all proposals from the Standing Committee without substantive debate.",
                 effects: PolicyEffects(
                     stabilityModifier: 10,
                     popularSupportModifier: -5,
@@ -507,7 +507,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "congress_limited_debate",
                 name: "Limited Debate",
-                description: "Delegates may discuss proposals but amendments require Presidium approval.",
+                description: "Delegates may discuss proposals but amendments require Standing Committee approval.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     popularSupportModifier: 5,
@@ -536,7 +536,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "congress_constitutional",
                 name: "Constitutional Authority",
-                description: "The Congress is the supreme legislative body with power to override the Presidium.",
+                description: "The Congress is the supreme legislative body with power to override the Standing Committee.",
                 effects: PolicyEffects(
                     stabilityModifier: -15,
                     popularSupportModifier: 20,
@@ -653,7 +653,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "budget_party_controlled",
                 name: "Party Controlled",
-                description: "The defense budget is set by the Presidium. Military requests but doesn't decide.",
+                description: "The defense budget is set by the Standing Committee. Military requests but doesn't decide.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     militaryLoyaltyModifier: -5,
@@ -812,8 +812,8 @@ extension PolicySlot {
             ),
             PolicyOption(
                 id: "nuclear_presidium_consensus",
-                name: "Presidium Consensus",
-                description: "Nuclear use requires unanimous agreement of the Presidium.",
+                name: "Committee Consensus",
+                description: "Nuclear use requires unanimous agreement of the Standing Committee.",
                 effects: PolicyEffects(
                     stabilityModifier: 10,
                     internationalStandingModifier: 5,
@@ -990,8 +990,8 @@ extension PolicySlot {
             ),
             PolicyOption(
                 id: "arrest_presidium_approval",
-                name: "Presidium Approval",
-                description: "Arrest of officials requires Politburo approval. Citizens still subject to BPS authority.",
+                name: "Committee Approval",
+                description: "Arrest of officials requires Standing Committee approval. Citizens still subject to BPS authority.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     eliteLoyaltyModifier: 10
@@ -1452,7 +1452,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "governor_central_appointment",
                 name: "Central Appointment",
-                description: "Governors appointed directly by the Presidium from the capital.",
+                description: "Governors appointed directly by the Standing Committee from the capital.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     regionalControlModifier: 15,
@@ -1485,7 +1485,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "governor_party_congress",
                 name: "Party Congress",
-                description: "Regional Party congresses nominate governors, confirmed by Presidium.",
+                description: "Regional Party congresses nominate governors, confirmed by Standing Committee.",
                 effects: PolicyEffects(
                     stabilityModifier: 0,
                     eliteLoyaltyModifier: 5,
@@ -1499,7 +1499,7 @@ extension PolicySlot {
             PolicyOption(
                 id: "governor_local_council",
                 name: "Local Council Nomination",
-                description: "Local councils nominate candidates, Presidium chooses from list.",
+                description: "Local councils nominate candidates, Standing Committee chooses from list.",
                 effects: PolicyEffects(
                     stabilityModifier: 5,
                     popularSupportModifier: 5,

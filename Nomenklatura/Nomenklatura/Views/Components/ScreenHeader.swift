@@ -250,7 +250,7 @@ struct SectionDivider: View {
 
 #Preview("Screen Header") {
     VStack(spacing: 0) {
-        ScreenHeader(title: "The Desk", subtitle: "The Presidium — Turn 14")
+        ScreenHeader(title: "The Desk", subtitle: "The Apparatus — Turn 14")
         Spacer()
     }
     .background(Color(hex: "F4F1E8"))

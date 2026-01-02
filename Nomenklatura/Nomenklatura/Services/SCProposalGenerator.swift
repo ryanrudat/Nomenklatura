@@ -26,6 +26,11 @@ struct SCProposalGenerator {
 
         var results: [SCProposalResult] = []
 
+        // Get player-submitted agenda items to detect overlap
+        let playerAgendaCategories = committee.pendingAgenda
+            .filter { $0.sponsorId == "player" || $0.sponsorId == nil }
+            .map { $0.category }
+
         for memberId in committee.memberIds {
             guard let member = game.characters.first(where: { $0.templateId == memberId && $0.isAlive }),
                   shouldProposeThisTurn(member: member, committee: committee, game: game) else {
@@ -51,23 +56,107 @@ struct SCProposalGenerator {
                     turnSubmitted: game.turnNumber
                 ))
 
-                proposalLogger.info("\(member.name) proposed: \(proposal.title)")
+                // Check for overlap with player agenda items
+                let hasOverlap = playerAgendaCategories.contains(proposal.category)
+
+                // Log to journal so player is aware of committee activity
+                JournalService.shared.onCommitteeProposal(
+                    sponsor: member,
+                    proposalTitle: proposal.title,
+                    description: proposal.description,
+                    isPlayerOverlap: hasOverlap,
+                    game: game
+                )
+
+                proposalLogger.info("\(member.name) proposed: \(proposal.title) (overlap: \(hasOverlap))")
+            }
+        }
+
+        // Ensure at least one proposal per turn for immersive committee activity
+        if results.isEmpty && game.turnNumber > 2 {
+            if let guaranteedProposal = generateGuaranteedProposal(committee: committee, game: game) {
+                results.append(guaranteedProposal)
             }
         }
 
         return results
     }
 
+    /// Generate a guaranteed proposal when no NPC proposed this turn
+    private static func generateGuaranteedProposal(committee: StandingCommittee, game: Game) -> SCProposalResult? {
+        // Pick a random SC member to generate a routine proposal
+        let eligibleMembers = committee.memberIds.compactMap { memberId in
+            game.characters.first(where: { $0.templateId == memberId && $0.isAlive })
+        }
+
+        guard let member = eligibleMembers.randomElement() else { return nil }
+
+        // Generate a routine proposal
+        let routineProposals: [ProposalContent] = [
+            ProposalContent(
+                title: "Administrative Efficiency Review",
+                description: "\(member.name) proposes a review of bureaucratic procedures to improve efficiency.",
+                category: .policy,
+                priority: .routine,
+                proposalType: .institutionalReform,
+                effects: [:]
+            ),
+            ProposalContent(
+                title: "Quarterly Progress Report",
+                description: "\(member.name) requests a formal progress report on current initiatives.",
+                category: .policy,
+                priority: .routine,
+                proposalType: .institutionalReform,
+                effects: [:]
+            ),
+            ProposalContent(
+                title: "Resource Allocation Update",
+                description: "\(member.name) proposes adjustments to resource allocation based on current needs.",
+                category: .economic,
+                priority: .routine,
+                proposalType: .economicReform,
+                effects: [:]
+            )
+        ]
+
+        guard let proposal = routineProposals.randomElement() else { return nil }
+
+        StandingCommitteeService.shared.submitAgendaItem(
+            to: committee,
+            title: proposal.title,
+            description: proposal.description,
+            category: proposal.category,
+            priority: proposal.priority,
+            sponsor: member,
+            game: game
+        )
+
+        JournalService.shared.onCommitteeProposal(
+            sponsor: member,
+            proposalTitle: proposal.title,
+            description: proposal.description,
+            isPlayerOverlap: false,
+            game: game
+        )
+
+        return SCProposalResult(
+            sponsorId: member.templateId,
+            sponsorName: member.name,
+            proposal: proposal,
+            turnSubmitted: game.turnNumber
+        )
+    }
+
     // MARK: - Proposal Decision Logic
 
     /// Determine if an NPC should propose this turn
     private static func shouldProposeThisTurn(member: GameCharacter, committee: StandingCommittee, game: Game) -> Bool {
-        // Base 10% chance
-        var chance = 10
+        // Base 25% chance - high enough for active committee feel
+        var chance = 25
 
         // GS proposes more often (setting agenda)
         if member.templateId == committee.chairId {
-            chance += 20
+            chance += 25
         }
 
         // Increase if faction is losing power
@@ -79,23 +168,23 @@ struct SCProposalGenerator {
 
         // Increase if ambitious personality
         if member.personalityAmbitious > 70 {
-            chance += 10
+            chance += 15
         }
 
         // Increase during crises
         if game.stability < 40 {
-            chance += 15
+            chance += 20
         }
 
         // Increase if member has active goals that could be advanced
         if hasAdvanceableGoals(member: member, game: game) {
-            chance += 10
+            chance += 15
         }
 
         // Decrease if there are too many pending items (avoid spam)
         let pendingCount = committee.pendingAgenda.count
-        if pendingCount >= 5 {
-            chance -= pendingCount * 3
+        if pendingCount >= 6 {
+            chance -= (pendingCount - 5) * 5
         }
 
         return Int.random(in: 1...100) <= max(chance, 5)
