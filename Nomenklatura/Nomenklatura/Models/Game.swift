@@ -84,6 +84,7 @@ final class Game {
     var consecutiveDecisionEvents: Int  // Tracks how many decisions in a row
     var lastNewspaperTurn: Int          // Last turn newspaper appeared
     var recentScenarioCategories: [String]  // Recent categories for variety
+    var lastDisplayedScenarioId: String?  // Prevents same scenario twice in a row (persisted)
 
     // Dynamic events system
     var pendingDynamicEventsData: Data?  // Encoded [DynamicEvent]
@@ -313,6 +314,7 @@ final class Game {
         self.consecutiveDecisionEvents = 0
         self.lastNewspaperTurn = 0
         self.recentScenarioCategories = []
+        self.lastDisplayedScenarioId = nil
 
         // Dynamic events system
         self.pendingDynamicEventsData = nil

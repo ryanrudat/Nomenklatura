@@ -38,7 +38,7 @@ struct DeskView: View {
     @State private var showFullNewspaper = false  // Expand newspaper from preview
     @State private var showFullScenario = false   // Expand scenario from card
     @State private var scenarioOverlayOffset: CGFloat = 0  // For pull-to-dismiss
-    @State private var lastDisplayedScenarioId: String? = nil  // Track to prevent consecutive duplicates
+    // NOTE: lastDisplayedScenarioId moved to Game model for persistence across view recreations
 
     // Document queue system
     @State private var selectedDocument: DeskDocument?
@@ -1304,7 +1304,8 @@ struct DeskView: View {
         if let scenario = loadingState.cachedScenario {
             // DEDUPLICATION: Skip if this is the same scenario we just displayed
             // This prevents "Rumors & Whispers" and similar events from showing twice in a row
-            if scenario.templateId == lastDisplayedScenarioId {
+            // Uses persisted game.lastDisplayedScenarioId for reliability across view recreations
+            if scenario.templateId == game.lastDisplayedScenarioId {
                 #if DEBUG
                 print("[DeskView] Skipping duplicate scenario: \(scenario.templateId)")
                 #endif
@@ -1315,8 +1316,8 @@ struct DeskView: View {
                 return
             }
 
-            // Track this scenario to prevent consecutive duplicates
-            lastDisplayedScenarioId = scenario.templateId
+            // Track this scenario to prevent consecutive duplicates (persisted in Game model)
+            game.lastDisplayedScenarioId = scenario.templateId
             hasDisplayedContentForTurn = true
             handleScenarioLoaded(scenario)
             return

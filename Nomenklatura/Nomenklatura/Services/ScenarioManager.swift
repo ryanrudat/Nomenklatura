@@ -441,10 +441,18 @@ class ScenarioManager {
             $0.category == category && $0.category != .introduction
         }
 
-        // Step 4: Filter out recently used
-        var candidates = categoryScenarios.filter { !recentlyUsedIds.contains($0.templateId) }
+        // Step 4: Filter out recently used AND the last displayed scenario (prevents consecutive duplicates)
+        var candidates = categoryScenarios.filter { scenario in
+            !recentlyUsedIds.contains(scenario.templateId) &&
+            scenario.templateId != game.lastDisplayedScenarioId
+        }
 
-        // If all scenarios in category were recently used, allow repeats
+        // If no candidates, allow recently used but still exclude last displayed
+        if candidates.isEmpty {
+            candidates = categoryScenarios.filter { $0.templateId != game.lastDisplayedScenarioId }
+        }
+
+        // If still empty, allow all scenarios
         if candidates.isEmpty {
             candidates = categoryScenarios
         }
@@ -485,8 +493,18 @@ class ScenarioManager {
             scenarios = routineDayScenarios
         }
 
-        // Filter out recently used
-        var candidates = scenarios.filter { !recentlyUsedIds.contains($0.templateId) }
+        // Filter out recently used AND the last displayed scenario (to prevent consecutive duplicates)
+        var candidates = scenarios.filter { scenario in
+            !recentlyUsedIds.contains(scenario.templateId) &&
+            scenario.templateId != game.lastDisplayedScenarioId
+        }
+
+        // If no candidates after filtering, allow recently used but still exclude last displayed
+        if candidates.isEmpty {
+            candidates = scenarios.filter { $0.templateId != game.lastDisplayedScenarioId }
+        }
+
+        // If still empty (only one scenario that was just displayed), allow all
         if candidates.isEmpty {
             candidates = scenarios
         }
