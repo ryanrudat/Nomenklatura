@@ -111,8 +111,16 @@ struct ScenarioValidator {
             return "Missing briefing"
         }
 
-        if raw.presenterName.isEmpty {
-            return "Missing presenterName"
+        // presenterName is required for decision events, optional for non-decision events
+        let category = ScenarioCategory(rawValue: raw.category) ?? .routine
+        if raw.presenterName.isEmpty && category.requiresDecision {
+            return "Missing presenterName for decision scenario"
+        }
+
+        // Non-decision events don't need options
+        if !category.requiresDecision {
+            // For non-decision events, skip option validation
+            return nil
         }
 
         // Must have exactly 3 options

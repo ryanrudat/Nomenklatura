@@ -22,27 +22,67 @@ final class ClaudeClient: Sendable {
     /// Generate a scenario using Claude
     func generateScenario(prompt: String) async throws -> ClaudeResponse {
         guard Secrets.isAIEnabled else {
+            #if DEBUG
+            print("[ClaudeClient] AI not enabled - isAIEnabled returned false")
+            #endif
             throw ClaudeError.apiKeyMissing
         }
 
+        #if DEBUG
+        print("[ClaudeClient] Making request to: \(baseURL)")
+        #endif
+
         let request = try buildRequest(prompt: prompt)
-        let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ClaudeError.invalidResponse
-        }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
 
-        switch httpResponse.statusCode {
-        case 200:
-            return try decodeResponse(data)
-        case 401:
-            throw ClaudeError.unauthorized
-        case 429:
-            throw ClaudeError.rateLimited
-        case 500...599:
-            throw ClaudeError.serverError(httpResponse.statusCode)
-        default:
-            throw ClaudeError.httpError(httpResponse.statusCode, String(data: data, encoding: .utf8))
+            guard let httpResponse = response as? HTTPURLResponse else {
+                #if DEBUG
+                print("[ClaudeClient] Invalid response - not HTTPURLResponse")
+                #endif
+                throw ClaudeError.invalidResponse
+            }
+
+            #if DEBUG
+            print("[ClaudeClient] HTTP \(httpResponse.statusCode) - Response size: \(data.count) bytes")
+            #endif
+
+            switch httpResponse.statusCode {
+            case 200:
+                return try decodeResponse(data)
+            case 401:
+                #if DEBUG
+                print("[ClaudeClient] Unauthorized - check API key on proxy")
+                #endif
+                throw ClaudeError.unauthorized
+            case 429:
+                #if DEBUG
+                print("[ClaudeClient] Rate limited")
+                #endif
+                throw ClaudeError.rateLimited
+            case 500...599:
+                #if DEBUG
+                print("[ClaudeClient] Server error: \(httpResponse.statusCode)")
+                if let body = String(data: data, encoding: .utf8) {
+                    print("[ClaudeClient] Error body: \(body)")
+                }
+                #endif
+                throw ClaudeError.serverError(httpResponse.statusCode)
+            default:
+                let body = String(data: data, encoding: .utf8)
+                #if DEBUG
+                print("[ClaudeClient] HTTP error \(httpResponse.statusCode): \(body ?? "no body")")
+                #endif
+                throw ClaudeError.httpError(httpResponse.statusCode, body)
+            }
+        } catch let error as ClaudeError {
+            throw error
+        } catch {
+            #if DEBUG
+            print("[ClaudeClient] Network error: \(error.localizedDescription)")
+            #endif
+            throw error
         }
     }
 
@@ -77,7 +117,7 @@ final class ClaudeClient: Sendable {
             request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         }
 
-        request.timeoutInterval = 12  // Fast timeout - user shouldn't wait long, fallback is good
+        request.timeoutInterval = 45  // Allow time for complex scenario generation
 
         let body = ClaudeRequest(
             model: model,

@@ -130,9 +130,10 @@ struct ContentView: View {
         // Clear scenario manager cache
         ScenarioManager.shared.loadingState.clearCache()
 
-        // Clear AI scenario cache
+        // Clear AI scenario cache and reset circuit breaker
         Task {
             await AIScenarioGenerator.shared.clearCache()
+            await AIScenarioGenerator.shared.resetCircuitBreaker()
         }
 
         // Save changes
@@ -403,6 +404,9 @@ struct GameView: View {
     @State private var showPromotionNotification = false
     @State private var promotionPosition: LadderPosition?
 
+    // Journal navigation state (for toast -> dossier navigation)
+    @State private var navigateToJournalEntry: JournalEntry?
+
     private var campaignConfig: CampaignConfig {
         CampaignLoader.shared.getColdWarCampaign()
     }
@@ -439,7 +443,21 @@ struct GameView: View {
                             onMinistryTap: { showingMinistrySheet = true }
                         )
                     case .dossier:
-                        DossierView(game: game, onWorldTap: { showingWorldSheet = true }, onCongressTap: { showingCongressSheet = true })
+                        DossierView(
+                            game: game,
+                            onWorldTap: { showingWorldSheet = true },
+                            onCongressTap: { showingCongressSheet = true },
+                            initialTab: navigateToJournalEntry != nil ? .journal : nil,
+                            highlightedEntryId: navigateToJournalEntry?.id.uuidString
+                        )
+                        .onAppear {
+                            // Clear the navigation state after view appears
+                            if navigateToJournalEntry != nil {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    navigateToJournalEntry = nil
+                                }
+                            }
+                        }
                     case .codex:
                         CodexTerminalView(game: game)
                     case .ladder:
@@ -502,7 +520,10 @@ struct GameView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
-        .journalToastOverlay()
+        .journalToastOverlay(onNavigateToEntry: { entry in
+            navigateToJournalEntry = entry
+            selectedTab = .dossier
+        })
         .onAppear {
             // Check if game already ended
             if game.currentStatus != .active {
@@ -957,7 +978,7 @@ struct GamePreparationView: View {
 
         // Wait for scenario generation with timeout
         let startTime = Date()
-        let maxWait: TimeInterval = 15.0  // Maximum 15 seconds wait
+        let maxWait: TimeInterval = 35.0  // Wait for AI generation
 
         while loadingState.isLoading && Date().timeIntervalSince(startTime) < maxWait {
             try? await Task.sleep(nanoseconds: 100_000_000)

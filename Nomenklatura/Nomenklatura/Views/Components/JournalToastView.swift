@@ -10,16 +10,23 @@ import SwiftUI
 struct JournalToastView: View {
     let toast: JournalToast
     let onDismiss: () -> Void
+    let onNavigate: ((JournalEntry) -> Void)?
     @Environment(\.theme) var theme
     @State private var isVisible = false
+
+    init(toast: JournalToast, onDismiss: @escaping () -> Void, onNavigate: ((JournalEntry) -> Void)? = nil) {
+        self.toast = toast
+        self.onDismiss = onDismiss
+        self.onNavigate = onNavigate
+    }
 
     var body: some View {
         VStack {
             Spacer()
 
-            // Make entire toast tappable to dismiss
+            // Make entire toast tappable to navigate to entry
             Button {
-                dismissToast()
+                navigateToEntry()
             } label: {
                 HStack(spacing: 12) {
                     // Book icon
@@ -94,28 +101,50 @@ struct JournalToastView: View {
             onDismiss()
         }
     }
+
+    private func navigateToEntry() {
+        withAnimation(.easeOut(duration: 0.2)) {
+            isVisible = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            // Navigate to the entry if handler provided, otherwise just dismiss
+            if let onNavigate = onNavigate {
+                onNavigate(toast.entry)
+            }
+            onDismiss()
+        }
+    }
 }
 
 // MARK: - Journal Toast Overlay Modifier
 
 struct JournalToastOverlay: ViewModifier {
     @ObservedObject var journalService = JournalService.shared
+    let onNavigateToEntry: ((JournalEntry) -> Void)?
+
+    init(onNavigateToEntry: ((JournalEntry) -> Void)? = nil) {
+        self.onNavigateToEntry = onNavigateToEntry
+    }
 
     func body(content: Content) -> some View {
         content
             .overlay {
                 if let toast = journalService.currentToast {
-                    JournalToastView(toast: toast) {
-                        journalService.dismissCurrentToast()
-                    }
+                    JournalToastView(
+                        toast: toast,
+                        onDismiss: {
+                            journalService.dismissCurrentToast()
+                        },
+                        onNavigate: onNavigateToEntry
+                    )
                 }
             }
     }
 }
 
 extension View {
-    func journalToastOverlay() -> some View {
-        modifier(JournalToastOverlay())
+    func journalToastOverlay(onNavigateToEntry: ((JournalEntry) -> Void)? = nil) -> some View {
+        modifier(JournalToastOverlay(onNavigateToEntry: onNavigateToEntry))
     }
 }
 

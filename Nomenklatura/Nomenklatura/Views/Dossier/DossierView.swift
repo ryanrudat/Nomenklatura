@@ -21,6 +21,8 @@ struct DossierView: View {
     @Bindable var game: Game
     var onWorldTap: (() -> Void)? = nil
     var onCongressTap: (() -> Void)? = nil
+    var initialTab: DossierTab? = nil
+    var highlightedEntryId: String? = nil
     @State private var selectedTab: DossierTab = .profile
     @State private var characterFilter: CharacterFilter = .all
     @State private var searchText: String = ""
@@ -134,6 +136,12 @@ struct DossierView: View {
                             }
                         }
                 )
+            }
+        }
+        .onAppear {
+            // Set initial tab if provided (e.g., navigating from journal toast)
+            if let initial = initialTab {
+                selectedTab = initial
             }
         }
     }
