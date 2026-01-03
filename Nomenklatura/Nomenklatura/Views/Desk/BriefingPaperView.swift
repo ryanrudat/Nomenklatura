@@ -310,7 +310,7 @@ struct BriefingPaperView: View {
 #Preview {
     let scenario = Scenario(
         templateId: "test",
-        briefing: "\"Comrade, we have a situation. The workers at the Pittsburgh steel plant have stopped production. They claim the new quotas are impossible. Already the local party secretary is blaming 'counter-revolutionary elements.' If we don't act, this spreads.\"",
+        briefing: "\"Comrade, we have a situation. The workers at the Fitzgerald City steel plant have stopped production. They claim the new quotas are impossible. Already the local party secretary is blaming 'counter-revolutionary elements.' If we don't act, this spreads.\"",
         presenterName: "Director Wallace",
         presenterTitle: "Head of State Security",
         options: []

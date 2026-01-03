@@ -1284,11 +1284,11 @@ struct CharacterRelationship: Codable, Identifiable {
     var targetCharacterId: String           // The other character in the relationship
     var targetCharacterName: String         // For display purposes
     var relationshipType: RelationshipType
-    var description: String                 // "Served under him at Chicago"
+    var description: String                 // "Served under him at Fitzgerald City"
     var sentiment: Int                      // -100 to 100 (negative = hostile)
     var isKnownToPlayer: Bool = false       // Has player learned of this relationship?
     var turnRevealed: Int?                  // When player learned about it
-    var historicalOrigin: String?           // "Battle of Chicago", "The Purges", etc.
+    var historicalOrigin: String?           // "Battle of Fitzgerald City", "The Purges", etc.
 
     enum RelationshipType: String, Codable {
         case family             // Blood or marriage relation
