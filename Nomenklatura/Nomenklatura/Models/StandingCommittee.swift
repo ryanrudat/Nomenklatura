@@ -197,6 +197,7 @@ struct CommitteeAgendaItem: Codable, Identifiable {
     var priority: AgendaPriority
     var sponsorId: String?           // Who submitted this item
     var turnSubmitted: Int
+    var effects: [String: Int] = [:] // Game state effects when passed (e.g., ["stability": 5, "popularSupport": -3])
 
     // Voting tracking
     var hasBeenVoted: Bool = false
@@ -741,9 +742,10 @@ final class StandingCommitteeService {
         category: CommitteeAgendaItem.AgendaCategory,
         priority: CommitteeAgendaItem.AgendaPriority,
         sponsor: GameCharacter?,
-        game: Game
+        game: Game,
+        effects: [String: Int] = [:]
     ) {
-        let item = CommitteeAgendaItem(
+        var item = CommitteeAgendaItem(
             title: title,
             description: description,
             category: category,
@@ -751,6 +753,7 @@ final class StandingCommitteeService {
             sponsorId: sponsor?.templateId,
             turnSubmitted: game.turnNumber
         )
+        item.effects = effects
 
         var agenda = committee.pendingAgenda
         agenda.append(item)

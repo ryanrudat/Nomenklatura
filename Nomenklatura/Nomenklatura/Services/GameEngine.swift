@@ -861,47 +861,74 @@ class GameEngine {
     private func applyDecisionEffects(decision: CommitteeDecisionResult, game: Game) {
         let item = decision.item
 
-        // Category-based effects
-        switch item.category {
-        case .economic:
-            // Economic decisions affect industrial output and treasury
-            let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
-            game.industrialOutput = min(100, game.industrialOutput + impact)
+        // Use proposal-specific effects if defined, otherwise fall back to category-based
+        if !item.effects.isEmpty {
+            // Apply custom effects from the proposal
+            for (key, value) in item.effects {
+                switch key {
+                case "stability":
+                    game.stability = max(0, min(100, game.stability + value))
+                case "popularSupport":
+                    game.popularSupport = max(0, min(100, game.popularSupport + value))
+                case "eliteLoyalty":
+                    game.eliteLoyalty = max(0, min(100, game.eliteLoyalty + value))
+                case "industrialOutput":
+                    game.industrialOutput = max(0, min(100, game.industrialOutput + value))
+                case "internationalStanding":
+                    game.internationalStanding = max(0, min(100, game.internationalStanding + value))
+                case "militaryLoyalty":
+                    // Find military faction and adjust power
+                    if let militaryFaction = game.factions.first(where: { $0.factionId == "military" }) {
+                        militaryFaction.power = max(0, min(100, militaryFaction.power + value))
+                    }
+                default:
+                    gameLogger.warning("Unknown effect key: \(key)")
+                }
+            }
+            gameLogger.info("SC decision '\(item.title)' applied custom effects: \(item.effects)")
+        } else {
+            // Fall back to category-based effects for legacy/routine proposals
+            switch item.category {
+            case .economic:
+                // Economic decisions affect industrial output and treasury
+                let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
+                game.industrialOutput = min(100, game.industrialOutput + impact)
 
-        case .security:
-            // Security decisions affect stability but may hurt popular support
-            let impact = item.priority == .critical ? 8 : (item.priority == .urgent ? 5 : 2)
-            game.stability = min(100, game.stability + impact)
-            game.popularSupport = max(0, game.popularSupport - (impact / 2))
+            case .security:
+                // Security decisions affect stability but may hurt popular support
+                let impact = item.priority == .critical ? 8 : (item.priority == .urgent ? 5 : 2)
+                game.stability = min(100, game.stability + impact)
+                game.popularSupport = max(0, game.popularSupport - (impact / 2))
 
-        case .personnel:
-            // Personnel changes affect elite loyalty
-            let impact = item.priority == .critical ? 6 : (item.priority == .urgent ? 4 : 2)
-            game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
+            case .personnel:
+                // Personnel changes affect elite loyalty
+                let impact = item.priority == .critical ? 6 : (item.priority == .urgent ? 4 : 2)
+                game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
 
-        case .foreign:
-            // Foreign policy affects international standing
-            let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
-            game.internationalStanding = min(100, game.internationalStanding + impact)
+            case .foreign:
+                // Foreign policy affects international standing
+                let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
+                game.internationalStanding = min(100, game.internationalStanding + impact)
 
-        case .ideological:
-            // Ideological decisions affect elite loyalty but may hurt popular support
-            let impact = item.priority == .critical ? 5 : 3
-            game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
-            game.popularSupport = max(0, game.popularSupport - 2)
+            case .ideological:
+                // Ideological decisions affect elite loyalty but may hurt popular support
+                let impact = item.priority == .critical ? 5 : 3
+                game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
+                game.popularSupport = max(0, game.popularSupport - 2)
 
-        case .crisis:
-            // Crisis responses have mixed effects
-            game.stability = min(100, game.stability + 5)
+            case .crisis:
+                // Crisis responses have mixed effects
+                game.stability = min(100, game.stability + 5)
 
-        case .policy:
-            // General policy has modest stability effect
-            game.stability = min(100, game.stability + 2)
+            case .policy:
+                // General policy has modest stability effect
+                game.stability = min(100, game.stability + 2)
 
-        case .succession:
-            // Succession decisions affect elite loyalty and stability
-            game.eliteLoyalty = min(100, game.eliteLoyalty + 5)
-            game.stability = min(100, game.stability + 3)
+            case .succession:
+                // Succession decisions affect elite loyalty and stability
+                game.eliteLoyalty = min(100, game.eliteLoyalty + 5)
+                game.stability = min(100, game.stability + 3)
+            }
         }
     }
 

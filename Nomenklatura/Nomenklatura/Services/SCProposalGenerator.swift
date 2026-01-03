@@ -51,7 +51,8 @@ struct SCProposalGenerator {
                     category: proposal.category,
                     priority: proposal.priority,
                     sponsor: member,
-                    game: game
+                    game: game,
+                    effects: proposal.effects
                 )
 
                 results.append(SCProposalResult(
@@ -175,7 +176,8 @@ struct SCProposalGenerator {
             category: proposal.category,
             priority: proposal.priority,
             sponsor: member,
-            game: game
+            game: game,
+            effects: proposal.effects
         )
 
         JournalService.shared.onCommitteeProposal(
