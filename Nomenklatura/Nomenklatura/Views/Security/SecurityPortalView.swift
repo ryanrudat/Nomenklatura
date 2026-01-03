@@ -18,7 +18,7 @@ import SwiftData
 struct SecurityPortalView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
-    @State private var selectedSection: SecuritySection = .operations
+    @State private var selectedSection: SecuritySection = .personal
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
@@ -39,6 +39,8 @@ struct SecurityPortalView: View {
             // Content
             ScrollView {
                 switch selectedSection {
+                case .personal:
+                    PersonalSecurityView(game: game)
                 case .operations:
                     SecurityOperationsSection(game: game)
                 case .intelligence:
@@ -84,6 +86,7 @@ struct SecurityPortalHeader: View {
 // MARK: - Security Sections
 
 enum SecuritySection: String, CaseIterable {
+    case personal
     case operations
     case intelligence
     case detention
@@ -91,15 +94,17 @@ enum SecuritySection: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .operations: return "Operations"
+        case .personal: return "Dossier"
+        case .operations: return "Ops"
         case .intelligence: return "Intel"
-        case .detention: return "Detention"
+        case .detention: return "Detain"
         case .actions: return "Actions"
         }
     }
 
     var icon: String {
         switch self {
+        case .personal: return "person.text.rectangle.fill"
         case .operations: return "folder.fill"
         case .intelligence: return "eye.fill"
         case .detention: return "lock.fill"
@@ -109,6 +114,7 @@ enum SecuritySection: String, CaseIterable {
 
     var requiredLevel: Int {
         switch self {
+        case .personal: return 0        // Everyone can see their own dossier
         case .operations: return 0      // All can view (filtered content)
         case .intelligence: return 1    // Position 1+ (all security personnel)
         case .detention: return 3       // Position 3+ (case officers)

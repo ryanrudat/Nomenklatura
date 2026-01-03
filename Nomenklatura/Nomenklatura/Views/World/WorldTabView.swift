@@ -10,11 +10,13 @@ import SwiftData
 
 enum WorldSubTab: String, CaseIterable {
     case embassy
+    case situation
     case economics
 
     var title: String {
         switch self {
         case .embassy: return "Embassy"
+        case .situation: return "Situation"
         case .economics: return "Economics"
         }
     }
@@ -22,6 +24,7 @@ enum WorldSubTab: String, CaseIterable {
     var icon: String {
         switch self {
         case .embassy: return "building.columns.fill"
+        case .situation: return "map.fill"
         case .economics: return "chart.bar.fill"
         }
     }
@@ -29,6 +32,7 @@ enum WorldSubTab: String, CaseIterable {
     var description: String {
         switch self {
         case .embassy: return "Diplomatic intelligence center"
+        case .situation: return "Strategic situation room"
         case .economics: return "Economic command dashboard"
         }
     }
@@ -62,6 +66,8 @@ struct WorldTabView: View {
                     switch selectedSubTab {
                     case .embassy:
                         EmbassyPortalView(game: game)
+                    case .situation:
+                        SituationMapView(game: game)
                     case .economics:
                         EconomicDashboardView(game: game)
                     }

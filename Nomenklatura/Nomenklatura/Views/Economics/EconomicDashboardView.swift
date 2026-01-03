@@ -12,13 +12,41 @@ struct EconomicDashboardView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
     @State private var selectedView: EconomicView = .overview
+    @State private var showPropaganda: Bool = true  // Junior officials see propaganda by default
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
     }
 
+    /// Can this official see internal (reality) data?
+    private var canSeeReality: Bool {
+        accessLevel.effectiveLevel(for: .economic) >= 3
+    }
+
+    /// Classification label based on position
+    private var classificationLabel: String {
+        switch game.currentPositionIndex {
+        case 0...2: return "PUBLIC DIGEST"
+        case 3...4: return "RESTRICTED"
+        case 5...6: return "CONFIDENTIAL"
+        default: return "SECRET"
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
+            // Report header with classification
+            reportHeader
+                .padding(.horizontal, 15)
+                .padding(.top, 10)
+
+            // Propaganda/Reality toggle (position 3+ only)
+            if canSeeReality {
+                propagandaToggle
+                    .padding(.horizontal, 15)
+                    .padding(.vertical, 8)
+            }
+
             // View selector
             EconomicViewSelector(selectedView: $selectedView, accessLevel: accessLevel)
                 .padding(.horizontal, 15)
@@ -28,11 +56,11 @@ struct EconomicDashboardView: View {
             ScrollView {
                 switch selectedView {
                 case .overview:
-                    NationalStatsView(game: game)
+                    EnhancedNationalStatsView(game: game, showPropaganda: effectiveShowPropaganda)
                 case .trends:
                     EconomicTrendsView(game: game)
                 case .fiveYearPlan:
-                    FiveYearPlanView(game: game)
+                    EnhancedFiveYearPlanView(game: game, showPropaganda: effectiveShowPropaganda)
                 case .trade:
                     TradeFlowView(game: game)
                 case .regional:
@@ -42,6 +70,127 @@ struct EconomicDashboardView: View {
                 }
             }
         }
+    }
+
+    /// Always show propaganda for junior officials, toggle for seniors
+    private var effectiveShowPropaganda: Bool {
+        canSeeReality ? showPropaganda : true
+    }
+
+    // MARK: - Report Header
+
+    private var reportHeader: some View {
+        VStack(spacing: 4) {
+            HStack {
+                // Classification stamp
+                Text(classificationLabel)
+                    .font(.system(size: 9, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(classificationColor)
+                    .cornerRadius(3)
+
+                Spacer()
+
+                // Report date
+                Text(RevolutionaryCalendar.formatTurnFull(game.turnNumber))
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.inkGray)
+            }
+
+            // Title
+            Text(reportTitle)
+                .font(.system(size: 13, weight: .semibold))
+                .tracking(0.5)
+                .foregroundColor(theme.inkBlack)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var reportTitle: String {
+        if canSeeReality && !showPropaganda {
+            return "GOSPLAN INTERNAL ASSESSMENT"
+        } else {
+            return "PEOPLE'S ECONOMIC DIGEST"
+        }
+    }
+
+    private var classificationColor: Color {
+        switch game.currentPositionIndex {
+        case 0...2: return .gray
+        case 3...4: return .blue
+        case 5...6: return .orange
+        default: return theme.sovietRed
+        }
+    }
+
+    // MARK: - Propaganda Toggle
+
+    private var propagandaToggle: some View {
+        HStack {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showPropaganda = true
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "newspaper.fill")
+                        .font(.system(size: 10))
+                    Text("PUBLIC REPORT")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(0.5)
+                }
+                .foregroundColor(showPropaganda ? .white : theme.inkGray)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(showPropaganda ? theme.sovietRed : theme.parchmentDark)
+                .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showPropaganda = false
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 10))
+                    Text("INTERNAL DATA")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(0.5)
+                }
+                .foregroundColor(!showPropaganda ? .white : theme.inkGray)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(!showPropaganda ? theme.accentGold : theme.parchmentDark)
+                .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            // Divergence warning
+            if !showPropaganda && hasDivergence {
+                HStack(spacing: 3) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
+                    Text("DIVERGENT")
+                        .font(.system(size: 8, weight: .bold))
+                        .tracking(0.5)
+                }
+                .foregroundColor(.orange)
+            }
+        }
+    }
+
+    private var hasDivergence: Bool {
+        let report = EconomicIntelligenceReport.generate(for: game)
+        return report.gdpData.hasDivergence ||
+               report.industrialData.hasDivergence ||
+               report.inflationData.hasDivergence
     }
 }
 
@@ -901,6 +1050,413 @@ struct EconomicStatusSummary: View {
         case 40..<60: return .orange
         default: return .red
         }
+    }
+}
+
+// MARK: - Enhanced National Stats View (with Propaganda Support)
+
+struct EnhancedNationalStatsView: View {
+    @Bindable var game: Game
+    let showPropaganda: Bool
+    @Environment(\.theme) var theme
+
+    private var report: PropagandaReport {
+        EconomicPropagandaService.shared.generatePropagandaReport(for: game)
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Headline banner
+            headlineBanner
+
+            // Five Year Plan wheel (compact)
+            CompactPlanSummary(game: game, showPropaganda: showPropaganda)
+                .padding(.horizontal, 15)
+
+            // Key indicators
+            VStack(alignment: .leading, spacing: 12) {
+                Text("KEY INDICATORS")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    PropagandaStatCard(
+                        title: "Treasury",
+                        realValue: game.treasury,
+                        propagandaValue: game.treasury,  // Treasury not propagandized
+                        showPropaganda: showPropaganda,
+                        icon: "banknote.fill"
+                    )
+                    PropagandaStatCard(
+                        title: "Industry",
+                        realValue: game.industrialOutput,
+                        propagandaValue: report.industrialOutput,
+                        showPropaganda: showPropaganda,
+                        icon: "hammer.fill"
+                    )
+                    PropagandaStatCard(
+                        title: "Food Supply",
+                        realValue: game.foodSupply,
+                        propagandaValue: report.foodSupply,
+                        showPropaganda: showPropaganda,
+                        icon: "leaf.fill"
+                    )
+                    PropagandaStatCard(
+                        title: "Intl. Standing",
+                        realValue: game.internationalStanding,
+                        propagandaValue: game.internationalStanding,  // Not propagandized
+                        showPropaganda: showPropaganda,
+                        icon: "globe"
+                    )
+                }
+            }
+            .padding(.horizontal, 15)
+
+            Divider()
+                .background(theme.borderTan)
+                .padding(.horizontal, 15)
+
+            // Stability indicators
+            VStack(alignment: .leading, spacing: 12) {
+                Text("STABILITY INDICATORS")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 12) {
+                    PropagandaStatCard(
+                        title: "Stability",
+                        realValue: game.stability,
+                        propagandaValue: max(60, game.stability + 15),
+                        showPropaganda: showPropaganda,
+                        icon: "building.2.fill"
+                    )
+                    PropagandaStatCard(
+                        title: "Popular Support",
+                        realValue: game.popularSupport,
+                        propagandaValue: max(65, game.popularSupport + 20),
+                        showPropaganda: showPropaganda,
+                        icon: "person.3.fill"
+                    )
+                    PropagandaStatCard(
+                        title: "Military Loyalty",
+                        realValue: game.militaryLoyalty,
+                        propagandaValue: max(70, game.militaryLoyalty + 10),
+                        showPropaganda: showPropaganda,
+                        icon: "shield.fill"
+                    )
+                    PropagandaStatCard(
+                        title: "Elite Loyalty",
+                        realValue: game.eliteLoyalty,
+                        propagandaValue: max(65, game.eliteLoyalty + 15),
+                        showPropaganda: showPropaganda,
+                        icon: "star.fill"
+                    )
+                }
+            }
+            .padding(.horizontal, 15)
+        }
+        .padding(.bottom, 120)
+    }
+
+    private var headlineBanner: some View {
+        VStack(spacing: 6) {
+            Text(showPropaganda ? report.overallHeadline : realHeadline)
+                .font(.system(size: 12, weight: .bold))
+                .tracking(0.3)
+                .foregroundColor(showPropaganda ? theme.sovietRed : theme.inkBlack)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 15)
+
+            if !showPropaganda && hasDivergence {
+                Text("Internal assessment differs from public reporting")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.orange)
+            }
+        }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .background(theme.parchmentDark)
+    }
+
+    private var realHeadline: String {
+        let health = game.economicHealthScore
+        if health >= 80 {
+            return "ASSESSMENT: Economic conditions genuinely favorable"
+        } else if health >= 60 {
+            return "ASSESSMENT: Economy stable with minor concerns"
+        } else if health >= 40 {
+            return "ASSESSMENT: Significant economic challenges require attention"
+        } else {
+            return "WARNING: Serious economic deterioration underway"
+        }
+    }
+
+    private var hasDivergence: Bool {
+        abs(game.industrialOutput - report.industrialOutput) > 5 ||
+        abs(game.foodSupply - report.foodSupply) > 5
+    }
+}
+
+// MARK: - Propaganda Stat Card
+
+struct PropagandaStatCard: View {
+    let title: String
+    let realValue: Int
+    let propagandaValue: Int
+    let showPropaganda: Bool
+    let icon: String
+    @Environment(\.theme) var theme
+
+    private var displayValue: Int {
+        showPropaganda ? propagandaValue : realValue
+    }
+
+    private var hasDivergence: Bool {
+        abs(propagandaValue - realValue) > 5
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Icon and value
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(theme.accentGold)
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(displayValue)")
+                        .font(.system(size: 24, weight: .bold, design: .monospaced))
+                        .foregroundColor(valueColor)
+
+                    // Show divergence indicator when viewing reality
+                    if !showPropaganda && hasDivergence {
+                        HStack(spacing: 2) {
+                            Image(systemName: propagandaValue > realValue ? "arrow.down" : "arrow.up")
+                                .font(.system(size: 8))
+                            Text("vs public")
+                                .font(.system(size: 8))
+                        }
+                        .foregroundColor(.orange)
+                    }
+                }
+            }
+
+            // Progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(theme.parchmentDark)
+                        .frame(height: 6)
+
+                    Rectangle()
+                        .fill(valueColor)
+                        .frame(width: geometry.size.width * CGFloat(displayValue) / 100, height: 6)
+                }
+                .cornerRadius(3)
+            }
+            .frame(height: 6)
+
+            // Title
+            HStack {
+                Text(title.uppercased())
+                    .font(.system(size: 9, weight: .medium))
+                    .tracking(0.5)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(hasDivergence && !showPropaganda ? Color.orange.opacity(0.5) : theme.borderTan, lineWidth: 1)
+        )
+    }
+
+    private var valueColor: Color {
+        switch displayValue {
+        case 70...: return .green
+        case 40..<70: return theme.accentGold
+        case 20..<40: return .orange
+        default: return .red
+        }
+    }
+}
+
+// MARK: - Enhanced Five Year Plan View
+
+struct EnhancedFiveYearPlanView: View {
+    @Bindable var game: Game
+    let showPropaganda: Bool
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Full wheel visualization
+            FiveYearPlanWheelView(game: game, showPropaganda: showPropaganda)
+                .padding(.horizontal, 15)
+
+            // Sector details
+            VStack(alignment: .leading, spacing: 12) {
+                Text("SECTOR PERFORMANCE")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                ForEach(sectors, id: \.name) { sector in
+                    EnhancedSectorProgressRow(
+                        sector: sector,
+                        showPropaganda: showPropaganda
+                    )
+                }
+            }
+            .padding(.horizontal, 15)
+
+            // Propaganda headline
+            if showPropaganda {
+                propagandaHeadline
+                    .padding(.horizontal, 15)
+            }
+        }
+        .padding(.bottom, 120)
+    }
+
+    private var sectors: [EnhancedPlanSector] {
+        let report = EconomicPropagandaService.shared.generatePropagandaReport(for: game)
+
+        return [
+            EnhancedPlanSector(
+                name: "Heavy Industry",
+                realValue: game.industrialOutput,
+                propagandaValue: report.industrialOutput,
+                target: 100,
+                icon: "gearshape.fill"
+            ),
+            EnhancedPlanSector(
+                name: "Agriculture",
+                realValue: game.foodSupply,
+                propagandaValue: report.foodSupply,
+                target: 100,
+                icon: "leaf.fill"
+            ),
+            EnhancedPlanSector(
+                name: "Energy & Mining",
+                realValue: (game.industrialOutput + game.treasury) / 2,
+                propagandaValue: (report.industrialOutput + 60) / 2,
+                target: 100,
+                icon: "bolt.fill"
+            ),
+            EnhancedPlanSector(
+                name: "Infrastructure",
+                realValue: game.stability,
+                propagandaValue: max(60, game.stability + 15),
+                target: 100,
+                icon: "road.lanes"
+            )
+        ]
+    }
+
+    private var propagandaHeadline: some View {
+        let report = EconomicPropagandaService.shared.generatePropagandaReport(for: game)
+
+        return VStack(spacing: 8) {
+            Text(report.fiveYearPlanHeadline)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(theme.sovietRed)
+                .multilineTextAlignment(.center)
+
+            Text("- People's Economic Digest")
+                .font(.system(size: 10, weight: .medium))
+                .italic()
+                .foregroundColor(theme.inkGray)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+    }
+}
+
+struct EnhancedPlanSector {
+    let name: String
+    let realValue: Int
+    let propagandaValue: Int
+    let target: Int
+    let icon: String
+}
+
+struct EnhancedSectorProgressRow: View {
+    let sector: EnhancedPlanSector
+    let showPropaganda: Bool
+    @Environment(\.theme) var theme
+
+    private var displayValue: Int {
+        showPropaganda ? sector.propagandaValue : sector.realValue
+    }
+
+    private var hasDivergence: Bool {
+        abs(sector.propagandaValue - sector.realValue) > 5
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: sector.icon)
+                .font(.system(size: 16))
+                .foregroundColor(theme.accentGold)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(sector.name)
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkBlack)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Text("\(displayValue)/\(sector.target)")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(theme.inkGray)
+
+                        if !showPropaganda && hasDivergence {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
+
+                ProgressView(value: Double(displayValue) / Double(sector.target))
+                    .tint(progressColor)
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(hasDivergence && !showPropaganda ? Color.orange.opacity(0.5) : theme.borderTan, lineWidth: 1)
+        )
+    }
+
+    private var progressColor: Color {
+        let ratio = Double(displayValue) / Double(sector.target)
+        if ratio >= 0.9 { return .green }
+        if ratio >= 0.7 { return theme.accentGold }
+        if ratio >= 0.5 { return .orange }
+        return .red
     }
 }
 
