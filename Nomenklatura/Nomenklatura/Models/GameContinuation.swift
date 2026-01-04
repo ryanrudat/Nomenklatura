@@ -297,38 +297,119 @@ enum GameOverReason: String, Codable {
 extension Game {
     /// Check if player can continue through heir succession
     func canContinueWithHeir() -> Bool {
+        // Get current succession mode
+        let mode = SuccessionLawService.shared.getCurrentMode(game: self)
+
+        // Check active heir relationships
         let activeHeirs = successorRelationships.filter { $0.isActive && !$0.becameRival }
-        return !activeHeirs.isEmpty
+
+        if activeHeirs.isEmpty {
+            // No heirs - can SC select one?
+            return mode == .collectiveDecision || mode == .partyElection
+        }
+
+        // Check if at least one heir is eligible under current law
+        for relationship in activeHeirs {
+            if let heir = characters.first(where: { $0.id == relationship.protegeId }) {
+                let isFamily = relationship.protegeTitle?.lowercased().contains("son") == true ||
+                               relationship.protegeTitle?.lowercased().contains("daughter") == true
+                let eligibility = SuccessionLawService.shared.isHeirEligible(
+                    heir: heir,
+                    isFamily: isFamily,
+                    game: self
+                )
+                if eligibility.isEligible {
+                    return true
+                }
+            }
+        }
+
+        // No eligible heirs found
+        return false
     }
 
-    /// Get available heirs for succession
+    /// Get available heirs for succession, filtered by law eligibility
     func getAvailableHeirs() -> [HeirCandidate] {
+        let mode = SuccessionLawService.shared.getCurrentMode(game: self)
+
         return successorRelationships
             .filter { $0.isActive && !$0.becameRival }
-            .map { relationship in
-                HeirCandidate(
+            .compactMap { relationship -> HeirCandidate? in
+                // Find the actual character
+                guard let heir = characters.first(where: { $0.id == relationship.protegeId }) else {
+                    return nil
+                }
+
+                // Determine family status
+                let isFamily = relationship.protegeTitle?.lowercased().contains("son") == true ||
+                               relationship.protegeTitle?.lowercased().contains("daughter") == true ||
+                               relationship.protegeTitle?.lowercased().contains("child") == true
+
+                // Check law eligibility
+                let eligibility = SuccessionLawService.shared.isHeirEligible(
+                    heir: heir,
+                    isFamily: isFamily,
+                    game: self
+                )
+
+                guard eligibility.isEligible else {
+                    return nil
+                }
+
+                // Calculate law-adjusted inheritance
+                let heirRelationship: HeirRelationship = isFamily ? .child : .protege
+                let inheritanceResult = SuccessionLawService.shared.calculateInheritance(
+                    heir: heir,
+                    relationship: heirRelationship,
+                    isFamily: isFamily,
+                    game: self
+                )
+
+                return HeirCandidate(
                     id: relationship.id,
                     characterId: relationship.protegeId,
                     name: relationship.protegeName,
                     currentTitle: relationship.protegeTitle,
-                    currentPosition: 2, // Would need to look up actual position
+                    currentPosition: heir.positionIndex ?? 2,
                     relationshipStrength: relationship.strength,
                     loyalty: relationship.protegeLoyalty,
                     competence: relationship.protegeCompetence,
                     ambition: relationship.protegeAmbition,
-                    networkInheritance: calculateNetworkInheritance(strength: relationship.strength),
-                    relationshipInheritance: calculateRelationshipInheritance(strength: relationship.strength)
+                    networkInheritance: inheritanceResult.finalPercent,
+                    relationshipInheritance: calculateRelationshipInheritance(
+                        strength: relationship.strength,
+                        mode: mode
+                    )
                 )
             }
             .sorted { $0.heirScore > $1.heirScore }
     }
 
-    private func calculateNetworkInheritance(strength: Int) -> Int {
-        // Stronger relationship = more network transfer
-        return min(80, strength / 2 + 20)
+    /// Get the current succession law mode for display
+    var currentSuccessionMode: SuccessionMode {
+        SuccessionLawService.shared.getCurrentMode(game: self)
     }
 
-    private func calculateRelationshipInheritance(strength: Int) -> Int {
-        return min(70, strength / 2 + 10)
+    /// Get Standing Committee power over succession
+    var scSuccessionPower: SCSuccessionPower {
+        currentSuccessionMode.standingCommitteePower
+    }
+
+    private func calculateRelationshipInheritance(strength: Int, mode: SuccessionMode) -> Int {
+        var base = min(70, strength / 2 + 10)
+
+        // Law modifiers
+        switch mode {
+        case .familyPrivilege:
+            base += 10  // Family privilege helps relationship transfer
+        case .partyElection:
+            base -= 10  // Competition means less loyalty transfer
+        case .revolutionaryContinuity:
+            base += 5   // Autocratic succession maintains relationships
+        default:
+            break
+        }
+
+        return max(10, min(80, base))
     }
 }

@@ -314,6 +314,16 @@ extension Law {
         appointmentApproval.beneficiaries = ["youth_league"]  // Merit-based appointments help meritocrats
         laws.append(appointmentApproval)
 
+        let leadershipSuccession = Law(
+            lawId: "leadership_succession",
+            name: "Leadership Succession Protocol",
+            description: "Defines how leadership transitions occur upon death, removal, or retirement of senior officials. The Standing Committee collectively selects successors from approved candidates.",
+            category: .institutional
+        )
+        leadershipSuccession.beneficiaries = ["youth_league", "reformists"]  // Meritocrats prefer competitive selection
+        leadershipSuccession.losers = ["princelings"]  // Dynasties prefer family privilege
+        laws.append(leadershipSuccession)
+
         // POLITICAL LAWS
         let partyElections = Law(
             lawId: "party_elections",
@@ -426,6 +436,42 @@ struct LawChangeRequirement {
                 canBeForced: true,
                 forcePowerRequired: 95
             )
+        }
+
+        // Special case: leadership succession has different requirements per state
+        if law.lawId == "leadership_succession" {
+            switch toState {
+            case .modifiedWeak:  // Designated Successor - player can name heir, SC confirms
+                return LawChangeRequirement(
+                    powerRequired: 70,
+                    factionSupportRequired: ["princelings": 50],  // Dynasties support this
+                    canBeForced: false,
+                    forcePowerRequired: 85
+                )
+            case .modifiedStrong:  // Family Privilege - children get priority
+                return LawChangeRequirement(
+                    powerRequired: 80,
+                    factionSupportRequired: ["princelings": 40, "youth_league": 60],  // Strong opposition from meritocrats
+                    canBeForced: true,
+                    forcePowerRequired: 92
+                )
+            case .strengthened:  // Party Election - open competition
+                return LawChangeRequirement(
+                    powerRequired: 65,
+                    factionSupportRequired: ["reformists": 50, "youth_league": 40],  // Reformists and meritocrats support
+                    canBeForced: false,
+                    forcePowerRequired: 80
+                )
+            case .abolished:  // Revolutionary Continuity - autocratic succession
+                return LawChangeRequirement(
+                    powerRequired: 90,
+                    factionSupportRequired: ["old_guard": 60],  // Only old guard accepts autocracy
+                    canBeForced: true,
+                    forcePowerRequired: 98
+                )
+            default:
+                break
+            }
         }
 
         // Determine faction support needed based on beneficiaries/losers

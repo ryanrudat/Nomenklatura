@@ -88,6 +88,222 @@ struct SCProposalGenerator {
         return results
     }
 
+    // MARK: - Non-Proposal Political Actions
+
+    /// Generate non-proposal political actions from SC members
+    /// These include: attacks on colleagues, resignation threats, backroom deals, voting bloc formation
+    /// Called from PoliticalAIService to supplement proposal generation with living political drama
+    static func generateNonProposalActions(game: Game) -> [SCPoliticalAction] {
+        guard let committee = game.standingCommittee else { return [] }
+
+        var actions: [SCPoliticalAction] = []
+
+        // Low base chance per turn (5%) - these are dramatic events
+        guard Int.random(in: 1...100) <= 8 else { return [] }
+
+        let members = committee.memberIds.compactMap { memberId in
+            game.characters.first(where: { $0.templateId == memberId && $0.isActive })
+        }
+
+        guard members.count >= 2 else { return [] }
+
+        // Check for various non-proposal actions
+
+        // 1. SC member attacks another member (based on grudges)
+        if let attackAction = checkSCMemberAttack(members: members, game: game) {
+            actions.append(attackAction)
+        }
+
+        // 2. Resignation threat (under pressure or frustrated)
+        if let resignAction = checkResignationThreat(members: members, game: game) {
+            actions.append(resignAction)
+        }
+
+        // 3. Voting bloc formation
+        if let blocAction = checkVotingBlocFormation(members: members, game: game) {
+            actions.append(blocAction)
+        }
+
+        // 4. Backroom deal (if player has high network)
+        if game.network >= 50, let dealAction = checkBackroomDeal(members: members, game: game) {
+            actions.append(dealAction)
+        }
+
+        // Limit to 1 action per turn
+        return Array(actions.prefix(1))
+    }
+
+    /// Check if an SC member attacks another based on grudges
+    private static func checkSCMemberAttack(members: [GameCharacter], game: Game) -> SCPoliticalAction? {
+        // Find members with grudges against other SC members
+        for attacker in members {
+            for target in members where attacker.id != target.id {
+                // Check if there's a hostile relationship
+                if let relationship = game.npcRelationships.first(where: {
+                    $0.sourceCharacterId == attacker.templateId &&
+                    $0.targetCharacterId == target.templateId &&
+                    $0.grudgeLevel >= 50
+                }) {
+                    // Ruthless attackers are more likely to strike
+                    let attackChance = (attacker.personalityRuthless / 3) + (relationship.grudgeLevel / 4)
+                    guard Int.random(in: 1...100) <= attackChance else { continue }
+
+                    let attackTypes: [(String, String, SCVisibilityLevel)] = [
+                        ("Confrontation in Committee",
+                         "During a heated Standing Committee session, \(attacker.name) openly challenged \(target.name)'s competence, demanding an explanation for recent failures. The room fell silent as the two traded accusations.",
+                         .public),
+                        ("Public Criticism",
+                         "\(attacker.name) delivered a pointed critique of \(target.name)'s department in the latest Politburo review, citing 'systematic failures' and 'inadequate leadership.' The attack caught many off guard.",
+                         .public),
+                        ("Investigation Request",
+                         "Your sources report that \(attacker.name) has privately requested an investigation into \(target.name)'s conduct. The CCDI is reportedly considering the request.",
+                         .intel),
+                        ("Coalition Against",
+                         "\(attacker.name) is quietly building a coalition of SC members opposed to \(target.name). Informal discussions suggest a coordinated effort to isolate them.",
+                         .secret)
+                    ]
+
+                    let attack = attackTypes.randomElement()!
+
+                    return SCPoliticalAction(
+                        actionType: .scAttack,
+                        headline: attack.0,
+                        details: attack.1,
+                        visibilityLevel: attack.2,
+                        initiator: attacker,
+                        target: target
+                    )
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Check if an SC member threatens resignation
+    private static func checkResignationThreat(members: [GameCharacter], game: Game) -> SCPoliticalAction? {
+        for member in members {
+            // Conditions for resignation threat:
+            // - Under investigation
+            // - Very frustrated goals
+            // - Low security need (feels threatened)
+            // - OR principled opposition (high ideological commitment but losing faction)
+
+            var threatChance = 0
+
+            if member.currentStatus == .underInvestigation {
+                threatChance += 15
+            }
+
+            if let goal = member.primaryGoal, goal.frustrationLevel > 80 {
+                threatChance += 10
+            }
+
+            if member.npcNeeds.security < 20 {
+                threatChance += 8
+            }
+
+            // Principled resignation (rare but dramatic)
+            if member.npcNeeds.ideologicalCommitment > 80 {
+                // Check if their faction is losing
+                if let factionId = member.factionId,
+                   let faction = game.factions.first(where: { $0.factionId == factionId }),
+                   faction.power < 30 {
+                    threatChance += 12
+                }
+            }
+
+            guard threatChance > 0 && Int.random(in: 1...100) <= threatChance else { continue }
+
+            let threatTypes: [(String, String, SCVisibilityLevel)] = [
+                ("Resignation Threat",
+                 "In a dramatic moment, \(member.name) threatened to resign from the Standing Committee, citing 'impossible conditions' and 'lack of support.' Whether genuine or tactical, the threat has sent ripples through the leadership.",
+                 .public),
+                ("Health Retirement Rumor",
+                 "Whispers suggest \(member.name) is considering stepping down from the Standing Committee, citing health concerns. Some believe this is a tactical retreat; others sense genuine exhaustion.",
+                 .rumor),
+                ("Principled Stand",
+                 "\(member.name) is reportedly preparing a statement of resignation in protest of current policies. Such an act would be unprecedented and deeply destabilizing.",
+                 .secret)
+            ]
+
+            let threat = threatTypes.randomElement()!
+
+            return SCPoliticalAction(
+                actionType: .resignationThreat,
+                headline: threat.0,
+                details: threat.1,
+                visibilityLevel: threat.2,
+                initiator: member
+            )
+        }
+        return nil
+    }
+
+    /// Check for voting bloc formation
+    private static func checkVotingBlocFormation(members: [GameCharacter], game: Game) -> SCPoliticalAction? {
+        // Find members of the same faction
+        var factionMembers: [String: [GameCharacter]] = [:]
+        for member in members {
+            if let factionId = member.factionId {
+                factionMembers[factionId, default: []].append(member)
+            }
+        }
+
+        // Look for faction with 2+ SC members who might coordinate
+        for (factionId, factionMemberList) in factionMembers where factionMemberList.count >= 2 {
+            guard let faction = game.factions.first(where: { $0.factionId == factionId }) else { continue }
+
+            // 10% chance if faction has multiple SC members
+            guard Int.random(in: 1...100) <= 10 else { continue }
+
+            let leadMember = factionMemberList.first!
+            let otherMembers = factionMemberList.dropFirst().map { $0.name }.joined(separator: " and ")
+
+            return SCPoliticalAction(
+                actionType: .votingBlocFormed,
+                headline: "\(faction.name) Faction Consolidating",
+                details: "Your sources report that \(leadMember.name) has been coordinating with \(otherMembers) to form a unified voting bloc within the Standing Committee. They appear to be aligning their positions on upcoming matters.",
+                visibilityLevel: .intel,
+                initiator: leadMember,
+                involvedFaction: faction
+            )
+        }
+        return nil
+    }
+
+    /// Check for backroom deals (high network reveals these)
+    private static func checkBackroomDeal(members: [GameCharacter], game: Game) -> SCPoliticalAction? {
+        guard members.count >= 2 else { return nil }
+
+        // 15% chance if player has network >= 50
+        guard Int.random(in: 1...100) <= 15 else { return nil }
+
+        let member1 = members.randomElement()!
+        let member2 = members.filter { $0.id != member1.id }.randomElement()!
+
+        let deals: [(String, String)] = [
+            ("Private Meeting Observed",
+             "Your informants report a lengthy private meeting between \(member1.name) and \(member2.name) at an undisclosed location. The subject of their discussion remains unknown, but such meetings rarely concern routine matters."),
+            ("Unusual Coordination",
+             "Analysis of recent votes shows unusual coordination between \(member1.name) and \(member2.name), suggesting a private understanding. They've voted identically on the last several contentious issues."),
+            ("Exchange of Favors",
+             "Sources suggest \(member1.name) and \(member2.name) have reached an informal agreement. \(member1.name) reportedly supported \(member2.name)'s recent initiative in exchange for future consideration on an unspecified matter."),
+            ("Secret Understanding",
+             "A trusted source reports that \(member1.name) and \(member2.name) have reached a secret understanding regarding committee business. Details are sparse, but your source believes it involves upcoming personnel decisions.")
+        ]
+
+        let deal = deals.randomElement()!
+
+        return SCPoliticalAction(
+            actionType: .backroomDeal,
+            headline: deal.0,
+            details: deal.1,
+            visibilityLevel: .secret,
+            initiator: member1,
+            target: member2
+        )
+    }
+
     /// Generate a guaranteed proposal when no NPC proposed this turn
     private static func generateGuaranteedProposal(committee: StandingCommittee, game: Game, excludeTitles: Set<String>) -> SCProposalResult? {
         // Pick a random SC member to generate a routine proposal
@@ -255,12 +471,20 @@ struct SCProposalGenerator {
             return factionProposal
         }
 
-        // 3. Goal advancement (active NPC goals)
+        // 3. Succession law change (faction interests, elderly leader, ambitious NPC)
+        // 15% base chance when conditions are met
+        if Int.random(in: 1...100) <= 15 {
+            if let successionProposal = generateSuccessionProposal(member: member, game: game, excludeTitles: excludeTitles) {
+                return successionProposal
+            }
+        }
+
+        // 4. Goal advancement (active NPC goals)
         if let goalProposal = generateGoalDrivenProposal(member: member, game: game, excludeTitles: excludeTitles) {
             return goalProposal
         }
 
-        // 4. Opportunistic (random beneficial proposal)
+        // 5. Opportunistic (random beneficial proposal)
         return generateOpportunisticProposal(member: member, game: game, excludeTitles: excludeTitles)
     }
 
@@ -932,6 +1156,202 @@ struct SCProposalGenerator {
         return available.randomElement()
     }
 
+    // MARK: - Succession Law Proposals
+
+    /// Generate proposals to change the leadership succession law
+    /// Triggers: elderly leader, faction interests, ambitious NPCs, recent succession failures
+    private static func generateSuccessionProposal(member: GameCharacter, game: Game, excludeTitles: Set<String>) -> ProposalContent? {
+        let currentMode = SuccessionLawService.shared.getCurrentMode(game: game)
+
+        // Check trigger conditions
+        var shouldPropose = false
+        var preferredMode: SuccessionMode? = nil
+
+        // 1. Check if General Secretary is elderly (succession becomes relevant)
+        let gsAge = Int(game.variables["general_secretary_age"] ?? "55") ?? 55
+        if gsAge >= 70 {
+            shouldPropose = true
+        }
+
+        // 2. Check faction interests - each faction prefers different succession modes
+        if let factionId = member.factionId {
+            switch factionId {
+            case "reformists", "youth_league":
+                // Meritocrats prefer open competition or collective decision
+                if currentMode == .familyPrivilege || currentMode == .revolutionaryContinuity {
+                    shouldPropose = true
+                    preferredMode = member.personalityAmbitious > 60 ? .partyElection : .collectiveDecision
+                }
+            case "princelings":
+                // Dynasties prefer family privilege
+                if currentMode != .familyPrivilege && currentMode != .designatedSuccessor {
+                    shouldPropose = true
+                    preferredMode = .familyPrivilege
+                }
+            case "old_guard", "conservatives":
+                // Old guard prefers stability/autocracy
+                if currentMode == .partyElection || currentMode == .collectiveDecision {
+                    shouldPropose = true
+                    preferredMode = .designatedSuccessor
+                }
+            default:
+                break
+            }
+        }
+
+        // 3. Ambitious NPCs seeking open competition (personal advantage)
+        if member.personalityAmbitious > 75 && currentMode != .partyElection {
+            shouldPropose = true
+            preferredMode = .partyElection
+        }
+
+        // 4. Low probability base chance for variety
+        if !shouldPropose && Int.random(in: 1...100) <= 5 {
+            shouldPropose = true
+        }
+
+        guard shouldPropose else { return nil }
+
+        // Generate appropriate proposal based on member's interests
+        var candidates: [ProposalContent] = []
+
+        // Proposals for each target succession mode
+        switch preferredMode ?? suggestModeForMember(member: member, game: game) {
+        case .collectiveDecision:
+            candidates.append(contentsOf: [
+                ProposalContent(
+                    title: "Restore Collective Leadership Principle",
+                    description: "\(member.name) proposes returning to the collective decision-making model for leadership succession, ensuring the Standing Committee has final say in selecting successors from approved candidates.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["eliteLoyalty": 5, "stability": 3]
+                ),
+                ProposalContent(
+                    title: "Strengthen Committee Authority in Succession",
+                    description: "\(member.name) proposes reinforcing the Standing Committee's role in leadership transitions, preventing any individual from unilaterally determining succession.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["eliteLoyalty": 4]
+                )
+            ])
+
+        case .designatedSuccessor:
+            candidates.append(contentsOf: [
+                ProposalContent(
+                    title: "Orderly Succession Protocol",
+                    description: "\(member.name) proposes allowing the current leader to designate a preferred successor, subject to Standing Committee confirmation, to ensure smooth transitions.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["stability": 5, "eliteLoyalty": -3]
+                ),
+                ProposalContent(
+                    title: "Successor Designation Framework",
+                    description: "\(member.name) proposes establishing a formal process for leadership to identify and prepare successors, with Committee oversight.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["stability": 4]
+                )
+            ])
+
+        case .familyPrivilege:
+            candidates.append(contentsOf: [
+                ProposalContent(
+                    title: "Revolutionary Family Continuity",
+                    description: "\(member.name) proposes recognizing that families with revolutionary credentials should receive priority consideration in succession, honoring the sacrifices of founding generations.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["eliteLoyalty": -5, "stability": 2]
+                ),
+                ProposalContent(
+                    title: "Hereditary Succession Rights",
+                    description: "\(member.name) proposes that family members of deceased leaders should receive preferential treatment in succession decisions, ensuring continuity of vision.",
+                    category: .policy,
+                    priority: .urgent,
+                    proposalType: .successionLawChange,
+                    effects: ["eliteLoyalty": -6, "popularSupport": -3]
+                )
+            ])
+
+        case .partyElection:
+            candidates.append(contentsOf: [
+                ProposalContent(
+                    title: "Democratic Centralism in Succession",
+                    description: "\(member.name) proposes that all eligible Politburo members should compete for succession through Party election, ensuring the most capable leader emerges.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["eliteLoyalty": 8, "stability": -5]
+                ),
+                ProposalContent(
+                    title: "Merit-Based Leadership Selection",
+                    description: "\(member.name) proposes expanding the pool of succession candidates to all senior officials, allowing open competition based on merit and accomplishment.",
+                    category: .policy,
+                    priority: .important,
+                    proposalType: .successionLawChange,
+                    effects: ["eliteLoyalty": 6, "stability": -4]
+                )
+            ])
+
+        case .revolutionaryContinuity:
+            candidates.append(contentsOf: [
+                ProposalContent(
+                    title: "Revolutionary Continuity Protocol",
+                    description: "\(member.name) proposes that in the interest of stability, the leader's designated successor should automatically assume power, without Committee intervention.",
+                    category: .policy,
+                    priority: .critical,
+                    proposalType: .successionLawChange,
+                    effects: ["stability": 8, "eliteLoyalty": -10, "popularSupport": -5]
+                ),
+                ProposalContent(
+                    title: "Consolidate Succession Authority",
+                    description: "\(member.name) proposes removing Standing Committee oversight from succession, allowing the current leader to directly choose their replacement.",
+                    category: .policy,
+                    priority: .urgent,
+                    proposalType: .successionLawChange,
+                    effects: ["stability": 6, "eliteLoyalty": -8]
+                )
+            ])
+        }
+
+        // Filter out already-used titles
+        let available = candidates.filter { !excludeTitles.contains($0.title) }
+        return available.randomElement()
+    }
+
+    /// Suggest succession mode based on member's personality and faction
+    private static func suggestModeForMember(member: GameCharacter, game: Game) -> SuccessionMode {
+        // Ambitious members prefer open competition
+        if member.personalityAmbitious > 70 {
+            return .partyElection
+        }
+
+        // Risk-averse prefer stability
+        if member.personalityAmbitious < 30 {
+            return .designatedSuccessor
+        }
+
+        // Faction-based preference
+        if let factionId = member.factionId {
+            switch factionId {
+            case "princelings":
+                return .familyPrivilege
+            case "reformists", "youth_league":
+                return .partyElection
+            case "old_guard":
+                return .revolutionaryContinuity
+            default:
+                return .collectiveDecision
+            }
+        }
+
+        return .collectiveDecision
+    }
+
     // MARK: - Helper Methods
 
     private static func hasAdvanceableGoals(member: GameCharacter, game: Game) -> Bool {
@@ -985,6 +1405,7 @@ struct ProposalContent {
         case welfareProgram
         case budgetChange
         case policyReview
+        case successionLawChange  // NEW: Proposals to change leadership succession law
     }
 }
 
@@ -993,4 +1414,31 @@ struct SCProposalResult {
     let sponsorName: String
     let proposal: ProposalContent
     let turnSubmitted: Int
+}
+
+// MARK: - SC Political Actions (Non-Proposal)
+
+struct SCPoliticalAction {
+    let actionType: SCPoliticalActionType
+    let headline: String
+    let details: String
+    let visibilityLevel: SCVisibilityLevel
+    var initiator: GameCharacter
+    var target: GameCharacter? = nil
+    var involvedFaction: GameFaction? = nil
+}
+
+/// Visibility levels for SC political actions (mirrors EventVisibilityLevel)
+enum SCVisibilityLevel: String, Codable {
+    case `public` = "public"
+    case rumor = "rumor"
+    case intel = "intel"
+    case secret = "secret"
+}
+
+enum SCPoliticalActionType: String, Codable {
+    case scAttack = "sc_attack"                 // SC member attacks another
+    case resignationThreat = "resignation_threat" // Member threatens to resign
+    case votingBlocFormed = "voting_bloc_formed"  // Faction coordinates votes
+    case backroomDeal = "backroom_deal"           // Secret deal between members
 }

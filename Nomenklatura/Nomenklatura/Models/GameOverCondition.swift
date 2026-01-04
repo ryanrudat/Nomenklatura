@@ -475,6 +475,12 @@ class GameOverChecker {
     private static func hasViableHeir(game: Game) -> Bool {
         // Check if player has designated an heir who is still viable
         guard let heirId = game.variables["designated_heir_id"] else {
+            // No designated heir - check if law allows SC selection
+            let mode = SuccessionLawService.shared.getCurrentMode(game: game)
+            if mode == .collectiveDecision || mode == .partyElection {
+                // SC can pick someone from available candidates
+                return hasAnyEligibleSuccessor(game: game)
+            }
             return false
         }
 
@@ -488,12 +494,56 @@ class GameOverChecker {
             return false
         }
 
-        // Heir must have reasonable standing to take over
-        guard heir.disposition >= 50 else {
+        // Check law-based eligibility
+        let isFamily = game.variables["heir_is_family"] == "true"
+        let eligibility = SuccessionLawService.shared.isHeirEligible(
+            heir: heir,
+            isFamily: isFamily,
+            game: game
+        )
+
+        guard eligibility.isEligible else {
+            // Heir not eligible under current law
             return false
         }
 
+        // If SC approval required, check if heir has enough support
+        if eligibility.requiresSCApproval {
+            // Heir needs reasonable standing + disposition for SC approval
+            guard heir.disposition >= 40 else {
+                return false
+            }
+        }
+
         return true
+    }
+
+    /// Check if there are any potential successors when no heir is designated
+    private static func hasAnyEligibleSuccessor(game: Game) -> Bool {
+        let mode = SuccessionLawService.shared.getCurrentMode(game: game)
+
+        // Find active characters who could be selected
+        let potentialSuccessors = game.characters.filter {
+            $0.isAlive && $0.isActive && $0.disposition >= 30
+        }
+
+        for candidate in potentialSuccessors {
+            let eligibility = SuccessionLawService.shared.isHeirEligible(
+                heir: candidate,
+                isFamily: false,
+                game: game
+            )
+            if eligibility.isEligible {
+                return true
+            }
+        }
+
+        // Also check successor relationships
+        let activeRelationships = game.successorRelationships.filter {
+            $0.isActive && !$0.becameRival
+        }
+
+        return !activeRelationships.isEmpty
     }
 
     private static func createGameOver(
@@ -554,47 +604,19 @@ struct HeirDesignation: Codable, Identifiable {
     var id: String = UUID().uuidString
     var heirCharacterId: UUID
     var heirName: String
-    var relationship: HeirRelationship
+    var relationship: HeirRelationship  // Defined in SuccessionLawService.swift
     var designatedTurn: Int
-    var inheritanceBonus: Int            // Percentage of standing/network inherited
+    var inheritanceBonus: Int           // Percentage of standing/network inherited
 
-    var isViable: Bool = true            // Can be invalidated if heir is purged/killed
-}
+    var isViable: Bool = true           // Can be invalidated if heir is purged/killed
 
-enum HeirRelationship: String, Codable, CaseIterable {
-    case child           // Family member - highest inheritance
-    case protege         // Political protege - good inheritance
-    case ally            // Trusted ally - moderate inheritance
-    case lieutenant      // Loyal subordinate - lower inheritance
-
-    var inheritanceMultiplier: Double {
-        switch self {
-        case .child: return 0.75        // Inherits 75% of standing/network
-        case .protege: return 0.60      // Inherits 60%
-        case .ally: return 0.45         // Inherits 45%
-        case .lieutenant: return 0.30   // Inherits 30%
-        }
-    }
-
-    var displayName: String {
-        switch self {
-        case .child: return "Family Member"
-        case .protege: return "Political Protege"
-        case .ally: return "Trusted Ally"
-        case .lieutenant: return "Loyal Lieutenant"
-        }
-    }
-
-    var description: String {
-        switch self {
-        case .child:
-            return "Blood ties ensure the strongest inheritance of your political capital"
-        case .protege:
-            return "Years of mentorship create a natural successor"
-        case .ally:
-            return "A proven ally can continue your work, though some connections will be lost"
-        case .lieutenant:
-            return "A loyal subordinate can pick up the mantle, but must rebuild much"
-        }
+    /// Calculate inheritance based on succession law
+    func calculateLawBasedInheritance(game: Game, heir: GameCharacter) -> InheritanceResult {
+        return SuccessionLawService.shared.calculateInheritance(
+            heir: heir,
+            relationship: relationship,
+            isFamily: relationship.isFamily,
+            game: game
+        )
     }
 }
