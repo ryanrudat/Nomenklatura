@@ -125,7 +125,7 @@ class SuccessionLawService {
         game: Game
     ) -> InheritanceResult {
         let mode = getCurrentMode(game: game)
-        var basePercent = mode.baseInheritancePercent
+        let basePercent = mode.baseInheritancePercent
 
         // Relationship modifiers
         let relationshipModifier = getRelationshipModifier(relationship: relationship)

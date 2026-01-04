@@ -520,7 +520,7 @@ class GameOverChecker {
 
     /// Check if there are any potential successors when no heir is designated
     private static func hasAnyEligibleSuccessor(game: Game) -> Bool {
-        let mode = SuccessionLawService.shared.getCurrentMode(game: game)
+        // Mode is used indirectly via SuccessionLawService.isHeirEligible
 
         // Find active characters who could be selected
         let potentialSuccessors = game.characters.filter {

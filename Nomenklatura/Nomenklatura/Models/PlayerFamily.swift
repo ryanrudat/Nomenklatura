@@ -16,7 +16,7 @@ import SwiftData
 // MARK: - Marriage Type
 
 /// How the marriage came about - affects dynamics and counsel quality
-enum MarriageType: String, Codable, CaseIterable {
+nonisolated enum MarriageType: String, Codable, CaseIterable, Sendable {
     case political    // Married for connections, functional relationship
     case love         // Genuine love match, but makes you vulnerable
     case arranged     // Party arranged it, spouse may resent
@@ -58,7 +58,7 @@ enum MarriageType: String, Codable, CaseIterable {
 // MARK: - Family Temperament
 
 /// How family members approach the political reality
-enum FamilyTemperament: String, Codable, CaseIterable {
+nonisolated enum FamilyTemperament: String, Codable, CaseIterable, Sendable {
     case devoted      // "The Party is always right, as are you"
     case questioning  // "Are you sure this is wise?"
     case ambitious    // "When will you be promoted?"
@@ -114,7 +114,7 @@ enum FamilyTemperament: String, Codable, CaseIterable {
 
 // MARK: - Family Relation Type
 
-enum FamilyRelationType: String, Codable, CaseIterable {
+nonisolated enum FamilyRelationType: String, Codable, CaseIterable, Sendable {
     case spouse
     case son
     case daughter
@@ -139,7 +139,7 @@ enum FamilyRelationType: String, Codable, CaseIterable {
 // MARK: - Player Family Member
 
 /// A member of the player's family
-struct PlayerFamilyMember: Codable, Identifiable {
+nonisolated struct PlayerFamilyMember: Codable, Identifiable, Sendable {
     var id: UUID = UUID()
     var name: String
     var relation: FamilyRelationType
