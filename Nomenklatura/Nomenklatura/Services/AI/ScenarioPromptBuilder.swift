@@ -53,7 +53,7 @@ struct ScenarioPromptBuilder {
 
         \(buildCategoryRequirement(category: selectedCategory, game: game))
 
-        \(buildInstructions(excludingVariety: true))
+        \(buildInstructions(excludingVariety: true, forTrack: ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared))
 
         \(buildOutputFormat(category: selectedCategory))
         """
@@ -254,12 +254,17 @@ struct ScenarioPromptBuilder {
         let positionScope = getPositionScopeGuidance(forIndex: game.currentPositionIndex)
         let currentDate = RevolutionaryCalendar.formatTurnFull(game.turnNumber)
 
+        // Get current career track for bureau-specific guidance
+        let currentTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+        let bureauScope = getBureauScopeGuidance(forTrack: currentTrack, atLevel: game.currentPositionIndex)
+
         return """
         ## CURRENT GAME STATE
 
         **Turn:** \(game.turnNumber) — Each turn represents 2 weeks (a fortnight)
         **Current Date:** \(currentDate)
         **Player Position:** \(positionTitle) (Level \(game.currentPositionIndex) of 8)
+        **Career Track:** \(currentTrack.displayName)
 
         **TIME PACING:** Since each turn = 2 weeks, things that would take time in reality should take multiple turns:
         - Small administrative tasks: same turn
@@ -270,6 +275,8 @@ struct ScenarioPromptBuilder {
         When creating scenarios about ongoing projects, reference realistic timeframes.
 
         \(positionScope)
+
+        \(bureauScope)
 
         **National Statistics:**
         - Stability: \(game.stability)/100 \(statWarning(game.stability))
@@ -289,6 +296,419 @@ struct ScenarioPromptBuilder {
 
         **Critical Concerns:** \(identifyCriticalStats(game: game))
         """
+    }
+
+    /// Get bureau-specific scope guidance based on the player's career track
+    private static func getBureauScopeGuidance(forTrack track: ExpandedCareerTrack, atLevel level: Int) -> String {
+        // Only provide bureau-specific guidance for specialized tracks (levels 2-6)
+        guard level >= 2 else { return "" }
+
+        switch track {
+        case .partyApparatus:
+            return getBureauGuidance_PartyApparatus(level: level)
+        case .stateMinistry:
+            return getBureauGuidance_StateMinistry(level: level)
+        case .securityServices:
+            return getBureauGuidance_SecurityServices(level: level)
+        case .foreignAffairs:
+            return getBureauGuidance_ForeignAffairs(level: level)
+        case .economicPlanning:
+            return getBureauGuidance_EconomicPlanning(level: level)
+        case .militaryPolitical:
+            return getBureauGuidance_MilitaryPolitical(level: level)
+        case .shared, .regional:
+            return ""
+        }
+    }
+
+    // MARK: - Bureau-Specific Guidance (Party Apparatus)
+
+    private static func getBureauGuidance_PartyApparatus(level: Int) -> String {
+        let baseGuidance = """
+        **Bureau Focus:** PARTY APPARATUS (Central Committee)
+        You work within the ideological and personnel heart of the Party. Your concerns are:
+        - Cadre selection and vetting - who rises, who falls
+        - Ideological purity and doctrinal interpretation
+        - Party discipline and internal investigations
+        - Propaganda messaging and cultural orthodoxy
+        - Managing relationships between Party organs
+
+        """
+
+        switch level {
+        case 2: // Instructor of the Central Committee
+            return baseGuidance + """
+            **Level-Specific Scope:** As CC Instructor, you handle:
+            - Investigating complaints against lower cadres
+            - Verifying ideological credentials of nominees
+            - Attending endless meetings on doctrinal interpretation
+            - Writing reports on local Party organizations
+            DO NOT involve this player in top-level personnel decisions or Politburo politics.
+            """
+        case 3: // Deputy Head of CC Department
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Department Head, you handle:
+            - Managing a team of instructors and investigators
+            - Preparing personnel files for your superior's review
+            - Mediating disputes between regional Party organs
+            - Implementing policy directives from above
+            You have real influence but remain subordinate to Department leadership.
+            """
+        case 4: // Head of CC Department
+            return baseGuidance + """
+            **Level-Specific Scope:** As Department Head, you control:
+            - All personnel decisions within your department's portfolio
+            - Direct access to CC Secretaries for major issues
+            - Authority to launch investigations into cadre behavior
+            - Significant influence over regional appointments
+            You are a person of consequence whose favor is sought.
+            """
+        case 5: // Secretary of the Central Committee
+            return baseGuidance + """
+            **Level-Specific Scope:** As CC Secretary, you are:
+            - One of the Party's senior leaders
+            - Responsible for entire policy domains (ideology, personnel, propaganda)
+            - A regular participant in high-level strategy sessions
+            - Capable of making or breaking careers with a word
+            Your decisions shape Party doctrine and personnel across the nation.
+            """
+        case 6: // Second Secretary
+            return baseGuidance + """
+            **Level-Specific Scope:** As Second Secretary, you are:
+            - The second-most powerful person in the Party apparatus
+            - The General Secretary's right hand on Party matters
+            - The gatekeeper for CC personnel and ideology
+            - A kingmaker who controls who rises in the Party
+            Only the General Secretary outranks you in Party affairs.
+            """
+        default:
+            return baseGuidance
+        }
+    }
+
+    // MARK: - Bureau-Specific Guidance (State Ministry)
+
+    private static func getBureauGuidance_StateMinistry(level: Int) -> String {
+        let baseGuidance = """
+        **Bureau Focus:** STATE MINISTRY (Council of Ministers)
+        You work within the governmental machinery that runs the state. Your concerns are:
+        - Policy implementation and ministerial coordination
+        - Budget allocations and resource distribution
+        - Managing the vast state bureaucracy
+        - Balancing Party directives with practical governance
+        - Dealing with the gap between plans and reality
+
+        """
+
+        switch level {
+        case 2: // Deputy Minister
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Minister, you handle:
+            - Day-to-day operations within your ministry
+            - Coordinating between departments and regional offices
+            - Preparing reports and briefings for the Minister
+            - Firefighting when plans fail to meet reality
+            You have real authority but answer to your Minister.
+            """
+        case 3: // First Deputy Minister
+            return baseGuidance + """
+            **Level-Specific Scope:** As First Deputy Minister, you handle:
+            - Standing in for the Minister in their absence
+            - Managing inter-ministerial coordination
+            - Overseeing major projects and initiatives
+            - Building relationships with other ministries
+            You are the Minister's trusted second-in-command.
+            """
+        case 4: // Minister
+            return baseGuidance + """
+            **Level-Specific Scope:** As Minister, you control:
+            - Your entire ministry and its vast apparatus
+            - Budget requests and resource allocation within your domain
+            - Direct relationships with other Ministers and Council leadership
+            - Implementation of national policy in your sector
+            You are a member of the Council of Ministers with significant power.
+            """
+        case 5: // Deputy Chairman of Council of Ministers
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Chairman, you oversee:
+            - Multiple ministries within your portfolio
+            - Cross-sector coordination and major national projects
+            - Direct participation in Council of Ministers decisions
+            - Resolution of inter-ministerial disputes
+            You are among the most powerful administrators in the state.
+            """
+        case 6: // First Deputy Chairman
+            return baseGuidance + """
+            **Level-Specific Scope:** As First Deputy Chairman, you are:
+            - The second-most powerful figure in state administration
+            - The Chairman's right hand on governmental matters
+            - Coordinator of the entire ministerial apparatus
+            - A key voice in all major state decisions
+            Only the Chairman of the Council of Ministers outranks you in state affairs.
+            """
+        default:
+            return baseGuidance
+        }
+    }
+
+    // MARK: - Bureau-Specific Guidance (Security Services)
+
+    private static func getBureauGuidance_SecurityServices(level: Int) -> String {
+        let baseGuidance = """
+        **Bureau Focus:** SECURITY SERVICES (Bureau of People's Security - BPS)
+        You work within the state's security and intelligence apparatus. Your concerns are:
+        - Counter-intelligence and catching foreign spies
+        - Internal surveillance and monitoring dissent
+        - Shuanggui detention and political investigations
+        - Protecting state secrets and key personnel
+        - The paranoid world of loyalty verification
+
+        """
+
+        switch level {
+        case 2: // Senior Investigator
+            return baseGuidance + """
+            **Level-Specific Scope:** As Senior Investigator, you handle:
+            - Running investigations into suspected counter-revolutionaries
+            - Interrogating suspects and building cases
+            - Managing informant networks in your assigned area
+            - Writing reports that could destroy careers or lives
+            Your work is hands-on and often grim. You see the worst.
+            """
+        case 3: // Deputy Directorate Chief
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Directorate Chief, you handle:
+            - Managing teams of investigators and surveillance operatives
+            - Coordinating with other security directorates
+            - Briefing superiors on ongoing operations
+            - Deciding which leads to pursue, which to shelve
+            You have real power over investigations but answer to your Chief.
+            """
+        case 4: // Directorate Chief
+            return baseGuidance + """
+            **Level-Specific Scope:** As Directorate Chief, you control:
+            - An entire directorate (counter-intelligence, surveillance, etc.)
+            - Operations affecting hundreds or thousands of targets
+            - Direct access to BPS leadership for major operations
+            - Authority to authorize arrests and detentions
+            You are a feared figure whose attention terrifies.
+            """
+        case 5: // First Deputy Director of BPS
+            return baseGuidance + """
+            **Level-Specific Scope:** As First Deputy Director, you oversee:
+            - Multiple directorates across the security apparatus
+            - Coordination with foreign intelligence services
+            - Protection of top Party leadership
+            - Major operations with national implications
+            You are among the most feared individuals in the state.
+            """
+        case 6: // Director of State Protection (BPS)
+            return baseGuidance + """
+            **Level-Specific Scope:** As Director of BPS, you are:
+            - The supreme authority over state security
+            - Privy to every secret, every file, every sin
+            - The General Secretary's shield against all threats
+            - Capable of destroying anyone with a word
+            You hold the sword and shield of the revolution.
+            """
+        default:
+            return baseGuidance
+        }
+    }
+
+    // MARK: - Bureau-Specific Guidance (Foreign Affairs)
+
+    private static func getBureauGuidance_ForeignAffairs(level: Int) -> String {
+        let baseGuidance = """
+        **Bureau Focus:** FOREIGN AFFAIRS (Ministry of Foreign Affairs - MFA)
+        You work within the diplomatic apparatus. Your concerns are:
+        - Managing relations with foreign powers
+        - Navigating Cold War tensions between East and West
+        - Trade negotiations and international agreements
+        - Protecting PSR citizens abroad
+        - Balancing Soviet expectations with national interests
+
+        """
+
+        switch level {
+        case 2: // Embassy Counselor
+            return baseGuidance + """
+            **Level-Specific Scope:** As Embassy Counselor, you handle:
+            - Day-to-day diplomatic functions at a foreign posting
+            - Cultivating contacts in the host country
+            - Preparing cables and reports for the Ministry
+            - Managing visa and consular matters
+            You see the world beyond our borders firsthand.
+            """
+        case 3: // Ambassador
+            return baseGuidance + """
+            **Level-Specific Scope:** As Ambassador, you are:
+            - The PSR's representative to a foreign nation
+            - Responsible for all diplomatic relations in your country
+            - A key source of intelligence on foreign intentions
+            - Empowered to negotiate within your mandate
+            You speak for the Republic abroad.
+            """
+        case 4: // Deputy Minister of Foreign Affairs
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Minister, you oversee:
+            - Multiple regional desks or functional departments
+            - Coordination with ambassadors across your portfolio
+            - Preparation of positions for major negotiations
+            - Direct participation in significant diplomatic encounters
+            You shape foreign policy within your domain.
+            """
+        case 5: // First Deputy Minister
+            return baseGuidance + """
+            **Level-Specific Scope:** As First Deputy Minister, you handle:
+            - The full spectrum of foreign relations
+            - Standing in for the Minister at major events
+            - Coordination with intelligence on foreign matters
+            - Direct relations with key foreign governments
+            You are one of the architects of our foreign policy.
+            """
+        case 6: // Minister of Foreign Affairs
+            return baseGuidance + """
+            **Level-Specific Scope:** As Foreign Minister, you are:
+            - The voice of the PSR to the world
+            - A key player in superpower negotiations
+            - The manager of all diplomatic relationships
+            - A member of the highest leadership councils
+            You represent the Republic on the world stage.
+            """
+        default:
+            return baseGuidance
+        }
+    }
+
+    // MARK: - Bureau-Specific Guidance (Economic Planning)
+
+    private static func getBureauGuidance_EconomicPlanning(level: Int) -> String {
+        let baseGuidance = """
+        **Bureau Focus:** ECONOMIC PLANNING (State Planning Commission - Gosplan)
+        You work within the command economy apparatus. Your concerns are:
+        - Setting and enforcing production quotas
+        - Allocating resources across the economy
+        - Industrial development and modernization
+        - Managing the gap between plans and reality
+        - Balancing ideological goals with practical constraints
+
+        """
+
+        switch level {
+        case 2: // Senior Economist
+            return baseGuidance + """
+            **Level-Specific Scope:** As Senior Economist, you handle:
+            - Analyzing production data from factories and farms
+            - Calculating quotas and resource requirements
+            - Writing reports on plan fulfillment
+            - Investigating discrepancies in production figures
+            You deal with the numbers behind the propaganda.
+            """
+        case 3: // Department Head of Planning Commission
+            return baseGuidance + """
+            **Level-Specific Scope:** As Department Head, you handle:
+            - Coordinating planning for an entire economic sector
+            - Managing teams of economists and inspectors
+            - Negotiating with ministries over resource allocation
+            - Defending your department's quotas to leadership
+            You have real influence over the shape of the economy.
+            """
+        case 4: // Deputy Chairman of Planning Commission
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Chairman, you oversee:
+            - Multiple departments within the Planning Commission
+            - Major industrial projects and initiatives
+            - Coordination with the Council of Ministers on economic matters
+            - Resolution of inter-sectoral disputes over resources
+            You are a key architect of the five-year plans.
+            """
+        case 5: // First Deputy Chairman
+            return baseGuidance + """
+            **Level-Specific Scope:** As First Deputy Chairman, you handle:
+            - Oversight of the entire planning apparatus
+            - Direct participation in high-level economic decisions
+            - Coordination with Party leadership on economic policy
+            - Managing crises when plans fail to materialize
+            You are one of the most powerful economic figures in the state.
+            """
+        case 6: // Chairman of State Planning
+            return baseGuidance + """
+            **Level-Specific Scope:** As Chairman of Gosplan, you are:
+            - The supreme authority over economic planning
+            - Architect of five-year plans affecting millions
+            - A key voice in all resource allocation decisions
+            - Responsible for making the command economy function
+            You hold the economic fate of the nation in your hands.
+            """
+        default:
+            return baseGuidance
+        }
+    }
+
+    // MARK: - Bureau-Specific Guidance (Military-Political)
+
+    private static func getBureauGuidance_MilitaryPolitical(level: Int) -> String {
+        let baseGuidance = """
+        **Bureau Focus:** MILITARY-POLITICAL (Main Political Directorate - MPA)
+        You work within the military's political control apparatus. Your concerns are:
+        - Ensuring military loyalty to the Party
+        - Political education of soldiers and officers
+        - Monitoring the reliability of military commanders
+        - Coordinating between military and Party leadership
+        - Managing the balance between military effectiveness and political control
+
+        """
+
+        switch level {
+        case 2: // Regimental Political Officer
+            return baseGuidance + """
+            **Level-Specific Scope:** As Regimental Political Officer, you handle:
+            - Political education of soldiers in your regiment
+            - Monitoring morale and ideological reliability
+            - Reporting on the political mood of the troops
+            - Mediating between military commanders and Party requirements
+            You are the Party's eyes and ears at the ground level.
+            """
+        case 3: // Divisional Political Commissar
+            return baseGuidance + """
+            **Level-Specific Scope:** As Divisional Commissar, you handle:
+            - Political oversight of an entire division
+            - Managing a team of political officers
+            - Direct relationships with division commanders
+            - Investigating loyalty concerns at higher levels
+            You have significant influence over military affairs in your area.
+            """
+        case 4: // Deputy Head of Main Political Directorate
+            return baseGuidance + """
+            **Level-Specific Scope:** As Deputy Head of MPA, you oversee:
+            - Political work across multiple military districts
+            - Coordination with BPS on military security matters
+            - Personnel recommendations for senior military positions
+            - Major initiatives in military political education
+            You are a key figure in military-political relations.
+            """
+        case 5: // First Deputy Head
+            return baseGuidance + """
+            **Level-Specific Scope:** As First Deputy Head of MPA, you handle:
+            - Oversight of the entire military political apparatus
+            - Direct participation in high-level military decisions
+            - Relationships with senior military commanders
+            - Coordination with Party leadership on defense matters
+            You are among the most powerful figures in military affairs.
+            """
+        case 6: // Director of Main Political Directorate
+            return baseGuidance + """
+            **Level-Specific Scope:** As Director of the MPA, you are:
+            - The supreme political authority over the armed forces
+            - Equal in rank to the Defense Minister on political matters
+            - Responsible for the political reliability of the military
+            - A member of the highest leadership councils
+            You ensure the army remains the Party's sword, not its master.
+            """
+        default:
+            return baseGuidance
+        }
     }
 
     /// Get position-appropriate scope guidance for AI
@@ -808,7 +1228,7 @@ struct ScenarioPromptBuilder {
         return section
     }
 
-    private static func buildInstructions(excludingVariety: Bool = false) -> String {
+    private static func buildInstructions(excludingVariety: Bool = false, forTrack track: ExpandedCareerTrack = .shared) -> String {
         var instructions = """
         ## INSTRUCTIONS
 
@@ -865,49 +1285,158 @@ struct ScenarioPromptBuilder {
 
         7. **Personal Effects:** Include effects on standing, patronFavor, rivalThreat, or network where appropriate. Remember: increasing rivalThreat is NEGATIVE for the player.
 
-        8. **IMPORTANT - Theme Variety:** DO NOT generate generic factory scenarios. Instead, choose from these diverse themes:
-
-           **REGIONAL THEMES (use Zone names from DOMESTIC REGIONS section):**
-           - Regional unrest in Zone 3 (Agricultural), Zone 6 (Mountain), or Zone 7 (Border)
-           - Secession movements in autonomous regions
-           - Governor loyalty crises
-           - Ethnic tensions in culturally distinct zones
-           - Military deployments to troubled regions
-           - Religious revival in remote zones
-           - Labor disputes in Fitzgerald City factories (Zone 2)
-           - Labor camps in Northern Zone (Zone 4)
-           - Border tensions in Zone 7
-
-           **INTERNATIONAL THEMES (use actual game nations):**
-           - Diplomatic incidents with United States or United Kingdom
-           - Alliance strains with Soviet Union
-           - Trade negotiations with non-aligned nations (India, Yugoslavia)
-           - Espionage scandals involving CIA or British intelligence
-           - Relations with Mao's China
-           - Nuclear tensions and arms control
-           - Capitalist pressure from Western bloc
-           - Moscow's expectations vs PSR independence
-           - Eastern Bloc relations (Poland, Czechoslovakia, etc.)
-           - Non-Aligned Movement opportunities
-
-           **POWER & LAW THEMES:**
-           - Constitutional amendments
-           - Term limit debates
-           - Power consolidation moves
-           - Elite coalitions forming against player
-           - Law enforcement of new policies
-           - Consequences of recent law changes
-
-           **CLASSIC THEMES:**
-           - Party congress maneuvering
-           - Military leadership disputes
-           - Secret police investigations
-           - Cultural/artistic controversies
-           - Scientific/academic disputes
-           - Media/propaganda decisions
+        \(getBureauSpecificThemes(forTrack: track))
         """
 
         return instructions
+    }
+
+    // MARK: - Bureau-Specific Themes
+
+    private static func getBureauSpecificThemes(forTrack track: ExpandedCareerTrack) -> String {
+        let bureauThemes = getBureauThemes(forTrack: track)
+
+        return """
+        8. **CRITICAL - BUREAU-APPROPRIATE SCENARIOS:**
+           The player works in the \(track.displayName). Scenarios MUST be relevant to their bureau's domain.
+
+        \(bureauThemes)
+
+           **GENERAL THEMES (appropriate for all bureaus):**
+           - Patron/rival relationship dynamics
+           - Career advancement opportunities within your track
+           - Faction politics affecting your bureau
+           - Personal dilemmas and moral choices
+           - Historical parallels to real socialist states
+
+           **AVOID generating scenarios outside your bureau's domain:**
+           - Security officers should NOT primarily deal with trade negotiations
+           - Diplomats should NOT primarily handle factory quotas
+           - Economists should NOT primarily investigate suspected spies
+           - Keep scenarios thematically appropriate to your career track
+        """
+    }
+
+    private static func getBureauThemes(forTrack track: ExpandedCareerTrack) -> String {
+        switch track {
+        case .partyApparatus:
+            return """
+           **PARTY APPARATUS THEMES (Your Primary Domain):**
+           - Cadre evaluation and personnel decisions
+           - Ideological purity investigations
+           - Party discipline cases and tribunals
+           - Propaganda messaging disputes
+           - Doctrinal interpretation debates
+           - Regional Party organization problems
+           - Factional struggles within the Party
+           - Rehabilitating or purging former comrades
+           - Cultural orthodoxy enforcement
+           - Party congress preparations and maneuvering
+           - Loyalty investigations and background checks
+           - Managing relationships between Party organs
+        """
+
+        case .stateMinistry:
+            return """
+           **STATE MINISTRY THEMES (Your Primary Domain):**
+           - Budget allocation disputes between ministries
+           - Policy implementation failures
+           - Bureaucratic inefficiency and corruption
+           - Inter-ministerial coordination problems
+           - Regional administration issues
+           - Public services and citizen complaints
+           - Infrastructure projects and maintenance
+           - Housing, education, health sector management
+           - Managing the gap between Party directives and reality
+           - Ministerial appointments and reshuffles
+           - Implementing five-year plan objectives
+           - Dealing with petitioners and public grievances
+        """
+
+        case .securityServices:
+            return """
+           **SECURITY SERVICES THEMES (Your Primary Domain):**
+           - Counter-intelligence operations against foreign spies
+           - Internal surveillance and monitoring dissent
+           - Political investigations and shuanggui detention
+           - Suspected counter-revolutionary activities
+           - Loyalty verification of key personnel
+           - Informant network management
+           - Interrogation and confession extraction
+           - Protecting state secrets
+           - VIP protection and security details
+           - Cross-border smuggling and infiltration
+           - Monitoring foreign embassies and diplomats
+           - Internal security within the Party apparatus
+           - Prison and labor camp administration
+        """
+
+        case .foreignAffairs:
+            return """
+           **FOREIGN AFFAIRS THEMES (Your Primary Domain):**
+           - Diplomatic relations with Soviet Union
+           - Managing US/UK hostility and non-recognition
+           - Trade negotiations with neutral nations
+           - Embassy operations and consular matters
+           - Defection incidents (ours or theirs)
+           - International conferences and treaties
+           - Relations with other socialist states
+           - Non-Aligned Movement opportunities
+           - Visa and immigration disputes
+           - Foreign journalists and cultural exchanges
+           - Balancing Soviet expectations with independence
+           - Intelligence gathered through diplomatic channels
+           - Repatriating citizens abroad
+        """
+
+        case .economicPlanning:
+            return """
+           **ECONOMIC PLANNING THEMES (Your Primary Domain):**
+           - Production quota setting and enforcement
+           - Resource allocation between sectors
+           - Five-year plan adjustments
+           - Factory performance and industrial output
+           - Agricultural collectivization issues
+           - Supply chain disruptions and shortages
+           - Economic statistics and reporting accuracy
+           - Trade balance and foreign currency
+           - Worker productivity and labor discipline
+           - Technology transfer and modernization
+           - Price controls and black market activity
+           - Energy production and distribution
+           - Managing the gap between plans and reality
+        """
+
+        case .militaryPolitical:
+            return """
+           **MILITARY-POLITICAL THEMES (Your Primary Domain):**
+           - Military loyalty and political reliability
+           - Political education of soldiers and officers
+           - Monitoring military commanders for deviation
+           - Coordination between military and Party
+           - Defense policy and military readiness
+           - Veterans affairs and demobilization
+           - Military-industrial coordination
+           - Border defense and territorial integrity
+           - Military honors and promotions
+           - Investigating military misconduct
+           - Balancing professional military needs with political control
+           - Military intelligence coordination
+           - Civil defense and mobilization planning
+        """
+
+        case .shared, .regional:
+            return """
+           **GENERAL THEMES (Entry Level):**
+           - Local administrative matters
+           - Office politics and colleague relationships
+           - Proving yourself to superiors
+           - Small-scale governance decisions
+           - Building your reputation and network
+           - Learning the bureaucratic system
+           - Regional/district-level issues
+        """
+        }
     }
 
     private static func buildOutputFormat(category: ScenarioCategory? = nil) -> String {

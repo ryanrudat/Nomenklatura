@@ -36,6 +36,15 @@ class PoliticalAIService {
             events.append(contentsOf: scEvents)
         }
 
+        // 2b. Process SC non-proposal political actions (attacks, resignations, deals)
+        // These make SC members feel like living political actors, not just proposal machines
+        let scActions = SCProposalGenerator.generateNonProposalActions(game: game)
+        for action in scActions {
+            // Log to journal based on visibility level
+            logSCPoliticalAction(action: action, game: game)
+            politicalLogger.info("SC political action: \(action.actionType.rawValue) - \(action.headline)")
+        }
+
         // 3. Process faction-driven political pressure
         if let factionEvents = processFactionPolitics(game: game) {
             events.append(contentsOf: factionEvents)
@@ -1230,6 +1239,63 @@ extension PoliticalAIService {
                 )
             ],
             iconName: "building.columns.fill"
+        )
+    }
+
+    // MARK: - SC Political Actions Logging
+
+    /// Log SC political actions to the journal based on visibility level
+    private func logSCPoliticalAction(action: SCPoliticalAction, game: Game) {
+        // Check visibility thresholds
+        let isVisible: Bool
+        switch action.visibilityLevel {
+        case .public:
+            isVisible = true
+        case .rumor:
+            isVisible = game.network >= 30
+        case .intel:
+            isVisible = game.network >= 50
+        case .secret:
+            isVisible = game.network >= 70
+        }
+
+        guard isVisible else { return }
+
+        // Determine category
+        let category: JournalCategory = {
+            switch action.actionType {
+            case .scAttack:
+                return .npcActivity
+            case .resignationThreat:
+                return .fateChange
+            case .votingBlocFormed:
+                return .factionDiscovery
+            case .backroomDeal:
+                return .secretIntelligence
+            }
+        }()
+
+        // Add visibility prefix
+        let prefix: String = {
+            switch action.visibilityLevel {
+            case .public:
+                return ""
+            case .rumor:
+                return "Whispers suggest: "
+            case .intel:
+                return "Your sources report: "
+            case .secret:
+                return "[CLASSIFIED] "
+            }
+        }()
+
+        JournalService.shared.addEntry(
+            to: game,
+            category: category,
+            title: prefix + action.headline,
+            content: action.details,
+            relatedCharacterId: action.initiator.templateId,
+            importance: action.visibilityLevel == .secret ? 8 : 6
         )
     }
 }

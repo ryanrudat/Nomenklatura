@@ -22,6 +22,7 @@ struct LedgerView: View {
     var onMilitaryTap: (() -> Void)? = nil
     var onPartyTap: (() -> Void)? = nil
     var onMinistryTap: (() -> Void)? = nil
+    var onBureauTap: ((ExpandedCareerTrack) -> Void)? = nil  // Bureau Hub navigation
     @Environment(\.theme) var theme
     @State private var selectedStatKey: String?
 
@@ -115,28 +116,39 @@ struct LedgerView: View {
                             selectedStatKey: $selectedStatKey
                         )
 
-                        // Security Services quick access
-                        if let onSecurityTap = onSecurityTap {
+                        // Bureau Hub - shows all 6 bureaus with access status
+                        // Replaces individual quick-access cards with a unified bureau navigation
+                        if let onBureauTap = onBureauTap {
+                            BureauHubSection(
+                                game: game,
+                                onBureauTap: onBureauTap
+                            )
+                        } else {
+                            // Fallback to individual cards if no bureau handler provided
+                        }
+
+                        // Security Services quick access (legacy, kept for backwards compatibility)
+                        if onBureauTap == nil, let onSecurityTap = onSecurityTap {
                             SecurityQuickAccessCard(game: game, onTap: onSecurityTap)
                         }
 
-                        // Economic Planning quick access
-                        if let onEconomicTap = onEconomicTap {
+                        // Economic Planning quick access (legacy)
+                        if onBureauTap == nil, let onEconomicTap = onEconomicTap {
                             EconomicQuickAccessCard(game: game, onTap: onEconomicTap)
                         }
 
-                        // Military-Political quick access
-                        if let onMilitaryTap = onMilitaryTap {
+                        // Military-Political quick access (legacy)
+                        if onBureauTap == nil, let onMilitaryTap = onMilitaryTap {
                             MilitaryQuickAccessCard(game: game, onTap: onMilitaryTap)
                         }
 
-                        // Party Apparatus quick access
-                        if let onPartyTap = onPartyTap {
+                        // Party Apparatus quick access (legacy)
+                        if onBureauTap == nil, let onPartyTap = onPartyTap {
                             PartyQuickAccessCard(game: game, onTap: onPartyTap)
                         }
 
-                        // State Ministry quick access
-                        if let onMinistryTap = onMinistryTap {
+                        // State Ministry quick access (legacy)
+                        if onBureauTap == nil, let onMinistryTap = onMinistryTap {
                             MinistryQuickAccessCard(game: game, onTap: onMinistryTap)
                         }
 

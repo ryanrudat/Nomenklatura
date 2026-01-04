@@ -1168,6 +1168,13 @@ class GameEngine {
 
         // Process spy detection (checks if any spies get caught)
         agencyService.processSpyDetection(game: game)
+
+        // Process organic NPC life events (personality-driven deaths, scandals, breakdowns, etc.)
+        // These create visible world events based on player's Network stat (layered visibility)
+        let lifeEvents = NPCLifeEventsService.shared.processLifeEvents(game: game)
+        if !lifeEvents.isEmpty {
+            gameLogger.info("Generated \(lifeEvents.count) NPC life events this turn")
+        }
     }
 
     /// Simulate world events for the living world system
@@ -1264,6 +1271,13 @@ class GameEngine {
         // 3. Memory-driven agency - grudges, gratitude, and past interactions surfacing
         let memoryEvents = MemoryIntegrationService.shared.evaluateMemoryDrivenActions(game: game)
         npcActionsThisTurn.append(contentsOf: memoryEvents.prefix(1)) // Up to 1 memory event
+
+        // 4. NPC-to-NPC world actions - visible events of NPCs interacting with each other
+        // These use layered visibility based on player's Network stat
+        let worldActions = NPCWorldActionService.shared.processWorldActions(game: game)
+        if !worldActions.isEmpty {
+            gameLogger.info("Generated \(worldActions.count) NPC world action events")
+        }
 
         // Queue up to 3 NPC events per turn (prevents overwhelming but ensures activity)
         for event in npcActionsThisTurn.prefix(3) {
