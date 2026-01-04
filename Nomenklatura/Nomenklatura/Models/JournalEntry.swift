@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - Journal Category
 
-enum JournalCategory: String, Codable, CaseIterable {
+nonisolated enum JournalCategory: String, Codable, CaseIterable, Sendable {
     case personalityReveal      // Character personality discovered
     case factionDiscovery       // Faction scheming/information
     case plotDevelopment        // Major plot thread advancement
@@ -54,7 +54,7 @@ enum JournalCategory: String, Codable, CaseIterable {
 
 // MARK: - Journal Entry
 
-struct JournalEntry: Codable, Identifiable {
+nonisolated struct JournalEntry: Codable, Identifiable, Sendable {
     var id: UUID = UUID()
     var turnDiscovered: Int
     var category: JournalCategory

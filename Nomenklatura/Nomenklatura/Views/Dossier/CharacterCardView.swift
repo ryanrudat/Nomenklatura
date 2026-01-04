@@ -193,6 +193,9 @@ struct CharacterDetailView: View {
     @State private var selectedTab: DossierTab = .bio
     @State private var dragOffset: CGFloat = 0
 
+    // NPC Activity Timeline filter
+    @State private var npcActivityFilter: NPCHistoryEventType?
+
     // Denounce system state
     @State private var showingDenounceOptions = false
     @State private var showingDenounceResult = false
@@ -735,6 +738,11 @@ struct CharacterDetailView: View {
 
     private var bioTabContent: some View {
         VStack(spacing: 16) {
+            // Family Connections (if biography available)
+            if character.biography?.familyTree != nil {
+                familyConnectionsSection
+            }
+
             // Service Record
             serviceRecordSection
 
@@ -744,6 +752,60 @@ struct CharacterDetailView: View {
             // Key Relations
             keyRelationsSection
         }
+    }
+
+    // MARK: - Family Connections Section
+
+    private var familyConnectionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack(spacing: 6) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.inkGray)
+                Text("FAMILY CONNECTIONS")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+            }
+
+            if let familyTree = character.biography?.familyTree {
+                VStack(spacing: 8) {
+                    // Spouse
+                    if let spouse = familyTree.spouse, !spouse.isSecret {
+                        FamilyMemberRow(member: spouse, relationType: "Spouse", theme: theme)
+                    }
+
+                    // Parents
+                    if let father = familyTree.father, !father.isSecret {
+                        FamilyMemberRow(member: father, relationType: "Father", theme: theme)
+                    }
+                    if let mother = familyTree.mother, !mother.isSecret {
+                        FamilyMemberRow(member: mother, relationType: "Mother", theme: theme)
+                    }
+
+                    // Children
+                    ForEach(familyTree.children.filter { !$0.isSecret }, id: \.name) { child in
+                        FamilyMemberRow(member: child, relationType: child.relation, theme: theme)
+                    }
+
+                    // Siblings
+                    ForEach(familyTree.siblings.filter { !$0.isSecret }, id: \.name) { sibling in
+                        FamilyMemberRow(member: sibling, relationType: "Sibling", theme: theme)
+                    }
+
+                    // Extended family (notable)
+                    ForEach(familyTree.extendedFamily.filter { !$0.isSecret }, id: \.name) { relative in
+                        FamilyMemberRow(member: relative, relationType: relative.relation, theme: theme)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 
     private var serviceRecordSection: some View {
@@ -1452,6 +1514,10 @@ struct CharacterDetailView: View {
                 riskAssessmentSection
 
                 if let game = game {
+                    // NPC Activity Timeline (player-visible action history)
+                    npcActivityTimelineSection(game: game)
+
+                    // General history (game events and NPC interactions)
                     characterHistorySection(game: game)
                 }
             } else {
@@ -3306,6 +3372,211 @@ struct CharacterDetailView: View {
         }
     }
 
+    // MARK: - NPC Activity Timeline Section
+
+    @ViewBuilder
+    private func npcActivityTimelineSection(game: Game) -> some View {
+        let history = character.npcHistory.sorted { $0.turn > $1.turn } // Most recent first
+
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Image(systemName: "timeline.selection")
+                    .foregroundColor(theme.inkGray)
+                Text("ACTIVITY TIMELINE")
+                    .font(theme.tagFont)
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+
+                if !history.isEmpty {
+                    Text("\(history.count) recorded")
+                        .font(.system(size: 10))
+                        .foregroundColor(theme.inkLight)
+                }
+            }
+
+            if history.isEmpty {
+                // No activity recorded yet
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.inkLight)
+                    Text("No political activities recorded for this figure")
+                        .font(theme.bodyFontSmall)
+                        .foregroundColor(theme.inkLight)
+                        .italic()
+                }
+                .padding(.vertical, 8)
+            } else {
+                // Filter chips
+                NPCActivityFilterChips(
+                    selectedFilter: $npcActivityFilter,
+                    availableTypes: Set(history.map { $0.eventType })
+                )
+
+                // Filtered timeline
+                let filteredHistory = npcActivityFilter == nil
+                    ? history
+                    : history.filter { $0.eventType == npcActivityFilter }
+
+                ForEach(filteredHistory.prefix(8), id: \.id) { event in
+                    NPCHistoryEventRow(event: event)
+                }
+
+                if filteredHistory.count > 8 {
+                    Text("+ \(filteredHistory.count - 8) more activities...")
+                        .font(theme.bodyFontSmall)
+                        .foregroundColor(theme.inkLight)
+                        .italic()
+                        .padding(.top, 4)
+                }
+            }
+        }
+        .padding(16)
+        .background(theme.parchmentDark)
+        .overlay(
+            Rectangle()
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+    }
+
+    // MARK: - NPC Activity Filter Chips
+
+    private struct NPCActivityFilterChips: View {
+        @Binding var selectedFilter: NPCHistoryEventType?
+        let availableTypes: Set<NPCHistoryEventType>
+        @Environment(\.theme) var theme
+
+        var body: some View {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    // "All" chip
+                    FilterChip(
+                        label: "All",
+                        icon: "list.bullet",
+                        isSelected: selectedFilter == nil,
+                        action: { selectedFilter = nil }
+                    )
+
+                    // Type-specific chips (only show those with events)
+                    ForEach(NPCHistoryEventType.allCases.filter { availableTypes.contains($0) }, id: \.self) { eventType in
+                        FilterChip(
+                            label: eventType.displayName,
+                            icon: eventType.iconName,
+                            isSelected: selectedFilter == eventType,
+                            action: { selectedFilter = eventType }
+                        )
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+
+        private struct FilterChip: View {
+            let label: String
+            let icon: String
+            let isSelected: Bool
+            let action: () -> Void
+            @Environment(\.theme) var theme
+
+            var body: some View {
+                Button(action: action) {
+                    HStack(spacing: 4) {
+                        Image(systemName: icon)
+                            .font(.system(size: 9))
+                        Text(label)
+                            .font(.system(size: 9, weight: isSelected ? .semibold : .regular))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(isSelected ? theme.accentGold.opacity(0.2) : theme.parchment)
+                    .foregroundColor(isSelected ? theme.inkBlack : theme.inkGray)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(isSelected ? theme.accentGold : theme.borderTan, lineWidth: 1)
+                    )
+                    .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - NPC History Event Row
+
+    private struct NPCHistoryEventRow: View {
+        let event: NPCHistoryEvent
+        @Environment(\.theme) var theme
+
+        var body: some View {
+            HStack(alignment: .top, spacing: 10) {
+                // Turn number badge
+                Text("T\(event.turn)")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(theme.inkLight)
+                    .frame(width: 28)
+
+                // Event type icon
+                Image(systemName: event.eventType.iconName)
+                    .font(.system(size: 12))
+                    .foregroundColor(severityColor)
+                    .frame(width: 20)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    // Event title
+                    Text(event.title)
+                        .font(theme.bodyFontSmall)
+                        .fontWeight(event.severity >= 4 ? .medium : .regular)
+                        .foregroundColor(theme.inkBlack)
+
+                    // Description
+                    if !event.description.isEmpty {
+                        Text(event.description)
+                            .font(.system(size: 10))
+                            .foregroundColor(theme.inkGray)
+                            .italic()
+                            .lineLimit(2)
+                    }
+
+                    // Involved character (if any)
+                    if let involvedName = event.involvedCharacterName {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 8))
+                            Text(involvedName)
+                                .font(.system(size: 9))
+                        }
+                        .foregroundColor(theme.inkLight)
+                    }
+                }
+
+                Spacer()
+
+                // Severity indicator
+                if event.severity >= 4 {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(severityColor)
+                }
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(event.severity >= 4 ? severityColor.opacity(0.05) : Color.clear)
+            .cornerRadius(4)
+        }
+
+        private var severityColor: Color {
+            switch event.severity {
+            case 5: return theme.sovietRed
+            case 4: return Color.orange
+            case 3: return theme.accentGold
+            default: return theme.inkGray
+            }
+        }
+    }
+
     // MARK: - Interactions Section
 
     private func interactionsSection(game: Game) -> some View {
@@ -3860,6 +4131,99 @@ struct DossierBackground: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Family Member Row
+
+/// A row displaying a single family member
+struct FamilyMemberRow: View {
+    let member: FamilyMember
+    let relationType: String
+    let theme: any CampaignTheme
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Portrait placeholder (initials)
+            ZStack {
+                Circle()
+                    .fill(theme.parchment.opacity(0.8))
+                    .frame(width: 40, height: 40)
+
+                Text(initials)
+                    .font(.system(size: 14, weight: .medium, design: .serif))
+                    .foregroundColor(theme.inkGray)
+            }
+            .overlay(
+                Circle()
+                    .stroke(statusColor.opacity(0.5), lineWidth: 1)
+            )
+
+            // Details
+            VStack(alignment: .leading, spacing: 2) {
+                // Name
+                Text(member.name.uppercased())
+                    .font(.system(size: 12, weight: .semibold, design: .serif))
+                    .foregroundColor(theme.inkBlack)
+
+                // Relation and status
+                HStack(spacing: 4) {
+                    Text(relationType)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(theme.inkGray)
+
+                    Text("•")
+                        .font(.system(size: 8))
+                        .foregroundColor(theme.inkGray.opacity(0.5))
+
+                    Text(member.status.uppercased())
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(statusColor)
+                }
+
+                // Occupation if available
+                if let occupation = member.occupation, !occupation.isEmpty {
+                    Text(occupation)
+                        .font(.system(size: 10, design: .serif))
+                        .foregroundColor(theme.inkGray)
+                        .italic()
+                }
+
+                // Notes if meaningful
+                if !member.notes.isEmpty && member.notes.count < 100 {
+                    Text(member.notes)
+                        .font(.system(size: 10, design: .serif))
+                        .foregroundColor(theme.inkGray.opacity(0.8))
+                        .lineLimit(2)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var initials: String {
+        let components = member.name.components(separatedBy: " ")
+        if components.count >= 2 {
+            let first = components[0].prefix(1)
+            let last = components[components.count - 1].prefix(1)
+            return "\(first)\(last)"
+        }
+        return String(member.name.prefix(2)).uppercased()
+    }
+
+    private var statusColor: Color {
+        switch member.status.lowercased() {
+        case "alive":
+            return .green
+        case "deceased":
+            return theme.sovietRed
+        case "unknown":
+            return theme.inkGray
+        default:
+            return theme.inkGray
         }
     }
 }

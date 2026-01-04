@@ -89,6 +89,7 @@ final class GameCharacter {
     var npcMemoriesData: Data?           // Encoded [NPCMemory]
     var foreignAgentData: Data?          // Encoded ForeignAgentStatus
     var ambientActivitiesData: Data?     // Encoded [AmbientActivity]
+    var npcHistoryData: Data?            // Encoded [NPCHistoryEvent] - player-visible action history
 
     // Denouncement/Evidence System
     var evidenceLevel: Int               // 0-100: How much evidence exists against them
@@ -1418,5 +1419,162 @@ extension GameCharacter {
         }
 
         return context
+    }
+
+    // MARK: - NPC History (Player-Visible)
+
+    /// Player-visible history of NPC actions
+    var npcHistory: [NPCHistoryEvent] {
+        get {
+            guard let data = npcHistoryData else { return [] }
+            return (try? JSONDecoder().decode([NPCHistoryEvent].self, from: data)) ?? []
+        }
+        set {
+            npcHistoryData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Add an event to this character's player-visible history
+    func addHistoryEvent(_ event: NPCHistoryEvent) {
+        var history = npcHistory
+        history.insert(event, at: 0) // Newest first
+
+        // Keep only 50 most recent events
+        if history.count > 50 {
+            history = Array(history.prefix(50))
+        }
+
+        npcHistory = history
+    }
+
+    /// Get history events of a specific type
+    func historyEvents(ofType type: NPCHistoryEventType) -> [NPCHistoryEvent] {
+        return npcHistory.filter { $0.eventType == type }
+    }
+
+    /// Get history events involving a specific character
+    func historyEvents(involving characterId: String) -> [NPCHistoryEvent] {
+        return npcHistory.filter { $0.involvedCharacterId == characterId }
+    }
+
+    // MARK: - Biography Access
+
+    /// Access the deep biography data for this character (if available)
+    var biography: CharacterBiography? {
+        CharacterBiographyProvider.shared.getBiography(for: templateId)
+    }
+}
+
+// MARK: - NPC History Event Types
+
+/// Type of player-visible NPC action
+nonisolated enum NPCHistoryEventType: String, Codable, CaseIterable, Sendable {
+    case vote              // Committee/vote action
+    case proposal          // Submitted a proposal
+    case promotion         // Position change (up)
+    case demotion          // Position change (down)
+    case investigation     // Was investigated
+    case denouncement      // Denounced someone or was denounced
+    case relationshipShift // Major relationship change
+    case statusChange      // Status change (detained, etc.)
+    case factionAction     // Faction-related action
+    case speech            // Public statement
+    case meeting           // Met with another character
+    case decision          // Made a significant decision
+
+    var displayName: String {
+        switch self {
+        case .vote: return "Vote"
+        case .proposal: return "Proposal"
+        case .promotion: return "Promotion"
+        case .demotion: return "Demotion"
+        case .investigation: return "Investigation"
+        case .denouncement: return "Denouncement"
+        case .relationshipShift: return "Relationship"
+        case .statusChange: return "Status Change"
+        case .factionAction: return "Faction"
+        case .speech: return "Speech"
+        case .meeting: return "Meeting"
+        case .decision: return "Decision"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .vote: return "hand.raised.fill"
+        case .proposal: return "doc.text.fill"
+        case .promotion: return "arrow.up.circle.fill"
+        case .demotion: return "arrow.down.circle.fill"
+        case .investigation: return "magnifyingglass.circle.fill"
+        case .denouncement: return "exclamationmark.triangle.fill"
+        case .relationshipShift: return "person.2.fill"
+        case .statusChange: return "person.badge.clock.fill"
+        case .factionAction: return "person.3.fill"
+        case .speech: return "quote.bubble.fill"
+        case .meeting: return "person.line.dotted.person.fill"
+        case .decision: return "checkmark.seal.fill"
+        }
+    }
+}
+
+// MARK: - NPC History Event
+
+/// A player-visible record of an NPC action
+nonisolated struct NPCHistoryEvent: Codable, Identifiable, Sendable {
+    var id: UUID = UUID()
+    var turn: Int
+    var eventType: NPCHistoryEventType
+    var title: String               // "Voted against agricultural reform"
+    var description: String         // Detailed description
+    var involvedCharacterId: String? // Another character involved (if any)
+    var involvedCharacterName: String? // Name for display
+    var severity: Int               // 1-5 for visual importance
+
+    /// Create a vote event
+    static func vote(
+        turn: Int,
+        title: String,
+        description: String,
+        severity: Int = 3
+    ) -> NPCHistoryEvent {
+        NPCHistoryEvent(
+            turn: turn,
+            eventType: .vote,
+            title: title,
+            description: description,
+            severity: severity
+        )
+    }
+
+    /// Create a proposal event
+    static func proposal(
+        turn: Int,
+        title: String,
+        description: String,
+        severity: Int = 3
+    ) -> NPCHistoryEvent {
+        NPCHistoryEvent(
+            turn: turn,
+            eventType: .proposal,
+            title: title,
+            description: description,
+            severity: severity
+        )
+    }
+
+    /// Create a status change event
+    static func statusChange(
+        turn: Int,
+        title: String,
+        description: String,
+        severity: Int = 4
+    ) -> NPCHistoryEvent {
+        NPCHistoryEvent(
+            turn: turn,
+            eventType: .statusChange,
+            title: title,
+            description: description,
+            severity: severity
+        )
     }
 }

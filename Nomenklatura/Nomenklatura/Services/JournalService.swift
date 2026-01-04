@@ -2,7 +2,9 @@
 //  JournalService.swift
 //  Nomenklatura
 //
-//  Service for managing journal entries with toast notifications
+//  Service for managing journal entries with toast notifications.
+//  NOTE: Most auto-generated entries now route through IntelligenceAlertService
+//  for player-initiated save/dismiss. This service handles direct entries and toasts.
 //
 
 import Foundation
@@ -35,7 +37,8 @@ final class JournalService: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Add a journal entry and show toast notification
+    /// Add a journal entry directly (bypasses alert system).
+    /// Use for player-initiated saves or system-critical entries.
     func addEntry(
         to game: Game,
         category: JournalCategory,
@@ -44,7 +47,8 @@ final class JournalService: ObservableObject {
         relatedCharacterId: String? = nil,
         relatedFactionId: String? = nil,
         relatedLawId: String? = nil,
-        importance: Int = 5
+        importance: Int = 5,
+        showToast: Bool = true
     ) {
         let entry = JournalEntry(
             turnDiscovered: game.turnNumber,
@@ -59,200 +63,70 @@ final class JournalService: ObservableObject {
 
         game.addJournalEntry(entry)
 
-        // Show toast notification
-        showToast(for: entry)
+        // Show toast notification (optional)
+        if showToast {
+            self.showToast(for: entry)
+        }
     }
 
-    // MARK: - Specific Event Hooks
+    // MARK: - Event Hooks (Route to IntelligenceAlertService)
+    //
+    // These hooks now create alerts instead of directly adding to journal.
+    // Player must explicitly save or dismiss each alert.
 
     /// Called when a character's personality is revealed
     func onPersonalityRevealed(character: GameCharacter, game: Game) {
-        let dominantTrait = getDominantTrait(character)
-        addEntry(
-            to: game,
-            category: .personalityReveal,
-            title: "Character Insight: \(character.name)",
-            content: "You have come to understand \(character.name)'s true nature. They appear to be primarily \(dominantTrait.lowercased()) in character. This knowledge may prove useful in future dealings.",
-            relatedCharacterId: character.templateId,
-            importance: 6
-        )
+        IntelligenceAlertService.shared.onPersonalityRevealed(character: character, game: game)
     }
 
     /// Called when a character's fate changes
     func onFateChange(character: GameCharacter, newStatus: CharacterStatus, narrative: String?, game: Game) {
-        let title: String
-        let importance: Int
-
-        switch newStatus {
-        case .executed:
-            title = "Execution: \(character.name)"
-            importance = 9
-        case .imprisoned:
-            title = "Imprisonment: \(character.name)"
-            importance = 8
-        case .exiled:
-            title = "Exile: \(character.name)"
-            importance = 7
-        case .disappeared:
-            title = "Disappearance: \(character.name)"
-            importance = 8
-        case .rehabilitated:
-            title = "Rehabilitation: \(character.name)"
-            importance = 7
-        case .retired:
-            title = "Retirement: \(character.name)"
-            importance = 5
-        case .dead:
-            title = "Death: \(character.name)"
-            importance = 7
-        case .underInvestigation:
-            title = "Investigation: \(character.name)"
-            importance = 6
-        case .detained:
-            title = "Detention: \(character.name)"
-            importance = 6
-        case .active:
-            title = "Return to Service: \(character.name)"
-            importance = 5
-        }
-
-        let content = narrative ?? "\(character.name) has been \(newStatus.displayText.lowercased()). The Party's justice is final."
-
-        addEntry(
-            to: game,
-            category: .fateChange,
-            title: title,
-            content: content,
-            relatedCharacterId: character.templateId,
-            importance: importance
-        )
+        IntelligenceAlertService.shared.onFateChange(character: character, newStatus: newStatus, narrative: narrative, game: game)
     }
 
     /// Called when a plot thread develops significantly
     func onPlotDevelopment(title: String, description: String, game: Game) {
-        addEntry(
-            to: game,
-            category: .plotDevelopment,
-            title: title,
-            content: description,
-            importance: 7
-        )
+        IntelligenceAlertService.shared.onPlotDevelopment(title: title, description: description, game: game)
     }
 
     /// Called when a significant relationship change occurs
     func onRelationshipChange(character: GameCharacter, change: String, game: Game) {
-        addEntry(
-            to: game,
-            category: .relationshipChange,
-            title: "Relationship Update: \(character.name)",
-            content: change,
-            relatedCharacterId: character.templateId,
-            importance: 5
-        )
+        IntelligenceAlertService.shared.onRelationshipChange(character: character, change: change, game: game)
     }
 
     /// Called when secret intelligence is received (from Network stat)
-    func onSecretIntelligence(title: String, content: String, relatedCharacterId: String? = nil, game: Game) {
-        addEntry(
-            to: game,
-            category: .secretIntelligence,
-            title: title,
-            content: content,
-            relatedCharacterId: relatedCharacterId,
-            importance: 7
-        )
+    func onSecretIntelligence(title: String, content: String, relatedCharacterId: String? = nil, relatedCharacterName: String? = nil, game: Game) {
+        IntelligenceAlertService.shared.onSecretIntelligence(title: title, content: content, relatedCharacterId: relatedCharacterId, relatedCharacterName: relatedCharacterName, game: game)
     }
 
     /// Called when a law is changed or proposed
     func onLawChange(law: Law, change: String, game: Game) {
-        addEntry(
-            to: game,
-            category: .lawChange,
-            title: "Legislative Change: \(law.name)",
-            content: change,
-            relatedLawId: law.lawId,
-            importance: 6
-        )
+        IntelligenceAlertService.shared.onLawChange(law: law, change: change, game: game)
     }
 
     /// Called when historical information is declassified
     func onHistoricalRecordDeclassified(title: String, content: String, game: Game) {
-        addEntry(
-            to: game,
-            category: .historicalRecord,
-            title: title,
-            content: content,
-            importance: 5
-        )
+        IntelligenceAlertService.shared.onHistoricalRecordDeclassified(title: title, content: content, game: game)
     }
 
     /// Called when faction information is discovered
     func onFactionDiscovery(faction: GameFaction, discovery: String, game: Game) {
-        addEntry(
-            to: game,
-            category: .factionDiscovery,
-            title: "Faction Intelligence: \(faction.name)",
-            content: discovery,
-            relatedFactionId: faction.factionId,
-            importance: 6
-        )
+        IntelligenceAlertService.shared.onFactionDiscovery(faction: faction, discovery: discovery, game: game)
     }
 
     /// Called when an NPC takes autonomous action (political maneuvering)
     func onNPCActivity(character: GameCharacter, activitySummary: String, details: String, game: Game) {
-        // Don't log minor activities or player-initiated events
-        guard !activitySummary.isEmpty else { return }
-
-        // Determine importance based on character's role
-        var importance = 4
-        if character.isPatron { importance = 7 }
-        else if character.isRival { importance = 6 }
-        else if character.disposition >= 60 { importance = 5 } // Allies
-
-        addEntry(
-            to: game,
-            category: .npcActivity,
-            title: "\(character.name) Makes a Move",
-            content: details.isEmpty ? "Reports indicate \(character.name) has been active in political circles. The nature of their activities bears watching." : details,
-            relatedCharacterId: character.templateId,
-            importance: importance
-        )
+        IntelligenceAlertService.shared.onNPCActivity(character: character, activitySummary: activitySummary, details: details, game: game)
     }
 
     /// Called when a Standing Committee proposal is submitted
     func onCommitteeProposal(sponsor: GameCharacter, proposalTitle: String, description: String, isPlayerOverlap: Bool, game: Game) {
-        var content = "\(sponsor.name) has submitted a proposal to the Standing Committee: \"\(proposalTitle)\""
-
-        if isPlayerOverlap {
-            content += "\n\n⚠️ NOTE: This proposal may affect or conflict with your own agenda items."
-        }
-
-        if !description.isEmpty {
-            content += "\n\nDetails: \(description)"
-        }
-
-        addEntry(
-            to: game,
-            category: .committeeActivity,
-            title: "Committee Proposal: \(proposalTitle)",
-            content: content,
-            relatedCharacterId: sponsor.templateId,
-            importance: isPlayerOverlap ? 8 : 6
-        )
+        IntelligenceAlertService.shared.onCommitteeProposal(sponsor: sponsor, proposalTitle: proposalTitle, description: description, isPlayerOverlap: isPlayerOverlap, game: game)
     }
 
     /// Called when a Standing Committee decision is made
     func onCommitteeDecision(itemTitle: String, outcome: String, playerInvolved: Bool, game: Game) {
-        var importance = 5
-        if playerInvolved { importance = 8 }
-
-        addEntry(
-            to: game,
-            category: .committeeActivity,
-            title: "Committee Decision: \(itemTitle)",
-            content: "The Standing Committee has reached a decision on \"\(itemTitle)\": \(outcome)",
-            importance: importance
-        )
+        IntelligenceAlertService.shared.onCommitteeDecision(itemTitle: itemTitle, outcome: outcome, playerInvolved: playerInvolved, game: game)
     }
 
     // MARK: - Toast Management

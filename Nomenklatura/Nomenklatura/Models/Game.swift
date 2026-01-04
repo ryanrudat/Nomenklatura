@@ -137,6 +137,10 @@ final class Game {
     // Journal System (auto-added noteworthy information)
     var journalEntriesData: Data?  // Encoded [JournalEntry]
 
+    // Intelligence Alert System (player-initiated notes)
+    var pendingAlertsData: Data?           // Encoded [IntelligenceAlert] - awaiting player decision
+    var dismissedAlertHashesData: Data?    // Encoded Set<String> - hashes of dismissed alerts
+
     // Multi-turn Projects System (construction, reforms, etc.)
     var pendingProjectsData: Data?  // Encoded [PendingProject]
 
