@@ -500,7 +500,8 @@ class DocumentQueueService: ObservableObject {
                 id: "burn",
                 text: "BURN - Destroy the report",
                 shortDescription: "Destroyed report",
-                effects: ["security": -2]
+                effects: ["security": -2],
+                archetype: .deflect  // Covering up, not a security action
             )
             .addOption(
                 id: "forward",
@@ -573,7 +574,14 @@ class DocumentQueueService: ObservableObject {
                 text: "CLOSE SURVEILLANCE - Insufficient evidence",
                 shortDescription: "Closed surveillance",
                 effects: ["security": -3],
-                archetype: .administrative
+                archetype: .surveil  // Security: ending surveillance operation
+            )
+            .addOption(
+                id: "escalate_to_arrest",
+                text: "ESCALATE TO ARREST - Evidence sufficient",
+                shortDescription: "Escalated to arrest",
+                effects: ["security": 8, "stability": -3],
+                archetype: .repress  // Security: taking action
             )
             .build()
     }
@@ -643,7 +651,7 @@ class DocumentQueueService: ObservableObject {
                 text: "DENY - Insufficient evidence",
                 shortDescription: "Denied arrest",
                 effects: ["security": -5],
-                archetype: .administrative
+                archetype: .investigate  // Security: more investigation needed
             )
             .addOption(
                 id: "delay",
@@ -651,7 +659,14 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Requested more evidence",
                 effects: [:],
                 triggersDocument: "evidence_update_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
-                archetype: .delay
+                archetype: .investigate  // Security: continuing investigation
+            )
+            .addOption(
+                id: "raid",
+                text: "RAID PREMISES - Immediate action",
+                shortDescription: "Ordered immediate raid",
+                effects: ["security": 15, "stability": -10],
+                archetype: .attack  // Security: aggressive action
             )
             .withConsequenceIfIgnored(
                 "The suspect fled while awaiting your decision. Security is furious.",
@@ -708,10 +723,10 @@ class DocumentQueueService: ObservableObject {
             )
             .addOption(
                 id: "note",
-                text: "NOTE - Log incident, no action",
-                shortDescription: "Logged incident",
+                text: "NOTE - Log incident and monitor",
+                shortDescription: "Logged and monitoring",
                 effects: [:],
-                archetype: .administrative
+                archetype: .surveil  // Security: passive surveillance
             )
             .addOption(
                 id: "dismiss",
@@ -719,6 +734,13 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Dismissed concern",
                 effects: ["security": -2],
                 archetype: .administrative
+            )
+            .addOption(
+                id: "heighten_security",
+                text: "HEIGHTEN SECURITY - Increase patrols",
+                shortDescription: "Heightened security measures",
+                effects: ["security": 5, "treasury": -5],
+                archetype: .repress  // Security: active countermeasures
             )
             .build()
     }
@@ -866,7 +888,7 @@ class DocumentQueueService: ObservableObject {
                 text: "APPROVE - Quantities verified",
                 shortDescription: "Approved filing",
                 effects: [:],
-                archetype: .administrative
+                archetype: .loyalty  // Military-Political: supporting the troops
             )
             .addOption(
                 id: "flag_discrepancy",
@@ -874,6 +896,13 @@ class DocumentQueueService: ObservableObject {
                 shortDescription: "Flagged for audit",
                 effects: ["security": 2],
                 archetype: .investigate
+            )
+            .addOption(
+                id: "expedite",
+                text: "EXPEDITE - Mark as priority supply",
+                shortDescription: "Expedited supply request",
+                effects: ["military": 3],
+                archetype: .military  // Military-Political: enhancing readiness
             )
             .build()
     }
@@ -922,7 +951,7 @@ class DocumentQueueService: ObservableObject {
                 text: "APPROVE - Log satisfactory",
                 shortDescription: "Approved maintenance log",
                 effects: [:],
-                archetype: .administrative
+                archetype: .loyalty  // Military-Political: trusting the unit
             )
             .addOption(
                 id: "investigate_fuel",
@@ -932,11 +961,11 @@ class DocumentQueueService: ObservableObject {
                 archetype: .investigate
             )
             .addOption(
-                id: "request_detail",
-                text: "REQUEST DETAIL - Need more information",
-                shortDescription: "Requested details",
-                effects: [:],
-                archetype: .administrative
+                id: "commend_unit",
+                text: "COMMEND UNIT - Note excellent maintenance",
+                shortDescription: "Commended maintenance crew",
+                effects: ["military": 2],
+                archetype: .loyalty  // Military-Political: building morale
             )
             .build()
     }
@@ -1055,14 +1084,14 @@ class DocumentQueueService: ObservableObject {
                 text: "APPROVE IN FULL",
                 shortDescription: "Approved full requisition",
                 effects: ["treasury": -50, "military": 10],
-                archetype: .allocate
+                archetype: .military  // Military-Political: strengthening the forces
             )
             .addOption(
                 id: "approve_partial",
                 text: "APPROVE PARTIAL - Essential items only",
                 shortDescription: "Approved partial requisition",
                 effects: ["treasury": -25, "military": 5],
-                archetype: .allocate
+                archetype: .loyalty  // Military-Political: balancing needs
             )
             .addOption(
                 id: "deny",
@@ -1072,12 +1101,11 @@ class DocumentQueueService: ObservableObject {
                 archetype: .administrative
             )
             .addOption(
-                id: "reallocate",
-                text: "REALLOCATE FROM ANOTHER UNIT",
-                shortDescription: "Reallocated from other unit",
-                effects: ["military": 5],
-                triggersDocument: "reallocation_\(unit.lowercased().replacingOccurrences(of: " ", with: "_"))",
-                archetype: .allocate
+                id: "mobilize_reserves",
+                text: "MOBILIZE RESERVES - Draw from strategic stockpile",
+                shortDescription: "Mobilized reserve supplies",
+                effects: ["treasury": -30, "military": 15],
+                archetype: .mobilize  // Military-Political: mobilization action
             )
             .build()
     }
@@ -1127,11 +1155,18 @@ class DocumentQueueService: ObservableObject {
                 archetype: .deflect
             )
             .addOption(
+                id: "reinforce",
+                text: "REINFORCE SECTOR - Deploy additional troops",
+                shortDescription: "Reinforced border sector",
+                effects: ["military": 10, "treasury": -20],
+                archetype: .mobilize  // Military-Political: mobilizing forces
+            )
+            .addOption(
                 id: "escalate",
                 text: "ESCALATE - Report up the chain immediately",
                 shortDescription: "Reported incident",
                 effects: ["patronFavor": 5],
-                archetype: .administrative
+                archetype: .loyalty  // Military-Political: chain of command
             )
             .addOption(
                 id: "interrogate",
@@ -1274,14 +1309,21 @@ class DocumentQueueService: ObservableObject {
                 text: "ACKNOWLEDGE - Initial and file",
                 shortDescription: "Acknowledged budget report",
                 effects: [:],
-                archetype: .administrative
+                archetype: .allocate  // Economic: budget allocation
             )
             .addOption(
                 id: "question",
                 text: "REQUEST DETAILS - Ask for line items",
                 shortDescription: "Requested budget details",
                 effects: ["bureaucracy": 5],
-                archetype: .administrative
+                archetype: .production  // Economic: production oversight
+            )
+            .addOption(
+                id: "optimize",
+                text: "OPTIMIZE - Reallocate surplus to priority areas",
+                shortDescription: "Optimized budget allocation",
+                effects: ["treasury": 5],
+                archetype: .reform  // Economic: improving efficiency
             )
             .withDeadline(turnsFromNow: 3)
             .build()
@@ -1318,14 +1360,21 @@ class DocumentQueueService: ObservableObject {
                 text: "FILE - Note for records",
                 shortDescription: "Filed supply notice",
                 effects: [:],
-                archetype: .administrative
+                archetype: .allocate  // Economic: resource tracking
             )
             .addOption(
                 id: "expedite",
                 text: "EXPEDITE - Use your authority to speed up",
                 shortDescription: "Expedited supply order",
                 effects: ["standing": 2, "bureaucracy": -5],
-                archetype: .governance
+                archetype: .production  // Economic: keeping production running
+            )
+            .addOption(
+                id: "find_alternative",
+                text: "FIND ALTERNATIVE - Source from other supplier",
+                shortDescription: "Found alternative supplier",
+                effects: ["treasury": -3],
+                archetype: .trade  // Foreign Affairs: trade connections
             )
             .withDeadline(turnsFromNow: 4)
             .build()

@@ -1338,9 +1338,18 @@ extension Game {
 
     /// Update affinity for a track
     func addTrackAffinity(track: ExpandedCareerTrack, amount: Int, source: AffinitySignal.AffinitySource, description: String) {
-        var scores = trackAffinityScores
+        let oldScores = trackAffinityScores
+        var scores = oldScores
         scores.addScore(for: track, amount: amount)
         trackAffinityScores = scores
+
+        // Debug logging for track affinity changes
+        #if DEBUG
+        let newScore = scores.score(for: track)
+        let oldScore = oldScores.score(for: track)
+        print("🎯 [AFFINITY] +\(amount) \(track.displayName): \(oldScore) → \(newScore) | Source: \(source.rawValue) | \(description)")
+        print("   📊 All scores: Party=\(scores.partyApparatus) State=\(scores.stateMinistry) Security=\(scores.securityServices) Foreign=\(scores.foreignAffairs) Economic=\(scores.economicPlanning) Military=\(scores.militaryPolitical)")
+        #endif
 
         // Check if a dominant track has emerged
         updateTrackCommitmentStatus()

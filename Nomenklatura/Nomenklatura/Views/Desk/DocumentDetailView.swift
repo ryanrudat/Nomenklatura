@@ -478,23 +478,30 @@ struct DocumentOptionCardView: View {
                         .foregroundColor(FiftiesColors.typewriterInk)
                         .multilineTextAlignment(.leading)
 
-                    // Effects preview
-                    if !option.effects.isEmpty {
-                        HStack(spacing: 8) {
-                            ForEach(Array(option.effects.keys.sorted().prefix(3)), id: \.self) { key in
-                                if let value = option.effects[key], value != 0 {
-                                    HStack(spacing: 2) {
-                                        Image(systemName: value > 0 ? "arrow.up" : "arrow.down")
-                                            .font(.system(size: 8))
-                                        Text(formatStatName(key))
-                                            .font(.system(size: 8, design: .monospaced))
-                                    }
-                                    .foregroundColor(value > 0 ? Color.green.opacity(0.8) : Color.red.opacity(0.8))
+                    // Effects preview and archetype indicator
+                    HStack(spacing: 8) {
+                        // Stat effects
+                        ForEach(Array(option.effects.keys.sorted().prefix(3)), id: \.self) { key in
+                            if let value = option.effects[key], value != 0 {
+                                HStack(spacing: 2) {
+                                    Image(systemName: value > 0 ? "arrow.up" : "arrow.down")
+                                        .font(.system(size: 8))
+                                    Text(formatStatName(key))
+                                        .font(.system(size: 8, design: .monospaced))
                                 }
+                                .foregroundColor(value > 0 ? Color.green.opacity(0.8) : Color.red.opacity(0.8))
                             }
                         }
-                        .padding(.top, 2)
+
+                        // Archetype indicator - shows bureau direction
+                        if let archetype = option.archetype,
+                           let track = archetype.associatedTrack {
+                            DocumentArchetypeIndicator(
+                                track: track
+                            )
+                        }
                     }
+                    .padding(.top, 2)
                 }
 
                 Spacer()
@@ -522,6 +529,32 @@ struct DocumentOptionCardView: View {
         case "eliteLoyalty": return "ELITE"
         default: return key.prefix(4).uppercased()
         }
+    }
+}
+
+// MARK: - Document Archetype Indicator
+
+struct DocumentArchetypeIndicator: View {
+    let track: ExpandedCareerTrack
+
+    private let accentGold = Color(hex: "C9A227")
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: track.iconName)
+                .font(.system(size: 8))
+            Text(track.shortName)
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+        }
+        .foregroundColor(accentGold)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(accentGold.opacity(0.12))
+        .cornerRadius(3)
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(accentGold.opacity(0.3), lineWidth: 0.5)
+        )
     }
 }
 

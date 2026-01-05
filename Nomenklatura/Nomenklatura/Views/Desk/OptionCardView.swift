@@ -32,6 +32,14 @@ struct OptionCardView: View {
                         ForEach(option.getDisplayEffects()) { effect in
                             EffectTagView(effect: effect)
                         }
+
+                        // Archetype indicator - shows bureau direction
+                        if let track = option.archetype.associatedTrack {
+                            ArchetypeIndicator(
+                                archetype: option.archetype,
+                                track: track
+                            )
+                        }
                     }
                 }
                 .padding(.leading, 8)
@@ -47,6 +55,32 @@ struct OptionCardView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Archetype Indicator
+
+struct ArchetypeIndicator: View {
+    let archetype: OptionArchetype
+    let track: ExpandedCareerTrack
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: track.iconName)
+                .font(.system(size: 8))
+            Text(track.shortName)
+                .font(.system(size: 8, weight: .medium))
+        }
+        .foregroundColor(theme.accentGold)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(theme.accentGold.opacity(0.12))
+        .cornerRadius(3)
+        .overlay(
+            RoundedRectangle(cornerRadius: 3)
+                .stroke(theme.accentGold.opacity(0.3), lineWidth: 0.5)
+        )
     }
 }
 

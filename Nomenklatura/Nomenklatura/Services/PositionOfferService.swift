@@ -27,6 +27,12 @@ class PositionOfferService {
         let scores = game.trackAffinityScores
         let currentTurn = game.turnNumber
 
+        #if DEBUG
+        print("🎁 [OFFERS] Generating offers for turn \(currentTurn), position index \(game.currentPositionIndex)")
+        print("   📊 Affinity scores: Party=\(scores.partyApparatus) State=\(scores.stateMinistry) Security=\(scores.securityServices) Foreign=\(scores.foreignAffairs) Economic=\(scores.economicPlanning) Military=\(scores.militaryPolitical)")
+        print("   📈 Standing: \(game.standing), Patron Favor: \(game.patronFavor)")
+        #endif
+
         // Check each track for potential offers
         for track in ExpandedCareerTrack.allCases where track != .shared {
             if let offer = checkTrackForOffer(
@@ -37,6 +43,9 @@ class PositionOfferService {
                 currentTurn: currentTurn
             ) {
                 offers.append(offer)
+                #if DEBUG
+                print("   ✅ [OFFER] Generated: \(offer.positionName) (\(track.displayName)) - affinity \(scores.score(for: track))")
+                #endif
             }
         }
 
@@ -44,6 +53,10 @@ class PositionOfferService {
         if let lateralOffer = generatePatronLateralOffer(game: game, config: config, currentTurn: currentTurn) {
             offers.append(lateralOffer)
         }
+
+        #if DEBUG
+        print("   🎁 Total offers generated: \(offers.count)")
+        #endif
 
         return offers
     }
@@ -64,15 +77,28 @@ class PositionOfferService {
         guard let nextPosition = config.ladder.first(where: {
             $0.expandedTrack == track && $0.index == nextIndex
         }) else {
+            #if DEBUG
+            print("   ❌ [OFFER] \(track.displayName): No position found at index \(nextIndex)")
+            #endif
             return nil
         }
 
         // Check if player meets basic requirements
-        guard game.standing >= nextPosition.requiredStanding else { return nil }
+        guard game.standing >= nextPosition.requiredStanding else {
+            #if DEBUG
+            print("   ❌ [OFFER] \(track.displayName): Standing \(game.standing) < required \(nextPosition.requiredStanding)")
+            #endif
+            return nil
+        }
 
         // Check affinity threshold if required
         if let requiredAffinity = nextPosition.requiredAffinityScore {
-            guard affinityScore >= requiredAffinity else { return nil }
+            guard affinityScore >= requiredAffinity else {
+                #if DEBUG
+                print("   ❌ [OFFER] \(track.displayName): Affinity \(affinityScore) < required \(requiredAffinity)")
+                #endif
+                return nil
+            }
         }
 
         // Determine offer reason based on conditions

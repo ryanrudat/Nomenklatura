@@ -1478,7 +1478,7 @@ struct ScenarioPromptBuilder {
           "options": [
             {
               "id": "A",
-              "archetype": "repress|reform|negotiate|deflect|delay|attack|appease",
+              "archetype": "USE ONE: repress|investigate|surveil|attack (Security) | negotiate|international|trade (Foreign) | reform|production|allocate (Economic) | military|loyalty|mobilize (Military) | ideological|personnel|orthodox|deflect|sacrifice (Party) | administrative|governance|regulate|appease|delay (State)",
               "shortDescription": "Brief description of what the player does (1 sentence)",
               "immediateOutcome": "What happens as a result (2-3 paragraphs of narrative)",
               "statEffects": {

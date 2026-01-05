@@ -19,6 +19,7 @@ struct OutcomeView: View {
     @State private var showOutcome = false
     @State private var showReactions = false
     @State private var showStats = false
+    @State private var showAffinity = false
     @State private var showButton = false
 
     /// State mood based on current conditions
@@ -62,6 +63,17 @@ struct OutcomeView: View {
                                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         }
 
+                        // Affinity gain feedback - shows bureau path progress
+                        if showAffinity, let archetype = optionArchetype,
+                           let track = archetype.associatedTrack {
+                            AffinityGainCard(
+                                archetype: archetype,
+                                track: track,
+                                game: game
+                            )
+                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        }
+
                         // Continue button
                         if showButton {
                             ContinueButton {
@@ -99,8 +111,18 @@ struct OutcomeView: View {
             withAnimation(.easeOut(duration: 0.5).delay(1.1)) {
                 showStats = true
             }
-            withAnimation(.easeOut(duration: 0.4).delay(1.6)) {
-                showButton = true
+            // Show affinity gain after stats (if archetype has an associated track)
+            if optionArchetype?.associatedTrack != nil {
+                withAnimation(.easeOut(duration: 0.5).delay(1.5)) {
+                    showAffinity = true
+                }
+                withAnimation(.easeOut(duration: 0.4).delay(2.0)) {
+                    showButton = true
+                }
+            } else {
+                withAnimation(.easeOut(duration: 0.4).delay(1.6)) {
+                    showButton = true
+                }
             }
         } else {
             withAnimation(.easeOut(duration: 0.5).delay(0.6)) {
@@ -219,6 +241,145 @@ struct CharacterReactionCard: View {
             Rectangle()
                 .stroke(theme.borderTan.opacity(0.7), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Affinity Gain Card
+
+struct AffinityGainCard: View {
+    let archetype: OptionArchetype
+    let track: ExpandedCareerTrack
+    let game: Game
+    @Environment(\.theme) var theme
+    @State private var showProgress = false
+
+    /// Current affinity for this track
+    private var currentAffinity: Int {
+        game.trackAffinityScores.score(for: track)
+    }
+
+    /// Threshold to unlock bureau access
+    private let accessThreshold = 25
+
+    /// Whether this bureau is already accessible
+    private var hasAccess: Bool {
+        currentAffinity >= accessThreshold || game.currentCommittedTrack == track
+    }
+
+    /// Progress toward access (0.0 to 1.0)
+    private var progressPercent: Double {
+        min(1.0, Double(currentAffinity) / Double(accessThreshold))
+    }
+
+    /// How many more points needed
+    private var pointsRemaining: Int {
+        max(0, accessThreshold - currentAffinity)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Image(systemName: track.iconName)
+                    .font(.system(size: 14))
+                    .foregroundColor(track == game.currentCommittedTrack ? theme.accentGold : theme.sovietRed)
+
+                Text("EXPERTISE GAINED")
+                    .font(theme.labelFont)
+                    .tracking(2)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+
+                // Affinity points badge
+                HStack(spacing: 2) {
+                    Text("+\(archetype.affinityAmount)")
+                        .font(.system(size: 12, weight: .bold))
+                    Text(track.shortName)
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .foregroundColor(theme.accentGold)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(theme.accentGold.opacity(0.15))
+                .cornerRadius(4)
+            }
+
+            Rectangle()
+                .fill(theme.borderTan)
+                .frame(height: 1)
+
+            // Archetype description
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Your \(archetype.displayName.lowercased()) approach demonstrates skill in \(track.displayName).")
+                        .font(theme.bodyFontSmall)
+                        .foregroundColor(theme.inkBlack)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if hasAccess {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 10))
+                            Text("Bureau access unlocked")
+                                .font(theme.tagFont)
+                        }
+                        .foregroundColor(.statHigh)
+                    }
+                }
+            }
+
+            // Progress bar toward bureau access
+            if !hasAccess {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Bureau Access Progress")
+                            .font(theme.tagFont)
+                            .foregroundColor(theme.inkLight)
+
+                        Spacer()
+
+                        Text("\(currentAffinity)/\(accessThreshold)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.inkGray)
+                    }
+
+                    // Progress bar
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Background
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(theme.borderTan)
+
+                            // Fill
+                            if showProgress {
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(theme.accentGold)
+                                    .frame(width: geometry.size.width * progressPercent)
+                            }
+                        }
+                    }
+                    .frame(height: 8)
+
+                    // Hint text
+                    Text("\(pointsRemaining) more point\(pointsRemaining == 1 ? "" : "s") to unlock \(track.displayName) access")
+                        .font(.system(size: 9))
+                        .foregroundColor(theme.inkLight)
+                        .italic()
+                }
+            }
+        }
+        .padding(16)
+        .background(theme.parchmentDark)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(theme.accentGold.opacity(0.5), lineWidth: 1)
+        )
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                showProgress = true
+            }
+        }
     }
 }
 
