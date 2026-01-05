@@ -98,6 +98,10 @@ struct DeskView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(spacing: 16) {
+                            // Bureau Credential Badge (shown when committed to a core bureau)
+                            BureauCredentialBadge(game: game)
+                                .padding(.horizontal, 4)
+
                             // Player ID Card
                             PlayerIDCard(
                                 playerName: playerTitle,

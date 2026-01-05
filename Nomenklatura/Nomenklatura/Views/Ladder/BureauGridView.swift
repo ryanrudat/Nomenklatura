@@ -2,7 +2,7 @@
 //  BureauGridView.swift
 //  Nomenklatura
 //
-//  3x2 grid of bureau cards showing the 6 specialized career tracks
+//  Grid of bureau cards showing the 3 core playable career tracks
 //
 
 import SwiftUI
@@ -14,25 +14,33 @@ struct BureauGridView: View {
     @Binding var selectedTrack: ExpandedCareerTrack?
     @Environment(\.theme) var theme
 
-    // The 6 specialized bureaus (excluding .shared and .regional)
-    private let bureaus: [ExpandedCareerTrack] = [
-        .partyApparatus,
-        .stateMinistry,
+    // The 3 core playable bureaus
+    private let coreBureaus: [ExpandedCareerTrack] = [
         .securityServices,
-        .foreignAffairs,
         .economicPlanning,
-        .militaryPolitical
+        .partyApparatus
     ]
 
     var body: some View {
         VStack(spacing: 12) {
-            // Grid of bureau cards
+            // Section header
+            HStack {
+                Text("CHOOSE YOUR BUREAU")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1.5)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+
+            // Grid of bureau cards - 3 cards in a row
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 12) {
-                ForEach(bureaus, id: \.rawValue) { bureau in
+                ForEach(coreBureaus, id: \.rawValue) { bureau in
                     BureauCard(
                         track: bureau,
                         game: game,
@@ -51,9 +59,9 @@ struct BureauGridView: View {
                 }
             }
 
-            // Track affinity summary bar (Reigns-inspired)
+            // Track affinity summary bar (Reigns-inspired) - only for 3 core bureaus
             if showAffinitySummary {
-                AffinitySummaryBar(game: game)
+                CoreAffinitySummaryBar(game: game)
             }
         }
     }
@@ -61,13 +69,122 @@ struct BureauGridView: View {
     // Only show affinity summary if player has some affinity built up
     private var showAffinitySummary: Bool {
         let scores = game.trackAffinityScores
-        let total = scores.partyApparatus + scores.stateMinistry + scores.securityServices +
-                    scores.foreignAffairs + scores.economicPlanning + scores.militaryPolitical
+        let total = scores.securityServices + scores.economicPlanning + scores.partyApparatus
         return total > 0
     }
 }
 
-// MARK: - Affinity Summary Bar (Reigns-style stat meters)
+// MARK: - Core Affinity Summary Bar (3 playable bureaus only)
+
+struct CoreAffinitySummaryBar: View {
+    let game: Game
+    @Environment(\.theme) var theme
+
+    private var scores: TrackAffinityScores {
+        game.trackAffinityScores
+    }
+
+    // Find the dominant track among core bureaus
+    private var dominantCoreTrack: ExpandedCareerTrack? {
+        let coreScores: [(ExpandedCareerTrack, Int)] = [
+            (.securityServices, scores.securityServices),
+            (.economicPlanning, scores.economicPlanning),
+            (.partyApparatus, scores.partyApparatus)
+        ]
+        return coreScores.max(by: { $0.1 < $1.1 })?.0
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            // Divider label
+            HStack {
+                Rectangle()
+                    .fill(theme.borderTan)
+                    .frame(height: 1)
+
+                Text("BUREAU AFFINITY")
+                    .font(.system(size: 9, weight: .medium))
+                    .tracking(1)
+                    .foregroundColor(theme.inkLight)
+                    .fixedSize()
+
+                Rectangle()
+                    .fill(theme.borderTan)
+                    .frame(height: 1)
+            }
+
+            // Compact affinity bars for 3 core bureaus
+            HStack(spacing: 16) {
+                CoreAffinityMiniBar(
+                    track: .securityServices,
+                    score: scores.securityServices,
+                    isDominant: dominantCoreTrack == .securityServices
+                )
+                CoreAffinityMiniBar(
+                    track: .economicPlanning,
+                    score: scores.economicPlanning,
+                    isDominant: dominantCoreTrack == .economicPlanning
+                )
+                CoreAffinityMiniBar(
+                    track: .partyApparatus,
+                    score: scores.partyApparatus,
+                    isDominant: dominantCoreTrack == .partyApparatus
+                )
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(theme.parchmentDark)
+        .cornerRadius(6)
+    }
+}
+
+struct CoreAffinityMiniBar: View {
+    let track: ExpandedCareerTrack
+    let score: Int
+    let isDominant: Bool
+    @Environment(\.theme) var theme
+
+    // Normalized score (0-100, capped at 50 for display)
+    private var normalizedHeight: CGFloat {
+        CGFloat(min(score, 50)) / 50.0 * 24  // Max height 24pt
+    }
+
+    private var trackColor: Color {
+        BureauColors.primary(for: track)
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            // Bar
+            ZStack(alignment: .bottom) {
+                // Background
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(theme.borderTan.opacity(0.5))
+                    .frame(width: 20, height: 24)
+
+                // Fill
+                if score > 0 {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isDominant ? trackColor : trackColor.opacity(0.7))
+                        .frame(width: 20, height: max(4, normalizedHeight))
+                }
+            }
+
+            // Bureau code
+            Text(BureauColors.code(for: track))
+                .font(.system(size: 8, weight: isDominant ? .bold : .medium, design: .monospaced))
+                .foregroundColor(isDominant ? trackColor : theme.inkLight)
+
+            // Score
+            Text("\(score)")
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                .foregroundColor(theme.inkGray)
+        }
+    }
+}
+
+// MARK: - Legacy Affinity Summary Bar (all 6 bureaus - kept for compatibility)
 
 struct AffinitySummaryBar: View {
     let game: Game

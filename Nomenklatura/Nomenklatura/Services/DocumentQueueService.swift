@@ -149,6 +149,110 @@ class DocumentQueueService: ObservableObject {
         return Array(names).sorted { $0.components(separatedBy: " ").last ?? "" < $1.components(separatedBy: " ").last ?? "" }
     }
 
+    // MARK: - Region/Location Helpers for Document Generation
+
+    /// Location data derived from actual game regions for use in documents
+    struct DocumentLocation {
+        let zoneName: String       // e.g., "Zone 2: Industrial Zone"
+        let cityName: String       // e.g., "Fitzgerald City"
+        let regionType: String     // e.g., "industrial", "agricultural"
+        let shortName: String      // e.g., "Industrial Zone"
+    }
+
+    /// Get a random location from actual game regions for document context
+    private func getRandomLocation(for game: Game, preferType: RegionType? = nil) -> DocumentLocation {
+        // Prefer regions matching the requested type if specified
+        let matchingRegions: [Region]
+        if let preferType = preferType {
+            matchingRegions = game.regions.filter { $0.type == preferType }
+        } else {
+            matchingRegions = Array(game.regions)
+        }
+
+        // Use matching regions if found, otherwise fall back to any region
+        let regions = matchingRegions.isEmpty ? Array(game.regions) : matchingRegions
+
+        // If no game regions exist, use fallback data
+        guard let region = regions.randomElement() else {
+            return DocumentLocation(
+                zoneName: "Zone 2: Industrial Zone",
+                cityName: "Fitzgerald City",
+                regionType: "industrial",
+                shortName: "Industrial Zone"
+            )
+        }
+
+        // Extract city name from region name (pattern is "Zone N: Name" or just get the main city)
+        let cityNames: [String: String] = [
+            "zone_1": "The Capital",
+            "zone_2": "Fitzgerald City",
+            "zone_3": "The People's Proletarian Town",
+            "zone_4": "Upton on Tye",
+            "zone_5": "Red Harbor",
+            "zone_6": "Highland",
+            "zone_7": "The Frontier"
+        ]
+
+        let shortNames: [String: String] = [
+            "zone_1": "Capital District",
+            "zone_2": "Industrial Zone",
+            "zone_3": "Agricultural Zone",
+            "zone_4": "Northern Zone",
+            "zone_5": "Coastal Zone",
+            "zone_6": "Mountain Zone",
+            "zone_7": "Border Zone"
+        ]
+
+        return DocumentLocation(
+            zoneName: region.name,
+            cityName: cityNames[region.regionId] ?? "District Center",
+            regionType: region.type.rawValue,
+            shortName: shortNames[region.regionId] ?? "Central Zone"
+        )
+    }
+
+    /// Get multiple locations for documents that reference multiple areas
+    private func getMultipleLocations(for game: Game, count: Int) -> [DocumentLocation] {
+        var locations: [DocumentLocation] = []
+        var usedRegionIds: Set<String> = []
+
+        for region in game.regions.shuffled() {
+            guard locations.count < count else { break }
+            guard !usedRegionIds.contains(region.regionId) else { continue }
+
+            usedRegionIds.insert(region.regionId)
+
+            let cityNames: [String: String] = [
+                "zone_1": "The Capital",
+                "zone_2": "Fitzgerald City",
+                "zone_3": "The People's Proletarian Town",
+                "zone_4": "Upton on Tye",
+                "zone_5": "Red Harbor",
+                "zone_6": "Highland",
+                "zone_7": "The Frontier"
+            ]
+
+            let shortNames: [String: String] = [
+                "zone_1": "Capital District",
+                "zone_2": "Industrial Zone",
+                "zone_3": "Agricultural Zone",
+                "zone_4": "Northern Zone",
+                "zone_5": "Coastal Zone",
+                "zone_6": "Mountain Zone",
+                "zone_7": "Border Zone"
+            ]
+
+            locations.append(DocumentLocation(
+                zoneName: region.name,
+                cityName: cityNames[region.regionId] ?? "District Center",
+                regionType: region.type.rawValue,
+                shortName: shortNames[region.regionId] ?? "Central Zone"
+            ))
+        }
+
+        return locations
+    }
+
     /// Format a name list as a numbered document attachment
     private func formatNameListAsAttachment(names: [String], title: String) -> String {
         var result = """
@@ -344,41 +448,88 @@ class DocumentQueueService: ObservableObject {
     }
 
     /// Apply role-based document weighting based on player's track and position
+    /// This implements HARD FILTERING - documents outside your bureau jurisdiction are excluded
     private func applyRoleBasedWeights(_ weights: inout [DocumentCategory: Double], game: Game) {
         let playerTrack = game.currentCommittedTrack
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Adjust weights based on player's career track
-        // Players receive more documents relevant to their specialization
+        // HARD FILTERING: Bureau-specific documents should only go to relevant bureaus
+        // A Security Services official shouldn't receive Planning Commission resource allocation requests
+        // Cross-bureau documents should be rare and represent interdepartmental matters
         if let track = playerTrack {
             switch track {
             case .securityServices:
-                // Security track: 2x security documents, 1.5x crisis documents
-                weights[.security] = (weights[.security] ?? 15) * 2.0
-                weights[.crisis] = (weights[.crisis] ?? 3) * 1.5
+                // Security track: Focus on security documents
+                weights[.security] = (weights[.security] ?? 15) * 2.5
+                weights[.crisis] = (weights[.crisis] ?? 3) * 2.0
+                // Hard filter: No direct economic planning documents (not our bureau)
+                weights[.economic] = 0
+                // Minimal diplomatic (only security-relevant)
+                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 0.2
+                // Some military (intelligence overlap)
+                weights[.military] = (weights[.military] ?? 15) * 0.5
+
             case .economicPlanning:
-                // Economic track: 1.75x economic documents
-                weights[.economic] = (weights[.economic] ?? 20) * 1.75
+                // Economic track: Focus on economic documents
+                weights[.economic] = (weights[.economic] ?? 20) * 2.5
+                // Hard filter: No direct security documents (not our bureau)
+                weights[.security] = 0
+                // Minimal military (logistics overlap only)
+                weights[.military] = (weights[.military] ?? 15) * 0.3
+                // Some diplomatic (trade matters)
+                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 0.5
+
             case .militaryPolitical:
-                // Military track: 2x military documents
-                weights[.military] = (weights[.military] ?? 15) * 2.0
+                // Military track: Focus on military documents
+                weights[.military] = (weights[.military] ?? 15) * 2.5
+                // Some security (military intelligence overlap)
+                weights[.security] = (weights[.security] ?? 15) * 0.5
+                // Hard filter: No direct economic planning
+                weights[.economic] = 0
+                // Some diplomatic (military attaché matters)
+                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 0.4
+
             case .partyApparatus:
-                // Party track: 1.75x political, 1.5x personnel documents
-                weights[.political] = (weights[.political] ?? 20) * 1.75
-                weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
+                // Party track: Focus on political and personnel documents
+                weights[.political] = (weights[.political] ?? 20) * 2.0
+                weights[.personnel] = (weights[.personnel] ?? 15) * 2.0
+                // Reduced but present: oversight role sees everything at lower rate
+                weights[.economic] = (weights[.economic] ?? 20) * 0.3
+                weights[.security] = (weights[.security] ?? 15) * 0.3
+                weights[.military] = (weights[.military] ?? 15) * 0.3
+
             case .foreignAffairs:
-                // Foreign Affairs track: 2x diplomatic documents
-                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 2.0
+                // Foreign Affairs track: Focus on diplomatic documents
+                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 3.0
+                // Some economic (trade negotiations)
+                weights[.economic] = (weights[.economic] ?? 20) * 0.4
+                // Hard filter: No direct security documents
+                weights[.security] = 0
+                // Minimal military (arms treaties only)
+                weights[.military] = (weights[.military] ?? 15) * 0.2
+
             case .stateMinistry:
-                // State Ministry: 1.5x economic, 1.5x political
+                // State Ministry: Administrative matters, economic and political
                 weights[.economic] = (weights[.economic] ?? 20) * 1.5
                 weights[.political] = (weights[.political] ?? 20) * 1.5
+                weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
+                // Reduced specialized bureau documents
+                weights[.security] = (weights[.security] ?? 15) * 0.3
+                weights[.military] = (weights[.military] ?? 15) * 0.3
+
             case .regional:
-                // Regional track: 1.5x economic, 1.5x personnel (regional matters)
+                // Regional track: Local matters - economic, personnel, some political
                 weights[.economic] = (weights[.economic] ?? 20) * 1.5
                 weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
+                weights[.political] = (weights[.political] ?? 20) * 1.2
+                // Hard filter: No direct security or military (handled by central bureaus)
+                weights[.security] = (weights[.security] ?? 15) * 0.1
+                weights[.military] = (weights[.military] ?? 15) * 0.1
+                weights[.diplomatic] = 0
+
             case .shared:
-                // Shared track: No specific weighting - balanced documents
+                // Shared track (early career): Balanced documents, no specialization yet
+                // These are junior officials who see general administrative work
                 break
             }
         }
@@ -435,12 +586,15 @@ class DocumentQueueService: ObservableObject {
     }
 
     private func generateDenunciationLetter(for game: Game) -> DeskDocument {
+        // Get a random location for context
+        let location = getRandomLocation(for: game)
+
         let subjects = [
-            ("Marcus Henderson", "Factory Worker", "Textile Mill #7"),
-            ("Dr. Anna Kowalski", "Physician", "City Hospital"),
-            ("John Peterson", "Teacher", "Secondary School #12"),
-            ("Ellen Morrison", "Secretary", "Trade Ministry"),
-            ("Samuel Wallace", "Engineer", "Power Station #3")
+            ("Marcus Henderson", "Factory Worker", "Textile Mill #7, \(location.cityName)"),
+            ("Dr. Anna Kowalski", "Physician", "\(location.cityName) City Hospital"),
+            ("John Peterson", "Teacher", "Secondary School #12, \(location.shortName)"),
+            ("Ellen Morrison", "Secretary", "Trade Ministry, \(location.shortName) Office"),
+            ("Samuel Wallace", "Engineer", "Power Station #3, \(location.cityName)")
         ]
 
         let (name, job, workplace) = subjects.randomElement()!
@@ -459,6 +613,7 @@ class DocumentQueueService: ObservableObject {
 
         let body = """
         CONFIDENTIAL - CITIZEN REPORT
+        ORIGIN: \(location.zoneName)
 
         Subject: \(name.uppercased())
         Position: \(job), \(workplace)
@@ -474,7 +629,7 @@ class DocumentQueueService: ObservableObject {
             .withTemplateId("denunciation_\(UUID().uuidString.prefix(6))")
             .ofType(.denunciation)
             .titled("Citizen Report: \(name)")
-            .from("Anonymous", title: "Concerned Citizen")
+            .from("Anonymous", title: "Concerned Citizen, \(location.shortName)")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.routine)
             .inCategory(.security)
@@ -1436,6 +1591,12 @@ class DocumentQueueService: ObservableObject {
         let authority = AuthorityLanguage(game: game)
         let resourceLang = authority.resourceAllocationLanguage(resource: "coal", amount: "40,000 tonnes")
 
+        // Get actual regions for location references
+        let industrialLoc = getRandomLocation(for: game, preferType: .industrial)
+        let capitalLoc = getRandomLocation(for: game, preferType: .capital)
+        let coastalLoc = getRandomLocation(for: game, preferType: .coastal)
+        let northernLoc = getRandomLocation(for: game, preferType: .extractive)
+
         let actionLine = authority.hasStrategicResourceAuthority ?
             "YOU HAVE 40,000 TONNES TO DISTRIBUTE." :
             "Your recommendation will be forwarded to the Politburo for final allocation."
@@ -1451,17 +1612,17 @@ class DocumentQueueService: ObservableObject {
 
         REQUESTS:
 
-        1. RESIDENTIAL HEATING - 60,000 tonnes
-           "Predicted harsh winter. Without additional coal, rationing will be necessary."
+        1. RESIDENTIAL HEATING (\(capitalLoc.shortName) & \(northernLoc.shortName)) - 60,000 tonnes
+           "Predicted harsh winter. \(capitalLoc.cityName) and \(northernLoc.cityName) report coal reserves critically low. Without additional allocation, rationing will be necessary."
 
-        2. STEEL PRODUCTION - 50,000 tonnes
-           "Current allocation insufficient to meet tank production targets."
+        2. STEEL PRODUCTION (\(industrialLoc.shortName)) - 50,000 tonnes
+           "Blast furnaces at \(industrialLoc.cityName) operating below capacity. Current allocation insufficient to meet tank production targets at Factory Complex #7."
 
-        3. RAIL TRANSPORT - 45,000 tonnes
-           "Locomotives at reduced capacity. Shipping delays mounting."
+        3. RAIL TRANSPORT (National Network) - 45,000 tonnes
+           "Locomotives on the \(industrialLoc.cityName)-\(coastalLoc.cityName) corridor at reduced capacity. Shipping delays mounting across all zones."
 
-        4. EXPORT COMMITMENT - 30,000 tonnes
-           "Contractual obligation to allied nation."
+        4. EXPORT COMMITMENT (\(coastalLoc.shortName)) - 30,000 tonnes
+           "Contractual obligation to allied nation. \(coastalLoc.cityName) port authority reports cargo ships awaiting loading."
 
         \(actionLine)
 
@@ -1518,20 +1679,23 @@ class DocumentQueueService: ObservableObject {
     }
 
     private func generateProductionDiscrepancy(for game: Game) -> DeskDocument {
+        // Get actual industrial region for context
+        let industrialLoc = getRandomLocation(for: game, preferType: .industrial)
+
         let body = """
         INTERNAL MEMO - DO NOT DISTRIBUTE
 
-        FROM: Statistical Analysis Division
+        FROM: Statistical Analysis Division, \(industrialLoc.shortName)
         SUBJECT: Irregularities in Steel Sector Reporting
 
-        Our analysis indicates significant discrepancies between reported and actual steel production.
+        Our analysis indicates significant discrepancies between reported and actual steel production at the \(industrialLoc.cityName) steel combine.
 
         REPORTED (Q3): 2.4 million tonnes
         ESTIMATED ACTUAL: 1.7 million tonnes
 
         Discrepancy: approximately 700,000 tonnes (29% inflation)
 
-        This pattern has persisted for 18 months. Previous reports may have been similarly inflated.
+        This pattern has persisted for 18 months at facilities throughout \(industrialLoc.shortName). Previous reports may have been similarly inflated.
 
         IMPLICATIONS:
         - National figures are overstated
@@ -1545,7 +1709,7 @@ class DocumentQueueService: ObservableObject {
             .withTemplateId("discrepancy_\(UUID().uuidString.prefix(6))")
             .ofType(.report)
             .titled("Production Discrepancy Analysis")
-            .from("Statistical Analysis", title: "Planning Commission")
+            .from("Statistical Analysis", title: "\(industrialLoc.shortName) Planning Office")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.priority)
             .inCategory(.economic)
@@ -1588,12 +1752,15 @@ class DocumentQueueService: ObservableObject {
     }
 
     private func generateFactoryDirectorAppeal(for game: Game) -> DeskDocument {
+        // Get actual industrial region for context
+        let industrialLoc = getRandomLocation(for: game, preferType: .industrial)
+
         let body = """
         [HANDWRITTEN LETTER - not official channels]
 
         Comrade,
 
-        I am writing to you directly because I am desperate. I am the director of Tractor Factory #12 in Volgograd.
+        I am writing to you directly because I am desperate. I am the director of Tractor Factory #12 in \(industrialLoc.cityName), \(industrialLoc.shortName).
 
         My factory has been assigned a quota of 500 tractors per quarter. Last quarter we produced 340. The quarter before, 380.
 
@@ -1615,7 +1782,7 @@ class DocumentQueueService: ObservableObject {
             .withTemplateId("appeal_\(UUID().uuidString.prefix(6))")
             .ofType(.letter)
             .titled("Personal Appeal: Dir. Morrison")
-            .from("Eugene Morrison", title: "Director, Tractor Factory #12")
+            .from("Eugene Morrison", title: "Director, Tractor Factory #12, \(industrialLoc.cityName)")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.routine)
             .inCategory(.economic)

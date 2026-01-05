@@ -35,6 +35,108 @@ struct FiftiesColors {
     static let leatherBrown = Color(hex: "5C4033")     // Leather binding
 }
 
+// MARK: - Bureau Colors
+
+/// Color palette for the three core bureaus
+struct BureauColors {
+
+    /// Primary color for a bureau (main accent/header)
+    static func primary(for bureau: ExpandedCareerTrack) -> Color {
+        switch bureau {
+        case .securityServices:
+            return Color(hex: "8B0000")     // Dark red - surveillance, authority
+        case .economicPlanning:
+            return Color(hex: "2D5A27")     // Soviet green - production, industry
+        case .partyApparatus:
+            return Color(hex: "CC0000")     // Party red - ideology, power
+        default:
+            return FiftiesColors.leatherBrown
+        }
+    }
+
+    /// Secondary/accent color for a bureau
+    static func accent(for bureau: ExpandedCareerTrack) -> Color {
+        switch bureau {
+        case .securityServices:
+            return FiftiesColors.stampRed   // Bright red accents
+        case .economicPlanning:
+            return Color(hex: "4A7C59")     // Lighter industrial green
+        case .partyApparatus:
+            return Color(hex: "FFD700")     // Gold - prestige, Party glory
+        default:
+            return FiftiesColors.brassGold
+        }
+    }
+
+    /// Background color for bureau cards/sections
+    static func background(for bureau: ExpandedCareerTrack) -> Color {
+        switch bureau {
+        case .securityServices:
+            return Color(hex: "8B0000").opacity(0.08)
+        case .economicPlanning:
+            return Color(hex: "2D5A27").opacity(0.08)
+        case .partyApparatus:
+            return Color(hex: "CC0000").opacity(0.08)
+        default:
+            return FiftiesColors.cardstock
+        }
+    }
+
+    /// Icon name for a bureau
+    static func icon(for bureau: ExpandedCareerTrack) -> String {
+        bureau.iconName
+    }
+
+    /// Short code for a bureau (BPS, GOSPLAN, CC)
+    static func code(for bureau: ExpandedCareerTrack) -> String {
+        bureau.shortName
+    }
+
+    /// Full display name for bureau header
+    static func headerTitle(for bureau: ExpandedCareerTrack) -> String {
+        switch bureau {
+        case .securityServices:
+            return "STATE PROTECTION BUREAU"
+        case .economicPlanning:
+            return "ECONOMIC PLANNING BUREAU"
+        case .partyApparatus:
+            return "PARTY APPARATUS BUREAU"
+        case .foreignAffairs:
+            return "FOREIGN AFFAIRS BUREAU"
+        case .militaryPolitical:
+            return "MILITARY-POLITICAL BUREAU"
+        case .stateMinistry:
+            return "STATE MINISTRY BUREAU"
+        case .regional:
+            return "REGIONAL ADMINISTRATION"
+        case .shared:
+            return "GENERAL ADMINISTRATION"
+        }
+    }
+
+    /// Subtitle for bureau identity
+    static func subtitle(for bureau: ExpandedCareerTrack) -> String {
+        switch bureau {
+        case .securityServices:
+            return "Security Services Official"
+        case .economicPlanning:
+            return "Gosplan Official"
+        case .partyApparatus:
+            return "Central Committee Official"
+        case .foreignAffairs:
+            return "Foreign Ministry Official"
+        case .militaryPolitical:
+            return "Military-Political Official"
+        case .stateMinistry:
+            return "State Ministry Official"
+        case .regional:
+            return "Regional Administrator"
+        case .shared:
+            return "Government Official"
+        }
+    }
+}
+
 // MARK: - Rubber Stamp Component
 
 /// Authentic rubber stamp effect with ink bleed and wear

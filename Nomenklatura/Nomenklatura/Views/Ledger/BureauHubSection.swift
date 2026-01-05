@@ -2,7 +2,7 @@
 //  BureauHubSection.swift
 //  Nomenklatura
 //
-//  Bureau Hub section for LedgerView - shows all 6 bureaus with access status
+//  Bureau Hub section for LedgerView - shows the 3 core playable bureaus with access status
 //  and track affinity progress. Provides natural paths to bureau access through
 //  affinity building, patron connections, and position progression.
 //
@@ -16,14 +16,11 @@ struct BureauHubSection: View {
 
     @Environment(\.theme) var theme
 
-    // The 6 specialized bureaus
-    private let bureaus: [ExpandedCareerTrack] = [
-        .partyApparatus,
-        .stateMinistry,
+    // The 3 core playable bureaus
+    private let coreBureaus: [ExpandedCareerTrack] = [
         .securityServices,
-        .foreignAffairs,
         .economicPlanning,
-        .militaryPolitical
+        .partyApparatus
     ]
 
     var body: some View {
@@ -39,22 +36,28 @@ struct BureauHubSection: View {
 
                 // Track commitment status
                 if let track = game.currentCommittedTrack {
-                    Text("Committed: \(track.shortName)")
-                        .font(.system(size: 10))
-                        .foregroundColor(theme.accentGold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(4)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(BureauColors.primary(for: track))
+                            .frame(width: 6, height: 6)
+                        Text(BureauColors.code(for: track))
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(BureauColors.primary(for: track))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(theme.parchmentDark)
+                    .cornerRadius(4)
                 }
             }
 
-            // Bureau cards grid (2 columns for mobile)
+            // Bureau cards (3 in a row for core bureaus)
             LazyVGrid(columns: [
+                GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible())
             ], spacing: 10) {
-                ForEach(bureaus, id: \.rawValue) { bureau in
+                ForEach(coreBureaus, id: \.rawValue) { bureau in
                     BureauAccessCard(
                         bureau: bureau,
                         game: game,
@@ -66,7 +69,7 @@ struct BureauHubSection: View {
 
             // Affinity explanation (if player has no affinity yet)
             if !hasAnyAffinity {
-                Text("Your actions build expertise in different areas. Gain 25+ affinity to unlock bureau access.")
+                Text("Your actions build expertise. Gain 25+ affinity to unlock bureau access.")
                     .font(.system(size: 10, design: .serif))
                     .foregroundColor(theme.inkLight)
                     .italic()
@@ -85,8 +88,7 @@ struct BureauHubSection: View {
 
     private var hasAnyAffinity: Bool {
         let scores = game.trackAffinityScores
-        return scores.partyApparatus + scores.stateMinistry + scores.securityServices +
-               scores.foreignAffairs + scores.economicPlanning + scores.militaryPolitical > 0
+        return scores.securityServices + scores.economicPlanning + scores.partyApparatus > 0
     }
 
     /// Determine access status for a bureau

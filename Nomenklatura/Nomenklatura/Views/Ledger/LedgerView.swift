@@ -42,6 +42,17 @@ struct LedgerView: View {
         return .danger
     }
 
+    // Check if player is committed to a core bureau
+    private var committedCoreBureau: ExpandedCareerTrack? {
+        guard let track = game.currentCommittedTrack else { return nil }
+        switch track {
+        case .securityServices, .economicPlanning, .partyApparatus:
+            return track
+        default:
+            return nil
+        }
+    }
+
     var body: some View {
         ZStack {
             // Background
@@ -64,6 +75,10 @@ struct LedgerView: View {
                 // Scrollable stats
                 ScrollView {
                     VStack(spacing: 20) {
+                        // Bureau Operations Center - shown prominently when committed to core bureau
+                        if let bureau = committedCoreBureau {
+                            BureauOperationsCenter(game: game, bureau: bureau)
+                        }
                         // Stability section - CRITICAL
                         StatCategoryCard(
                             icon: "shield.fill",

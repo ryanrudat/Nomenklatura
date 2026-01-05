@@ -2,8 +2,8 @@
 //  BureauCard.swift
 //  Nomenklatura
 //
-//  Soviet-style bureau badge card for the Ladder view
-//  Shows player's position/status in each career track
+//  Soviet propaganda-style bureau selection cards for the Ladder view.
+//  Bold, visual cards that invite players to join a bureau.
 //
 
 import SwiftUI
@@ -32,102 +32,292 @@ struct BureauCard: View {
         game.trackAffinityScores.score(for: track)
     }
 
-    // Get player's status text in this track
-    private var playerStatusText: String {
-        if isPlayerTrack {
-            // Find current position title in this track
-            if let position = ladder.first(where: {
-                $0.expandedTrack == track && $0.index == game.currentPositionIndex
-            }) {
-                return position.title.uppercased()
-            }
-            return "ASSIGNED"
-        } else if hasHeldPosition {
-            return "PREVIOUS"
-        } else if affinityScore >= 15 {
-            return "EMERGING"
-        } else {
-            return "UNASSIGNED"
-        }
+    // Bureau-specific colors
+    private var primaryColor: Color {
+        BureauColors.primary(for: track)
     }
 
-    private var statusColor: Color {
+    private var accentColor: Color {
+        BureauColors.accent(for: track)
+    }
+
+    // Propaganda-style call to action
+    private var ctaText: String {
         if isPlayerTrack {
-            return theme.accentGold
-        } else if hasHeldPosition {
-            return theme.inkGray
-        } else if affinityScore >= 15 {
-            return Color(hex: "4A90A4")  // Teal for emerging
+            return "YOUR BUREAU"
+        } else if affinityScore >= 25 {
+            return "JOIN NOW"
+        } else if affinityScore > 0 {
+            return "BUILD AFFINITY"
         } else {
-            return theme.inkLight
+            return "EXPLORE"
         }
     }
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 6) {
-                // Bureau icon - Soviet badge style
+            VStack(spacing: 0) {
+                // Top color block with emblem
                 ZStack {
-                    // Badge background
-                    Circle()
-                        .fill(isSelected ? theme.sovietRed : theme.schemeCard)
-                        .frame(width: 50, height: 50)
+                    // Background gradient
+                    LinearGradient(
+                        colors: [
+                            primaryColor,
+                            primaryColor.opacity(0.85)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
 
-                    // Gold border if player's track
+                    // Decorative rays (propaganda poster style)
+                    if isPlayerTrack || isSelected {
+                        propagandaRays
+                    }
+
+                    // Bureau emblem
+                    VStack(spacing: 4) {
+                        BureauEmblem(bureau: track, size: .medium)
+                            .brightness(0.1)
+
+                        // Bureau code
+                        Text(BureauColors.code(for: track))
+                            .font(.system(size: 14, weight: .black, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                    }
+
+                    // "Your Bureau" badge
                     if isPlayerTrack {
-                        Circle()
-                            .stroke(theme.accentGold, lineWidth: 2)
-                            .frame(width: 54, height: 54)
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("ACTIVE")
+                                    .font(.system(size: 7, weight: .black, design: .monospaced))
+                                    .foregroundColor(primaryColor)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(accentColor)
+                                    .cornerRadius(2)
+                                    .padding(4)
+                            }
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(height: 90)
+                .clipped()
+
+                // Bottom info section
+                VStack(spacing: 4) {
+                    // Bureau name
+                    Text(track.shortName)
+                        .font(.system(size: 10, weight: .bold))
+                        .tracking(0.5)
+                        .foregroundColor(theme.inkBlack)
+                        .lineLimit(1)
+
+                    // Affinity progress
+                    if !isPlayerTrack {
+                        affinityProgress
                     }
 
-                    Image(systemName: track.iconName)
-                        .font(.system(size: 22))
-                        .foregroundColor(isSelected ? .white : (isPlayerTrack ? theme.accentGold : theme.inkGray))
+                    // CTA or status
+                    Text(ctaText)
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundColor(isPlayerTrack ? accentColor : primaryColor)
                 }
-
-                // Bureau short name
-                Text(track.shortName)
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(0.5)
-                    .foregroundColor(isSelected ? theme.sovietRed : theme.inkBlack)
-
-                // Status text
-                Text(playerStatusText)
-                    .font(.system(size: 8, weight: .medium))
-                    .tracking(0.5)
-                    .foregroundColor(statusColor)
-                    .lineLimit(1)
-
-                // Affinity score (if > 0)
-                if affinityScore > 0 {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 8))
-                        Text("\(affinityScore)")
-                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                    }
-                    .foregroundColor(theme.inkGray)
-                }
-
-                // Previous indicator star
-                if hasHeldPosition && !isPlayerTrack {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 8))
-                        .foregroundColor(theme.bronzeGold)
-                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(
+                    isPlayerTrack
+                        ? primaryColor.opacity(0.1)
+                        : (isSelected ? primaryColor.opacity(0.05) : theme.parchmentDark)
+                )
             }
-            .padding(10)
-            .frame(maxWidth: .infinity)
-            .background(isSelected ? theme.sovietRed.opacity(0.1) : theme.parchmentDark)
+            .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(
-                        isSelected ? theme.sovietRed :
-                            (isPlayerTrack ? theme.accentGold : theme.borderTan),
-                        lineWidth: isSelected ? 2 : 1
+                        isPlayerTrack ? accentColor :
+                            (isSelected ? primaryColor : theme.borderTan),
+                        lineWidth: isPlayerTrack ? 2 : (isSelected ? 2 : 1)
                     )
             )
-            .cornerRadius(8)
+            .shadow(
+                color: isSelected ? primaryColor.opacity(0.3) : .black.opacity(0.1),
+                radius: isSelected ? 6 : 2,
+                x: 0,
+                y: isSelected ? 3 : 1
+            )
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+
+    // MARK: - Propaganda Rays
+
+    private var propagandaRays: some View {
+        GeometryReader { geo in
+            ZStack {
+                ForEach(0..<8, id: \.self) { i in
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 3, height: geo.size.height * 1.5)
+                        .rotationEffect(.degrees(Double(i) * 22.5))
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .position(x: geo.size.width / 2, y: geo.size.height / 2)
+        }
+    }
+
+    // MARK: - Affinity Progress
+
+    private var affinityProgress: some View {
+        VStack(spacing: 2) {
+            // Progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    // Background
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(theme.borderTan)
+
+                    // Fill
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(primaryColor)
+                        .frame(width: geo.size.width * CGFloat(min(affinityScore, 25)) / 25.0)
+                }
+            }
+            .frame(height: 4)
+
+            // Score text
+            HStack {
+                Text("\(affinityScore)/25")
+                    .font(.system(size: 7, design: .monospaced))
+                    .foregroundColor(theme.inkLight)
+                Spacer()
+            }
+        }
+    }
+}
+
+// MARK: - Large Bureau Poster Card (for selection screen)
+
+/// Larger, more dramatic bureau card for dedicated selection views
+struct BureauPosterCard: View {
+    let track: ExpandedCareerTrack
+    let game: Game
+    let onSelect: () -> Void
+    @Environment(\.theme) var theme
+
+    private var isCommitted: Bool {
+        game.currentCommittedTrack == track
+    }
+
+    private var primaryColor: Color {
+        BureauColors.primary(for: track)
+    }
+
+    private var affinityScore: Int {
+        game.trackAffinityScores.score(for: track)
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(spacing: 0) {
+                // Large header section
+                ZStack {
+                    // Background
+                    LinearGradient(
+                        colors: [primaryColor, primaryColor.opacity(0.8)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+
+                    // Propaganda rays
+                    GeometryReader { geo in
+                        ZStack {
+                            ForEach(0..<12, id: \.self) { i in
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.08))
+                                    .frame(width: 4, height: geo.size.height * 2)
+                                    .rotationEffect(.degrees(Double(i) * 15))
+                            }
+                        }
+                        .position(x: geo.size.width / 2, y: geo.size.height * 0.7)
+                    }
+
+                    // Content
+                    VStack(spacing: 12) {
+                        // Large emblem
+                        BureauEmblem(bureau: track, size: .large)
+
+                        // Bureau title
+                        Text(BureauColors.headerTitle(for: track))
+                            .font(.system(size: 16, weight: .black, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+
+                        // Subtitle
+                        Text(BureauColors.subtitle(for: track).uppercased())
+                            .font(.system(size: 11, weight: .medium))
+                            .tracking(1)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .padding(.vertical, 20)
+                }
+                .frame(height: 180)
+
+                // Bottom section
+                VStack(spacing: 12) {
+                    // Status
+                    if isCommitted {
+                        HStack {
+                            StatusLight(.active, size: 10)
+                            Text("YOUR BUREAU")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(primaryColor)
+                        }
+                    } else {
+                        // Affinity
+                        VStack(spacing: 4) {
+                            Text("AFFINITY")
+                                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                .foregroundColor(theme.inkLight)
+
+                            CircularGauge(
+                                value: Double(min(affinityScore, 25)) * 4,
+                                label: "",
+                                color: primaryColor,
+                                size: 50
+                            )
+                        }
+                    }
+
+                    // CTA Button
+                    Text(isCommitted ? "OPEN PORTAL" : (affinityScore >= 25 ? "COMMIT NOW" : "BUILD AFFINITY"))
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(primaryColor)
+                        .cornerRadius(4)
+                }
+                .padding(16)
+                .background(theme.parchment)
+            }
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(primaryColor.opacity(0.3), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(.plain)
     }
@@ -138,37 +328,50 @@ struct BureauCard: View {
     let container = try! ModelContainer(for: Game.self, configurations: config)
     let game = Game(campaignId: "coldwar")
     game.currentPositionIndex = 3
+    game.committedTrack = ExpandedCareerTrack.securityServices.rawValue
     container.mainContext.insert(game)
 
     let ladder = CampaignLoader.shared.getColdWarCampaign().ladder
 
-    return VStack(spacing: 20) {
-        // Normal state
-        HStack {
-            BureauCard(
-                track: .partyApparatus,
-                game: game,
-                ladder: ladder,
-                isSelected: false,
-                onTap: {}
-            )
-            BureauCard(
+    return ScrollView {
+        VStack(spacing: 20) {
+            // Small cards
+            HStack(spacing: 12) {
+                BureauCard(
+                    track: .securityServices,
+                    game: game,
+                    ladder: ladder,
+                    isSelected: false,
+                    onTap: {}
+                )
+                BureauCard(
+                    track: .economicPlanning,
+                    game: game,
+                    ladder: ladder,
+                    isSelected: true,
+                    onTap: {}
+                )
+                BureauCard(
+                    track: .partyApparatus,
+                    game: game,
+                    ladder: ladder,
+                    isSelected: false,
+                    onTap: {}
+                )
+            }
+            .padding(.horizontal)
+
+            // Large poster card
+            BureauPosterCard(
                 track: .securityServices,
                 game: game,
-                ladder: ladder,
-                isSelected: true,
-                onTap: {}
+                onSelect: {}
             )
-            BureauCard(
-                track: .foreignAffairs,
-                game: game,
-                ladder: ladder,
-                isSelected: false,
-                onTap: {}
-            )
+            .padding(.horizontal)
         }
-        .padding()
+        .padding(.vertical)
     }
+    .background(Color(hex: "E8E4D9"))
     .modelContainer(container)
     .environment(\.theme, ColdWarTheme())
 }
