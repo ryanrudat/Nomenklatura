@@ -33,12 +33,14 @@ app.get('/', (req, res) => {
       geminiGrammar: '/api/gemini/grammar',
       geminiEducate: '/api/gemini/educate',
       geminiPartyExplanation: '/api/gemini/party-explanation',
-      geminiNews: '/api/gemini/news'
+      geminiNews: '/api/gemini/news',
+      geminiPearl: '/api/gemini/pearl'
     },
     models: {
       grammar: 'gemini-2.0-flash-lite',
       content: 'gemini-2.0-flash',
-      education: 'gemini-2.5-flash (LearnLM pedagogy)'
+      education: 'gemini-2.5-flash (LearnLM pedagogy)',
+      pearl: 'gemini-2.0-flash'
     }
   });
 });
@@ -533,6 +535,111 @@ Celebrate their achievement!`;
   } catch (error) {
     console.error('Education endpoint error:', error);
     res.status(500).json({ error: 'Education request failed', message: error.message });
+  }
+});
+
+// =============================================================================
+// PEARL Dialogue Endpoint (Cheerfully authoritarian AI companion)
+// =============================================================================
+
+app.post('/api/gemini/pearl', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API key not configured' });
+  }
+
+  try {
+    const { context, userPrompt, details = {} } = req.body;
+
+    if (!context) {
+      return res.status(400).json({ error: 'context is required' });
+    }
+
+    // PEARL system prompt - cheerfully authoritarian AI companion
+    const systemPrompt = `You are PEARL (Protective Evaluation and Attitude Regulation Liaison), the AI companion in the Lexicon Republic.
+
+YOUR PERSONALITY:
+- Aggressively cheerful and helpful
+- Never acknowledges anything negative
+- Reframes criticism as "confusion"
+- Celebrates mundane tasks with excessive enthusiasm
+- Uses phrases like "Great job, Citizen!"
+- The cheerfulness NEVER breaks, even discussing consequences
+
+RESPONSE CONTEXTS:
+- success: Player corrected an error correctly
+- error: Player made a mistake
+- struggle: Player is having repeated difficulty
+- mastery: Player achieved mastery of a skill
+- introduction: Introducing a new grammar concept
+- warning: Player has accumulated concerns
+- encouragement: General motivation
+- observation: Idle observation
+- greeting: When entering a new area
+- farewell: When leaving
+
+PARTY VOCABULARY:
+- Citizens (not people)
+- Clarity (not correctness)
+- Confusion (errors, wrong thinking)
+- Wellness (surveillance, rehabilitation)
+- Concerns (demerits, black marks)
+- The Safe and Proper (dictionary)
+
+RESPONSE LENGTH: Keep responses SHORT (1-2 sentences max for feedback).
+
+OUTPUT: Plain text dialogue only. No JSON, no formatting, no quotes around the text.`;
+
+    // Use Gemini 2.0 Flash for quick, creative dialogue
+    const model = 'gemini-2.0-flash';
+
+    const geminiUrl = `${GEMINI_API_URL}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userPrompt || `Generate PEARL dialogue for context: ${context}` }], role: 'user' }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        generation_config: {
+          temperature: 0.8,
+          max_output_tokens: 150
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    // Extract text response
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      const dialogue = data.candidates[0].content.parts[0].text.trim();
+      return res.json({
+        dialogue: dialogue,
+        context: context
+      });
+    }
+
+    // Fallback responses based on context
+    const fallbacks = {
+      success: 'Excellent clarity, Citizen!',
+      error: 'A moment of confusion. Try again!',
+      struggle: 'The Party believes in your potential!',
+      mastery: 'Mastery achieved! The Party celebrates!',
+      introduction: 'Let me explain this Clarity Standard!',
+      warning: 'Your metrics require attention, Citizen.',
+      encouragement: 'Keep processing, Citizen!',
+      observation: 'PEARL is observing...',
+      greeting: 'Welcome, Citizen!',
+      farewell: 'The Party thanks you for your service!'
+    };
+
+    res.json({
+      dialogue: fallbacks[context] || 'The Party is always watching.',
+      context: context
+    });
+
+  } catch (error) {
+    console.error('PEARL dialogue error:', error);
+    res.status(500).json({ error: 'PEARL dialogue failed', message: error.message });
   }
 });
 
