@@ -30,7 +30,15 @@ app.get('/', (req, res) => {
     endpoints: {
       anthropic: '/api/messages',
       gemini: '/api/gemini/generate',
-      geminiGrammar: '/api/gemini/grammar'
+      geminiGrammar: '/api/gemini/grammar',
+      geminiEducate: '/api/gemini/educate',
+      geminiPartyExplanation: '/api/gemini/party-explanation',
+      geminiNews: '/api/gemini/news'
+    },
+    models: {
+      grammar: 'gemini-2.0-flash-lite',
+      content: 'gemini-2.0-flash',
+      education: 'gemini-2.5-flash (LearnLM pedagogy)'
     }
   });
 });
@@ -393,6 +401,138 @@ Category: ${category}`;
   } catch (error) {
     console.error('News generation error:', error);
     res.status(500).json({ error: 'News generation failed', message: error.message });
+  }
+});
+
+// =============================================================================
+// Educational Endpoint (LearnLM-style pedagogy)
+// =============================================================================
+
+app.post('/api/gemini/educate', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API key not configured' });
+  }
+
+  try {
+    const { type, errorType, errorWord, hintLevel, attemptCount, previousHints, skillName, practiceCount } = req.body;
+
+    if (!type) {
+      return res.status(400).json({ error: 'type is required (hint, explain, struggle, celebrate)' });
+    }
+
+    // Use Gemini 2.5 Flash for educational content (has LearnLM pedagogy built-in)
+    const model = 'gemini-2.5-flash';
+
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    switch (type) {
+      case 'hint':
+        systemPrompt = `You are an expert tutor helping a student learn grammar through a game. Your role is to GUIDE, not give answers.
+
+LEARNING SCIENCE PRINCIPLES:
+1. INSPIRE ACTIVE LEARNING: Ask guiding questions instead of stating facts
+2. MANAGE COGNITIVE LOAD: Focus on ONE concept at a time
+3. ADAPT TO THE LEARNER: This is hint level ${hintLevel || 0} of 3 - adjust depth accordingly
+4. STIMULATE CURIOSITY: Make them want to figure it out
+5. DEEPEN METACOGNITION: Help them recognize patterns
+
+HINT LEVELS:
+- Level 0: Gentle nudge - point toward the type of error without naming it
+- Level 1: Guiding question - ask a question that leads to the answer
+- Level 2: Direct clue - explain the rule briefly, let them apply it
+
+NEVER give the answer directly. Be encouraging. Use simple language.
+
+OUTPUT: A single hint (1-2 sentences). Plain text only.`;
+        userPrompt = `The student is trying to correct this error:
+Error type: ${errorType || 'grammar error'}
+Incorrect word: "${errorWord || 'unknown'}"
+Generate a level ${hintLevel || 0} hint.`;
+        break;
+
+      case 'explain':
+        systemPrompt = `You are an expert tutor helping a student understand a grammar rule they just encountered.
+
+STRUCTURE:
+1. Acknowledge what they got right (1 sentence)
+2. Explain the rule simply (1-2 sentences)
+3. Give ONE clear example
+4. Suggest how to spot this in the future (1 sentence)
+
+TONE: Warm, encouraging, like a helpful friend who's good at grammar.
+OUTPUT: A brief, friendly explanation (3-5 sentences). Plain text only.`;
+        userPrompt = `The student just correctly identified a ${errorType || 'grammar'} error.
+Explain this rule in a friendly way.`;
+        break;
+
+      case 'struggle':
+        systemPrompt = `You are an expert tutor helping a student who is struggling with a grammar concept.
+
+The student has made ${attemptCount || 'several'} incorrect attempts.
+
+APPROACH:
+1. Normalize the struggle ("This one trips up a lot of people!")
+2. Offer a simple memory trick or pattern
+3. Be patient and supportive
+
+NEVER make them feel bad or repeat the same explanation.
+OUTPUT: A supportive explanation with a new approach (2-4 sentences). Plain text only.`;
+        userPrompt = `The student is struggling with: ${errorType || 'this grammar rule'}
+Attempts: ${attemptCount || 3}
+${previousHints ? 'Previous hints: ' + previousHints.join(', ') : ''}
+Give them a fresh approach.`;
+        break;
+
+      case 'celebrate':
+        systemPrompt = `You are congratulating a student who has mastered a grammar skill.
+
+RESPONSE:
+1. Celebrate specifically (not generic "good job")
+2. Note their progress
+3. Be genuinely proud, not over-the-top
+
+OUTPUT: A brief celebration (1-2 sentences). Plain text only.`;
+        userPrompt = `The student has mastered: ${skillName || 'this skill'}
+They practiced ${practiceCount || 'multiple'} times.
+Celebrate their achievement!`;
+        break;
+
+      default:
+        return res.status(400).json({ error: 'Invalid type. Use: hint, explain, struggle, celebrate' });
+    }
+
+    const geminiUrl = `${GEMINI_API_URL}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userPrompt }], role: 'user' }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        generation_config: {
+          temperature: 0.7,
+          max_output_tokens: 300
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    // Extract text response
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      return res.json({
+        text: data.candidates[0].content.parts[0].text,
+        type: type
+      });
+    }
+
+    console.error('Unexpected education response:', data);
+    res.json({ text: 'Keep trying! You\'ve got this.', type: type });
+
+  } catch (error) {
+    console.error('Education endpoint error:', error);
+    res.status(500).json({ error: 'Education request failed', message: error.message });
   }
 });
 
