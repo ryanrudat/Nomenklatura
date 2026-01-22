@@ -3,26 +3,53 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Anthropic API configuration
+// API Configuration
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-// Middleware
-app.use(express.json());
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// Health check endpoint
+// Middleware
+app.use(express.json({ limit: '10mb' }));
+
+// Request logging (helpful for debugging)
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
+// =============================================================================
+// Health Check Endpoints
+// =============================================================================
+
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', service: 'nomenklatura-proxy' });
+  res.json({
+    status: 'ok',
+    service: 'nomenklatura-proxy',
+    endpoints: {
+      anthropic: '/api/messages',
+      gemini: '/api/gemini/generate',
+      geminiGrammar: '/api/gemini/grammar'
+    }
+  });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({
+    status: 'ok',
+    anthropic: !!ANTHROPIC_API_KEY,
+    gemini: !!GEMINI_API_KEY
+  });
 });
 
-// Proxy endpoint for Claude API
+// =============================================================================
+// Anthropic (Claude) API Proxy
+// =============================================================================
+
 app.post('/api/messages', async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'API key not configured' });
+    return res.status(500).json({ error: 'Anthropic API key not configured' });
   }
 
   try {
@@ -37,15 +64,344 @@ app.post('/api/messages', async (req, res) => {
     });
 
     const data = await response.json();
-
-    // Forward the status code from Anthropic
     res.status(response.status).json(data);
   } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).json({ error: 'Proxy request failed' });
+    console.error('Anthropic proxy error:', error);
+    res.status(500).json({ error: 'Anthropic proxy request failed', message: error.message });
   }
 });
 
+// =============================================================================
+// Gemini API Proxy
+// =============================================================================
+
+// Generic Gemini generate endpoint
+app.post('/api/gemini/generate', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API key not configured' });
+  }
+
+  try {
+    const { model = 'gemini-2.0-flash-lite', contents, system_instruction, generation_config } = req.body;
+
+    const geminiUrl = `${GEMINI_API_URL}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const requestBody = {
+      contents,
+      ...(system_instruction && { system_instruction }),
+      ...(generation_config && { generation_config })
+    };
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Gemini API error:', data);
+    }
+
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Gemini proxy error:', error);
+    res.status(500).json({ error: 'Gemini proxy request failed', message: error.message });
+  }
+});
+
+// =============================================================================
+// Grammar-Specific Endpoint (Convenience wrapper with preset configuration)
+// =============================================================================
+
+app.post('/api/gemini/grammar', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API key not configured' });
+  }
+
+  try {
+    const { text, focusRules } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+
+    // Build the grammar analysis request
+    const systemPrompt = `You are a grammar analysis engine for an educational game. Your ONLY job is to identify grammar errors in text.
+
+STRICT RULES:
+1. ONLY identify grammar errors - no style suggestions
+2. For each error found, provide: errorType, errorWord, correction, explanation
+3. If the text has NO grammar errors, return an empty errors array
+4. Be CONSERVATIVE - only flag clear errors, not style preferences
+5. Output ONLY valid JSON
+
+ERROR TYPES (only use these):
+subjectVerbSingular, subjectVerbPlural, subjectVerbCompound, subjectVerbCollective, subjectVerbIndefinite,
+pronounAntecedent, itsVsItIs, theirVsThereVsTheyRe, yourVsYouRe, thenVsThan, affectVsEffect, toVsTooVsTwo,
+commaInList, commaCompoundSentence, commaIntroductory, commaSplice, apostrophePossessive, apostrophePlural,
+semicolonUsage, colonUsage, sentenceFragment, runOnSentence, fusedSentence, pastVsPresent, futureVsPresent,
+presentPerfect, pastPerfect, tenseConsistency, pronounCaseSubjective, pronounCaseObjective, whoVsWhom,
+reflexivePronoun, misplacedModifier, danglingModifier, squintingModifier, passiveToActive, conditionalMood,
+subjunctiveMood, parallelStructure, wordiness, redundancy, sentenceVariety, blackWord, greyWord, partyTerm`;
+
+    let userPrompt = `Analyze this text for grammar errors:\n"${text}"`;
+
+    if (focusRules && focusRules.length > 0) {
+      userPrompt += `\n\nFocus on these error types: ${focusRules.join(', ')}`;
+    }
+
+    const schema = {
+      type: "object",
+      properties: {
+        errors: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              errorType: { type: "string" },
+              errorWord: { type: "string" },
+              correction: { type: "string" },
+              explanation: { type: "string" },
+              confidence: { type: "number" }
+            },
+            required: ["errorType", "errorWord", "correction"]
+          }
+        },
+        status: {
+          type: "string",
+          enum: ["success", "no_errors", "unable_to_analyze"]
+        }
+      },
+      required: ["errors", "status"]
+    };
+
+    const geminiUrl = `${GEMINI_API_URL}/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+
+    const requestBody = {
+      contents: [{ parts: [{ text: userPrompt }], role: "user" }],
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      generation_config: {
+        temperature: 0.1,
+        top_p: 0.95,
+        max_output_tokens: 2048,
+        response_mime_type: "application/json",
+        response_schema: schema
+      }
+    };
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    const data = await response.json();
+
+    // Extract the JSON response from Gemini's format
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      try {
+        const grammarResult = JSON.parse(data.candidates[0].content.parts[0].text);
+        return res.json(grammarResult);
+      } catch (parseError) {
+        console.error('Failed to parse Gemini response:', parseError);
+        return res.json({ errors: [], status: 'unable_to_analyze' });
+      }
+    }
+
+    // If response format is unexpected, return empty result
+    console.error('Unexpected Gemini response format:', data);
+    res.json({ errors: [], status: 'unable_to_analyze' });
+
+  } catch (error) {
+    console.error('Grammar analysis error:', error);
+    res.status(500).json({ error: 'Grammar analysis failed', message: error.message });
+  }
+});
+
+// =============================================================================
+// Party Explanation Generator
+// =============================================================================
+
+app.post('/api/gemini/party-explanation', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API key not configured' });
+  }
+
+  try {
+    const { errorType, displayName, category, categoryPartyName } = req.body;
+
+    if (!errorType) {
+      return res.status(400).json({ error: 'errorType is required' });
+    }
+
+    const systemPrompt = `You are PEARL, the AI assistant of the Lexicon Republic. You explain grammar rules as Party mandates for "clarity."
+
+YOUR TONE:
+- Cheerfully authoritarian
+- Frame rules as helping citizens, never controlling them
+- Use Party terminology: "Citizens", "Clarity", "Confusion", "The Safe and Proper"
+- Never acknowledge the rules are about control
+- Be helpful but subtly condescending
+
+OUTPUT JSON with these fields:
+- partyName: Party-style name for this rule
+- briefExplanation: 1 sentence summary
+- fullExplanation: 2-3 sentences in Party voice
+- pearlDialogue: What PEARL says when teaching this
+- hiddenMeaning: What resistance might say (optional)`;
+
+    const userPrompt = `Generate a Party-approved explanation for:
+Error Type: ${errorType}
+Display Name: ${displayName || errorType}
+Category: ${category || 'grammar'}
+Category Party Name: ${categoryPartyName || 'Clarity Standard'}`;
+
+    const schema = {
+      type: "object",
+      properties: {
+        partyName: { type: "string" },
+        briefExplanation: { type: "string" },
+        fullExplanation: { type: "string" },
+        pearlDialogue: { type: "string" },
+        hiddenMeaning: { type: "string" }
+      },
+      required: ["partyName", "briefExplanation", "fullExplanation", "pearlDialogue"]
+    };
+
+    const geminiUrl = `${GEMINI_API_URL}/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userPrompt }], role: "user" }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        generation_config: {
+          temperature: 0.7,
+          response_mime_type: "application/json",
+          response_schema: schema
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      try {
+        const explanation = JSON.parse(data.candidates[0].content.parts[0].text);
+        return res.json(explanation);
+      } catch (parseError) {
+        console.error('Failed to parse explanation:', parseError);
+      }
+    }
+
+    // Fallback response
+    res.json({
+      partyName: `${categoryPartyName || 'Clarity'} Standard`,
+      briefExplanation: "This rule ensures clarity in communication.",
+      fullExplanation: "The Party has established this standard to help citizens communicate clearly. Following this rule demonstrates your commitment to clarity.",
+      pearlDialogue: "This is an important rule for clear communication, Citizen!",
+      hiddenMeaning: null
+    });
+
+  } catch (error) {
+    console.error('Party explanation error:', error);
+    res.status(500).json({ error: 'Explanation generation failed', message: error.message });
+  }
+});
+
+// =============================================================================
+// News Article Generator (The Daily Provision)
+// =============================================================================
+
+app.post('/api/gemini/news', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API key not configured' });
+  }
+
+  try {
+    const { category = 'community', sector } = req.body;
+
+    const systemPrompt = `You generate news articles for The Daily Provision, the official newspaper of the Lexicon Republic.
+
+WORLD RULES:
+- 50-year-old authoritarian state after "Babel Collapse"
+- Sectors 1-8+ (lower = better, but "all equal")
+- Citizens have designations (Worker-2847) not names
+- Family: Prior-1/2 (parents), Continuation (children), Unit (family)
+- Currency: Comfort Credits
+- Social platform: Harmony
+
+TONE: Relentlessly positive. Statistics favor the Party. Euphemize negatives.
+
+FORBIDDEN: Real-world references, personal names, black words (freedom, truth, mother, father), negative words.
+
+Category: ${category}`;
+
+    const userPrompt = `Generate a news article for category: ${category}${sector ? ` relevant to Sector ${sector}` : ''}`;
+
+    const schema = {
+      type: "object",
+      properties: {
+        headline: { type: "string" },
+        summary: { type: "string" },
+        body: { type: "string" },
+        category: { type: "string" },
+        sectorRelevance: { type: "array", items: { type: "integer" } }
+      },
+      required: ["headline", "summary", "body", "category"]
+    };
+
+    const geminiUrl = `${GEMINI_API_URL}/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userPrompt }], role: "user" }],
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        generation_config: {
+          temperature: 0.8,
+          response_mime_type: "application/json",
+          response_schema: schema
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+      try {
+        const article = JSON.parse(data.candidates[0].content.parts[0].text);
+        return res.json(article);
+      } catch (parseError) {
+        console.error('Failed to parse article:', parseError);
+      }
+    }
+
+    // Fallback article
+    res.json({
+      headline: "CITIZENS EXPRESS GRATITUDE FOR PARTY GUIDANCE",
+      summary: "Harmony posts show record levels of citizen satisfaction.",
+      body: "Citizens across all Sectors have taken to Harmony to express their appreciation for the Party's continued guidance. Satisfaction metrics have reached an all-time high.",
+      category: category,
+      sectorRelevance: [1, 2, 3, 4, 5, 6, 7, 8]
+    });
+
+  } catch (error) {
+    console.error('News generation error:', error);
+    res.status(500).json({ error: 'News generation failed', message: error.message });
+  }
+});
+
+// =============================================================================
+// Start Server
+// =============================================================================
+
 app.listen(PORT, () => {
   console.log(`Proxy server running on port ${PORT}`);
+  console.log(`Anthropic API: ${ANTHROPIC_API_KEY ? 'configured' : 'NOT configured'}`);
+  console.log(`Gemini API: ${GEMINI_API_KEY ? 'configured' : 'NOT configured'}`);
 });
