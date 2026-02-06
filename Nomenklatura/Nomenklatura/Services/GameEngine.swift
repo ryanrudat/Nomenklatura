@@ -556,7 +556,7 @@ class GameEngine {
     }
 
     /// Call this at end of each turn to update game state
-    func endTurnUpdates(game: Game, ladder: [LadderPosition]) {
+    func endTurnUpdates(game: Game, ladder: [LadderPosition], recordHistory: Bool = true) {
         // Increment turns as leader if applicable
         if game.flags.contains("reached_general_secretary") {
             let current = Int(game.variables["turns_as_leader"] ?? "0") ?? 0
@@ -599,15 +599,20 @@ class GameEngine {
         // Intelligence leaks - generate secret intel based on Network stat
         processIntelligenceLeaks(game: game)
 
-        // Record stat history for sparklines (at end of turn after all processing)
-        game.recordAllStatHistory()
+        if recordHistory {
+            // Record stat history for sparklines (at end of turn after all processing)
+            game.recordAllStatHistory()
+        }
     }
 
     /// Extended end-of-turn processing that includes Codex and Consequence integration
     /// Call this instead of endTurnUpdates when you have a ModelContext available
     func endTurnUpdatesWithContext(game: Game, ladder: [LadderPosition], context: ModelContext) async {
         // Run standard end-of-turn updates
-        endTurnUpdates(game: game, ladder: ladder)
+        endTurnUpdates(game: game, ladder: ladder, recordHistory: false)
+
+        // Resolve multi-turn bureau operations after core turn systems run.
+        processBureauOperations(game: game, context: context)
 
         // Process consequences and generate Codex reactions
         let firedConsequences = ConsequenceEngine.shared.processConsequences(game: game)
@@ -616,7 +621,19 @@ class GameEngine {
         // Process event-driven Codex messages (relationship triggers, state thresholds, check-ins)
         await CodexService.shared.processEventDrivenMessages(game: game, context: context)
 
+        // Record stat history once after all turn effects are applied.
+        game.recordAllStatHistory()
+
         gameLogger.info("End-of-turn Codex processing complete. \(firedConsequences.count) consequences fired.")
+    }
+
+    private func processBureauOperations(game: Game, context: ModelContext) {
+        _ = SecurityActionService.shared.processPendingActions(for: game, modelContext: context)
+        _ = SecurityActionService.shared.processActiveDetentions(for: game, modelContext: context)
+        _ = EconomicActionService.shared.advanceProjects(for: game, modelContext: context)
+        _ = PartyActionService.shared.advanceCampaigns(for: game, modelContext: context)
+        _ = MilitaryActionService.shared.advanceCampaigns(for: game, modelContext: context)
+        _ = StateMinistryActionService.shared.advanceProjects(for: game, modelContext: context)
     }
 
     /// Generate Codex messages for characters affected by fired consequences

@@ -272,7 +272,8 @@ final class SecurityActionService {
         targetFaction: GameFaction?,
         successChance: Int,
         for game: Game,
-        modelContext: ModelContext
+        modelContext: ModelContext,
+        setCooldown: Bool = true
     ) -> ExecutionResult {
         // Roll for success
         let roll = Int.random(in: 1...100)
@@ -318,10 +319,12 @@ final class SecurityActionService {
             applyEffects(effects, targetCharacter: targetCharacter, targetFaction: targetFaction, for: game, modelContext: modelContext)
         }
 
-        // Set cooldown
-        var cooldowns = getSecurityCooldowns(for: game)
-        cooldowns.setCooldown(actionId: action.id, availableTurn: game.turnNumber + action.cooldownTurns)
-        saveSecurityCooldowns(cooldowns, for: game)
+        if setCooldown {
+            // Set cooldown
+            var cooldowns = getSecurityCooldowns(for: game)
+            cooldowns.setCooldown(actionId: action.id, availableTurn: game.turnNumber + action.cooldownTurns)
+            saveSecurityCooldowns(cooldowns, for: game)
+        }
 
         // Generate description
         let description = generateResultDescription(action: action, succeeded: succeeded, targetCharacter: targetCharacter, effects: effects)
@@ -411,7 +414,7 @@ final class SecurityActionService {
         saveActiveDetentions(detentions, for: game)
 
         // Mark character as detained
-        target.isDetained = true
+        target.status = CharacterStatus.detained.rawValue
 
         return detention
     }
@@ -451,7 +454,7 @@ final class SecurityActionService {
                 }
             }
         case .documentation:
-            if detention.turnsInDetention >= detention.initiatedTurn + 8 {
+            if detention.turnsInDetention >= 8 {
                 detention.phase = .referral
             }
         case .referral:
@@ -555,7 +558,6 @@ final class SecurityActionService {
     ) {
         // Set status to executed (permanent death)
         character.status = CharacterStatus.executed.rawValue
-        character.isDetained = false
 
         // Record death
         let deathDescription: String
@@ -861,6 +863,126 @@ final class SecurityActionService {
         }
     }
 
+    // MARK: - Turn Processing
+
+    /// Resolve completed multi-turn security actions.
+    @discardableResult
+    func processPendingActions(for game: Game, modelContext: ModelContext) -> [SecurityActionRecord] {
+        var records = getPendingActions(for: game)
+        var completedRecords: [SecurityActionRecord] = []
+
+        for index in records.indices {
+            guard records[index].status == .inProgress || records[index].status == .pending else { continue }
+            guard game.turnNumber >= records[index].completionTurn else { continue }
+
+            guard let action = SecurityAction.action(withId: records[index].actionId) else {
+                records[index].status = .blocked
+                records[index].result = SecurityActionRecord.SecurityActionResult(
+                    succeeded: false,
+                    roll: 0,
+                    description: "Action definition missing: \(records[index].actionId)",
+                    implicatedCharacterIds: []
+                )
+                completedRecords.append(records[index])
+                continue
+            }
+
+            let targetCharacter = records[index].targetCharacterId.flatMap { game.character(withId: $0) }
+            let targetFaction = records[index].targetFactionId.flatMap { factionId in
+                game.factions.first(where: { $0.factionId == factionId })
+            }
+
+            let resolution = resolveAction(
+                action,
+                targetCharacter: targetCharacter,
+                targetFaction: targetFaction,
+                successChance: records[index].successChance,
+                for: game,
+                modelContext: modelContext,
+                setCooldown: false
+            )
+
+            records[index].status = .completed
+            records[index].result = SecurityActionRecord.SecurityActionResult(
+                succeeded: resolution.succeeded,
+                roll: resolution.roll,
+                description: resolution.description,
+                implicatedCharacterIds: resolution.implicatedCharacters
+            )
+            completedRecords.append(records[index])
+        }
+
+        if !completedRecords.isEmpty {
+            savePendingActions(records, for: game)
+        }
+
+        return completedRecords
+    }
+
+    /// Advance all active detentions by one turn and resolve finished detentions.
+    @discardableResult
+    func processActiveDetentions(for game: Game, modelContext: ModelContext) -> [ShuangguiDetention] {
+        var detentions = getActiveDetentions(for: game)
+        guard !detentions.isEmpty else { return [] }
+
+        var resolved: [ShuangguiDetention] = []
+
+        for index in detentions.indices {
+            if let existingOutcome = detentions[index].outcome {
+                applyDetentionOutcome(existingOutcome, detention: detentions[index], game: game, modelContext: modelContext)
+                resolved.append(detentions[index])
+                continue
+            }
+
+            advanceDetention(&detentions[index], game: game, modelContext: modelContext)
+
+            // Auto-resolve very long detentions to avoid permanent limbo.
+            if detentions[index].outcome == nil &&
+                detentions[index].phase == .referral &&
+                detentions[index].turnsInDetention >= detentions[index].maxDetentionTurns {
+                detentions[index].outcome = detentions[index].confessionObtained ? .referredToTrial : .warned
+            }
+
+            if let outcome = detentions[index].outcome {
+                applyDetentionOutcome(outcome, detention: detentions[index], game: game, modelContext: modelContext)
+                resolved.append(detentions[index])
+            }
+        }
+
+        detentions.removeAll { $0.outcome != nil }
+        saveActiveDetentions(detentions, for: game)
+
+        return resolved
+    }
+
+    private func applyDetentionOutcome(
+        _ outcome: ShuangguiOutcome,
+        detention: ShuangguiDetention,
+        game: Game,
+        modelContext: ModelContext
+    ) {
+        guard let target = game.character(withId: detention.targetCharacterId) else { return }
+
+        switch outcome {
+        case .cleared, .warned:
+            target.status = CharacterStatus.active.rawValue
+        case .demoted:
+            demoteCharacter(target, levels: 1, game: game, modelContext: modelContext)
+            target.status = CharacterStatus.active.rawValue
+        case .expelled:
+            target.status = CharacterStatus.exiled.rawValue
+        case .referredToTrial:
+            target.status = CharacterStatus.underInvestigation.rawValue
+            initiateShowTrial(for: target, game: game, modelContext: modelContext)
+        case .imprisoned:
+            target.status = CharacterStatus.imprisoned.rawValue
+        case .diedInDetention:
+            if target.currentStatus != .executed && target.currentStatus != .dead {
+                executeCharacter(target, method: .detention, game: game, modelContext: modelContext)
+            }
+        }
+    }
+
     // MARK: - Storage Helpers
 
     func getSecurityCooldowns(for game: Game) -> SecurityCooldownTracker {
@@ -896,7 +1018,8 @@ final class SecurityActionService {
     }
 
     func getActiveDetentions(for game: Game) -> [ShuangguiDetention] {
-        guard let data = game.variables["active_detentions"],
+        let raw = game.variables["active_detentions"] ?? game.variables["security_active_detentions"]
+        guard let data = raw,
               let jsonData = data.data(using: .utf8),
               let detentions = try? JSONDecoder().decode([ShuangguiDetention].self, from: jsonData) else {
             return []
@@ -960,13 +1083,13 @@ extension Game {
 extension GameCharacter {
     /// Whether character is currently detained
     var isDetained: Bool {
-        get { return detainedFlag ?? false }
-        set { detainedFlag = newValue }
-    }
-
-    // This assumes a detainedFlag property exists or we add it
-    private var detainedFlag: Bool? {
-        get { return nil } // Would read from actual property
-        set { } // Would write to actual property
+        get { currentStatus == .detained }
+        set {
+            if newValue {
+                status = CharacterStatus.detained.rawValue
+            } else if currentStatus == .detained {
+                status = CharacterStatus.active.rawValue
+            }
+        }
     }
 }

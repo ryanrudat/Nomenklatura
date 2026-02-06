@@ -33,6 +33,27 @@ struct ActionableTasksSection: View {
         tasks.filter { !$0.canInitiate }
     }
 
+    private var refreshToken: String {
+        let cooldownKey: String
+        switch bureau {
+        case .securityServices:
+            cooldownKey = "security_cooldowns"
+        case .economicPlanning:
+            cooldownKey = "economic_cooldowns"
+        case .partyApparatus:
+            cooldownKey = "party_cooldowns"
+        default:
+            cooldownKey = ""
+        }
+
+        return [
+            "\(game.turnNumber)",
+            "\(game.currentPositionIndex)",
+            "\(game.network)",
+            "\(game.variables[cooldownKey] ?? "")"
+        ].joined(separator: "|")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Section header
@@ -47,7 +68,12 @@ struct ActionableTasksSection: View {
         .onAppear {
             loadTasks()
         }
-        .sheet(isPresented: $showingConfirmation) {
+        .onChange(of: refreshToken) { _ in
+            loadTasks()
+        }
+        .sheet(isPresented: $showingConfirmation, onDismiss: {
+            loadTasks()
+        }) {
             if let task = selectedTask {
                 TaskConfirmationSheet(task: task, game: game, bureauColor: bureauColor)
             }
@@ -243,6 +269,11 @@ struct TaskConfirmationSheet: View {
     let game: Game
     let bureauColor: Color
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var isExecuting = false
+    @State private var executionResult: BureauOperationsService.TaskExecutionResult?
+    @State private var showingResult = false
 
     var body: some View {
         NavigationStack {
@@ -339,13 +370,14 @@ struct TaskConfirmationSheet: View {
                         dismiss()
                     }
                     .buttonStyle(.bordered)
+                    .disabled(isExecuting)
 
-                    Button("Initiate Action") {
-                        // TODO: Connect to action execution system
-                        dismiss()
+                    Button(isExecuting ? "Initiating..." : "Initiate Action") {
+                        executeTask()
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(bureauColor)
+                    .disabled(isExecuting)
                 }
             }
             .padding()
@@ -353,6 +385,37 @@ struct TaskConfirmationSheet: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .presentationDetents([.medium, .large])
+        .alert(
+            executionResult?.succeeded == true ? "Action Initiated" : "Action Failed",
+            isPresented: $showingResult
+        ) {
+            Button("OK") {
+                if executionResult?.succeeded == true {
+                    dismiss()
+                }
+            }
+        } message: {
+            if let result = executionResult {
+                Text(result.description)
+            }
+        }
+    }
+
+    // MARK: - Task Execution
+
+    private func executeTask() {
+        isExecuting = true
+
+        // Execute the task via BureauOperationsService
+        let result = BureauOperationsService.shared.executeTask(
+            task,
+            for: game,
+            modelContext: modelContext
+        )
+
+        executionResult = result
+        isExecuting = false
+        showingResult = true
     }
 
     private func effectColor(for effect: String) -> Color {
@@ -365,4 +428,3 @@ struct TaskConfirmationSheet: View {
         }
     }
 }
-

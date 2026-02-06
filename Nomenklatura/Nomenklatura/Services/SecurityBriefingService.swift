@@ -278,7 +278,9 @@ class SecurityBriefingService {
 
     /// Get active shuanggui detentions from storage
     private func getActiveDetentions(for game: Game) -> [ShuangguiDetention] {
-        guard let data = game.variables["security_active_detentions"],
+        // Backward-compatible read: new key first, then legacy key.
+        let raw = game.variables["active_detentions"] ?? game.variables["security_active_detentions"]
+        guard let data = raw,
               let jsonData = data.data(using: .utf8),
               let detentions = try? JSONDecoder().decode([ShuangguiDetention].self, from: jsonData) else {
             return []

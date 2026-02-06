@@ -199,13 +199,16 @@ struct BureauOperation: Identifiable, Codable, Sendable {
     }
 
     var turnsElapsed: Int {
-        // Note: Would need game.turnNumber passed in to calculate
-        0
+        guard let target = targetCompletionTurn else { return 0 }
+        let totalTurns = max(1, target - initiatedTurn)
+        let completedTurns = Int(round(Double(totalTurns) * (Double(progress) / 100.0)))
+        return max(0, min(totalTurns, completedTurns))
     }
 
     var turnsRemaining: Int? {
         guard let target = targetCompletionTurn else { return nil }
-        return max(0, target - initiatedTurn)
+        let totalTurns = max(1, target - initiatedTurn)
+        return max(0, totalTurns - turnsElapsed)
     }
 
     var isActive: Bool {

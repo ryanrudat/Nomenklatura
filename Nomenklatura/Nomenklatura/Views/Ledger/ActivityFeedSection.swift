@@ -23,6 +23,19 @@ struct ActivityFeedSection: View {
         BureauColors.primary(for: bureau)
     }
 
+    private var refreshToken: String {
+        switch bureau {
+        case .securityServices:
+            return "\(game.turnNumber)|\(game.variables["security_pending_actions"] ?? "")|\(game.variables["active_detentions"] ?? "")"
+        case .economicPlanning:
+            return "\(game.turnNumber)|\(game.variables["economic_projects"] ?? "")"
+        case .partyApparatus:
+            return "\(game.turnNumber)|\(game.variables["party_campaigns"] ?? "")"
+        default:
+            return "\(game.turnNumber)"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Section header
@@ -35,6 +48,9 @@ struct ActivityFeedSection: View {
             }
         }
         .onAppear {
+            loadActivity()
+        }
+        .onChange(of: refreshToken) { _ in
             loadActivity()
         }
     }

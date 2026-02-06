@@ -27,6 +27,34 @@ struct BureauOperationsCenter: View {
         BureauColors.headerTitle(for: bureau)
     }
 
+    private var summaryRefreshToken: String {
+        let cooldownKey: String
+        let operationsKey: String
+
+        switch bureau {
+        case .securityServices:
+            cooldownKey = "security_cooldowns"
+            operationsKey = (game.variables["security_pending_actions"] ?? "") + "|" + (game.variables["active_detentions"] ?? "")
+        case .economicPlanning:
+            cooldownKey = "economic_cooldowns"
+            operationsKey = game.variables["economic_projects"] ?? ""
+        case .partyApparatus:
+            cooldownKey = "party_cooldowns"
+            operationsKey = game.variables["party_campaigns"] ?? ""
+        default:
+            cooldownKey = ""
+            operationsKey = ""
+        }
+
+        return [
+            "\(game.turnNumber)",
+            "\(game.currentPositionIndex)",
+            "\(game.network)",
+            "\(game.variables[cooldownKey] ?? "")",
+            operationsKey
+        ].joined(separator: "|")
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -65,6 +93,9 @@ struct BureauOperationsCenter: View {
                 .stroke(bureauColor.opacity(0.2), lineWidth: 1)
         )
         .onAppear {
+            loadSummary()
+        }
+        .onChange(of: summaryRefreshToken) { _ in
             loadSummary()
         }
     }

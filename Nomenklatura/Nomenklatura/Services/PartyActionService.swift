@@ -672,7 +672,7 @@ final class PartyActionService {
         // Standard party work
         if position >= 2 {
             return NPCPartyActionPlan(
-                actionId: "conduct_united_front",
+                actionId: "coordinate_united_front",
                 targetCadreId: nil,
                 priority: 30
             )
