@@ -297,11 +297,23 @@ final class MemoryIntegrationService {
 
     /// Process how memories affect NPC-to-NPC relationships
     private func processRelationshipMemoryEffects(game: Game) {
+        // Pre-index relationships by character pair for O(1) lookup
+        // instead of scanning all relationships per memory target (was O(n*k*r), now O(n*k + r))
+        var relationshipIndex: [String: NPCRelationship] = [:]
+        for relationship in game.npcRelationships {
+            let key1 = "\(relationship.sourceCharacterId)|\(relationship.targetCharacterId)"
+            let key2 = "\(relationship.targetCharacterId)|\(relationship.sourceCharacterId)"
+            relationshipIndex[key1] = relationship
+            relationshipIndex[key2] = relationship
+        }
+
         for character in game.characters where character.isActive {
             // Group memories by involved character
             let memoriesByCharacter = Dictionary(grouping: character.npcMemoriesEnhanced.filter { $0.isSignificant }) {
                 $0.involvedCharacterId ?? "unknown"
             }
+
+            let charId = character.id.uuidString
 
             for (targetId, memories) in memoriesByCharacter {
                 guard targetId != "unknown" else { continue }
@@ -312,20 +324,15 @@ final class MemoryIntegrationService {
                     return sum + Int(Double(memory.sentiment) * strengthFactor)
                 }
 
-                // Update NPC relationship if one exists
-                let charId = character.id.uuidString
-                for relationship in game.npcRelationships {
-                    let match1 = relationship.sourceCharacterId == charId && relationship.targetCharacterId == targetId
-                    let match2 = relationship.targetCharacterId == charId && relationship.sourceCharacterId == targetId
-                    if match1 || match2 {
-                        // Gradual drift based on memories
-                        let targetTrust = relationship.trust + netSentiment / 10
-                        if relationship.trust < targetTrust {
-                            relationship.trust = min(relationship.trust + 1, targetTrust)
-                        } else if relationship.trust > targetTrust {
-                            relationship.trust = max(relationship.trust - 1, targetTrust)
-                        }
-                        break
+                // O(1) lookup instead of linear scan
+                let lookupKey = "\(charId)|\(targetId)"
+                if let relationship = relationshipIndex[lookupKey] {
+                    // Gradual drift based on memories
+                    let targetTrust = relationship.trust + netSentiment / 10
+                    if relationship.trust < targetTrust {
+                        relationship.trust = min(relationship.trust + 1, targetTrust)
+                    } else if relationship.trust > targetTrust {
+                        relationship.trust = max(relationship.trust - 1, targetTrust)
                     }
                 }
             }
