@@ -230,7 +230,8 @@ class NPCWorldActionService {
         }
 
         // Ambitious and low-loyalty characters are more likely to betray
-        let betrayalChance = (betrayer.personalityAmbitious + (100 - betrayer.personalityLoyal)) / 10
+        // Range: 0-100, where 100 = max ambitious + min loyal, 0 = min ambitious + max loyal
+        let betrayalChance = (betrayer.personalityAmbitious + (100 - betrayer.personalityLoyal)) / 2
         guard Int.random(in: 1...100) <= betrayalChance else { return nil }
 
         return NPCWorldActionResult(

@@ -410,7 +410,11 @@ class DynamicEventTriggerService {
                 initiatingCharacterName: ally.name,
                 turnGenerated: game.turnNumber,
                 isUrgent: false,
-                responseOptions: [],
+                responseOptions: [
+                    EventResponse(id: "help", text: "Agree to help—building alliances is valuable", shortText: "Help Them", effects: ["network": 5, "patronFavor": -3]),
+                    EventResponse(id: "delay", text: "Promise to look into it (noncommittal)", shortText: "Delay", effects: [:]),
+                    EventResponse(id: "refuse", text: "Decline—you can't afford the risk", shortText: "Decline", effects: ["network": -3])
+                ],
                 iconName: "person.fill.questionmark",
                 accentColor: "statHigh"
             )
@@ -997,7 +1001,7 @@ class DynamicEventTriggerService {
             priority: priority,
             title: leak.title,
             briefText: leak.content,
-            initiatingCharacterId: leak.relatedCharacterId != nil ? UUID() : nil,
+            initiatingCharacterId: leak.relatedCharacterId.flatMap { UUID(uuidString: $0) },
             initiatingCharacterName: nil,
             turnGenerated: game.turnNumber,
             isUrgent: false,
@@ -1046,7 +1050,10 @@ class DynamicEventTriggerService {
                 briefText: "Your contacts have gathered intelligence.",
                 turnGenerated: game.turnNumber,
                 isUrgent: false,
-                responseOptions: [],
+                responseOptions: [
+                    EventResponse(id: "note", text: "File this away for later", shortText: "Note It", effects: [:]),
+                    EventResponse(id: "investigate", text: "Have your contacts dig deeper", shortText: "Investigate", effects: ["network": -2], setsFlag: "investigating_intel")
+                ],
                 iconName: "antenna.radiowaves.left.and.right",
                 accentColor: "statNeutral"
             )

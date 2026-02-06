@@ -610,7 +610,7 @@ struct SecurityQuickAccessCard: View {
 
                 // Quick stats row
                 HStack(spacing: 0) {
-                    SecurityStatBox(
+                    BureauStatBox(
                         label: "INVESTIGATIONS",
                         value: "\(summary.activeInvestigations)",
                         icon: "magnifyingglass"
@@ -619,7 +619,7 @@ struct SecurityQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    SecurityStatBox(
+                    BureauStatBox(
                         label: "DETENTIONS",
                         value: "\(summary.activeDetentions)",
                         icon: "lock.fill"
@@ -628,7 +628,7 @@ struct SecurityQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    SecurityStatBox(
+                    BureauStatBox(
                         label: "PENDING TRIALS",
                         value: "\(summary.pendingTrials)",
                         icon: "building.columns.fill"
@@ -671,7 +671,7 @@ struct SecurityQuickAccessCard: View {
     }
 }
 
-struct SecurityStatBox: View {
+struct BureauStatBox: View {
     let label: String
     let value: String
     let icon: String
@@ -756,7 +756,7 @@ struct EconomicQuickAccessCard: View {
 
                 // Quick stats row
                 HStack(spacing: 0) {
-                    EconomicStatBox(
+                    BureauStatBox(
                         label: "INDUSTRIAL",
                         value: "\(game.industrialOutput)%",
                         icon: "building.2.fill"
@@ -765,7 +765,7 @@ struct EconomicQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    EconomicStatBox(
+                    BureauStatBox(
                         label: "FOOD SUPPLY",
                         value: "\(game.foodSupply)%",
                         icon: "leaf.fill"
@@ -774,7 +774,7 @@ struct EconomicQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    EconomicStatBox(
+                    BureauStatBox(
                         label: "PROJECTS",
                         value: "\(activeProjects)/3",
                         icon: "hammer.fill"
@@ -814,31 +814,6 @@ struct EconomicQuickAccessCard: View {
         case 30..<50: return .statMedium
         default: return .statLow
         }
-    }
-}
-
-struct EconomicStatBox: View {
-    let label: String
-    let value: String
-    let icon: String
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundColor(theme.inkLight)
-                Text(value)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(theme.schemeText)
-            }
-            Text(label)
-                .font(.system(size: 8, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkLight)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -902,7 +877,7 @@ struct MilitaryQuickAccessCard: View {
 
                 // Quick stats row
                 HStack(spacing: 0) {
-                    MilitaryStatBox(
+                    BureauStatBox(
                         label: "LOYALTY",
                         value: "\(game.militaryLoyalty)%",
                         icon: "shield.checkered"
@@ -911,7 +886,7 @@ struct MilitaryQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    MilitaryStatBox(
+                    BureauStatBox(
                         label: "STABILITY",
                         value: "\(game.stability)%",
                         icon: "building.columns.fill"
@@ -920,7 +895,7 @@ struct MilitaryQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    MilitaryStatBox(
+                    BureauStatBox(
                         label: "CAMPAIGNS",
                         value: "\(activeCampaigns)/1",
                         icon: "flag.fill"
@@ -960,31 +935,6 @@ struct MilitaryQuickAccessCard: View {
         case 30..<50: return .statMedium
         default: return .statLow
         }
-    }
-}
-
-struct MilitaryStatBox: View {
-    let label: String
-    let value: String
-    let icon: String
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundColor(theme.inkLight)
-                Text(value)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(theme.schemeText)
-            }
-            Text(label)
-                .font(.system(size: 8, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkLight)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -1048,7 +998,7 @@ struct PartyQuickAccessCard: View {
 
                 // Quick stats row
                 HStack(spacing: 0) {
-                    LedgerPartyStatBox(
+                    BureauStatBox(
                         label: "ELITE LOYALTY",
                         value: "\(game.eliteLoyalty)%",
                         icon: "person.crop.rectangle.stack"
@@ -1057,7 +1007,7 @@ struct PartyQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    LedgerPartyStatBox(
+                    BureauStatBox(
                         label: "CAMPAIGNS",
                         value: "\(activeCampaigns)",
                         icon: "flag.fill"
@@ -1066,7 +1016,7 @@ struct PartyQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    LedgerPartyStatBox(
+                    BureauStatBox(
                         label: "NETWORK",
                         value: "\(game.network)",
                         icon: "person.3.fill"
@@ -1106,31 +1056,6 @@ struct PartyQuickAccessCard: View {
         case 30..<50: return .statMedium
         default: return .statLow
         }
-    }
-}
-
-struct LedgerPartyStatBox: View {
-    let label: String
-    let value: String
-    let icon: String
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundColor(theme.inkLight)
-                Text(value)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(theme.schemeText)
-            }
-            Text(label)
-                .font(.system(size: 8, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkLight)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -1194,7 +1119,7 @@ struct MinistryQuickAccessCard: View {
 
                 // Stats row
                 HStack(spacing: 0) {
-                    LedgerMinistryStatBox(
+                    BureauStatBox(
                         label: "TREASURY",
                         value: "\(game.treasury)%",
                         icon: "banknote.fill"
@@ -1203,7 +1128,7 @@ struct MinistryQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    LedgerMinistryStatBox(
+                    BureauStatBox(
                         label: "PROJECTS",
                         value: "\(activeProjects)",
                         icon: "building.2.fill"
@@ -1212,7 +1137,7 @@ struct MinistryQuickAccessCard: View {
                     Divider()
                         .frame(height: 40)
 
-                    LedgerMinistryStatBox(
+                    BureauStatBox(
                         label: "INDUSTRY",
                         value: "\(game.industrialOutput)",
                         icon: "gearshape.2.fill"
@@ -1252,31 +1177,6 @@ struct MinistryQuickAccessCard: View {
         case 30..<50: return .statMedium
         default: return .statLow
         }
-    }
-}
-
-struct LedgerMinistryStatBox: View {
-    let label: String
-    let value: String
-    let icon: String
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundColor(theme.inkLight)
-                Text(value)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(theme.schemeText)
-            }
-            Text(label)
-                .font(.system(size: 8, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkLight)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 

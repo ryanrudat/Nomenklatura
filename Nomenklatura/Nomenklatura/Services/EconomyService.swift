@@ -1193,7 +1193,9 @@ class EconomyService {
         // Count crisis regions
         let crisisRegions = game.regions.filter { $0.status.severity >= 2 }.count
         if crisisRegions >= 3 {
-            game.applyStat("stability", change: -3)
+            // NOTE: Stability penalty for widespread regional crisis is handled by
+            // RegionSecessionService.processCascadeEffects() to avoid double-penalizing.
+            // EconomyService only applies the elite loyalty and flag effects here.
             game.applyStat("eliteLoyalty", change: -2)
             if !game.flags.contains("regional_crisis_widespread") {
                 game.flags.append("regional_crisis_widespread")

@@ -994,27 +994,3 @@ extension SecurityAction {
     }
 }
 
-// MARK: - Cooldown Tracker
-
-/// Tracks cooldowns for security actions
-struct SecurityCooldownTracker: Codable {
-    var cooldowns: [String: Int] = [:]      // actionId -> turn available
-
-    mutating func setCooldown(actionId: String, availableTurn: Int) {
-        cooldowns[actionId] = availableTurn
-    }
-
-    func isOnCooldown(actionId: String, currentTurn: Int) -> Bool {
-        guard let availableTurn = cooldowns[actionId] else { return false }
-        return currentTurn < availableTurn
-    }
-
-    func turnsRemaining(actionId: String, currentTurn: Int) -> Int {
-        guard let availableTurn = cooldowns[actionId] else { return 0 }
-        return max(0, availableTurn - currentTurn)
-    }
-
-    mutating func clearExpired(currentTurn: Int) {
-        cooldowns = cooldowns.filter { $0.value > currentTurn }
-    }
-}

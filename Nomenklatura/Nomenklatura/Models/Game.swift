@@ -1140,6 +1140,14 @@ extension Game {
             oldValue = corruptionEvidence
             corruptionEvidence = clampStat(corruptionEvidence + change)
             newValue = corruptionEvidence
+        case "coalitionStrength":
+            oldValue = coalitionStrength
+            coalitionStrength = clampStat(coalitionStrength + change)
+            newValue = coalitionStrength
+        case "resistanceAccumulation":
+            oldValue = resistanceAccumulation
+            resistanceAccumulation = clampStat(resistanceAccumulation + change)
+            newValue = resistanceAccumulation
         default:
             oldValue = 0
             newValue = 0
@@ -1161,7 +1169,7 @@ extension Game {
         let highThreshold = 75
 
         // Stats where HIGH is bad
-        let negativeStats = ["rivalThreat", "wealthVisibility", "corruptionEvidence"]
+        let negativeStats = ["rivalThreat", "wealthVisibility", "corruptionEvidence", "coalitionStrength", "resistanceAccumulation"]
 
         if negativeStats.contains(key) {
             // For negative stats, crossing above highThreshold is critical

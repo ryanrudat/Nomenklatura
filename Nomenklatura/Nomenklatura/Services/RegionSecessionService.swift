@@ -141,6 +141,9 @@ class RegionSecessionService {
         let rebellingRegions = game.regions.filter { $0.status.severity >= 3 }
 
         // Widespread crisis affects national stability
+        // NOTE: This is the sole stability penalty for 3+ crisis regions.
+        // EconomyService.calculateAggregateRegionalEffects() handles only the
+        // eliteLoyalty penalty and flag for the same condition, to avoid double-penalizing.
         if crisisRegions.count >= 3 {
             game.applyStat("stability", change: -5)
         }

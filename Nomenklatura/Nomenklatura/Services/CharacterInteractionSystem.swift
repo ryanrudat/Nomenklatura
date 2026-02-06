@@ -2715,8 +2715,8 @@ extension CharacterInteractionSystem {
         }
 
         // Apply stability/loyalty effects based on intimidation and condemnation
-        game.stability = max(0, min(100, game.stability - trial.internationalCondemnation / 3))
-        game.eliteLoyalty = max(0, min(100, game.eliteLoyalty - 5))
+        game.applyStat("stability", change: -(trial.internationalCondemnation / 3))
+        game.applyStat("eliteLoyalty", change: -5)
 
         // Intimidation increases faction fear
         if trial.intimidationGained > 0 {

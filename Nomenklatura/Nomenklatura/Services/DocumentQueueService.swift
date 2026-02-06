@@ -278,6 +278,9 @@ class DocumentQueueService: ObservableObject {
 
     /// Generate new documents for the current turn
     func generateDocumentsForTurn(game: Game) {
+        // Skip document generation on turn 1 - player is in briefing phase
+        guard game.turnNumber > 1 else { return }
+
         let clearance = min(game.currentPositionIndex + 1, 8)
         documentLog.info("📄 [DocQueue] Starting document generation for turn \(game.turnNumber), Position: \(game.currentPositionIndex), Clearance: \(clearance)")
 

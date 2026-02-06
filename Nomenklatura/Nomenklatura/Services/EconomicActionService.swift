@@ -702,25 +702,6 @@ final class EconomicActionService {
 
 // MARK: - Supporting Types
 
-/// Cooldown tracking for economic actions
-struct EconomicCooldownTracker: Codable {
-    var cooldowns: [String: Int] = [:]  // actionId -> availableTurn
-
-    func isOnCooldown(actionId: String, currentTurn: Int) -> Bool {
-        guard let availableTurn = cooldowns[actionId] else { return false }
-        return currentTurn < availableTurn
-    }
-
-    func turnsRemaining(actionId: String, currentTurn: Int) -> Int {
-        guard let availableTurn = cooldowns[actionId] else { return 0 }
-        return max(0, availableTurn - currentTurn)
-    }
-
-    mutating func setCooldown(actionId: String, availableTurn: Int) {
-        cooldowns[actionId] = availableTurn
-    }
-}
-
 /// An active economic project
 struct EconomicProject: Identifiable, Codable {
     let id: UUID

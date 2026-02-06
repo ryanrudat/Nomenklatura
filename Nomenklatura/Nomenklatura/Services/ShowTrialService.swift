@@ -503,7 +503,32 @@ final class ShowTrialService {
             turnGenerated: game.turnNumber,
             expiresOnTurn: nil,
             isUrgent: false,
-            responseOptions: []
+            responseOptions: [
+                EventResponse(
+                    id: "acknowledge_conclusion",
+                    text: "Note the conclusion and move on. The Party's justice has been served.",
+                    shortText: "Acknowledge",
+                    effects: [:],
+                    riskLevel: .low,
+                    followUpHint: nil
+                ),
+                EventResponse(
+                    id: "express_approval",
+                    text: "Publicly praise the verdict as a triumph of socialist justice.",
+                    shortText: "Praise Verdict",
+                    effects: ["eliteLoyalty": 2, "internationalStanding": -1],
+                    riskLevel: .low,
+                    followUpHint: nil
+                ),
+                EventResponse(
+                    id: "quietly_reflect",
+                    text: "Say nothing. In this system, today's judge could be tomorrow's defendant.",
+                    shortText: "Stay Silent",
+                    effects: [:],
+                    riskLevel: .low,
+                    followUpHint: nil
+                )
+            ]
         )
     }
 
@@ -516,7 +541,7 @@ final class ShowTrialService {
             return "\(charges[0].displayName.lowercased()) and \(charges[1].displayName.lowercased())"
         } else {
             let allButLast = charges.dropLast().map { $0.displayName.lowercased() }.joined(separator: ", ")
-            return "\(allButLast), and \(charges.last!.displayName.lowercased())"
+            return "\(allButLast), and \(charges[charges.count - 1].displayName.lowercased())"
         }
     }
 

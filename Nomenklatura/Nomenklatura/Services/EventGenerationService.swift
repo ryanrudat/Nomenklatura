@@ -129,7 +129,7 @@ final class EventGenerationService {
                     id: "accept_cautious",
                     text: "Accept with appropriate caution",
                     shortText: "Accept Cautiously",
-                    effects: ["standing": selected.effects["standing"] ?? 0 - 2]
+                    effects: ["standing": (selected.effects["standing"] ?? 0) - 2]
                 ),
                 EventResponse(
                     id: "defer",
