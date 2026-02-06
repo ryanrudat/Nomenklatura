@@ -774,6 +774,14 @@ extension Game {
     /// Add a dynamic event to the pending queue
     func queueDynamicEvent(_ event: DynamicEvent) {
         var current = pendingDynamicEvents
+
+        // Prevent duplicate prompts in the same turn when multiple systems enqueue
+        // effectively identical events (same type/title/body).
+        let incomingKey = dynamicEventDeduplicationKey(for: event)
+        if current.contains(where: { dynamicEventDeduplicationKey(for: $0) == incomingKey }) {
+            return
+        }
+
         current.append(event)
         pendingDynamicEvents = current
     }
@@ -829,6 +837,19 @@ extension Game {
         case .worldNews: return 2
         case .institutionalChange: return 5  // SC decisions don't happen frequently
         }
+    }
+
+    private func dynamicEventDeduplicationKey(for event: DynamicEvent) -> String {
+        let titleKey = event.title
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        let briefKey = event.briefText
+            .lowercased()
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .prefix(18)
+            .joined(separator: " ")
+        return "\(event.turnGenerated)|\(event.eventType.rawValue)|\(titleKey)|\(briefKey)"
     }
 
     /// Reset consecutive event counter (call on quiet turn)
