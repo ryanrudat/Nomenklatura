@@ -303,9 +303,10 @@ final class BureauOperationsService {
 
             switch record.status {
             case .completed:
-                entryType = .operationCompleted
-                title = "Operation Completed"
-                wasSuccess = true
+                let succeeded = record.result?.succeeded ?? true
+                entryType = succeeded ? .operationCompleted : .operationFailed
+                title = succeeded ? "Operation Completed" : "Operation Failed"
+                wasSuccess = succeeded
             case .pending:
                 entryType = .operationStarted
                 title = "Operation Initiated"

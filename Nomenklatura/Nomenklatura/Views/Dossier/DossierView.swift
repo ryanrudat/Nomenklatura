@@ -944,7 +944,22 @@ struct PlayerStatsCard: View {
     }
 
     private var currentPosition: String {
-        campaignConfig.ladder[safe: game.currentPositionIndex]?.title ?? "Official"
+        let positionsAtIndex = campaignConfig.ladder.filter { $0.index == game.currentPositionIndex }
+        guard !positionsAtIndex.isEmpty else { return "Official" }
+        if positionsAtIndex.count == 1 { return positionsAtIndex[0].title }
+
+        let currentTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+        if let match = positionsAtIndex.first(where: { $0.expandedTrack == currentTrack }) {
+            return match.title
+        }
+
+        if let committedTrack = game.currentCommittedTrack,
+           let match = positionsAtIndex.first(where: { $0.expandedTrack == committedTrack }) {
+            return match.title
+        }
+
+        return positionsAtIndex.first(where: { $0.expandedTrack == .shared })?.title
+            ?? positionsAtIndex[0].title
     }
 
     var body: some View {

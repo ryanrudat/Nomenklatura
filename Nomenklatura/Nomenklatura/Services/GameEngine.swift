@@ -267,9 +267,10 @@ class GameEngine {
     func checkPromotionEligibility(game: Game, ladder: [LadderPosition]) -> PromotionCheck {
         let currentPosition = game.currentPositionIndex
         let nextPositionIndex = currentPosition + 1
+        let highestPositionIndex = ladder.map(\.index).max() ?? currentPosition
 
-        // Already at top
-        guard nextPositionIndex < ladder.count else {
+        // Already at top tier
+        guard nextPositionIndex <= highestPositionIndex else {
             return PromotionCheck(
                 canPromote: false,
                 nextPosition: nil,
@@ -277,8 +278,15 @@ class GameEngine {
             )
         }
 
-        let nextPosition = ladder[nextPositionIndex]
-        let currentLadderPosition = ladder[safe: currentPosition]
+        guard let nextPosition = resolveLadderPosition(for: game, at: nextPositionIndex, ladder: ladder) else {
+            return PromotionCheck(
+                canPromote: false,
+                nextPosition: nil,
+                reason: "No valid promotion path is available from your current track."
+            )
+        }
+
+        let currentLadderPosition = resolveLadderPosition(for: game, at: currentPosition, ladder: ladder)
 
         // Check minimum turns in current position
         let minimumTurns = currentLadderPosition?.minimumTurnsInPosition ?? defaultMinimumTurnsInPosition
@@ -338,8 +346,8 @@ class GameEngine {
 
         // Check for vacancy (simplified: check if max holders not exceeded)
         let holdersAtPosition = game.characters.filter {
-            $0.positionIndex == nextPositionIndex && $0.isAlive
-        }.count + (currentPosition == nextPositionIndex - 1 ? 1 : 0)
+            $0.positionIndex == nextPosition.index && $0.isAlive
+        }.count
 
         if holdersAtPosition >= nextPosition.maxHolders {
             return PromotionCheck(
@@ -364,6 +372,58 @@ class GameEngine {
             nextPosition: nextPosition,
             reason: "You are eligible for promotion to \(nextPosition.title)."
         )
+    }
+
+    private func resolveLadderPosition(for game: Game, at index: Int, ladder: [LadderPosition]) -> LadderPosition? {
+        let positionsAtIndex = ladder.filter { $0.index == index }
+        guard !positionsAtIndex.isEmpty else { return nil }
+        if positionsAtIndex.count == 1 { return positionsAtIndex.first }
+
+        // Top leadership converges to shared positions.
+        if index >= 7,
+           let sharedPosition = positionsAtIndex.first(where: { $0.expandedTrack == .shared }) {
+            return sharedPosition
+        }
+
+        if let committedTrack = game.currentCommittedTrack,
+           let committedPosition = positionsAtIndex.first(where: { $0.expandedTrack == committedTrack }) {
+            return committedPosition
+        }
+
+        let currentTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+        if currentTrack != .shared,
+           let currentTrackPosition = positionsAtIndex.first(where: { $0.expandedTrack == currentTrack }) {
+            return currentTrackPosition
+        }
+
+        if let dominantTrack = game.trackAffinityScores.dominantTrack,
+           let dominantPosition = positionsAtIndex.first(where: { $0.expandedTrack == dominantTrack }) {
+            return dominantPosition
+        }
+
+        if let factionTrack = preferredTrackForFaction(game.playerFactionId),
+           let factionPosition = positionsAtIndex.first(where: { $0.expandedTrack == factionTrack }) {
+            return factionPosition
+        }
+
+        return positionsAtIndex.first(where: { $0.expandedTrack == .shared }) ?? positionsAtIndex.first
+    }
+
+    private func preferredTrackForFaction(_ factionId: String?) -> ExpandedCareerTrack? {
+        switch factionId {
+        case "old_guard":
+            return .securityServices
+        case "princelings":
+            return .militaryPolitical
+        case "reformists":
+            return .economicPlanning
+        case "youth_league":
+            return .partyApparatus
+        case "regional":
+            return .regional
+        default:
+            return nil
+        }
     }
 
     /// Execute a promotion
@@ -634,6 +694,7 @@ class GameEngine {
         _ = PartyActionService.shared.advanceCampaigns(for: game, modelContext: context)
         _ = MilitaryActionService.shared.advanceCampaigns(for: game, modelContext: context)
         _ = StateMinistryActionService.shared.advanceProjects(for: game, modelContext: context)
+        _ = DiplomaticActionService.shared.processPendingActions(for: game, modelContext: context)
     }
 
     /// Generate Codex messages for characters affected by fired consequences
@@ -696,6 +757,9 @@ class GameEngine {
 
         // Process foreign country economies
         EconomyService.shared.processForeignEconomies(game: game)
+
+        // Keep desk/report UI in sync without applying a second treasury model.
+        EconomyService.shared.snapshotEconomicReport(game: game)
 
         gameLogger.info("Economic indicators - GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
     }

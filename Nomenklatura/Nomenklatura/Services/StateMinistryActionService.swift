@@ -509,6 +509,7 @@ final class StateMinistryActionService {
     func advanceProjects(for game: Game, modelContext: ModelContext) -> [MinistryProjectCompletionEvent] {
         var projects = getActiveProjects(for: game)
         var completionEvents: [MinistryProjectCompletionEvent] = []
+        let resolvingTurn = game.turnNumber + 1
 
         for i in projects.indices {
             projects[i].progress += 1
@@ -526,14 +527,14 @@ final class StateMinistryActionService {
             }
 
             // Check for completion
-            if game.turnNumber >= projects[i].completionTurn {
+            if resolvingTurn >= projects[i].completionTurn {
                 let event = completeProject(&projects[i], for: game, modelContext: modelContext)
                 completionEvents.append(event)
             }
         }
 
         // Remove completed projects
-        projects.removeAll { game.turnNumber >= $0.completionTurn }
+        projects.removeAll { resolvingTurn >= $0.completionTurn }
         saveActiveProjects(projects, for: game)
 
         return completionEvents

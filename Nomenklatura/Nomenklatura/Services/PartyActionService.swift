@@ -539,6 +539,7 @@ final class PartyActionService {
     func advanceCampaigns(for game: Game, modelContext: ModelContext) -> [PartyCampaignCompletionEvent] {
         var campaigns = getActiveCampaigns(for: game)
         var completionEvents: [PartyCampaignCompletionEvent] = []
+        let resolvingTurn = game.turnNumber + 1
 
         for i in campaigns.indices {
             campaigns[i].progress += 1
@@ -556,14 +557,14 @@ final class PartyActionService {
             }
 
             // Check for completion
-            if game.turnNumber >= campaigns[i].completionTurn {
+            if resolvingTurn >= campaigns[i].completionTurn {
                 let event = completeCampaign(&campaigns[i], for: game, modelContext: modelContext)
                 completionEvents.append(event)
             }
         }
 
         // Remove completed campaigns
-        campaigns.removeAll { game.turnNumber >= $0.completionTurn }
+        campaigns.removeAll { resolvingTurn >= $0.completionTurn }
         saveActiveCampaigns(campaigns, for: game)
 
         return completionEvents

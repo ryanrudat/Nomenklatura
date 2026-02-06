@@ -145,6 +145,12 @@ class EconomyService {
         game.lastEconomicReport = encodeReport(report)
     }
 
+    /// Store a fresh report snapshot without mutating game stats.
+    func snapshotEconomicReport(game: Game) {
+        let report = calculateTurnEconomy(game: game)
+        game.lastEconomicReport = encodeReport(report)
+    }
+
     // MARK: - Income Calculations
 
     private func calculateDomesticProduction(game: Game) -> Int {

@@ -68,7 +68,7 @@ struct ActionableTasksSection: View {
         .onAppear {
             loadTasks()
         }
-        .onChange(of: refreshToken) { _ in
+        .onChange(of: refreshToken) { _, _ in
             loadTasks()
         }
         .sheet(isPresented: $showingConfirmation, onDismiss: {

@@ -348,14 +348,10 @@ class DiplomaticActionService {
             }
         }
 
-        // Apply treasury cost/gain
-        game.treasury -= effects.treasuryCost
-
-        // Apply player stat changes
-        game.standing += effects.standingChange
-        game.standing = max(0, min(100, game.standing))
-        game.network += effects.networkChange
-        game.network = max(0, min(100, game.network))
+        // Apply treasury cost/gain and player stats through unified stat pipeline.
+        game.applyStat("treasury", change: -effects.treasuryCost)
+        game.applyStat("standing", change: effects.standingChange)
+        game.applyStat("network", change: effects.networkChange)
 
         // Handle game flags
         if let flag = effects.createsFlag {
@@ -431,9 +427,10 @@ class DiplomaticActionService {
     func processPendingActions(for game: Game, modelContext: ModelContext) -> [ActionExecutionResult] {
         var results: [ActionExecutionResult] = []
         var pendingActions = getPendingActions(for: game)
+        let resolvingTurn = game.turnNumber + 1
 
         for i in pendingActions.indices {
-            if pendingActions[i].completionTurn <= game.turnNumber && !pendingActions[i].isComplete {
+            if pendingActions[i].completionTurn <= resolvingTurn && !pendingActions[i].isComplete {
                 // This action is ready to resolve
                 guard let action = DiplomaticAction.action(withId: pendingActions[i].actionId) else { continue }
 

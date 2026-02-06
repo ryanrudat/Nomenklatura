@@ -50,7 +50,7 @@ struct ActivityFeedSection: View {
         .onAppear {
             loadActivity()
         }
-        .onChange(of: refreshToken) { _ in
+        .onChange(of: refreshToken) { _, _ in
             loadActivity()
         }
     }

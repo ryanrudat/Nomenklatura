@@ -426,7 +426,7 @@ class DocumentQueueService: ObservableObject {
             weights[.security] = 25
         }
 
-        if game.treasury < 200 {
+        if game.treasury < 40 {
             weights[.economic] = 30
         }
 
@@ -5319,4 +5319,3 @@ class DocumentQueueService: ObservableObject {
         return consequences
     }
 }
-

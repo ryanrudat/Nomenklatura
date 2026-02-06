@@ -95,7 +95,7 @@ struct BureauOperationsCenter: View {
         .onAppear {
             loadSummary()
         }
-        .onChange(of: summaryRefreshToken) { _ in
+        .onChange(of: summaryRefreshToken) { _, _ in
             loadSummary()
         }
     }

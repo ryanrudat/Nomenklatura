@@ -250,7 +250,7 @@ struct ScenarioPromptBuilder {
     // MARK: - Prompt Sections
 
     private static func buildContextSection(game: Game, config: CampaignConfig) -> String {
-        let positionTitle = config.ladder[safe: game.currentPositionIndex]?.title ?? "Official"
+        let positionTitle = resolvePositionTitle(game: game, config: config)
         let positionScope = getPositionScopeGuidance(forIndex: game.currentPositionIndex)
         let currentDate = RevolutionaryCalendar.formatTurnFull(game.turnNumber)
 
@@ -296,6 +296,25 @@ struct ScenarioPromptBuilder {
 
         **Critical Concerns:** \(identifyCriticalStats(game: game))
         """
+    }
+
+    private static func resolvePositionTitle(game: Game, config: CampaignConfig) -> String {
+        let positionsAtIndex = config.ladder.filter { $0.index == game.currentPositionIndex }
+        guard !positionsAtIndex.isEmpty else { return "Official" }
+        if positionsAtIndex.count == 1 { return positionsAtIndex[0].title }
+
+        let currentTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+        if let match = positionsAtIndex.first(where: { $0.expandedTrack == currentTrack }) {
+            return match.title
+        }
+
+        if let committedTrack = game.currentCommittedTrack,
+           let match = positionsAtIndex.first(where: { $0.expandedTrack == committedTrack }) {
+            return match.title
+        }
+
+        return positionsAtIndex.first(where: { $0.expandedTrack == .shared })?.title
+            ?? positionsAtIndex[0].title
     }
 
     /// Get bureau-specific scope guidance based on the player's career track
@@ -1604,4 +1623,3 @@ struct ScenarioPromptBuilder {
         return traits.isEmpty ? "Unremarkable" : traits.joined(separator: ", ")
     }
 }
-

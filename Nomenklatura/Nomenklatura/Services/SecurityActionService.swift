@@ -101,18 +101,6 @@ final class SecurityActionService {
             }
         }
 
-        // Check treasury for any costs (security actions are mostly free but some have costs)
-        let treasuryCost = action.successEffects.standingChange < 0 ? abs(action.successEffects.standingChange) : 0
-        if treasuryCost > 0 && game.treasury < treasuryCost {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Insufficient resources",
-                successChance: 0,
-                requiresApproval: false,
-                targetTooSenior: false
-            )
-        }
-
         // Calculate success chance
         let successChance = calculateSuccessChance(action, targetCharacter: targetCharacter, for: game)
 
@@ -870,10 +858,11 @@ final class SecurityActionService {
     func processPendingActions(for game: Game, modelContext: ModelContext) -> [SecurityActionRecord] {
         var records = getPendingActions(for: game)
         var completedRecords: [SecurityActionRecord] = []
+        let resolvingTurn = game.turnNumber + 1
 
         for index in records.indices {
             guard records[index].status == .inProgress || records[index].status == .pending else { continue }
-            guard game.turnNumber >= records[index].completionTurn else { continue }
+            guard resolvingTurn >= records[index].completionTurn else { continue }
 
             guard let action = SecurityAction.action(withId: records[index].actionId) else {
                 records[index].status = .blocked

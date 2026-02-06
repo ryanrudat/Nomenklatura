@@ -54,7 +54,7 @@ struct ActiveOperationsSection: View {
         .onAppear {
             loadOperations()
         }
-        .onChange(of: refreshToken) { _ in
+        .onChange(of: refreshToken) { _, _ in
             loadOperations()
         }
     }

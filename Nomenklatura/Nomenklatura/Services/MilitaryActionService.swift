@@ -432,6 +432,7 @@ final class MilitaryActionService {
     func advanceCampaigns(for game: Game, modelContext: ModelContext) -> [CampaignCompletionEvent] {
         var campaigns = getActiveCampaigns(for: game)
         var completionEvents: [CampaignCompletionEvent] = []
+        let resolvingTurn = game.turnNumber + 1
 
         for i in campaigns.indices {
             campaigns[i].progress += 1
@@ -449,14 +450,14 @@ final class MilitaryActionService {
             }
 
             // Check for completion
-            if game.turnNumber >= campaigns[i].completionTurn {
+            if resolvingTurn >= campaigns[i].completionTurn {
                 let event = completeCampaign(&campaigns[i], for: game, modelContext: modelContext)
                 completionEvents.append(event)
             }
         }
 
         // Remove completed campaigns
-        campaigns.removeAll { game.turnNumber >= $0.completionTurn }
+        campaigns.removeAll { resolvingTurn >= $0.completionTurn }
         saveActiveCampaigns(campaigns, for: game)
 
         return completionEvents
@@ -831,4 +832,3 @@ struct NPCMilitaryEvent: Identifiable, Codable {
     let success: Bool
     let description: String
 }
-

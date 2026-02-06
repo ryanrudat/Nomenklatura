@@ -126,6 +126,10 @@ struct DeskView: View {
                                 onRivalTap: openRivalSheet
                             )
 
+                            if let report = latestEconomicReport {
+                                treasuryBriefingSection(report: report)
+                            }
+
                             // Content area - newspaper preview or scenario cards
                             contentSection
                         }
@@ -246,6 +250,11 @@ struct DeskView: View {
 
     private var hasNotifications: Bool {
         game.unreadJournalCount > 0 || currentDynamicEvent != nil
+    }
+
+    private var latestEconomicReport: EconomyService.EconomicReport? {
+        guard let data = game.lastEconomicReport else { return nil }
+        return EconomyService.shared.decodeReport(data)
     }
 
     // MARK: - Turn Advancement
@@ -416,6 +425,101 @@ struct DeskView: View {
                         .stroke(FiftiesColors.leatherBrown.opacity(0.2), lineWidth: 1)
                 )
         )
+    }
+
+    @ViewBuilder
+    private func treasuryBriefingSection(report: EconomyService.EconomicReport) -> some View {
+        let primaryLines = Array(report.breakdown.sorted { abs($0.1) > abs($1.1) }.prefix(3))
+
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("TREASURY BRIEFING")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(FiftiesColors.leatherBrown)
+
+                Spacer()
+
+                Text("LAST TURN")
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(FiftiesColors.fadedInk)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(FiftiesColors.manillaFolder.opacity(0.6))
+                    )
+            }
+
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("NET")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(1)
+                        .foregroundColor(FiftiesColors.fadedInk)
+                    Text(signedValue(report.netChange))
+                        .font(.system(size: 17, weight: .bold, design: .monospaced))
+                        .foregroundColor(colorForDelta(report.netChange))
+                }
+
+                Rectangle()
+                    .fill(FiftiesColors.leatherBrown.opacity(0.2))
+                    .frame(width: 1, height: 28)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("CURRENT TREASURY")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(1)
+                        .foregroundColor(FiftiesColors.fadedInk)
+                    Text("\(game.treasury)")
+                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                        .foregroundColor(FiftiesColors.typewriterInk)
+                }
+            }
+
+            if !primaryLines.isEmpty {
+                Rectangle()
+                    .fill(FiftiesColors.leatherBrown.opacity(0.15))
+                    .frame(height: 1)
+
+                VStack(spacing: 4) {
+                    ForEach(Array(primaryLines.enumerated()), id: \.offset) { _, line in
+                        HStack(spacing: 8) {
+                            Text(line.0)
+                                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                .foregroundColor(FiftiesColors.fadedInk)
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            Text(signedValue(line.1))
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(colorForDelta(line.1))
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(FiftiesColors.agedPaper.opacity(0.92))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(FiftiesColors.leatherBrown.opacity(0.22), lineWidth: 1)
+                )
+        )
+    }
+
+    private func signedValue(_ value: Int) -> String {
+        if value > 0 { return "+\(value)" }
+        return "\(value)"
+    }
+
+    private func colorForDelta(_ value: Int) -> Color {
+        if value > 0 { return FiftiesColors.approvedGreen }
+        if value < 0 { return FiftiesColors.urgentRed }
+        return FiftiesColors.fadedInk
     }
 
     /// Advance turn when player clicks End Turn from desk
@@ -1335,29 +1439,45 @@ struct DeskView: View {
     private func checkForDynamicEventsSync() -> DynamicEvent? {
         guard game.turnNumber > 1 else { return nil }
 
+        // Hard cap: at most one dynamic interruption per turn.
+        if game.lastDynamicEventTurn == game.turnNumber {
+            return nil
+        }
+
         if game.shouldForceQuietTurn {
             game.resetEventPacing()
             return nil
         }
 
+        // Always surface queued events first (project completions, reactions, crises).
+        if let queuedEvent = game.popNextDynamicEvent() {
+            return queuedEvent
+        }
+
         if let event = DynamicEventTriggerService.shared.evaluateTriggers(game: game, phase: .briefing) {
-            return event
+            game.queueDynamicEvent(event)
+            return game.popNextDynamicEvent()
         }
 
         if let characterEvent = CharacterAgencyService.shared.evaluateCharacterActions(game: game) {
-            return characterEvent
+            game.queueDynamicEvent(characterEvent)
+            return game.popNextDynamicEvent()
         }
 
         let goalEvents = GoalDrivenAgencyService.shared.evaluateGoalDrivenActions(game: game)
         if let firstGoalEvent = goalEvents.first {
-            return firstGoalEvent
+            game.queueDynamicEvent(firstGoalEvent)
+            return game.popNextDynamicEvent()
         }
 
         let memoryEvents = MemoryIntegrationService.shared.evaluateMemoryDrivenActions(game: game)
         if let memoryEvent = memoryEvents.first {
-            return memoryEvent
+            game.queueDynamicEvent(memoryEvent)
+            return game.popNextDynamicEvent()
         }
 
+        // Quiet turn: clear streak so "consecutive events" stays true to name.
+        game.resetEventPacing()
         return nil
     }
 
@@ -1389,12 +1509,6 @@ struct DeskView: View {
         // Document queue: check expirations and generate new documents
         documentQueue.checkExpiredDocuments(game: game)
         documentQueue.generateDocumentsForTurn(game: game)
-
-        // Economy: calculate and apply turn economy (skip turn 1 - player hasn't ended turn yet)
-        if newValue > 1 {
-            let economicReport = EconomyService.shared.calculateTurnEconomy(game: game)
-            EconomyService.shared.applyEconomicReport(economicReport, to: game)
-        }
 
         if newValue != previousTurn && newValue > 1 {
             previousTurn = newValue
