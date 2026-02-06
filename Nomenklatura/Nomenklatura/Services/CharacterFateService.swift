@@ -213,19 +213,19 @@ final class CharacterFateService {
 
         // High-profile deaths affect stability
         if position >= 5 {
-            game.stability -= (cause.isOfficial ? 5 : 10)
+            game.applyStat("stability", change: -(cause.isOfficial ? 5 : 10))
         }
 
         // Executions create fear
         if cause.isOfficial {
-            game.eliteLoyalty += 3 // Fear increases loyalty
-            game.popularSupport -= 2 // But reduces popular support
+            game.applyStat("eliteLoyalty", change: 3) // Fear increases loyalty
+            game.applyStat("popularSupport", change: -2) // But reduces popular support
         }
 
         // Suspicious deaths create unease
         if !cause.isOfficial && cause != .illness && cause != .naturalCauses {
-            game.stability -= 3
-            game.eliteLoyalty -= 2
+            game.applyStat("stability", change: -3)
+            game.applyStat("eliteLoyalty", change: -2)
         }
     }
 
@@ -364,13 +364,13 @@ final class CharacterFateService {
     ) {
         // High-profile dismissals affect stability
         if previousPosition >= 5 {
-            game.stability -= 3
+            game.applyStat("stability", change: -3)
         }
 
         // Purge-style dismissals create fear
         if dismissalType == .factionPurge {
-            game.eliteLoyalty += 2
-            game.stability -= 5
+            game.applyStat("eliteLoyalty", change: 2)
+            game.applyStat("stability", change: -5)
         }
     }
 
@@ -403,7 +403,7 @@ final class CharacterFateService {
 
         // Exile affects stability less than death
         if previousPosition >= 5 {
-            game.stability -= 2
+            game.applyStat("stability", change: -2)
         }
     }
 
@@ -441,8 +441,8 @@ final class CharacterFateService {
         game.variables["sentence_end_\(character.id.uuidString)"] = String(endTurn)
 
         if previousPosition >= 5 {
-            game.stability -= 3
-            game.eliteLoyalty += 2 // Fear
+            game.applyStat("stability", change: -3)
+            game.applyStat("eliteLoyalty", change: 2) // Fear
         }
     }
 
@@ -471,7 +471,7 @@ final class CharacterFateService {
         character.fateNarrative = "\(character.name) has been rehabilitated \(sponsorDesc) and returns to public life."
 
         // Rehabilitation can signal thaw or power shift
-        game.stability += 2
+        game.applyStat("stability", change: 2)
     }
 
     // MARK: - Convenience Methods

@@ -326,31 +326,14 @@ class PolicyService {
         newOption: PolicyOption,
         previousOption: PolicyOption?
     ) {
-        // Remove previous effects (if any)
-        if let prev = previousOption {
-            game.stability -= prev.effects.stabilityModifier
-            game.popularSupport -= prev.effects.popularSupportModifier
-            game.eliteLoyalty -= prev.effects.eliteLoyaltyModifier
-            game.industrialOutput -= prev.effects.economicOutputModifier
-            game.militaryLoyalty -= prev.effects.militaryLoyaltyModifier
-            game.internationalStanding -= prev.effects.internationalStandingModifier
-        }
-
-        // Apply new effects
-        game.stability += newOption.effects.stabilityModifier
-        game.popularSupport += newOption.effects.popularSupportModifier
-        game.eliteLoyalty += newOption.effects.eliteLoyaltyModifier
-        game.industrialOutput += newOption.effects.economicOutputModifier
-        game.militaryLoyalty += newOption.effects.militaryLoyaltyModifier
-        game.internationalStanding += newOption.effects.internationalStandingModifier
-
-        // Clamp all stats to 0-100
-        game.stability = max(0, min(100, game.stability))
-        game.popularSupport = max(0, min(100, game.popularSupport))
-        game.eliteLoyalty = max(0, min(100, game.eliteLoyalty))
-        game.industrialOutput = max(0, min(100, game.industrialOutput))
-        game.militaryLoyalty = max(0, min(100, game.militaryLoyalty))
-        game.internationalStanding = max(0, min(100, game.internationalStanding))
+        // Compute net change (new - previous) and apply with clamping
+        let prevEffects = previousOption?.effects
+        game.applyStat("stability", change: newOption.effects.stabilityModifier - (prevEffects?.stabilityModifier ?? 0))
+        game.applyStat("popularSupport", change: newOption.effects.popularSupportModifier - (prevEffects?.popularSupportModifier ?? 0))
+        game.applyStat("eliteLoyalty", change: newOption.effects.eliteLoyaltyModifier - (prevEffects?.eliteLoyaltyModifier ?? 0))
+        game.applyStat("industrialOutput", change: newOption.effects.economicOutputModifier - (prevEffects?.economicOutputModifier ?? 0))
+        game.applyStat("militaryLoyalty", change: newOption.effects.militaryLoyaltyModifier - (prevEffects?.militaryLoyaltyModifier ?? 0))
+        game.applyStat("internationalStanding", change: newOption.effects.internationalStandingModifier - (prevEffects?.internationalStandingModifier ?? 0))
 
         // Apply faction standing changes
         for (factionId, modifier) in newOption.effects.factionModifiers {

@@ -199,24 +199,23 @@ class ProjectService {
     }
 
     private func applyStat(_ stat: String, change: Int, game: Game) {
+        // Map lowercase keys from project effects to Game.applyStat camelCase keys
+        let key: String
         switch stat.lowercased() {
-        case "stability": game.stability = clamp(game.stability + change)
-        case "popularsupport": game.popularSupport = clamp(game.popularSupport + change)
-        case "militaryloyalty": game.militaryLoyalty = clamp(game.militaryLoyalty + change)
-        case "eliteloyalty": game.eliteLoyalty = clamp(game.eliteLoyalty + change)
-        case "treasury": game.treasury = clamp(game.treasury + change)
-        case "industrialoutput": game.industrialOutput = clamp(game.industrialOutput + change)
-        case "foodsupply": game.foodSupply = clamp(game.foodSupply + change)
-        case "internationalstanding": game.internationalStanding = clamp(game.internationalStanding + change)
-        case "standing": game.standing = clamp(game.standing + change)
-        case "patronfavor": game.patronFavor = clamp(game.patronFavor + change)
-        case "network": game.network = clamp(game.network + change)
-        default: break
+        case "stability": key = "stability"
+        case "popularsupport": key = "popularSupport"
+        case "militaryloyalty": key = "militaryLoyalty"
+        case "eliteloyalty": key = "eliteLoyalty"
+        case "treasury": key = "treasury"
+        case "industrialoutput": key = "industrialOutput"
+        case "foodsupply": key = "foodSupply"
+        case "internationalstanding": key = "internationalStanding"
+        case "standing": key = "standing"
+        case "patronfavor": key = "patronFavor"
+        case "network": key = "network"
+        default: return
         }
-    }
-
-    private func clamp(_ value: Int) -> Int {
-        max(0, min(100, value))
+        game.applyStat(key, change: change)
     }
 
     // MARK: - Dynamic Event Generation

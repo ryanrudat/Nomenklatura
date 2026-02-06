@@ -266,16 +266,16 @@ final class ShowTrialService {
 
         // Intimidation from trial
         trialCopy.intimidationGained = calculateIntimidation(trial: trial)
-        game.eliteLoyalty += trialCopy.intimidationGained / 10  // Fear breeds compliance
+        game.applyStat("eliteLoyalty", change: trialCopy.intimidationGained / 10)  // Fear breeds compliance
 
         // Martyr effect
         if trial.confessionType == .resisted || trial.confessionType == .recanted {
             trialCopy.martyrCreated = true
-            game.popularSupport -= 5  // Some sympathy for the defiant
+            game.applyStat("popularSupport", change: -5)  // Some sympathy for the defiant
         }
 
         // International condemnation
-        game.internationalStanding -= trialCopy.internationalCondemnation
+        game.applyStat("internationalStanding", change: -trialCopy.internationalCondemnation)
 
         // Update stored trial
         game.updateShowTrial(trialCopy)

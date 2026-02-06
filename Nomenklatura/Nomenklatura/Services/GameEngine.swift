@@ -947,16 +947,8 @@ class GameEngine {
             // Apply custom effects from the proposal
             for (key, value) in item.effects {
                 switch key {
-                case "stability":
-                    game.stability = max(0, min(100, game.stability + value))
-                case "popularSupport":
-                    game.popularSupport = max(0, min(100, game.popularSupport + value))
-                case "eliteLoyalty":
-                    game.eliteLoyalty = max(0, min(100, game.eliteLoyalty + value))
-                case "industrialOutput":
-                    game.industrialOutput = max(0, min(100, game.industrialOutput + value))
-                case "internationalStanding":
-                    game.internationalStanding = max(0, min(100, game.internationalStanding + value))
+                case "stability", "popularSupport", "eliteLoyalty", "industrialOutput", "internationalStanding":
+                    game.applyStat(key, change: value)
                 case "militaryLoyalty":
                     // Find military faction and adjust power
                     if let militaryFaction = game.factions.first(where: { $0.factionId == "military" }) {
@@ -973,42 +965,42 @@ class GameEngine {
             case .economic:
                 // Economic decisions affect industrial output and treasury
                 let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
-                game.industrialOutput = min(100, game.industrialOutput + impact)
+                game.applyStat("industrialOutput", change: impact)
 
             case .security:
                 // Security decisions affect stability but may hurt popular support
                 let impact = item.priority == .critical ? 8 : (item.priority == .urgent ? 5 : 2)
-                game.stability = min(100, game.stability + impact)
-                game.popularSupport = max(0, game.popularSupport - (impact / 2))
+                game.applyStat("stability", change: impact)
+                game.applyStat("popularSupport", change: -(impact / 2))
 
             case .personnel:
                 // Personnel changes affect elite loyalty
                 let impact = item.priority == .critical ? 6 : (item.priority == .urgent ? 4 : 2)
-                game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
+                game.applyStat("eliteLoyalty", change: impact)
 
             case .foreign:
                 // Foreign policy affects international standing
                 let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
-                game.internationalStanding = min(100, game.internationalStanding + impact)
+                game.applyStat("internationalStanding", change: impact)
 
             case .ideological:
                 // Ideological decisions affect elite loyalty but may hurt popular support
                 let impact = item.priority == .critical ? 5 : 3
-                game.eliteLoyalty = min(100, game.eliteLoyalty + impact)
-                game.popularSupport = max(0, game.popularSupport - 2)
+                game.applyStat("eliteLoyalty", change: impact)
+                game.applyStat("popularSupport", change: -2)
 
             case .crisis:
                 // Crisis responses have mixed effects
-                game.stability = min(100, game.stability + 5)
+                game.applyStat("stability", change: 5)
 
             case .policy:
                 // General policy has modest stability effect
-                game.stability = min(100, game.stability + 2)
+                game.applyStat("stability", change: 2)
 
             case .succession:
                 // Succession decisions affect elite loyalty and stability
-                game.eliteLoyalty = min(100, game.eliteLoyalty + 5)
-                game.stability = min(100, game.stability + 3)
+                game.applyStat("eliteLoyalty", change: 5)
+                game.applyStat("stability", change: 3)
             }
         }
     }

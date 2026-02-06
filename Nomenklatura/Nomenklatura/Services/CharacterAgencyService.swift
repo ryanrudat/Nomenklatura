@@ -1446,18 +1446,18 @@ class CharacterAgencyService {
             relationship.trust = min(100, relationship.trust + 10)
             relationship.disposition = min(100, relationship.disposition + 5)
             // May affect international standing
-            game.internationalStanding = min(100, game.internationalStanding + Int.random(in: 1...3))
+            game.applyStat("internationalStanding", change: Int.random(in: 1...3))
 
         case .diplomaticOutreach:
             // Diplomatic coordination builds working relationships
             relationship.disposition = min(100, relationship.disposition + 8)
-            game.internationalStanding = min(100, game.internationalStanding + Int.random(in: 1...2))
+            game.applyStat("internationalStanding", change: Int.random(in: 1...2))
 
         case .recallAmbassador:
             // Briefing superiors about escalation
             relationship.trust = min(100, relationship.trust + 5)
             // Diplomatic tension
-            game.internationalStanding = max(0, game.internationalStanding - Int.random(in: 1...3))
+            game.applyStat("internationalStanding", change: -Int.random(in: 1...3))
 
         // GOVERNANCE: Economic Planning Track
         case .setProductionQuota:
@@ -1471,7 +1471,7 @@ class CharacterAgencyService {
                 reciprocal.disposition = min(100, reciprocal.disposition + 5)
             }
             // Economic effect
-            game.industrialOutput = min(100, max(0, game.industrialOutput + Int.random(in: -2...3)))
+            game.applyStat("industrialOutput", change: Int.random(in: -2...3))
 
         case .allocateResources:
             // Resource allocation creates winners and losers
@@ -1545,7 +1545,7 @@ class CharacterAgencyService {
             let reciprocal = getOrCreateNPCRelationship(from: target, to: actor, game: game)
             reciprocal.trust = min(100, reciprocal.trust + 8)
             // May improve stability
-            game.stability = min(100, game.stability + Int.random(in: 1...3))
+            game.applyStat("stability", change: Int.random(in: 1...3))
 
         // GOVERNANCE: Party Apparatus Track
         case .ideologicalCampaign:
@@ -1556,7 +1556,7 @@ class CharacterAgencyService {
                 reciprocal.disposition = max(-100, reciprocal.disposition - 10)
             }
             // Loyalty effect
-            game.eliteLoyalty = min(100, game.eliteLoyalty + Int.random(in: 1...3))
+            game.applyStat("eliteLoyalty", change: Int.random(in: 1...3))
 
         case .cadreReview:
             // Reviews create anxiety
@@ -1580,12 +1580,12 @@ class CharacterAgencyService {
             let reciprocal = getOrCreateNPCRelationship(from: target, to: actor, game: game)
             reciprocal.fear = min(100, reciprocal.fear + 10)
             // Military loyalty effect
-            game.militaryLoyalty = min(100, game.militaryLoyalty + Int.random(in: 0...2))
+            game.applyStat("militaryLoyalty", change: Int.random(in: 0...2))
 
         case .politicalIndoctrination:
             // Indoctrination builds ideological conformity
             relationship.trust = min(100, relationship.trust + 5)
-            game.eliteLoyalty = min(100, game.eliteLoyalty + Int.random(in: 1...2))
+            game.applyStat("eliteLoyalty", change: Int.random(in: 1...2))
 
         case .vetOfficers:
             // Vetting creates anxiety among officers
@@ -1666,7 +1666,7 @@ class CharacterAgencyService {
             let reciprocal = getOrCreateNPCRelationship(from: target, to: actor, game: game)
             reciprocal.trust = min(100, reciprocal.trust + 10)
             // Stability improvement
-            game.stability = min(100, game.stability + Int.random(in: 2...5))
+            game.applyStat("stability", change: Int.random(in: 2...5))
 
         case .addressShortage:
             // Addressing shortage helps economy
@@ -1674,24 +1674,24 @@ class CharacterAgencyService {
             let reciprocal = getOrCreateNPCRelationship(from: target, to: actor, game: game)
             reciprocal.gratitudeLevel = min(100, reciprocal.gratitudeLevel + 10)
             // Economic improvement
-            game.foodSupply = min(100, game.foodSupply + Int.random(in: 1...4))
-            game.industrialOutput = min(100, game.industrialOutput + Int.random(in: 1...3))
+            game.applyStat("foodSupply", change: Int.random(in: 1...4))
+            game.applyStat("industrialOutput", change: Int.random(in: 1...3))
 
         case .handleIncident:
             // Handling incidents coordinates responses
             relationship.trust = min(100, relationship.trust + 10)
             relationship.disposition = min(100, relationship.disposition + 5)
             // International effect
-            game.internationalStanding = min(100, max(0, game.internationalStanding + Int.random(in: -1...3)))
+            game.applyStat("internationalStanding", change: Int.random(in: -1...3))
 
         case .suppressUnrest:
             // Suppressing unrest stabilizes but may create resentment
             let reciprocal = getOrCreateNPCRelationship(from: target, to: actor, game: game)
             reciprocal.trust = min(100, reciprocal.trust + 5)
             // Stability but at cost
-            game.stability = min(100, game.stability + Int.random(in: 3...6))
+            game.applyStat("stability", change: Int.random(in: 3...6))
             if actor.personalityRuthless > 60 {
-                game.eliteLoyalty = max(0, game.eliteLoyalty - Int.random(in: 0...2))
+                game.applyStat("eliteLoyalty", change: -Int.random(in: 0...2))
             }
         }
 

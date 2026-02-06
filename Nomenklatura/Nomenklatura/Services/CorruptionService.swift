@@ -534,10 +534,10 @@ extension CorruptionService {
         // Stability/loyalty effects
         switch detention.outcome {
         case .referredToTrial, .executed:
-            game.stability = max(0, game.stability - 5)
-            game.eliteLoyalty = max(0, game.eliteLoyalty - 8)
+            game.applyStat("stability", change: -5)
+            game.applyStat("eliteLoyalty", change: -8)
         case .demoted:
-            game.eliteLoyalty = max(0, game.eliteLoyalty - 3)
+            game.applyStat("eliteLoyalty", change: -3)
         default:
             break
         }
