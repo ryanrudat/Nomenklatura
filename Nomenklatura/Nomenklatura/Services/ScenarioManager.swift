@@ -74,6 +74,7 @@ class ScenarioManager {
     // Pacing constants
     private let maxConsecutiveDecisions = 2  // Force variety after just 2 decisions
     private let maxCategoryHistory = 5       // Track more history for better variety
+    private let onboardingTurns = 4           // First turns are curated to avoid chaotic early prompts
 
     // Newspaper appearance chance (base 25%, modified by events)
     private let baseNewspaperChance: Double = 0.25
@@ -84,6 +85,13 @@ class ScenarioManager {
     /// Call this from async context for AI-powered scenarios
     @MainActor
     func getScenarioAsync(for game: Game, config: CampaignConfig) async -> Scenario {
+        // Keep the opening turns deterministic and grounded.
+        if game.turnNumber <= onboardingTurns {
+            lastWasAIGenerated = false
+            lastNarrativeMetadata = nil
+            return getFallbackScenario(for: game)
+        }
+
         // Build prompt and cache key on MainActor (needs Game access)
         let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
         let cacheKey = "turn_\(game.turnNumber)_\(game.phase)"
@@ -191,7 +199,8 @@ class ScenarioManager {
             let (prompt, cacheKey, useAI) = await MainActor.run {
                 let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
                 let cacheKey = "turn_\(game.turnNumber)_\(game.phase)"
-                return (prompt, cacheKey, Secrets.isAIEnabled)
+                let useAI = Secrets.isAIEnabled && game.turnNumber > self.onboardingTurns
+                return (prompt, cacheKey, useAI)
             }
 
             var scenario: Scenario
@@ -299,7 +308,7 @@ class ScenarioManager {
         // This prevents SwiftData faulting issues when game object is captured across task boundaries
         let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
         let cacheKey = "pregenerate_turn_\(nextTurn)"
-        let useAI = Secrets.isAIEnabled
+        let useAI = Secrets.isAIEnabled && nextTurn > onboardingTurns
 
         // Pre-generate fallback scenario on MainActor before detaching
         // This avoids accessing Game inside the detached task
@@ -458,7 +467,9 @@ class ScenarioManager {
         // Step 6: Pick from top candidates with randomness
         let topCount = min(3, scored.count)
         let topCandidates = Array(scored.prefix(topCount))
-        let selected = topCandidates.randomElement()?.0 ?? allScenarios.first { $0.category != .introduction }!
+        guard let selected = topCandidates.randomElement()?.0 ?? allScenarios.first(where: { $0.category != .introduction }) else {
+            return allScenarios[0]
+        }
 
         // Track usage
         markAsUsed(selected.templateId, category: selected.category, turnNumber: game.turnNumber, game: game)
@@ -492,7 +503,9 @@ class ScenarioManager {
         }
 
         // Random selection from candidates
-        let selected = candidates.randomElement() ?? scenarios.first!
+        guard let selected = candidates.randomElement() ?? scenarios.first else {
+            return createNewspaperPlaceholder(for: game)
+        }
 
         markAsUsed(selected.templateId, category: selected.category, turnNumber: game.turnNumber, game: game)
 
@@ -590,6 +603,11 @@ class ScenarioManager {
     /// Weighted category selection that avoids obvious patterns
     /// Now includes pacing logic to force variety after consecutive decision events
     private func selectCategory(for game: Game) -> ScenarioCategory {
+        // Onboarding window: avoid high-chaos categories while the player is still learning.
+        if game.turnNumber <= onboardingTurns {
+            return selectOnboardingCategory(for: game)
+        }
+
         // Check if we should force a non-decision event for pacing
         // Use the game's persisted counter
         if game.consecutiveDecisionEvents >= maxConsecutiveDecisions {
@@ -652,6 +670,32 @@ class ScenarioManager {
         }
 
         return .routine // Fallback
+    }
+
+    /// Curated category selection for the first few turns.
+    private func selectOnboardingCategory(for game: Game) -> ScenarioCategory {
+        if game.turnNumber == 2 {
+            return .routine
+        }
+
+        let onboardingCategories: [(ScenarioCategory, Int)] = [
+            (.routine, 45),
+            (.opportunity, 25),
+            (.character, 20),
+            (.routineDay, 10)
+        ]
+
+        let totalWeight = onboardingCategories.reduce(0) { $0 + $1.1 }
+        var random = Int.random(in: 0..<totalWeight)
+
+        for (category, weight) in onboardingCategories {
+            random -= weight
+            if random < 0 {
+                return category
+            }
+        }
+
+        return .routine
     }
 
     /// Select from non-decision categories to break up decision fatigue

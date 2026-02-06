@@ -412,7 +412,7 @@ final class NewspaperGenerator {
                     category: .economic
                 )
             ]
-            return headlines.randomElement()!
+            return headlines.randomElement() ?? headlines[0]
         }
     }
 
@@ -446,7 +446,7 @@ final class NewspaperGenerator {
                     category: .political
                 )
             ]
-            return headlines.randomElement()!
+            return headlines.randomElement() ?? headlines[0]
         }
     }
 
@@ -471,7 +471,7 @@ final class NewspaperGenerator {
                 category: .military
             )
         ]
-        return headlines.randomElement()!
+        return headlines.randomElement() ?? headlines[0]
     }
 
     private func generateInternationalHeadline(for game: Game) -> HeadlineStory {
@@ -495,7 +495,7 @@ final class NewspaperGenerator {
                 category: .international
             )
         ]
-        return headlines.randomElement()!
+        return headlines.randomElement() ?? headlines[0]
     }
 
     private func generateDomesticHeadline(for game: Game) -> HeadlineStory {
@@ -521,7 +521,7 @@ final class NewspaperGenerator {
                     category: .domestic
                 )
             ]
-            return headlines.randomElement()!
+            return headlines.randomElement() ?? headlines[0]
         }
     }
 
@@ -546,7 +546,7 @@ final class NewspaperGenerator {
                 category: .ideological
             )
         ]
-        return headlines.randomElement()!
+        return headlines.randomElement() ?? headlines[0]
     }
 
     // MARK: - Secondary Stories
@@ -692,7 +692,7 @@ final class NewspaperGenerator {
         let fateTypes: [CharacterFateType] = [
             .promoted, .reassigned, .retired, .underInvestigation, .rehabilitated
         ]
-        let fateType = fateTypes.randomElement()!
+        guard let fateType = fateTypes.randomElement() else { return nil }
 
         let names = [
             ("Deputy Minister Horvat", "Ministry of Heavy Industry"),
@@ -702,7 +702,7 @@ final class NewspaperGenerator {
             ("Director Steinberg", "State Planning Commission")
         ]
 
-        let (name, title) = names.randomElement()!
+        guard let (name, title) = names.randomElement() else { return nil }
 
         let report: String
         let euphemism: String
@@ -887,7 +887,7 @@ final class NewspaperGenerator {
                     category: .political
                 )
             ]
-            return headlines.randomElement()!
+            return headlines.randomElement() ?? headlines[0]
 
         case .emergency:
             return HeadlineStory(
@@ -934,7 +934,7 @@ final class NewspaperGenerator {
                     category: .political
                 )
             ]
-            return headlines.randomElement()!
+            return headlines.randomElement() ?? headlines[0]
         }
 
         let generalHeadlines = [
@@ -963,7 +963,7 @@ final class NewspaperGenerator {
                 category: .political
             )
         ]
-        return generalHeadlines.randomElement()!
+        return generalHeadlines.randomElement() ?? generalHeadlines[0]
     }
 
     private func generateCongressVotingHeadline(session: CongressSession, game: Game) -> HeadlineStory {
@@ -989,7 +989,7 @@ final class NewspaperGenerator {
                 category: .political
             )
         ]
-        return headlines.randomElement()!
+        return headlines.randomElement() ?? headlines[0]
     }
 
     private func generateCongressConclusionHeadline(session: CongressSession, game: Game) -> HeadlineStory {
@@ -1017,7 +1017,7 @@ final class NewspaperGenerator {
                     category: .political
                 )
             ]
-            return headlines.randomElement()!
+            return headlines.randomElement() ?? headlines[0]
         } else if totalAgainst > 0 {
             // Some dissent (extremely rare)
             return HeadlineStory(
@@ -1057,7 +1057,7 @@ final class NewspaperGenerator {
                 category: .political
             )
         ]
-        return headlines.randomElement()!
+        return headlines.randomElement() ?? headlines[0]
     }
 
     /// Helper to generate ordinal numbers
@@ -1401,6 +1401,9 @@ final class NewspaperGenerator {
 
     private func weightedRandomSelection<T>(from items: [(T, Int)]) -> T {
         let totalWeight = items.reduce(0) { $0 + $1.1 }
+        guard totalWeight > 0, let fallback = items.first?.0 else {
+            fatalError("weightedRandomSelection called with empty items array")
+        }
         var random = Int.random(in: 0..<totalWeight)
 
         for (item, weight) in items {
@@ -1410,7 +1413,7 @@ final class NewspaperGenerator {
             }
         }
 
-        return items.first!.0
+        return fallback
     }
 }
 

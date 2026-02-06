@@ -258,7 +258,7 @@ class NPCLifeEventsService {
 
         // If no specific weights, use default
         if weights.isEmpty {
-            return ScandalType.allCases.randomElement()!
+            return ScandalType.allCases.randomElement() ?? .corruption
         }
 
         // Weighted random selection
@@ -270,7 +270,7 @@ class NPCLifeEventsService {
                 return type
             }
         }
-        return weights.first!.0
+        return weights.first?.0 ?? .corruption
     }
 
     // MARK: - Nervous Breakdown (Paranoid Under Pressure)
@@ -320,7 +320,7 @@ class NPCLifeEventsService {
              .rumor)
         ]
 
-        let outcome = outcomes.randomElement()!
+        guard let outcome = outcomes.randomElement() else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -415,7 +415,7 @@ class NPCLifeEventsService {
              10)
         ]
 
-        let success = successes.randomElement()!
+        guard let success = successes.randomElement() else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -444,7 +444,7 @@ class NPCLifeEventsService {
             ("illness", "succumbed to a long-hidden illness that they had concealed for years")
         ]
 
-        let cause = causes.randomElement()!
+        guard let cause = causes.randomElement() else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -482,7 +482,7 @@ class NPCLifeEventsService {
              .rumor)
         ]
 
-        let crisis = crises.randomElement()!
+        guard let crisis = crises.randomElement() else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -516,7 +516,7 @@ class NPCLifeEventsService {
              -15)
         ]
 
-        let disgrace = disgraces.randomElement()!
+        guard let disgrace = disgraces.randomElement() else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -636,7 +636,7 @@ class NPCLifeEventsService {
                 "\(character.name) was found unresponsive at their desk by staff early the following morning. Despite immediate medical attention, they could not be saved. Colleagues speak of their dedication in hushed, careful tones.",
                 "After complaining of chest pains during a reception at the Cultural Palace, \(character.name) was rushed to the Central Clinical Hospital where they died shortly after arrival. The funeral will be held with full state honors."
             ]
-            return narratives.randomElement()!
+            return narratives.randomElement() ?? narratives[0]
         } else {
             return "\(character.name) suffered a minor cardiac event and is recovering in hospital. They are expected to return to duties within weeks, though some whisper that the strain of office is taking its toll."
         }
@@ -649,7 +649,7 @@ class NPCLifeEventsService {
                 "\(character.name) has been diagnosed with a serious but treatable condition. Their duties have been temporarily reassigned as they undergo treatment at the special clinic reserved for senior cadres.",
                 "Following weeks of declining health that could no longer be concealed, \(character.name) has finally been hospitalized. The prognosis remains guarded, and their position grows uncertain."
             ]
-            return illnesses.randomElement()!
+            return illnesses.randomElement() ?? illnesses[0]
         } else {
             return "\(character.name) has taken a brief medical leave to address 'minor health concerns.' They are expected to return shortly, though rivals note the opportunity with interest."
         }

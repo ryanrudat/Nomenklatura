@@ -129,8 +129,8 @@ class DynamicEventTriggerService {
         return DynamicEvent(
             eventType: .patronDirective,
             priority: .elevated,
-            title: titles.randomElement()!,
-            briefText: texts.randomElement()!,
+            title: titles.randomElement() ?? titles[0],
+            briefText: texts.randomElement() ?? texts[0],
             initiatingCharacterId: patron.id,
             initiatingCharacterName: patron.name,
             turnGenerated: game.turnNumber,
@@ -161,8 +161,8 @@ class DynamicEventTriggerService {
         return DynamicEvent(
             eventType: .patronDirective,
             priority: .normal,
-            title: titles.randomElement()!,
-            briefText: texts.randomElement()!,
+            title: titles.randomElement() ?? titles[0],
+            briefText: texts.randomElement() ?? texts[0],
             initiatingCharacterId: patron.id,
             initiatingCharacterName: patron.name,
             turnGenerated: game.turnNumber,
@@ -275,8 +275,8 @@ class DynamicEventTriggerService {
         return DynamicEvent(
             eventType: .rivalAction,
             priority: .elevated,
-            title: titles.randomElement()!,
-            briefText: texts.randomElement()!,
+            title: titles.randomElement() ?? titles[0],
+            briefText: texts.randomElement() ?? texts[0],
             initiatingCharacterId: rival.id,
             initiatingCharacterName: rival.name,
             turnGenerated: game.turnNumber,
@@ -400,7 +400,21 @@ class DynamicEventTriggerService {
             )
         ]
 
-        let request = requests.randomElement()!
+        guard let request = requests.randomElement() else {
+            return DynamicEvent(
+                eventType: .allyRequest,
+                priority: .normal,
+                title: "A Request from a Friend",
+                briefText: "\(ally.name) approaches you with a favor to ask.",
+                initiatingCharacterId: ally.id,
+                initiatingCharacterName: ally.name,
+                turnGenerated: game.turnNumber,
+                isUrgent: false,
+                responseOptions: [],
+                iconName: "person.fill.questionmark",
+                accentColor: "statHigh"
+            )
+        }
 
         return DynamicEvent(
             eventType: .allyRequest,
@@ -1024,7 +1038,19 @@ class DynamicEventTriggerService {
             ("Useful Information", "A contact in the records office sends word: someone has been requesting your personnel file. They wouldn't say who.")
         ]
 
-        let (title, text) = intels.randomElement()!
+        guard let (title, text) = intels.randomElement() else {
+            return DynamicEvent(
+                eventType: .networkIntel,
+                priority: .normal,
+                title: "Network Report",
+                briefText: "Your contacts have gathered intelligence.",
+                turnGenerated: game.turnNumber,
+                isUrgent: false,
+                responseOptions: [],
+                iconName: "antenna.radiowaves.left.and.right",
+                accentColor: "statNeutral"
+            )
+        }
 
         return DynamicEvent(
             eventType: .networkIntel,
@@ -1321,7 +1347,7 @@ class DynamicEventTriggerService {
             State Security about \(target.name). Documents are being collected, and former \
             associates questioned.
 
-            The charges being assembled appear to involve \(TrialCharge.allCases.randomElement()!.displayName.lowercased()). \
+            The charges being assembled appear to involve \((TrialCharge.allCases.randomElement() ?? TrialCharge.allCases[0]).displayName.lowercased()). \
             Your informants suggest the case could be brought to the Procurator within weeks.
 
             This may be an opportunity - or a warning. Such investigations have a way of expanding.

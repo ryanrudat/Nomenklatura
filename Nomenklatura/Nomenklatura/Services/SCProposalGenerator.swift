@@ -163,7 +163,7 @@ struct SCProposalGenerator {
                          .secret)
                     ]
 
-                    let attack = attackTypes.randomElement()!
+                    guard let attack = attackTypes.randomElement() else { continue }
 
                     return SCPoliticalAction(
                         actionType: .scAttack,
@@ -226,7 +226,7 @@ struct SCProposalGenerator {
                  .secret)
             ]
 
-            let threat = threatTypes.randomElement()!
+            guard let threat = threatTypes.randomElement() else { continue }
 
             return SCPoliticalAction(
                 actionType: .resignationThreat,
@@ -256,7 +256,7 @@ struct SCProposalGenerator {
             // 10% chance if faction has multiple SC members
             guard Int.random(in: 1...100) <= 10 else { continue }
 
-            let leadMember = factionMemberList.first!
+            guard let leadMember = factionMemberList.first else { continue }
             let otherMembers = factionMemberList.dropFirst().map { $0.name }.joined(separator: " and ")
 
             return SCPoliticalAction(
@@ -278,8 +278,10 @@ struct SCProposalGenerator {
         // 15% chance if player has network >= 50
         guard Int.random(in: 1...100) <= 15 else { return nil }
 
-        let member1 = members.randomElement()!
-        let member2 = members.filter { $0.id != member1.id }.randomElement()!
+        guard let member1 = members.randomElement(),
+              let member2 = members.filter({ $0.id != member1.id }).randomElement() else {
+            return nil
+        }
 
         let deals: [(String, String)] = [
             ("Private Meeting Observed",
@@ -292,7 +294,7 @@ struct SCProposalGenerator {
              "A trusted source reports that \(member1.name) and \(member2.name) have reached a secret understanding regarding committee business. Details are sparse, but your source believes it involves upcoming personnel decisions.")
         ]
 
-        let deal = deals.randomElement()!
+        guard let deal = deals.randomElement() else { return nil }
 
         return SCPoliticalAction(
             actionType: .backroomDeal,

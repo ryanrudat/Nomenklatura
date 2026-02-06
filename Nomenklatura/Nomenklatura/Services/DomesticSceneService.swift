@@ -250,7 +250,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .quietEvening,
             title: "A Quiet Evening",
-            narrative: narratives.randomElement()!,
+            narrative: narratives.randomElement() ?? narratives[0],
             turnOccurred: game.turnNumber,
             harmonyChange: 5,
             involvedMemberId: spouse?.id,
@@ -274,7 +274,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .familyDinner,
             title: "Family Dinner",
-            narrative: narratives.randomElement()!,
+            narrative: narratives.randomElement() ?? narratives[0],
             turnOccurred: game.turnNumber,
             harmonyChange: family.familyHarmony > 50 ? 3 : -2,
             involvedMemberId: child.id,
@@ -316,7 +316,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .spouseConcerns,
             title: "Spouse's Concerns",
-            narrative: concerns.randomElement()!,
+            narrative: concerns.randomElement() ?? concerns[0],
             turnOccurred: game.turnNumber,
             warningGiven: true,
             involvedMemberId: spouse?.id,
@@ -340,7 +340,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .childsReport,
             title: "Child's Report",
-            narrative: reveals.randomElement()!,
+            narrative: reveals.randomElement() ?? reveals[0],
             turnOccurred: game.turnNumber,
             riskRevealed: true,
             involvedMemberId: child.id,
@@ -383,7 +383,15 @@ class DomesticSceneService {
              true)
         ]
 
-        let (narrative, hasChoice) = visitors.randomElement()!
+        guard let (narrative, hasChoice) = visitors.randomElement() else {
+            return DomesticScene(
+                type: .lateNightVisitor,
+                title: "Late Night Visitor",
+                narrative: "A knock at the door late at night. Your family tenses.",
+                turnOccurred: game.turnNumber,
+                harmonyChange: -5
+            )
+        }
 
         var scene = DomesticScene(
             type: .lateNightVisitor,
@@ -434,7 +442,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .tenseSilence,
             title: "Tense Silence",
-            narrative: silences.randomElement()!,
+            narrative: silences.randomElement() ?? silences[0],
             turnOccurred: game.turnNumber,
             harmonyChange: -3,
             involvedMemberId: spouse?.id,
@@ -454,7 +462,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .celebration,
             title: "Family Celebration",
-            narrative: celebrations.randomElement()!,
+            narrative: celebrations.randomElement() ?? celebrations[0],
             turnOccurred: game.turnNumber,
             harmonyChange: 10
         )
@@ -516,7 +524,7 @@ class DomesticSceneService {
         return DomesticScene(
             type: .neighborGone,
             title: "The Empty Apartment",
-            narrative: disappearances.randomElement()!,
+            narrative: disappearances.randomElement() ?? disappearances[0],
             turnOccurred: game.turnNumber,
             harmonyChange: -3,
             warningGiven: true,
