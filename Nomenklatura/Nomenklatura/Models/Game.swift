@@ -1649,6 +1649,20 @@ extension Game {
     }
 }
 
+// MARK: - Variable Accessors
+
+extension Game {
+    /// Read an integer from the string-typed variables dictionary, defaulting to 0.
+    func intVariable(_ key: String) -> Int {
+        Int(variables[key] ?? "0") ?? 0
+    }
+
+    /// Write an integer into the string-typed variables dictionary.
+    func setIntVariable(_ key: String, _ value: Int) {
+        variables[key] = "\(value)"
+    }
+}
+
 // MARK: - Power Consolidation Helpers
 
 extension Game {

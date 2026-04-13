@@ -7,6 +7,55 @@
 
 import Foundation
 
+// MARK: - Victory Type
+
+enum VictoryType: String, Codable, CaseIterable {
+    case survival       // Survived 40 turns in power
+    case legacy         // All national stats above 70 for 5 consecutive turns
+    case absolutePower  // Power consolidation >= 90 maintained for 10 consecutive turns
+    case reformer       // Popular support >= 80, international standing >= 80, stability >= 60
+
+    var displayTitle: String {
+        switch self {
+        case .survival: return "SURVIVAL VICTORY"
+        case .legacy: return "LEGACY VICTORY"
+        case .absolutePower: return "ABSOLUTE POWER"
+        case .reformer: return "REFORMER VICTORY"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .survival: return "THE SURVIVOR"
+        case .legacy: return "THE NATION BUILDER"
+        case .absolutePower: return "THE SUPREME LEADER"
+        case .reformer: return "THE REFORMER"
+        }
+    }
+
+    var epitaph: String {
+        switch self {
+        case .survival:
+            return "Against all odds, you survived 40 turns at the pinnacle of power. History records your tenure as an era of stability."
+        case .legacy:
+            return "You built something that endures. The factories hum, the people prosper, and the world respects your nation."
+        case .absolutePower:
+            return "You have achieved what few dare dream — absolute, unquestioned control. The Party IS you. Whether this is triumph or tragedy, only history will judge."
+        case .reformer:
+            return "You chose a different path. Your people are prosperous, the world respects you, and the state endures — not through fear, but through genuine progress."
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .survival: return "clock.fill"
+        case .legacy: return "building.2.fill"
+        case .absolutePower: return "crown.fill"
+        case .reformer: return "star.fill"
+        }
+    }
+}
+
 // MARK: - Game Over Type
 
 enum GameOverType: String, Codable, CaseIterable {

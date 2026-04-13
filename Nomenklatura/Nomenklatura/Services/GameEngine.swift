@@ -689,30 +689,46 @@ class GameEngine {
     }
 
     private func checkWinConditions(game: Game, ladder: [LadderPosition]) -> GameEndCheck? {
-        // WIN: Survival Victory - reach top and survive 20 turns
-        if game.flags.contains("reached_general_secretary") {
-            let turnsAsLeader = Int(game.variables["turns_as_leader"] ?? "0") ?? 0
-            if turnsAsLeader >= 20 {
-                return GameEndCheck(
-                    gameOver: true,
-                    result: .won,
-                    reason: "Twenty years of power. Your portrait hangs in every office. Your name is spoken with reverence—and fear. You have outlasted them all. History will remember you as... well, that depends on who writes it."
-                )
-            }
+        // Survival: survive 40 turns as leader
+        if game.intVariable("turns_as_leader") >= 40 {
+            return GameEndCheck(
+                gameOver: true,
+                result: .won,
+                reason: VictoryType.survival.epitaph,
+                victoryType: .survival
+            )
         }
 
-        // WIN: Legacy Victory - high stats while at top
-        if game.flags.contains("reached_general_secretary") {
-            if game.stability >= 80 &&
-               game.popularSupport >= 70 &&
-               game.industrialOutput >= 70 &&
-               game.internationalStanding >= 70 {
-                return GameEndCheck(
-                    gameOver: true,
-                    result: .won,
-                    reason: "Against all odds, you have built something that endures. The factories hum, the people have bread, and the world respects your nation. History may call this a golden age—and you its architect."
-                )
-            }
+        // Legacy: all national stats above 70 for 5 consecutive turns
+        if game.intVariable("consecutive_high_stat_turns") >= 5 {
+            return GameEndCheck(
+                gameOver: true,
+                result: .won,
+                reason: VictoryType.legacy.epitaph,
+                victoryType: .legacy
+            )
+        }
+
+        // Absolute Power: power consolidation >= 90 for 10 consecutive turns
+        if game.intVariable("consecutive_supreme_leader_turns") >= 10 {
+            return GameEndCheck(
+                gameOver: true,
+                result: .won,
+                reason: VictoryType.absolutePower.epitaph,
+                victoryType: .absolutePower
+            )
+        }
+
+        // Reformer: high popular support and international standing with stability (snapshot)
+        if game.popularSupport >= 80 &&
+           game.internationalStanding >= 80 &&
+           game.stability >= 60 {
+            return GameEndCheck(
+                gameOver: true,
+                result: .won,
+                reason: VictoryType.reformer.epitaph,
+                victoryType: .reformer
+            )
         }
 
         return nil
@@ -720,10 +736,28 @@ class GameEngine {
 
     /// Call this at end of each turn to update game state
     func endTurnUpdates(game: Game, ladder: [LadderPosition], recordHistory: Bool = true) {
-        // Increment turns as leader if applicable
-        if game.flags.contains("reached_general_secretary") {
-            let current = Int(game.variables["turns_as_leader"] ?? "0") ?? 0
-            game.variables["turns_as_leader"] = "\(current + 1)"
+        // Increment turns as leader if at General Secretary position
+        if game.currentPositionIndex >= 7 || game.flags.contains("reached_general_secretary") {
+            game.setIntVariable("turns_as_leader", game.intVariable("turns_as_leader") + 1)
+        }
+
+        // Track consecutive high-stat turns for Legacy Victory
+        let allStatsHigh = game.stability > 70 &&
+                           game.popularSupport > 70 &&
+                           game.industrialOutput > 70 &&
+                           game.internationalStanding > 70
+        if allStatsHigh {
+            game.setIntVariable("consecutive_high_stat_turns", game.intVariable("consecutive_high_stat_turns") + 1)
+        } else {
+            game.setIntVariable("consecutive_high_stat_turns", 0)
+        }
+
+        // Track consecutive supreme leader turns for Absolute Power Victory
+        game.updatePowerConsolidation()
+        if game.powerConsolidationScore >= 90 {
+            game.setIntVariable("consecutive_supreme_leader_turns", game.intVariable("consecutive_supreme_leader_turns") + 1)
+        } else {
+            game.setIntVariable("consecutive_supreme_leader_turns", 0)
         }
 
         // Natural stat drift
@@ -1673,6 +1707,7 @@ struct GameEndCheck {
     var result: GameStatus?
     var reason: String?
     var allowsHeirSuccession: Bool = false
+    var victoryType: VictoryType?
 }
 
 // MARK: - Threat Pre-Warning System

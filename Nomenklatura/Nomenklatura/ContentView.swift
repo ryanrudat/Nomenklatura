@@ -415,6 +415,7 @@ struct GameView: View {
     // Game over state
     @State private var showGameOver = false
     @State private var gameOverReason: String = ""
+    @State private var gameOverVictoryType: VictoryType?
 
     // Menu sheet state
     @State private var showingMenuSheet = false
@@ -459,6 +460,7 @@ struct GameView: View {
                 GameOverView(
                     game: game,
                     endReason: gameOverReason.isEmpty ? (game.endReason ?? "Your journey has ended.") : gameOverReason,
+                    victoryType: gameOverVictoryType,
                     onNewGame: {
                         startNewGame()
                     },
@@ -582,6 +584,10 @@ struct GameView: View {
             if game.currentStatus != .active {
                 showGameOver = true
                 gameOverReason = game.endReason ?? "Your journey has ended."
+                // Restore victory type from persisted game variables
+                if let vtRaw = game.variables["victory_type"] {
+                    gameOverVictoryType = VictoryType(rawValue: vtRaw)
+                }
             }
         }
     }
@@ -655,7 +661,7 @@ struct GameView: View {
     private func transitionToStandingCommitteeOrDirective() {
         let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
         if endCheck.gameOver {
-            endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
+            endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.", victoryType: endCheck.victoryType)
             return
         }
 
@@ -703,7 +709,7 @@ struct GameView: View {
                     if trySuccessionRecovery(from: endCheck, requiresEndTurnProcessing: false) {
                         return
                     }
-                    endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
+                    endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.", victoryType: endCheck.victoryType)
                     return
                 }
 
@@ -835,16 +841,22 @@ struct GameView: View {
         game.events.append(turnEvent)
     }
 
-    private func endGame(result: GameStatus, reason: String) {
+    private func endGame(result: GameStatus, reason: String, victoryType: VictoryType? = nil) {
         game.status = result.rawValue
         game.endReason = reason
         gameOverReason = reason
+        gameOverVictoryType = victoryType
+
+        // Store victory type in game variables for persistence
+        if let vt = victoryType {
+            game.variables["victory_type"] = vt.rawValue
+        }
 
         // Log end event
         let endEvent = GameEvent(
             turnNumber: game.turnNumber,
             eventType: .gameEnd,
-            summary: result == .won ? "Victory achieved." : "Career ended."
+            summary: result == .won ? "Victory achieved: \(victoryType?.displayTitle ?? "Unknown")." : "Career ended."
         )
         endEvent.importance = 10
         endEvent.game = game
