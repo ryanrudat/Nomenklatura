@@ -45,44 +45,26 @@ struct SituationMapView: View {
             // Classification header
             situationHeader
 
-            // Map with overlays
-            ZStack {
-                // Base map
-                SpriteKitMapView(game: game)
+            // Strategic situation board
+            ScrollView {
+                VStack(spacing: 12) {
+                    // Top row: tension + crises side by side
+                    HStack(alignment: .top, spacing: 10) {
+                        worldTensionIndicator
+                        activeCrisesIndicator
+                        Spacer()
+                    }
+                    .padding(.horizontal, 10)
 
-                // Position-gated overlays
-                VStack {
-                    Spacer()
+                    // Country cards grouped by bloc
+                    strategicBoard
 
-                    // Intelligence briefing bar at bottom
+                    // Intelligence summary bar
                     intelligenceBriefingBar
                         .padding(.horizontal, 10)
-                        .padding(.bottom, 8)
                 }
-
-                // World tension indicator (top right)
-                VStack {
-                    HStack {
-                        Spacer()
-                        worldTensionIndicator
-                            .padding(.trailing, 10)
-                            .padding(.top, 10)
-                    }
-                    Spacer()
-                }
-
-                // Active crises indicator (top left)
-                if intelligenceLevel.rawValue >= IntelligenceLevel.ministryAssessment.rawValue {
-                    VStack {
-                        HStack {
-                            activeCrisesIndicator
-                                .padding(.leading, 10)
-                                .padding(.top, 10)
-                            Spacer()
-                        }
-                        Spacer()
-                    }
-                }
+                .padding(.top, 8)
+                .padding(.bottom, 120)
             }
         }
         .sheet(isPresented: $showCountryDetail) {
@@ -273,6 +255,121 @@ struct SituationMapView: View {
         }
     }
 
+    // MARK: - Strategic Board (replaces SpriteKit map)
+
+    private var strategicBoard: some View {
+        let blocs: [(label: String, filter: (ForeignCountry) -> Bool, color: Color)] = [
+            ("SOCIALIST BLOC", { $0.politicalBloc == .socialist }, Color(hex: "CD5C5C")),
+            ("RIVAL SOCIALIST", { $0.politicalBloc == .rival }, Color(hex: "FF8C00")),
+            ("NON-ALIGNED", { $0.politicalBloc == .nonAligned }, Color(hex: "808080")),
+            ("CAPITALIST POWERS", { $0.politicalBloc == .capitalist }, Color(hex: "4169E1")),
+        ]
+
+        return VStack(spacing: 14) {
+            ForEach(blocs, id: \.label) { bloc in
+                let countries = game.foreignCountries
+                    .filter(bloc.filter)
+                    .sorted { $0.militaryStrength > $1.militaryStrength }
+
+                if !countries.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        // Bloc header
+                        HStack(spacing: 6) {
+                            Rectangle()
+                                .fill(bloc.color)
+                                .frame(width: 3, height: 14)
+                            Text(bloc.label)
+                                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                .tracking(1.5)
+                                .foregroundColor(bloc.color)
+                            Rectangle()
+                                .fill(bloc.color.opacity(0.3))
+                                .frame(height: 1)
+                        }
+
+                        // Country cards in a grid
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ForEach(countries, id: \.countryId) { country in
+                                strategicCountryCard(country: country, blocColor: bloc.color)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+    }
+
+    private func strategicCountryCard(country: ForeignCountry, blocColor: Color) -> some View {
+        Button {
+            selectedCountryId = country.countryId
+            showCountryDetail = true
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                // Name + status
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(countryStatusColor(country))
+                        .frame(width: 6, height: 6)
+                    Text(country.name)
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.inkBlack)
+                        .lineLimit(1)
+                    Spacer()
+                    if country.hasNuclearWeapons {
+                        Image(systemName: "atom")
+                            .font(.system(size: 8))
+                            .foregroundColor(.red)
+                    }
+                }
+
+                // Key stats row
+                HStack(spacing: 8) {
+                    statMini(label: "REL", value: country.relationshipScore, color: country.relationshipScore > 0 ? .green : (country.relationshipScore < -30 ? .red : theme.inkGray))
+                    statMini(label: "MIL", value: country.militaryStrength, color: country.militaryStrength >= 80 ? .red : (country.militaryStrength >= 60 ? .orange : theme.inkGray))
+                    statMini(label: "ECN", value: country.economicPower, color: theme.inkGray)
+                }
+
+                // Status label
+                Text(country.status.displayName.uppercased())
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .tracking(0.5)
+                    .foregroundColor(countryStatusColor(country))
+            }
+            .padding(8)
+            .background(theme.parchmentDark)
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(blocColor.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statMini(label: String, value: Int, color: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(label)
+                .font(.system(size: 6, weight: .bold, design: .monospaced))
+                .foregroundColor(theme.inkLight)
+            Text("\(value)")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(color)
+        }
+    }
+
+    private func countryStatusColor(_ country: ForeignCountry) -> Color {
+        switch country.status {
+        case .allied: return Color(hex: "228B22")
+        case .friendly: return Color(hex: "32CD32")
+        case .neutral: return .gray
+        case .strained: return .orange
+        case .hostile: return Color(hex: "CD5C5C")
+        case .atWar: return Color(hex: "8B0000")
+        case .noRelations: return Color(hex: "2F2F2F")
+        }
+    }
+
     // MARK: - Intelligence Briefing Bar
 
     private var intelligenceBriefingBar: some View {
@@ -396,10 +493,6 @@ struct EnhancedCountryDetailSheet: View {
         game.foreignCountries.first { $0.countryId == countryId }
     }
 
-    private var nationInfo: NationInfo {
-        NationInfo.forId(countryId)
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -407,56 +500,29 @@ struct EnhancedCountryDetailSheet: View {
                     // Header
                     countryHeader
 
-                    Divider()
-                        .background(theme.borderTan)
+                    Divider().background(theme.borderTan)
 
-                    // Basic relations (always visible)
+                    // Basic relations
                     relationshipSection
 
-                    // Treaties (position 3+)
-                    if intelligenceLevel.rawValue >= IntelligenceLevel.ministryAssessment.rawValue {
-                        if let country = country, !country.treaties.isEmpty {
-                            Divider().background(theme.borderTan)
-                            treatySection(country: country)
-                        }
-                    }
-
-                    // Military assessment (position 5+)
-                    if intelligenceLevel.rawValue >= IntelligenceLevel.strategicCommand.rawValue {
+                    // Treaties
+                    if let country = country, !country.treaties.isEmpty {
                         Divider().background(theme.borderTan)
-                        militaryAssessment
+                        treatySection(country: country)
                     }
 
-                    // Intelligence report (position 5+)
-                    if intelligenceLevel.rawValue >= IntelligenceLevel.strategicCommand.rawValue {
+                    // Military assessment
+                    Divider().background(theme.borderTan)
+                    militaryAssessment
+
+                    // Intelligence report
+                    Divider().background(theme.borderTan)
+                    intelligenceSection
+
+                    // Espionage data
+                    if let country = country {
                         Divider().background(theme.borderTan)
-                        intelligenceSection
-                    }
-
-                    // Espionage data (position 7+)
-                    if intelligenceLevel.rawValue >= IntelligenceLevel.supremeAuthority.rawValue {
-                        if let country = country {
-                            Divider().background(theme.borderTan)
-                            espionageSection(country: country)
-                        }
-                    }
-
-                    // Locked sections
-                    if intelligenceLevel.rawValue < IntelligenceLevel.strategicCommand.rawValue {
-                        Divider().background(theme.borderTan)
-                        lockedSection(
-                            title: "MILITARY ASSESSMENT",
-                            requirement: "Position 5+ required"
-                        )
-                    }
-
-                    if intelligenceLevel.rawValue < IntelligenceLevel.supremeAuthority.rawValue &&
-                       intelligenceLevel.rawValue >= IntelligenceLevel.strategicCommand.rawValue {
-                        Divider().background(theme.borderTan)
-                        lockedSection(
-                            title: "ESPIONAGE OPERATIONS",
-                            requirement: "Position 7+ required"
-                        )
+                        espionageSection(country: country)
                     }
                 }
                 .padding(20)
@@ -476,18 +542,14 @@ struct EnhancedCountryDetailSheet: View {
 
     private var countryHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Circle()
-                    .fill(nationInfo.color)
-                    .frame(width: 20, height: 20)
+            if let country = country {
+                HStack {
+                    Text(country.name)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(theme.inkBlack)
 
-                Text(nationInfo.name)
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(theme.inkBlack)
+                    Spacer()
 
-                Spacer()
-
-                if let country = country {
                     Text(country.politicalBloc.displayName.uppercased())
                         .font(.system(size: 9, weight: .bold))
                         .tracking(0.5)
@@ -497,11 +559,21 @@ struct EnhancedCountryDetailSheet: View {
                         .background(blocColor(country.politicalBloc))
                         .cornerRadius(4)
                 }
-            }
 
-            Text(nationInfo.governmentType)
-                .font(theme.bodyFont)
-                .foregroundColor(theme.inkGray)
+                Text(country.governmentType.displayName)
+                    .font(theme.bodyFont)
+                    .foregroundColor(theme.inkGray)
+
+                if !country.leaderName.isEmpty {
+                    Text("\(country.leaderTitle) \(country.leaderName)")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(theme.inkGray)
+                }
+            } else {
+                Text(countryId.replacingOccurrences(of: "_", with: " ").capitalized)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(theme.inkBlack)
+            }
         }
     }
 
@@ -536,9 +608,9 @@ struct EnhancedCountryDetailSheet: View {
                     }
                 }
             } else {
-                Text(nationInfo.relationshipDescription)
+                Text("No diplomatic data available.")
                     .font(theme.bodyFont)
-                    .foregroundColor(theme.inkBlack)
+                    .foregroundColor(theme.inkLight)
             }
         }
         .padding()
@@ -652,10 +724,26 @@ struct EnhancedCountryDetailSheet: View {
                     .cornerRadius(3)
             }
 
-            Text(nationInfo.intelligenceBrief)
-                .font(theme.bodyFont)
-                .foregroundColor(theme.inkBlack)
-                .lineSpacing(2)
+            if let country = country {
+                if !country.strategicImportance.isEmpty {
+                    Text(country.strategicImportance)
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkBlack)
+                        .lineSpacing(2)
+                }
+                if !country.relationshipHistory.isEmpty {
+                    Text(country.relationshipHistory)
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkBlack)
+                        .lineSpacing(2)
+                        .padding(.top, 4)
+                }
+                if country.strategicImportance.isEmpty && country.relationshipHistory.isEmpty {
+                    Text("No detailed intelligence assessment available for this nation.")
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkLight)
+                }
+            }
         }
         .padding()
         .background(theme.parchmentDark)
@@ -721,26 +809,8 @@ struct EnhancedCountryDetailSheet: View {
         )
     }
 
-    private func lockedSection(title: String, requirement: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 20))
-                .foregroundColor(theme.inkLight)
 
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
 
-            Text(requirement)
-                .font(.system(size: 10))
-                .foregroundColor(theme.inkLight)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(8)
-    }
 
     // MARK: - Helpers
 
