@@ -112,7 +112,7 @@ struct BalanceConfig {
     // MARK: - Progression
 
     /// Action points per turn
-    static var actionPointsPerTurn: Int = 2
+    static var actionPointsPerTurn: Int = 3
 
     /// Maximum character interactions per turn
     static var maxInteractionsPerTurn: Int = 2
@@ -188,7 +188,7 @@ struct BalanceConfig {
         territorialCollapseRegions = 3
 
         // Progression
-        actionPointsPerTurn = 2
+        actionPointsPerTurn = 3
         maxInteractionsPerTurn = 2
         startingPositionIndex = 1
 

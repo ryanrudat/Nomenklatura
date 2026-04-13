@@ -15,7 +15,7 @@ struct PersonalActionView: View {
     let onComplete: () -> Void
     @Environment(\.theme) var theme
 
-    @State private var remainingAP: Int = 2
+    @State private var remainingAP: Int = BalanceConfig.actionPointsPerTurn
     @State private var lastActionResult: ActionResult?
     @State private var showingResult = false
     @State private var showNextTurnButton = false
@@ -230,19 +230,7 @@ struct StatChangeTag: View {
     @Environment(\.theme) var theme
 
     private var displayName: String {
-        let names: [String: String] = [
-            "standing": "Standing",
-            "patronFavor": "Favor",
-            "rivalThreat": "Rival",
-            "network": "Network",
-            "reputationCompetent": "Competent",
-            "reputationLoyal": "Loyal",
-            "reputationCunning": "Cunning",
-            "reputationRuthless": "Ruthless",
-            "stability": "Stability",
-            "popularSupport": "Popular"
-        ]
-        return names[key] ?? key
+        StatDisplayNames.map[key] ?? key
     }
 
     private var isPositive: Bool {

@@ -821,7 +821,7 @@ struct GameView: View {
         // Advance turn
         game.phase = GamePhase.briefing.rawValue
         game.turnNumber += 1
-        game.actionPoints = 2  // Reset AP for next turn
+        game.actionPoints = BalanceConfig.actionPointsPerTurn  // Reset AP for next turn
         game.usedActionsThisTurn = []  // Clear used actions for new turn
 
         // Log the new turn only after progression state is finalized.

@@ -40,6 +40,11 @@ final class PersonalActionGenerator {
         // 5. High-stakes actions (position-gated)
         actions.append(contentsOf: generateHighStakesActions(game: game, patron: patron, rival: rival))
 
+        // 6. Dictator-level actions (General Secretary powers)
+        actions.append(contentsOf: generatePurgeActions(game: game, rival: rival))
+        actions.append(contentsOf: generateInformationControlActions(game: game))
+        actions.append(contentsOf: generateConsolidationActions(game: game))
+
         return actions
     }
 
@@ -893,6 +898,356 @@ final class PersonalActionGenerator {
                 ]
             ))
         }
+
+        return actions
+    }
+
+    // MARK: - Purge Enemies Actions (General Secretary powers)
+
+    private func generatePurgeActions(game: Game, rival: GameCharacter?) -> [PersonalAction] {
+        var actions: [PersonalAction] = []
+        let rivalName = rival?.name ?? "your rival"
+
+        // Order Show Trial — wire to ShowTrialService
+        actions.append(PersonalAction(
+            id: "order_show_trial",
+            category: .purgeEnemies,
+            title: "Order show trial against \(rivalName)",
+            description: "Initiate a public show trial to destroy \(rivalName)'s reputation and remove them from power.",
+            costAP: 2,
+            riskLevel: .high,
+            requirements: ActionRequirements(
+                minStanding: 50,
+                minNetwork: 30,
+                minPowerConsolidation: 30
+            ),
+            effects: ["rivalThreat": -20, "stability": -5, "reputationRuthless": 15, "eliteLoyalty": -8],
+            isLocked: false,
+            flavorText: "The courtroom becomes a theater of power.",
+            actionNarrative: "You direct the security apparatus to prepare charges. The trial will be public, the verdict predetermined.",
+            successNarratives: [
+                "The trial is a spectacle. \(rivalName) confesses to crimes real and imagined.",
+                "Cameras broadcast the humiliation. No one will dare challenge you after this.",
+                "The verdict is guilty. \(rivalName) is led away to thunderous silence."
+            ],
+            failureNarratives: [
+                "International observers condemn the trial. Domestic unrest grows.",
+                "The accused refuses to confess. The trial becomes an embarrassment.",
+                "Whispers spread that the charges were fabricated. Your legitimacy suffers."
+            ]
+        ))
+
+        // Launch Anti-Corruption Campaign
+        actions.append(PersonalAction(
+            id: "launch_anticorruption",
+            category: .purgeEnemies,
+            title: "Launch anti-corruption campaign",
+            description: "Target a rival faction with a sweeping corruption investigation. The tigers and flies will both be caught.",
+            costAP: 2,
+            riskLevel: .medium,
+            requirements: ActionRequirements(
+                minStanding: 40,
+                minPowerConsolidation: 20
+            ),
+            effects: ["popularSupport": 8, "rivalThreat": -10, "eliteLoyalty": -5, "reputationRuthless": 8],
+            isLocked: false,
+            flavorText: "Anti-corruption is the sharpest sword in the arsenal.",
+            actionNarrative: "You announce a campaign to root out corruption. Everyone understands who the real targets are.",
+            successNarratives: [
+                "Dozens of officials connected to your rival are placed under investigation.",
+                "The campaign sweeps through the bureaucracy. Your enemies tremble.",
+                "Public approval soars as corrupt officials are paraded before cameras."
+            ],
+            failureNarratives: [
+                "The investigations uncover uncomfortable connections to your own allies.",
+                "The campaign is seen as politically motivated. International credibility suffers."
+            ]
+        ))
+
+        // Authorize Mass Detention (Shuanggui)
+        actions.append(PersonalAction(
+            id: "authorize_detention",
+            category: .purgeEnemies,
+            title: "Authorize shuanggui detention",
+            description: "Order the extralegal detention and interrogation of suspect officials. They will confess or disappear.",
+            costAP: 1,
+            riskLevel: .high,
+            requirements: ActionRequirements(
+                minNetwork: 40,
+                minPowerConsolidation: 40
+            ),
+            effects: ["rivalThreat": -12, "stability": -3, "reputationRuthless": 12, "eliteLoyalty": -10],
+            isLocked: false,
+            flavorText: "In the Party's discipline system, there are no lawyers.",
+            actionNarrative: "Officials are quietly taken to undisclosed locations. The interrogations begin.",
+            successNarratives: [
+                "The detained officials provide useful confessions and intelligence.",
+                "Word spreads through the apparatus. Potential dissenters reconsider.",
+                "Your security services report full cooperation from the detainees."
+            ],
+            failureNarratives: [
+                "A detainee dies in custody. The cover-up is imperfect.",
+                "International human rights organizations publicize the detentions."
+            ]
+        ))
+
+        // Purge Bureau
+        actions.append(PersonalAction(
+            id: "purge_bureau",
+            category: .purgeEnemies,
+            title: "Purge disloyal bureau",
+            description: "Remove an entire tier of officials from a bureau and replace them with loyalists.",
+            costAP: 2,
+            riskLevel: .high,
+            requirements: ActionRequirements(
+                minStanding: 60,
+                minNetwork: 50,
+                minPowerConsolidation: 50
+            ),
+            effects: ["network": 8, "stability": -8, "eliteLoyalty": -12, "reputationRuthless": 15],
+            isLocked: false,
+            flavorText: "Cadres decide everything. And you decide the cadres.",
+            actionNarrative: "You sign dismissal orders by the dozen. New faces will fill the empty offices by morning.",
+            successNarratives: [
+                "The purged bureau is restaffed with your loyalists. Efficiency improves overnight.",
+                "The mass dismissals send a clear message: loyalty is not optional.",
+                "A generation of bureaucrats is swept aside. Your people take their places."
+            ],
+            failureNarratives: [
+                "The purge disrupts essential government functions. Problems cascade.",
+                "Experienced officials flee the apparatus. Institutional knowledge is lost.",
+                "The scale of the purge alarms even your supporters."
+            ]
+        ))
+
+        return actions
+    }
+
+    // MARK: - Control Information Actions (General Secretary powers)
+
+    private func generateInformationControlActions(game: Game) -> [PersonalAction] {
+        var actions: [PersonalAction] = []
+
+        // Issue Propaganda Directive
+        actions.append(PersonalAction(
+            id: "propaganda_directive",
+            category: .controlInformation,
+            title: "Issue propaganda directive",
+            description: "Order state media to amplify your achievements and minimize failures. The people will hear what you want them to hear.",
+            costAP: 1,
+            riskLevel: .low,
+            requirements: ActionRequirements(
+                minPowerConsolidation: 10
+            ),
+            effects: ["popularSupport": 6, "network": -3],
+            isLocked: false,
+            flavorText: "Truth is whatever the Party says it is.",
+            actionNarrative: "The propaganda department receives new guidelines. Tomorrow's headlines are already written.",
+            successNarratives: [
+                "State media praises your leadership in glowing terms. The people believe.",
+                "Your image is everywhere: billboards, newspapers, television. The cult grows.",
+                "The narrative shifts. Your version of events becomes the official record."
+            ]
+        ))
+
+        // Suppress Samizdat
+        actions.append(PersonalAction(
+            id: "suppress_samizdat",
+            category: .controlInformation,
+            title: "Suppress underground press",
+            description: "Crack down on samizdat publications and dissident networks that spread unauthorized information.",
+            costAP: 1,
+            riskLevel: .medium,
+            requirements: ActionRequirements(
+                minNetwork: 25,
+                minPowerConsolidation: 20
+            ),
+            effects: ["stability": 4, "popularSupport": -3, "reputationRuthless": 5],
+            isLocked: false,
+            flavorText: "Every typewriter is a potential weapon against the state.",
+            actionNarrative: "Security forces raid printing operations and confiscate materials. Dissident voices fall silent.",
+            successNarratives: [
+                "Underground printing presses are seized. The flow of samizdat slows.",
+                "Key dissident organizers are identified and placed under surveillance.",
+                "The information space is cleaner. Only approved voices remain."
+            ],
+            failureNarratives: [
+                "The crackdown drives the underground press deeper, making it harder to monitor.",
+                "Confiscated materials leak to foreign journalists. The story goes international."
+            ]
+        ))
+
+        // Control Media Narrative
+        actions.append(PersonalAction(
+            id: "control_narrative",
+            category: .controlInformation,
+            title: "Control media narrative",
+            description: "Shape newspaper coverage of recent events to present your policies in the most favorable light.",
+            costAP: 1,
+            riskLevel: .low,
+            requirements: ActionRequirements(
+                minPowerConsolidation: 15
+            ),
+            effects: ["popularSupport": 4, "standing": 3, "reputationCompetent": 5],
+            isLocked: false,
+            flavorText: "The pen is mightier than the sword when you control all the pens.",
+            actionNarrative: "Editors receive clear instructions about what to emphasize and what to bury.",
+            successNarratives: [
+                "The morning papers tell exactly the story you wanted told.",
+                "Coverage of your latest initiative is universally positive.",
+                "Unflattering details about your policies disappear from the news cycle."
+            ]
+        ))
+
+        // Censor Foreign Broadcasts
+        actions.append(PersonalAction(
+            id: "censor_foreign",
+            category: .controlInformation,
+            title: "Censor foreign broadcasts",
+            description: "Jam foreign radio signals and restrict access to outside information sources.",
+            costAP: 1,
+            riskLevel: .medium,
+            requirements: ActionRequirements(
+                minNetwork: 20,
+                minPowerConsolidation: 25
+            ),
+            effects: ["stability": 3, "popularSupport": -4, "reputationRuthless": 3],
+            isLocked: false,
+            flavorText: "The outside world has nothing useful to say to our people.",
+            actionNarrative: "Signal jammers are activated. The firewall between your people and the world grows thicker.",
+            successNarratives: [
+                "Foreign broadcasts are reduced to static. Your information monopoly strengthens.",
+                "Citizens lose access to alternative viewpoints. The Party's voice is all that remains.",
+                "The jamming operation is a technical success. Outside influence wanes."
+            ],
+            failureNarratives: [
+                "Tech-savvy citizens find ways around the censorship. Resentment builds.",
+                "The censorship draws international condemnation and trade pressure."
+            ]
+        ))
+
+        return actions
+    }
+
+    // MARK: - Consolidate Power Actions (General Secretary powers)
+
+    private func generateConsolidationActions(game: Game) -> [PersonalAction] {
+        var actions: [PersonalAction] = []
+
+        // Pack the Standing Committee
+        actions.append(PersonalAction(
+            id: "pack_standing_committee",
+            category: .consolidatePower,
+            title: "Pack the Standing Committee",
+            description: "Engineer the replacement of a hostile Standing Committee member with a loyalist. The highest body must answer to you alone.",
+            costAP: 2,
+            riskLevel: .high,
+            requirements: ActionRequirements(
+                minStanding: 60,
+                minNetwork: 40,
+                minPowerConsolidation: 35
+            ),
+            effects: ["eliteLoyalty": 10, "network": 5, "reputationCunning": 10, "stability": -3],
+            isLocked: false,
+            flavorText: "The Standing Committee should stand with you, or not stand at all.",
+            actionNarrative: "Through a careful combination of pressure, inducement, and bureaucratic maneuvering, you arrange a personnel change at the highest level.",
+            successNarratives: [
+                "Your loyalist takes their seat on the Standing Committee. The balance of power shifts.",
+                "The replaced member 'retires for health reasons.' Everyone understands.",
+                "The Standing Committee now has one more voice singing your tune."
+            ],
+            failureNarratives: [
+                "Your attempt to force a change is blocked by a coalition of moderates.",
+                "The targeted member fights back with powerful allies. Your move is checked."
+            ]
+        ))
+
+        // Modify Constitution
+        actions.append(PersonalAction(
+            id: "modify_constitution",
+            category: .consolidatePower,
+            title: "Modify the constitution",
+            description: "Push through constitutional amendments that expand your authority and weaken institutional checks on your power.",
+            costAP: 2,
+            riskLevel: .high,
+            requirements: ActionRequirements(
+                minStanding: 70,
+                minPowerConsolidation: 50,
+                minEliteLoyalty: 40
+            ),
+            effects: ["standing": 5, "eliteLoyalty": -8, "stability": -5, "reputationCunning": 12],
+            isLocked: false,
+            flavorText: "The law is what you make it.",
+            actionNarrative: "The People's Congress convenes to ratify amendments that were written in your office.",
+            successNarratives: [
+                "The constitution is amended. Your powers are expanded. The legislature applauds.",
+                "Legal scholars note the changes give you unprecedented authority. They keep their observations private.",
+                "The constitutional framework now reflects the reality of your rule."
+            ],
+            failureNarratives: [
+                "Unexpected resistance within the legislature delays the amendments.",
+                "Legal experts publicly question the changes. International credibility suffers."
+            ]
+        ))
+
+        // Abolish Term Limits
+        if !game.termLimitsAbolished {
+            actions.append(PersonalAction(
+                id: "abolish_term_limits",
+                category: .consolidatePower,
+                title: "Abolish term limits",
+                description: "Remove the constitutional restriction on how long you can serve. Your rule will have no expiration date.",
+                costAP: 2,
+                riskLevel: .high,
+                requirements: ActionRequirements(
+                    minStanding: 75,
+                    minPowerConsolidation: 60,
+                    minEliteLoyalty: 50
+                ),
+                effects: ["standing": 10, "eliteLoyalty": -15, "stability": -8, "popularSupport": -5, "reputationRuthless": 10],
+                isLocked: false,
+                flavorText: "Why should the people's mandate have an expiration date?",
+                actionNarrative: "The legislature votes to remove presidential term limits. The vote is nearly unanimous. It had to be.",
+                successNarratives: [
+                    "Term limits are abolished. You can rule for as long as you see fit.",
+                    "The rubber-stamp legislature approves the change. The world watches in silence.",
+                    "Your hold on power is now constitutionally unlimited. The dynasty begins."
+                ],
+                failureNarratives: [
+                    "Even your loyalists balk at removing all checks on power. The motion is tabled.",
+                    "Street protests erupt at the attempt. International sanctions are threatened."
+                ]
+            ))
+        }
+
+        // Create New Security Agency
+        actions.append(PersonalAction(
+            id: "create_security_agency",
+            category: .consolidatePower,
+            title: "Create parallel security agency",
+            description: "Establish a new security apparatus that answers only to you, bypassing existing institutional chains of command.",
+            costAP: 2,
+            riskLevel: .high,
+            requirements: ActionRequirements(
+                minStanding: 55,
+                minNetwork: 35,
+                minPowerConsolidation: 40,
+                forbiddenFlags: ["parallel_security_created"]
+            ),
+            effects: ["network": 12, "militaryLoyalty": -5, "eliteLoyalty": -5, "stability": -3, "reputationRuthless": 8],
+            isLocked: false,
+            flavorText: "Trust no one institution. Control them all through competition.",
+            actionNarrative: "You sign the decree establishing a new security directorate with broad authority and a direct reporting line to your office.",
+            successNarratives: [
+                "The new agency begins operations immediately. Its loyalty is to you personally.",
+                "Existing security services eye the newcomer warily. That's the point.",
+                "A parallel power structure now exists, answering only to the General Secretary."
+            ],
+            failureNarratives: [
+                "Military and existing security leaders push back against the new competitor.",
+                "The new agency struggles to recruit competent personnel from suspicious existing services."
+            ]
+        ))
 
         return actions
     }

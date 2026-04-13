@@ -283,7 +283,7 @@ final class Game {
         self.currentPositionIndex = 8  // General Secretary — the game is about keeping power
         self.currentTrack = CareerTrack.shared.rawValue
         self.currentExpandedTrack = ExpandedCareerTrack.shared.rawValue  // Gen Sec is on shared track
-        self.actionPoints = 2
+        self.actionPoints = BalanceConfig.actionPointsPerTurn
         self.directivePoints = 2
 
         // Policy/Resistance system
