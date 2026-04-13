@@ -87,6 +87,22 @@ struct PersonalAction: Codable, Identifiable {
             return (false, "Requires a vacancy above you")
         }
 
+        if let minPower = reqs.minPowerConsolidation, game.powerConsolidationScore < minPower {
+            return (false, "Requires Power \(minPower)+")
+        }
+
+        if let minElite = reqs.minEliteLoyalty, game.eliteLoyalty < minElite {
+            return (false, "Requires Elite Loyalty \(minElite)+")
+        }
+
+        if let minMilitary = reqs.minMilitaryLoyalty, game.militaryLoyalty < minMilitary {
+            return (false, "Requires Military Loyalty \(minMilitary)+")
+        }
+
+        if let minStab = reqs.minStability, game.stability < minStab {
+            return (false, "Requires Stability \(minStab)+")
+        }
+
         return (true, nil)
     }
 }
@@ -99,6 +115,9 @@ enum PersonalActionCategory: String, Codable, CaseIterable {
     case securePosition
     case makeYourPlay
     case cultivateSuccessor     // Heir cultivation actions
+    case purgeEnemies           // Show trials, purge campaigns, arrests
+    case controlInformation     // Propaganda, censorship, narrative control
+    case consolidatePower       // Constitutional changes, appointments, institutional reform
 
     var displayName: String {
         switch self {
@@ -107,6 +126,9 @@ enum PersonalActionCategory: String, Codable, CaseIterable {
         case .securePosition: return "SECURE POSITION"
         case .makeYourPlay: return "MAKE YOUR PLAY"
         case .cultivateSuccessor: return "CULTIVATE SUCCESSOR"
+        case .purgeEnemies: return "PURGE ENEMIES"
+        case .controlInformation: return "CONTROL INFORMATION"
+        case .consolidatePower: return "CONSOLIDATE POWER"
         }
     }
 
@@ -114,9 +136,12 @@ enum PersonalActionCategory: String, Codable, CaseIterable {
         switch self {
         case .buildNetwork: return 0
         case .undermineRivals: return 1
-        case .securePosition: return 2
-        case .cultivateSuccessor: return 3
-        case .makeYourPlay: return 4
+        case .purgeEnemies: return 2
+        case .controlInformation: return 3
+        case .securePosition: return 4
+        case .consolidatePower: return 5
+        case .cultivateSuccessor: return 6
+        case .makeYourPlay: return 7
         }
     }
 }
@@ -158,6 +183,30 @@ struct ActionRequirements: Codable {
     var forbiddenFlags: [String]?
     var vacancyRequired: Bool?
     var requiredFactionSupport: [String: Int]?
+    var minPowerConsolidation: Int?    // Minimum powerConsolidationScore
+    var minEliteLoyalty: Int?          // Minimum elite loyalty needed
+    var minMilitaryLoyalty: Int?       // Minimum military loyalty needed
+    var minStability: Int?             // Minimum stability needed
+}
+
+// MARK: - Stat Display Names
+
+/// Shared mapping of stat keys to short display labels used in action UI
+enum StatDisplayNames {
+    static let map: [String: String] = [
+        "standing": "Standing",
+        "patronFavor": "Favor",
+        "rivalThreat": "Rival",
+        "network": "Network",
+        "reputationCompetent": "Competent",
+        "reputationLoyal": "Loyal",
+        "reputationCunning": "Cunning",
+        "reputationRuthless": "Ruthless",
+        "stability": "Stability",
+        "popularSupport": "Popular",
+        "eliteLoyalty": "Elite",
+        "militaryLoyalty": "Military"
+    ]
 }
 
 // MARK: - Action Result

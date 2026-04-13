@@ -132,17 +132,7 @@ struct ActionCardView: View {
     private func getPrimaryEffect() -> String? {
         guard let (key, value) = action.effects.first else { return nil }
 
-        let statNames: [String: String] = [
-            "network": "Network",
-            "patronFavor": "Favor",
-            "rivalThreat": "Rival",
-            "standing": "Standing",
-            "reputationCunning": "Cunning",
-            "reputationRuthless": "Ruthless",
-            "reputationLoyal": "Loyal"
-        ]
-
-        if let name = statNames[key] {
+        if let name = StatDisplayNames.map[key] {
             let sign = value >= 0 ? "+" : ""
             return "\(name) \(sign)\(value)"
         }

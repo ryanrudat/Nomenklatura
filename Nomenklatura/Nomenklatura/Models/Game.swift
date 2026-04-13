@@ -278,7 +278,7 @@ final class Game {
         self.currentPositionIndex = 1  // Junior Politburo Member
         self.currentTrack = CareerTrack.shared.rawValue
         self.currentExpandedTrack = ExpandedCareerTrack.shared.rawValue  // No specific bureau yet
-        self.actionPoints = 2
+        self.actionPoints = BalanceConfig.actionPointsPerTurn
 
         // Policy/Resistance system
         self.resistanceAccumulation = 0

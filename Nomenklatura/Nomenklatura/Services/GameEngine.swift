@@ -97,6 +97,16 @@ class GameEngine {
             game.flags.removeAll { $0 == flag }
         }
 
+        // Handle special action side effects (only on success)
+        if !discoveryResult.wasDiscovered {
+            switch action.id {
+            case "abolish_term_limits":
+                game.termLimitsAbolished = true
+            default:
+                break
+            }
+        }
+
         // Log the event
         let event = GameEvent(
             turnNumber: game.turnNumber,
@@ -252,6 +262,14 @@ class GameEngine {
             return ["coup_preparations_begun"]
         case "frame_conspiracy":
             return ["sullivan_under_investigation"]
+        case "order_show_trial":
+            return ["show_trial_conducted"]
+        case "launch_anticorruption":
+            return ["anticorruption_campaign_active"]
+        case "create_security_agency":
+            return ["parallel_security_created"]
+        case "abolish_term_limits":
+            return ["term_limits_abolished_via_action"]
         default:
             return []
         }
