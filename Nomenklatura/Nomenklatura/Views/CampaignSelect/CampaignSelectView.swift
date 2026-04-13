@@ -18,8 +18,8 @@ struct CampaignSelectView: View {
             id: "coldwar",
             name: "The Apparatus",
             era: "",
-            description: "You are a cog in the Party machine. Survive purges, outmaneuver rivals, and climb the ranks of the nomenklatura toward ultimate power.",
-            startRole: "Junior Party Official",
+            description: "The previous General Secretary is dead. The Standing Committee has chosen you — a compromise candidate — to lead the People's Socialist Republic. Consolidate power, outmaneuver rivals, and survive the treacherous politics of supreme leadership.",
+            startRole: "General Secretary",
             available: true
         )
     ]

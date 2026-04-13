@@ -20,6 +20,13 @@ struct ScenarioPromptBuilder {
 
         SETTING: Revolutionary Year 43 (circa 1950-1951). The PSR emerged from a revolutionary war against colonial powers, with Soviet aid. The PSR is a tentative USSR ally but not an Eastern Bloc satellite - willing to trade with the West.
 
+        PLAYER ROLE: The player is the GENERAL SECRETARY of the PSR — the supreme leader.
+        - The previous General Secretary died suddenly. The player was elected as a compromise candidate by a fractured Standing Committee.
+        - The player's power is real but FRAGILE. Rival factions, ambitious subordinates, and uncertain allies all threaten their hold on power.
+        - Address the player as "Comrade General Secretary" or "Comrade Chairman." Documents come FROM subordinates (ministers, generals, ambassadors, governors) — never from superiors.
+        - Decisions should concern statecraft: national policy, military deployments, diplomatic crises, factional struggles, economic planning. NOT office politics or clerical work.
+        - Reference the player's powerConsolidationScore when relevant: low consolidation means the Standing Committee can block or override the player.
+
         TERMINOLOGY: Use "the Party" for supreme authority, "the Republic" or "the PSR" for the state, "the People's Congress" for the executive council, "the Bureau of People's Security (BPS)" for state security.
 
         KEY HISTORICAL CONTEXT:
@@ -27,6 +34,7 @@ struct ScenarioPromptBuilder {
         - Consolidation Purges: Post-revolution terror that shaped current politics
         - International: PSR is tentative Soviet ally, USA/UK do not recognize us
         - The real world (USA, USSR, UK, etc.) exists as it did in 1950-1951
+        - Succession: The previous General Secretary's sudden death created a power vacuum. The player was chosen as a compromise — not everyone's first choice.
 
         DOMESTIC REGIONS (7 Zones):
         - Zone 1: Capital District (The Capital) - seat of government
@@ -250,7 +258,6 @@ struct ScenarioPromptBuilder {
     // MARK: - Prompt Sections
 
     private static func buildContextSection(game: Game, config: CampaignConfig) -> String {
-        let positionTitle = resolvePositionTitle(game: game, config: config)
         let positionScope = getPositionScopeGuidance(forIndex: game.currentPositionIndex)
         let currentDate = RevolutionaryCalendar.formatTurnFull(game.turnNumber)
 
@@ -258,13 +265,17 @@ struct ScenarioPromptBuilder {
         let currentTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
         let bureauScope = getBureauScopeGuidance(forTrack: currentTrack, atLevel: game.currentPositionIndex)
 
+        // Calculate power consolidation for the prompt
+        let powerConsolidation = game.powerConsolidationScore
+
         return """
         ## CURRENT GAME STATE
 
         **Turn:** \(game.turnNumber) — Each turn represents 2 weeks (a fortnight)
         **Current Date:** \(currentDate)
-        **Player Position:** \(positionTitle) (Level \(game.currentPositionIndex) of 8)
+        **Player Position:** General Secretary of the PSR (supreme leader)
         **Career Track:** \(currentTrack.displayName)
+        **Power Consolidation:** \(powerConsolidation)/100 — \(powerConsolidation < 30 ? "PRECARIOUS: The Standing Committee can override you. Rivals sense weakness." : powerConsolidation < 60 ? "CONTESTED: You hold power but face resistance from key factions." : "CONSOLIDATED: Your authority is strong but never absolute.")
 
         **TIME PACING:** Since each turn = 2 weeks, things that would take time in reality should take multiple turns:
         - Small administrative tasks: same turn
@@ -273,6 +284,12 @@ struct ScenarioPromptBuilder {
         - Large infrastructure: 10-20+ turns (5-10 months)
         - Political changes: gradual over multiple turns
         When creating scenarios about ongoing projects, reference realistic timeframes.
+
+        **NARRATIVE FRAMING:** The player is General Secretary. All scenarios should:
+        - Present information as briefings FROM subordinates (ministers, generals, governors, ambassadors)
+        - Frame decisions as matters requiring the leader's judgment or authorization
+        - Make the player feel powerful but VULNERABLE — surrounded by ambitious subordinates, rival factions, and threats both foreign and domestic
+        - Never ask the player to "submit a report" or "seek approval" — they ARE the approval
 
         \(positionScope)
 
@@ -290,8 +307,8 @@ struct ScenarioPromptBuilder {
 
         **Player's Personal Stats:**
         - Standing: \(game.standing)/100 (political capital and reputation)
-        - Patron Favor: \(game.patronFavor)/100 (relationship with your political protector)
-        - Rival Threat: \(game.rivalThreat)/100 (danger from your political enemy)
+        - Patron Favor: \(game.patronFavor)/100 (relationship with key ally on the Standing Committee)
+        - Rival Threat: \(game.rivalThreat)/100 (danger from your most dangerous political rival)
         - Network: \(game.network)/100 (your web of contacts and informants)
 
         **Critical Concerns:** \(identifyCriticalStats(game: game))
@@ -368,7 +385,7 @@ struct ScenarioPromptBuilder {
             return baseGuidance + """
             **Level-Specific Scope:** As Deputy Department Head, you handle:
             - Managing a team of instructors and investigators
-            - Preparing personnel files for your superior's review
+            - Preparing personnel files for leadership review
             - Mediating disputes between regional Party organs
             - Implementing policy directives from above
             You have real influence but remain subordinate to Department leadership.
@@ -769,7 +786,7 @@ struct ScenarioPromptBuilder {
             - Serious factional maneuvering with national implications
             Events should reflect significant power but still subordinate to the top leadership.
             """
-        case 6...7:
+        case 6:
             return """
             **Position Scope:** TOP LEADERSHIP - You are among the most powerful. Your decisions involve:
             - National policy with consequences for millions
@@ -778,14 +795,16 @@ struct ScenarioPromptBuilder {
             - Succession politics and existential factional struggles
             Events should reflect near-absolute power and the weight of leadership.
             """
-        case 8:
+        case 7...8:
             return """
             **Position Scope:** GENERAL SECRETARY - You ARE the state. Your decisions involve:
-            - Absolute authority over national policy
-            - Managing the loyalty of your subordinates
-            - Foreign relations and superpower politics
-            - Your own succession and legacy
-            Events should reflect supreme power and its isolating burdens.
+            - National policy with consequences for millions
+            - Managing the loyalty of ministers, generals, and governors
+            - Foreign relations and superpower politics — the USSR expects deference, the West probes for weakness
+            - Factional struggles within the Standing Committee — rivals plot, allies demand favors
+            - Your own survival — the previous leader died suddenly, and you were a compromise candidate
+            Events should reflect supreme but FRAGILE power. The player can be overthrown, undermined, or outmaneuvered.
+            Documents and scenarios should come FROM subordinates seeking guidance, authorization, or favor.
             """
         default:
             return "**Position Scope:** Generate decisions appropriate for a mid-level official."
@@ -797,7 +816,7 @@ struct ScenarioPromptBuilder {
         var section = ""
 
         // TIER 1: Story summary (persistent narrative arc)
-        if !game.storySummary.isEmpty && game.storySummary != "A new official begins their career in the Party apparatus." {
+        if !game.storySummary.isEmpty && game.storySummary != "A new official begins their career in the Party apparatus." && game.storySummary != Game.defaultStorySummary {
             section += """
             ## STORY SO FAR
             \(game.storySummary)
@@ -865,7 +884,7 @@ struct ScenarioPromptBuilder {
         if section.isEmpty {
             return """
             ## RECENT HISTORY
-            The player is just beginning their political career. No major events have occurred yet.
+            The General Secretary has just taken power following the sudden death of the previous leader. The Standing Committee elected them as a compromise candidate — not everyone's first choice. No major events of their tenure have occurred yet, but the power structure is unstable.
             """
         }
 
@@ -884,20 +903,24 @@ struct ScenarioPromptBuilder {
         if let patron = patron {
             section += """
 
-            **Your Patron:** \(patron.name) (\(patron.title ?? "Unknown"))
+            **Your Key Ally:** \(patron.name) (\(patron.title ?? "Unknown"))
+            - This is the Standing Committee member who championed your candidacy for General Secretary
             - Disposition toward you: \(patron.disposition)/100
             - Personality: \(describePersonality(patron))
             - Speech pattern: \(patron.speechPattern ?? "Formal")
+            - They supported you for their own reasons — and will expect to be rewarded
             """
         }
 
         if let rival = rival {
             section += """
 
-            **Your Rival:** \(rival.name) (\(rival.title ?? "Unknown"))
+            **Your Chief Rival:** \(rival.name) (\(rival.title ?? "Unknown"))
+            - This is the most dangerous person in the Party — they believe THEY should be General Secretary
             - Disposition toward you: \(rival.disposition)/100
             - Personality: \(describePersonality(rival))
             - Speech pattern: \(rival.speechPattern ?? "Formal")
+            - They are actively working to undermine your authority and build their own power base
             """
         }
 
@@ -1255,7 +1278,7 @@ struct ScenarioPromptBuilder {
 
         1. **Relevance:** The scenario should relate to current concerns (low stats, character relationships, recent events)
 
-        2. **Stakes:** Match stakes to the player's position. Junior officials face different problems than senior leaders.
+        2. **Stakes:** The player is the GENERAL SECRETARY. All scenarios should involve matters of state: national crises, factional struggles, diplomatic confrontations, military decisions, economic policy. Documents and briefings come FROM ministers, generals, governors, and ambassadors. The player is NEVER a subordinate — they are the supreme authority, though their power can be challenged by the Standing Committee.
         """
 
         if !excludingVariety {

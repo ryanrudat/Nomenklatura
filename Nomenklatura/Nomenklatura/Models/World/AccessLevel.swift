@@ -303,19 +303,13 @@ struct DiplomaticActionClearance {
 /// Generates position-appropriate language for documents and scenarios
 struct AuthorityLanguage {
     let positionIndex: Int
-    let track: ExpandedCareerTrack
-    private let resolvedPositionTitle: String
 
-    init(positionIndex: Int, track: ExpandedCareerTrack = .shared, positionTitle: String? = nil) {
+    init(positionIndex: Int) {
         self.positionIndex = positionIndex
-        self.track = track
-        self.resolvedPositionTitle = positionTitle ?? Self.fallbackPositionTitle(for: positionIndex, track: track)
     }
 
     init(game: Game) {
         self.positionIndex = game.currentPositionIndex
-        self.track = game.effectiveOfficeTrack
-        self.resolvedPositionTitle = game.currentPositionName
     }
 
     // MARK: - Authority Thresholds
@@ -324,29 +318,22 @@ struct AuthorityLanguage {
     var hasRoutineAuthority: Bool { positionIndex >= 2 }
 
     /// Can make decisions affecting personnel
-    var hasPersonnelAuthority: Bool {
-        positionIndex >= 7 || (
-            positionIndex >= 3 &&
-            [.partyApparatus, .stateMinistry, .regional, .militaryPolitical, .economicPlanning].contains(track)
-        )
-    }
+    var hasPersonnelAuthority: Bool { positionIndex >= 3 }
 
     /// Can authorize arrests (with oversight)
-    var hasArrestAuthority: Bool { positionIndex >= 8 || (track == .securityServices && positionIndex >= 4) }
+    var hasArrestAuthority: Bool { positionIndex >= 5 }
 
     /// Can make unilateral arrest decisions
-    var hasUnilateralArrestAuthority: Bool { positionIndex >= 8 || (track == .securityServices && positionIndex >= 6) }
+    var hasUnilateralArrestAuthority: Bool { positionIndex >= 7 }
 
     /// Can allocate strategic resources
-    var hasStrategicResourceAuthority: Bool {
-        positionIndex >= 8 || ([.economicPlanning, .stateMinistry, .regional].contains(track) && positionIndex >= 4)
-    }
+    var hasStrategicResourceAuthority: Bool { positionIndex >= 6 }
 
     /// Can direct intelligence operations
-    var hasIntelligenceAuthority: Bool { positionIndex >= 8 || (track == .securityServices && positionIndex >= 5) }
+    var hasIntelligenceAuthority: Bool { positionIndex >= 6 }
 
-    /// Is part of the senior leadership tier beneath the General Secretary
-    var isPolitburoMember: Bool { positionIndex >= 6 }
+    /// Is a Politburo member
+    var isPolitburoMember: Bool { positionIndex >= 5 }
 
     /// Is General Secretary or Deputy
     var isTopLeadership: Bool { positionIndex >= 7 }
@@ -379,13 +366,13 @@ struct AuthorityLanguage {
     func authorizationPhrase(action: String) -> String {
         switch positionIndex {
         case 7...8:
-            return "You \(decisionVerb) \(action)."
+            return "You \(decisionVerb) \(action). Your word is law."
         case 5...6:
             return "You \(decisionVerb) \(action), pending General Secretary review."
         case 3...4:
             return "You \(decisionVerb) \(action) to the Politburo."
         default:
-            return "You \(decisionVerb) \(action) to your superiors."
+            return "You \(decisionVerb) \(action) to the Standing Committee."
         }
     }
 
@@ -395,13 +382,13 @@ struct AuthorityLanguage {
     var approvalChain: String {
         switch positionIndex {
         case 8: return "Your decision is final."
-        case 7: return "Subject to Politburo Standing Committee review if challenged."
+        case 7: return "Your decision is final, though the Standing Committee may challenge it."
         case 6: return "Requires General Secretary approval for implementation."
         case 5: return "Requires Politburo vote for final authorization."
         case 4: return "Must be forwarded to full Politburo for consideration."
         case 3: return "Requires Central Committee Secretary endorsement."
         case 2: return "Must be approved by your department superior."
-        default: return "Requires approval from Party officials above you."
+        default: return "Requires approval from the Standing Committee."
         }
     }
 
@@ -409,13 +396,13 @@ struct AuthorityLanguage {
     var reportsTo: String {
         switch positionIndex {
         case 8: return "the Politburo Standing Committee"
-        case 7: return "the General Secretary"
+        case 7: return "the Standing Committee (formally)"
         case 6: return "the Deputy General Secretary"
         case 5: return "the Politburo"
         case 4: return "senior Politburo members"
         case 3: return "the Central Committee"
         case 2: return "your department head"
-        default: return "your superiors"
+        default: return "the Standing Committee"
         }
     }
 
@@ -440,29 +427,23 @@ struct AuthorityLanguage {
     /// Language for arrest authorization documents
     var arrestAuthorizationLanguage: (header: String, action: String, footer: String) {
         switch positionIndex {
-        case 8:
+        case 7...8:
             return (
                 header: "ARREST AUTHORIZATION",
                 action: "Your signature authorizes immediate detention.",
                 footer: "BY ORDER OF THE GENERAL SECRETARY"
             )
-        case 7:
-            return (
-                header: "ARREST AUTHORIZATION REVIEW",
-                action: "Your approval forwards this for immediate General Secretary confirmation.",
-                footer: "LEADERSHIP REVIEW PENDING"
-            )
         case 5...6:
             return (
                 header: "ARREST RECOMMENDATION",
-                action: "Your approval forwards this to senior leadership for authorization.",
+                action: "Your approval forwards this to the General Secretary for authorization.",
                 footer: "PENDING FINAL AUTHORIZATION"
             )
         case 4:
             return (
                 header: "DETENTION REQUEST REVIEW",
                 action: "Your endorsement adds your recommendation to the file.",
-                footer: "FORWARDED TO SENIOR LEADERSHIP FOR REVIEW"
+                footer: "FORWARDED TO POLITBURO FOR REVIEW"
             )
         default:
             return (
@@ -478,25 +459,20 @@ struct AuthorityLanguage {
     /// Language for resource allocation documents
     func resourceAllocationLanguage(resource: String, amount: String) -> (header: String, action: String) {
         switch positionIndex {
-        case 8:
+        case 7...8:
             return (
                 header: "RESOURCE ALLOCATION DIRECTIVE",
                 action: "You direct the distribution of \(amount) of \(resource)."
             )
-        case 7:
-            return (
-                header: "RESOURCE ALLOCATION REVIEW",
-                action: "You set the leadership recommendation for distributing \(amount) of \(resource)."
-            )
         case 5...6:
             return (
                 header: "RESOURCE ALLOCATION PROPOSAL",
-                action: "You propose the distribution of \(amount) of \(resource), subject to senior leadership approval."
+                action: "You propose the distribution of \(amount) of \(resource), subject to General Secretary approval."
             )
         case 3...4:
             return (
                 header: "RESOURCE ALLOCATION REQUEST",
-                action: "You recommend how \(amount) of \(resource) should be distributed. Leadership will decide."
+                action: "You recommend how \(amount) of \(resource) should be distributed. The Politburo will decide."
             )
         default:
             return (
@@ -511,30 +487,20 @@ struct AuthorityLanguage {
     /// Language for intelligence documents
     var intelligenceDocumentLanguage: (header: String, context: String) {
         switch positionIndex {
-        case 8:
+        case 7...8:
             return (
                 header: "TOP SECRET - EYES ONLY",
                 context: "As General Secretary, you directly oversee intelligence operations."
             )
-        case 7:
-            return (
-                header: "TOP SECRET - LEADERSHIP CIRCULATION",
-                context: "You receive this briefing as Deputy General Secretary. Your direction carries exceptional weight, but final authority remains with the General Secretary."
-            )
-        case 6 where track == .securityServices:
-            return (
-                header: "SECRET - DIRECTORATE EYES ONLY",
-                context: "You oversee state protection directly. Operational details are provided in full."
-            )
-        case 5 where track == .securityServices:
-            return (
-                header: "SECRET - DIRECTORATE CIRCULATION",
-                context: "You receive this briefing as a senior security leader. You may shape the response, but major escalations require higher approval."
-            )
-        case 5...6:
+        case 6:
             return (
                 header: "SECRET - LIMITED DISTRIBUTION",
-                context: "You receive this as a senior bureau chief. You may advise but not directly command intelligence operations outside your portfolio."
+                context: "You receive this briefing as Deputy General Secretary. Operational decisions require General Secretary approval."
+            )
+        case 5:
+            return (
+                header: "SECRET - POLITBURO CIRCULATION",
+                context: "You receive this as a Politburo member. You may advise but not direct operations."
             )
         case 4:
             return (
@@ -553,53 +519,31 @@ struct AuthorityLanguage {
 
     /// Returns appropriate framing for the player's position
     var positionFraming: String {
-        "As \(resolvedPositionTitle)"
+        switch positionIndex {
+        case 8: return "As a member of the Politburo Standing Committee"
+        case 7: return "As General Secretary"
+        case 6: return "As Deputy General Secretary"
+        case 5: return "As a full member of the Politburo"
+        case 4: return "As a candidate member of the Politburo"
+        case 3: return "As a Central Committee Secretary"
+        case 2: return "As a department head"
+        case 1: return "As a Party official"
+        default: return "As a Party cadre"
+        }
     }
 
     /// Short version for document headers
     var positionTitle: String {
-        resolvedPositionTitle
-    }
-
-    private static func fallbackPositionTitle(for positionIndex: Int, track: ExpandedCareerTrack) -> String {
-        switch (track, positionIndex) {
-        case (.partyApparatus, 2): return "Instructor of the Central Committee"
-        case (.partyApparatus, 3): return "Deputy Head of Central Committee Department"
-        case (.partyApparatus, 4): return "Head of Central Committee Department"
-        case (.partyApparatus, 5): return "Secretary of the Central Committee"
-        case (.partyApparatus, 6): return "Second Secretary of the Central Committee"
-        case (.stateMinistry, 2): return "Deputy Minister"
-        case (.stateMinistry, 3): return "First Deputy Minister"
-        case (.stateMinistry, 4): return "Minister"
-        case (.stateMinistry, 5): return "Deputy Chairman of the Council of Ministers"
-        case (.stateMinistry, 6): return "First Deputy Chairman of the Council of Ministers"
-        case (.securityServices, 2): return "Senior Investigator"
-        case (.securityServices, 3): return "Deputy Directorate Chief"
-        case (.securityServices, 4): return "Directorate Chief"
-        case (.securityServices, 5): return "First Deputy Director of State Protection"
-        case (.securityServices, 6): return "Director of State Protection"
-        case (.foreignAffairs, 2): return "Embassy Counselor"
-        case (.foreignAffairs, 3): return "Ambassador"
-        case (.foreignAffairs, 4): return "Deputy Minister of Foreign Affairs"
-        case (.foreignAffairs, 5): return "First Deputy Minister of Foreign Affairs"
-        case (.foreignAffairs, 6): return "Minister of Foreign Affairs"
-        case (.economicPlanning, 2): return "Senior Economist"
-        case (.economicPlanning, 3): return "Department Head of Planning Commission"
-        case (.economicPlanning, 4): return "Deputy Chairman of the State Planning Commission"
-        case (.economicPlanning, 5): return "First Deputy Chairman of Planning Commission"
-        case (.economicPlanning, 6): return "Chairman of the State Planning Commission"
-        case (.militaryPolitical, 2): return "Regimental Political Officer"
-        case (.militaryPolitical, 3): return "Divisional Political Commissar"
-        case (.militaryPolitical, 4): return "Deputy Head of Main Political Directorate"
-        case (.militaryPolitical, 5): return "First Deputy Head of Main Political Directorate"
-        case (.militaryPolitical, 6): return "Head of the Main Political Directorate"
-        case (.regional, 2): return "Provincial Party Secretary"
-        case (.regional, 3): return "Provincial First Secretary"
-        case (.regional, 4): return "Republic First Secretary"
-        case (_, 8): return "General Secretary"
-        case (_, 7): return "Deputy General Secretary"
-        case (_, 1): return "Junior Party Official"
-        default: return "Party Official"
+        switch positionIndex {
+        case 8: return "Politburo Standing Committee Member"
+        case 7: return "General Secretary"
+        case 6: return "Deputy General Secretary"
+        case 5: return "Politburo Member"
+        case 4: return "Candidate Politburo Member"
+        case 3: return "Central Committee Secretary"
+        case 2: return "Department Head"
+        case 1: return "Party Official"
+        default: return "Junior Cadre"
         }
     }
 }

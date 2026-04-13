@@ -10,6 +10,9 @@ import SwiftData
 
 @Model
 final class Game {
+    // MARK: - Constants
+    static let defaultStorySummary = "The new General Secretary takes power after the sudden death of the previous leader. The Standing Committee is fractured, and rivals circle."
+
     // MARK: - Shared Encoders (Performance Optimization)
     // JSONDecoder/JSONEncoder are Sendable, safe to use across actor boundaries
     private static let sharedDecoder = JSONDecoder()
@@ -331,7 +334,7 @@ final class Game {
         self.dynamicEventCooldownsData = nil
 
         // Narrative Memory system
-        self.storySummary = "A new General Secretary has been elected by a divided Standing Committee following the sudden death of the previous leader. The nation watches with uncertainty as competing factions maneuver for influence."
+        self.storySummary = Game.defaultStorySummary
         self.activePlotThreadsData = nil
         self.resolvedPlotThreadsData = nil
         self.keyNarrativeMoments = []
@@ -519,7 +522,7 @@ extension Game {
 
     /// The player's current position title from the campaign ladder
     var currentPositionName: String {
-        resolvedCurrentPosition?.title ?? "Party Official"
+        resolvedCurrentPosition?.title ?? "General Secretary"
     }
 
     var nationalStats: [(name: String, value: Int, key: String)] {
