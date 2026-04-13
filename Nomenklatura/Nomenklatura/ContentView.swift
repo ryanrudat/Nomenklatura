@@ -601,13 +601,13 @@ struct GameView: View {
                 onDossierTap: { selectedTab = .dossier },  // Navigate to Dossier from memo tray
                 onLedgerTap: { selectedTab = .ledger },    // Navigate to Ledger from stats
                 onLadderTap: { selectedTab = .ladder },    // Navigate to Ladder from standing
-                onEndTurn: { transitionToStandingCommitteeOrPersonalAction() }  // Check SC before ending
+                onEndTurn: { transitionToStandingCommitteeOrDirective() }  // SC check → directives → personal action
             )
 
         case .standingCommittee:
             // Standing Committee meeting phase
             SCMeetingView(game: game) {
-                transitionToPersonalAction()
+                transitionToDirectivePhase()
             }
 
         case .outcome:
@@ -619,7 +619,7 @@ struct GameView: View {
                     statChanges: outcome.statChanges,
                     optionArchetype: outcome.optionChosen.archetype
                 ) {
-                    transitionToStandingCommitteeOrPersonalAction()
+                    transitionToStandingCommitteeOrDirective()
                 }
             } else {
                 // Fallback if no outcome data (shouldn't happen)
@@ -628,8 +628,14 @@ struct GameView: View {
                     outcomeText: "The consequences of your decision unfold...",
                     statChanges: []
                 ) {
-                    transitionToStandingCommitteeOrPersonalAction()
+                    transitionToStandingCommitteeOrDirective()
                 }
+            }
+
+        case .directive:
+            // Show directive phase where player issues bureau orders
+            DirectivePhaseView(game: game) {
+                transitionToPersonalAction()
             }
 
         case .personalAction:
@@ -645,27 +651,32 @@ struct GameView: View {
     }
 
     /// Check if a Standing Committee meeting is due this turn.
-    /// If so, transition to the SC phase; otherwise skip to personal action.
-    private func transitionToStandingCommitteeOrPersonalAction() {
-        // Check for game end conditions first
+    /// Flow: SC (if due) → Directives → Personal Action
+    private func transitionToStandingCommitteeOrDirective() {
         let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
         if endCheck.gameOver {
             endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
             return
         }
 
-        // Check if SC meeting is scheduled for this turn
         if StandingCommitteeMeetingService.shared.shouldHaveMeeting(game: game) {
             withAnimation(.easeInOut(duration: 0.3)) {
                 game.phase = GamePhase.standingCommittee.rawValue
             }
         } else {
-            transitionToPersonalAction()
+            transitionToDirectivePhase()
+        }
+    }
+
+    private func transitionToDirectivePhase() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            game.directivePoints = 2
+            game.phase = GamePhase.directive.rawValue
         }
     }
 
     private func transitionToPersonalAction() {
-        // Check for game end conditions after outcome
+        // Check for game end conditions after directive phase
         let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
         if endCheck.gameOver {
             if trySuccessionRecovery(from: endCheck, requiresEndTurnProcessing: true) {

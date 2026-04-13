@@ -31,7 +31,7 @@ final class Game {
     @Attribute(.unique) var id: UUID
     var campaignId: String
     var turnNumber: Int
-    var phase: String  // briefing, decision, outcome, personalAction
+    var phase: String  // briefing, decision, outcome, directive, personalAction
 
     // National Stats (0-100)
     var stability: Int
@@ -67,6 +67,7 @@ final class Game {
     var currentTrack: String  // CareerTrack.rawValue - "shared", "capital", "regional"
     var currentExpandedTrack: String = "shared"  // ExpandedCareerTrack.rawValue - specific bureau path
     var actionPoints: Int
+    var directivePoints: Int  // Points available for issuing bureau directives (default 2 per turn)
 
     // Policy/Resistance system
     var resistanceAccumulation: Int  // 0-100, danger of backlash from forced policies
@@ -283,6 +284,7 @@ final class Game {
         self.currentTrack = CareerTrack.shared.rawValue
         self.currentExpandedTrack = ExpandedCareerTrack.shared.rawValue  // Gen Sec is on shared track
         self.actionPoints = 2
+        self.directivePoints = 2
 
         // Policy/Resistance system
         self.resistanceAccumulation = 0
@@ -410,6 +412,7 @@ enum GamePhase: String, Codable, CaseIterable {
     case standingCommittee
     case decision
     case outcome
+    case directive
     case personalAction
 }
 
