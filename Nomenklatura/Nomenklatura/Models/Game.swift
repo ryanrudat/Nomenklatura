@@ -1195,7 +1195,7 @@ extension Game {
             newValue = resistanceAccumulation
         case "gdpIndex":
             oldValue = gdpIndex
-            gdpIndex = max(0, min(300, gdpIndex + change))
+            gdpIndex = max(50, min(200, gdpIndex + change))
             newValue = gdpIndex
         case "worldTension":
             oldValue = worldTension
