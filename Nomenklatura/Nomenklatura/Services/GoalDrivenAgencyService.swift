@@ -37,13 +37,6 @@ final class GoalDrivenAgencyService {
             return []
         }
 
-        // Require at least 1 turn between goal events to prevent spam
-        // (reduced from 2 to make NPC goals more active)
-        if game.lastDynamicEventTurn > 0 && game.turnNumber - game.lastDynamicEventTurn < 1 {
-            goalLogger.debug("Recent dynamic event, skipping goal-driven actions for pacing")
-            return []
-        }
-
         var events: [DynamicEvent] = []
 
         // Get all active NPCs with goals, shuffled for variety
@@ -51,25 +44,53 @@ final class GoalDrivenAgencyService {
             character.isActive && !character.npcGoals.isEmpty
         }.shuffled()
 
-        for character in npcsWithGoals {
-            // Skip characters who recently initiated contact (cooldown of 3 turns per character)
-            if let lastTurn = character.lastInitiatedTurn, game.turnNumber - lastTurn < 3 {
+        // Prioritize high-grudge and high-aggression NPCs (they act first)
+        let prioritizedNPCs = npcsWithGoals.sorted { npc1, npc2 in
+            let score1 = npc1.grudgeLevel + npc1.aggressionLevel
+            let score2 = npc2.grudgeLevel + npc2.aggressionLevel
+            return score1 > score2
+        }
+
+        for character in prioritizedNPCs {
+            // Per-character cooldown: reduced for aggressive/grudge-holding NPCs
+            let baseCooldown = BalanceConfig.npcGoalActionCooldown
+            let cooldown: Int
+            if character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold ||
+               character.aggressionLevel > BalanceConfig.npcHighAggressionThreshold {
+                cooldown = max(1, baseCooldown - 1)  // Aggressive NPCs act faster
+            } else {
+                cooldown = baseCooldown
+            }
+
+            if let lastTurn = character.lastInitiatedTurn, game.turnNumber - lastTurn < cooldown {
                 goalLogger.debug("\(character.name) recently initiated contact, skipping")
                 continue
             }
 
-            if let event = evaluateCharacterGoals(character, game: game) {
-                // Filter by player position - ensure event is appropriate for their rank
-                guard event.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex) else {
-                    goalLogger.debug("Event type \(event.eventType.rawValue) not appropriate for position \(game.currentPositionIndex), skipping")
+            // High-fear NPCs are suppressed: they won't initiate hostile actions
+            if character.fearLevel > BalanceConfig.npcHighFearThreshold {
+                // Fear suppresses hostile goal pursuit (but not survival/compliance goals)
+                if let goal = character.primaryGoal,
+                   [.destroyRival, .avengeBetrayal, .purgeEnemies, .conductPurge, .eliminateRivals].contains(goal.goalType) {
+                    goalLogger.debug("\(character.name) too afraid (fear: \(character.fearLevel)) to pursue hostile goal")
                     continue
                 }
+            }
 
-                // Filter by goal type - ensure goal-driven content matches player's authority level
-                if let primaryGoal = character.primaryGoal {
-                    guard game.currentPositionIndex >= primaryGoal.goalType.minimumPositionIndex else {
-                        goalLogger.debug("Goal type \(primaryGoal.goalType.displayName) requires position \(primaryGoal.goalType.minimumPositionIndex), player at \(game.currentPositionIndex), skipping")
+            if let event = evaluateCharacterGoals(character, game: game) {
+                // Position filtering is relaxed for General Secretary:
+                // As GS, you see events at ALL levels (you're at the top)
+                if game.currentPositionIndex < 7 {
+                    guard event.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex) else {
+                        goalLogger.debug("Event type \(event.eventType.rawValue) not appropriate for position \(game.currentPositionIndex), skipping")
                         continue
+                    }
+
+                    if let primaryGoal = character.primaryGoal {
+                        guard game.currentPositionIndex >= primaryGoal.goalType.minimumPositionIndex else {
+                            goalLogger.debug("Goal type \(primaryGoal.goalType.displayName) requires position \(primaryGoal.goalType.minimumPositionIndex), player at \(game.currentPositionIndex), skipping")
+                            continue
+                        }
                     }
                 }
 
@@ -78,8 +99,8 @@ final class GoalDrivenAgencyService {
                 // Update character's last initiated turn to prevent repeat contacts
                 character.lastInitiatedTurn = game.turnNumber
 
-                // Limit to max goal events per turn (but typically just 1)
-                if events.count >= GameplayConstants.NPCDecision.maxGoalEventsPerTurn {
+                // Limit to max goal events per turn
+                if events.count >= BalanceConfig.maxGoalEventsPerTurn {
                     break
                 }
             }
@@ -93,7 +114,9 @@ final class GoalDrivenAgencyService {
         guard let primaryGoal = character.primaryGoal else { return nil }
 
         // Skip if this goal type was used recently (prevents "Seeks Advancement" spam)
-        if recentGoalTypes.contains(primaryGoal.goalType) {
+        // But high-grudge NPCs bypass this -- their grievances override variety concerns
+        let bypassVarietyCheck = character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold
+        if !bypassVarietyCheck && recentGoalTypes.contains(primaryGoal.goalType) {
             goalLogger.debug("Goal type \(primaryGoal.goalType.displayName) used recently, skipping for variety")
             return nil
         }
@@ -110,11 +133,38 @@ final class GoalDrivenAgencyService {
         )
 
         // Use goal-driven decision maker to evaluate
-        let shouldAct = decisionMaker.shouldAct(
+        var shouldAct = decisionMaker.shouldAct(
             character: character,
             game: game,
             context: context
         )
+
+        // High-grudge NPCs are more likely to act even if the decision maker said no
+        if !shouldAct && character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
+            let grudgeOverrideChance = Double(character.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 100.0
+            if Double.random(in: 0...1) < grudgeOverrideChance {
+                goalLogger.info("\(character.name) grudge override (grudge: \(character.grudgeLevel)) — acting despite risk assessment")
+                shouldAct = true
+            }
+        }
+
+        // High-aggression NPCs are also more likely to push through
+        if !shouldAct && character.aggressionLevel > BalanceConfig.npcHighAggressionThreshold {
+            let aggressionOverrideChance = Double(character.aggressionLevel - BalanceConfig.npcHighAggressionThreshold) / 150.0
+            if Double.random(in: 0...1) < aggressionOverrideChance {
+                goalLogger.info("\(character.name) aggression override (aggression: \(character.aggressionLevel)) — forcing action")
+                shouldAct = true
+            }
+        }
+
+        // Low-fear NPCs are bolder: slight boost to act
+        if !shouldAct && character.fearLevel < BalanceConfig.npcLowFearThreshold {
+            let boldnessChance = Double(BalanceConfig.npcLowFearThreshold - character.fearLevel) / 200.0
+            if Double.random(in: 0...1) < boldnessChance {
+                goalLogger.info("\(character.name) bold action (low fear: \(character.fearLevel))")
+                shouldAct = true
+            }
+        }
 
         guard shouldAct else {
             // Track failed attempt (frustration may build)

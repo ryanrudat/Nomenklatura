@@ -601,15 +601,20 @@ class CharacterAgencyService {
         // Characters only act if they've interacted with player before
         guard !character.interactionHistory.isEmpty else { return nil }
 
-        // Check cooldown (at least 5 turns since last action)
+        let cooldown = (character.aggressionLevel > BalanceConfig.npcHighAggressionThreshold || character.disposition < 30) ? 2 : 3
         if let lastTurn = character.lastInitiatedTurn,
-           game.turnNumber - lastTurn < 5 { return nil }
+           game.turnNumber - lastTurn < cooldown { return nil }
+
+        // High-fear NPCs are suppressed from hostile actions against the player
+        if character.fearLevel > BalanceConfig.npcHighFearThreshold && character.disposition < 50 {
+            npcLogger.debug("\(character.name) too afraid (fear: \(character.fearLevel)) to act against player")
+            return nil
+        }
 
         // Motivation based on disposition and recent interactions
         let motivation = calculateDiscoveredCharacterMotivation(character, game: game)
 
-        // Action chance
-        let actionChance = Double(motivation) / 300.0
+        let actionChance = Double(motivation) / 200.0
         guard Double.random(in: 0...1) < actionChance else { return nil }
 
         // Check cooldown for character message type
@@ -627,13 +632,23 @@ class CharacterAgencyService {
     }
 
     private func calculateDiscoveredCharacterMotivation(_ character: GameCharacter, game: Game) -> Int {
-        var motivation = 10
+        var motivation = 15
 
         // Strong feelings = more likely to act
         motivation += abs(character.disposition - 50) / 2
 
         // Aggressive characters act more often
-        motivation += character.aggressionLevel / 5
+        motivation += character.aggressionLevel / 3
+
+        // High grudge dramatically increases motivation
+        if character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
+            motivation += (character.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 2
+        }
+
+        // Low fear makes NPCs bolder
+        if character.fearLevel < BalanceConfig.npcLowFearThreshold {
+            motivation += (BalanceConfig.npcLowFearThreshold - character.fearLevel) / 3
+        }
 
         // Recent significant events increase motivation
         let recentInteractions = character.interactionHistory.filter {
@@ -748,15 +763,19 @@ class CharacterAgencyService {
         let activeNPCs = game.characters.filter { $0.isActive && !$0.isPatron && !$0.isRival }
         npcLogger.info("Found \(activeNPCs.count) active NPCs to evaluate")
 
-        // Sort by position (higher positions act first)
-        let sortedNPCs = activeNPCs.sorted { ($0.positionIndex ?? 0) > ($1.positionIndex ?? 0) }
+        // Sort by position (higher positions act first), with aggressive NPCs prioritized
+        let sortedNPCs = activeNPCs.sorted { npc1, npc2 in
+            let score1 = (npc1.positionIndex ?? 0) * 10 + npc1.aggressionLevel / 10
+            let score2 = (npc2.positionIndex ?? 0) * 10 + npc2.aggressionLevel / 10
+            return score1 > score2
+        }
 
         // Track all events generated this turn (for living world feel)
         var generatedEvents: [DynamicEvent] = []
 
-        // Allow multiple NPCs to act each turn (up to 3 for performance)
+        // Allow more NPCs to act each turn for a livelier political world
         var actionsThisTurn = 0
-        let maxActionsPerTurn = 3
+        let maxActionsPerTurn = 5
 
         // Each NPC has a chance to take an autonomous action
         for npc in sortedNPCs {
@@ -781,17 +800,16 @@ class CharacterAgencyService {
 
     /// Evaluate if a single NPC should take an autonomous action
     private func evaluateSingleNPCAction(_ actor: GameCharacter, allNPCs: [GameCharacter], game: Game) -> DynamicEvent? {
-        // Skip if NPC recently acted (2 turn cooldown - politics moves fast)
-        if let lastTurn = actor.lastInitiatedTurn, game.turnNumber - lastTurn < 2 {
+        // Skip if NPC recently acted (1 turn cooldown for aggressive NPCs, 2 for others)
+        let cooldown = actor.aggressionLevel > BalanceConfig.npcHighAggressionThreshold ? 1 : 2
+        if let lastTurn = actor.lastInitiatedTurn, game.turnNumber - lastTurn < cooldown {
             return nil
         }
 
         // Calculate action motivation based on personality
         let motivation = calculateNPCAutonomousMotivation(actor)
 
-        // Reasonable chance to act based on motivation
-        // Base 25% + up to 35% from motivation = max ~60% for highly motivated NPCs
-        let actionChance = 0.25 + (Double(motivation) / 200.0)
+        let actionChance = 0.30 + (Double(motivation) / 175.0)
         guard Double.random(in: 0...1) < actionChance else { return nil }
 
         // Find potential targets (other NPCs)
@@ -822,7 +840,7 @@ class CharacterAgencyService {
     }
 
     private func calculateNPCAutonomousMotivation(_ actor: GameCharacter) -> Int {
-        var motivation = 20
+        var motivation = 25
 
         // Ambitious NPCs act more
         motivation += actor.personalityAmbitious / 3
@@ -839,7 +857,27 @@ class CharacterAgencyService {
         // Position provides resources to act
         motivation += (actor.positionIndex ?? 0) * 3
 
-        return motivation
+        // High grudge drives action (NPCs with grudges are compelled to act)
+        if actor.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
+            motivation += (actor.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 2
+        }
+
+        // High aggression increases activity
+        if actor.aggressionLevel > BalanceConfig.npcHighAggressionThreshold {
+            motivation += (actor.aggressionLevel - BalanceConfig.npcHighAggressionThreshold) / 2
+        }
+
+        // Low fear makes NPCs bolder
+        if actor.fearLevel < BalanceConfig.npcLowFearThreshold {
+            motivation += (BalanceConfig.npcLowFearThreshold - actor.fearLevel) / 3
+        }
+
+        // High fear suppresses action
+        if actor.fearLevel > BalanceConfig.npcHighFearThreshold {
+            motivation -= (actor.fearLevel - BalanceConfig.npcHighFearThreshold) / 2
+        }
+
+        return max(0, motivation)
     }
 
     /// Get all actions available to an NPC based on their track and position
@@ -2173,6 +2211,114 @@ class CharacterAgencyService {
         for relationship in game.npcRelationships {
             relationship.processDecay(currentTurn: game.turnNumber)
         }
+    }
+
+    // MARK: - Trust-Based Coalition Formation
+
+    /// Evaluate NPC relationships for visible coalition formation events
+    /// NPCs who trust each other form visible alliances that the player can observe
+    func evaluateCoalitionFormation(game: Game) -> [NPCWorldActionResult] {
+        var coalitionEvents: [NPCWorldActionResult] = []
+
+        let activeNPCs = game.characters.filter { $0.isActive && !$0.isPatron }
+        let npcByTemplateId = Dictionary(activeNPCs.map { ($0.templateId, $0) }, uniquingKeysWith: { first, _ in first })
+
+        for relationship in game.npcRelationships {
+            // Only form coalitions where trust exceeds threshold and they're not already allied
+            guard relationship.trust >= BalanceConfig.npcCoalitionTrustThreshold,
+                  !relationship.isAllied,
+                  relationship.disposition > 0 else { continue }
+
+            // 8% chance per turn for high-trust pairs to formalize their alliance
+            guard Int.random(in: 1...100) <= 8 else { continue }
+
+            guard let source = npcByTemplateId[relationship.sourceCharacterId],
+                  let target = npcByTemplateId[relationship.targetCharacterId] else {
+                continue
+            }
+
+            // Form the alliance
+            relationship.formAlliance(turn: game.turnNumber, strength: 40 + relationship.trust / 3)
+
+            // Create reciprocal alliance
+            let reciprocal = getOrCreateNPCRelationship(from: target, to: source, game: game)
+            reciprocal.formAlliance(turn: game.turnNumber, strength: 40 + reciprocal.trust / 3)
+
+            coalitionEvents.append(NPCWorldActionResult(
+                eventType: .allianceFormed,
+                headline: "\(source.name) and \(target.name) Form Coalition",
+                details: "Intelligence reports indicate that \(source.name) and \(target.name) have been coordinating their positions in recent weeks. They were seen dining together at the government dacha, and their votes in committee meetings have become suspiciously aligned. A formal political coalition appears to be taking shape.",
+                visibilityLevel: .intel,
+                involvedCharacters: [source, target]
+            ))
+
+            // Limit to 2 coalition events per turn
+            if coalitionEvents.count >= 2 { break }
+        }
+
+        return coalitionEvents
+    }
+
+    // MARK: - Fear-Based Informing
+
+    /// High-fear NPCs inform on others to curry favor with powerful figures
+    /// Returns intelligence reports the player receives as General Secretary
+    func evaluateFearDrivenInforming(game: Game) -> [NPCWorldActionResult] {
+        var informingEvents: [NPCWorldActionResult] = []
+
+        let activeNPCs = game.characters.filter { $0.isActive }
+
+        // Pre-build relationship lookup for O(1) access
+        let relByPair = Dictionary(
+            game.npcRelationships.map { (NPCRelationshipKey(source: $0.sourceCharacterId, target: $0.targetCharacterId), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        for npc in activeNPCs {
+            // Only very afraid NPCs inform
+            guard npc.fearLevel > BalanceConfig.npcHighFearThreshold else { continue }
+
+            // 10% chance per turn per high-fear NPC
+            guard Int.random(in: 1...100) <= 10 else { continue }
+
+            let targets = activeNPCs.filter { $0.id != npc.id }
+
+            // Inform on someone with high grudge against them, or just someone they distrust
+            let informTarget = targets.filter { target in
+                let rel = relByPair[NPCRelationshipKey(source: npc.templateId, target: target.templateId)]
+                return (rel?.grudgeLevel ?? 0) > 30 || (rel?.disposition ?? 0) < -20
+            }.randomElement() ?? targets.randomElement()
+
+            guard let target = informTarget else { continue }
+
+            let details: String
+            let headline: String
+
+            if target.personalityCorrupt > 50 {
+                headline = "\(npc.name) Reports Irregularities"
+                details = "\(npc.name), visibly anxious during your private meeting, confides that \(target.name) has been diverting state resources for personal use. 'I thought you should know, Comrade General Secretary. I am loyal to the Party above all.'"
+            } else if target.aggressionLevel > 60 {
+                headline = "\(npc.name) Warns of Discontent"
+                details = "\(npc.name) requests a private audience. In hushed tones, they report that \(target.name) has been making critical remarks about your leadership in closed meetings. 'They are building support for... alternative arrangements, Comrade.'"
+            } else {
+                headline = "\(npc.name) Provides Intelligence"
+                details = "\(npc.name) sends a confidential memorandum to your office. They report that \(target.name) held an unauthorized meeting with several officials last week. 'The agenda was not shared through proper channels, Comrade General Secretary.'"
+            }
+
+            informingEvents.append(NPCWorldActionResult(
+                eventType: .grudgeAttack,
+                headline: headline,
+                details: details,
+                visibilityLevel: .secret,
+                involvedCharacters: [npc],
+                targetCharacter: target
+            ))
+
+            // Only 1 informing event per turn
+            break
+        }
+
+        return informingEvents
     }
 
     /// Initialize NPC-NPC relationships at game start
@@ -3540,6 +3686,14 @@ class CharacterAgencyService {
             character.npcNeeds = needs
         }
     }
+}
+
+// MARK: - NPC Relationship Lookup Key
+
+/// Hashable key for O(1) NPC relationship lookups by source-target pair
+private struct NPCRelationshipKey: Hashable {
+    let source: String
+    let target: String
 }
 
 // MARK: - NPC Action Types
