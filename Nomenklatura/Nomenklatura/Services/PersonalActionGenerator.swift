@@ -118,36 +118,36 @@ final class PersonalActionGenerator {
             actions.append(PersonalAction(
                 id: "demonstrate_loyalty",
                 category: .securePosition,
-                title: "Demonstrate loyalty to \(patron.name)",
-                description: "Find ways to publicly show your dedication to \(patron.name)'s agenda.",
+                title: "Reinforce alliance with \(patron.name)",
+                description: "Publicly support \(patron.name)'s faction agenda to strengthen your coalition.",
                 costAP: 1,
                 riskLevel: .low,
                 requirements: nil,
                 effects: ["patronFavor": 8, "standing": -2],
                 isLocked: false,
-                flavorText: "A loyal dog at the master's heel—but dogs can bite.",
+                flavorText: "Even a General Secretary needs allies who feel valued.",
                 successNarratives: [
-                    "Your speech praising \(patron.name)'s wisdom is noted approvingly.",
-                    "\(patron.name) acknowledges your support with a nod at the Standing Committee.",
-                    "Word reaches \(patron.name) of your unwavering loyalty."
+                    "Your public acknowledgment of \(patron.name)'s contributions is well-received.",
+                    "\(patron.name) nods approvingly at the Standing Committee as you credit their work.",
+                    "Word circulates that you and \(patron.name) remain a united front."
                 ]
             ))
 
             actions.append(PersonalAction(
                 id: "private_audience",
                 category: .securePosition,
-                title: "Request private audience with \(patron.name)",
-                description: "Seek a one-on-one meeting to reinforce your relationship.",
+                title: "Private meeting with \(patron.name)",
+                description: "Meet privately with your key ally to coordinate strategy.",
                 costAP: 1,
                 riskLevel: .low,
                 requirements: ActionRequirements(minStanding: 40),
                 effects: ["patronFavor": 6, "reputationLoyal": 5],
                 isLocked: false,
-                flavorText: "Face to face, patron to protege.",
+                flavorText: "Face to face, ally to ally. Trust is built in private.",
                 successNarratives: [
-                    "\(patron.name) grants you fifteen minutes. You make them count.",
-                    "Over tea, \(patron.name) shares concerns about the faction's direction.",
-                    "The audience goes well. \(patron.name) seems to trust you more."
+                    "\(patron.name) shares intelligence over tea. Your strategy aligns.",
+                    "Over a private dinner, \(patron.name) voices concerns about mutual threats.",
+                    "The meeting goes well. \(patron.name)'s commitment to your leadership deepens."
                 ]
             ))
         }
@@ -165,7 +165,7 @@ final class PersonalActionGenerator {
             flavorText: "In troubled times, documentation is armor.",
             successNarratives: [
                 "Your file of commendations and testimonials grows reassuringly thick.",
-                "You've catalogued every success, every approval from superiors.",
+                "You've catalogued every success, every commendation and achievement.",
                 "If accusations come, you'll be ready with evidence of your dedication."
             ]
         ))

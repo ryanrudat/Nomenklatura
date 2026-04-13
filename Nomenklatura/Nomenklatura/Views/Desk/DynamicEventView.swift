@@ -776,14 +776,14 @@ struct EventTypeHelpView: View {
         eventType: .patronDirective,
         priority: .elevated,
         title: "A Word of Caution",
-        briefText: "Director Wallace catches your eye across the ministry corridor and gestures subtly toward an empty office.\n\n\"Be careful,\" they say quietly. \"Your rivals are circling. I may not always be able to protect you.\"",
+        briefText: "Director Wallace catches your eye across the corridor and gestures toward a private office.\n\n\"Be careful, Comrade General Secretary,\" they say quietly. \"Opposition is building. Our coalition needs to show strength.\"",
         initiatingCharacterId: UUID(),
         initiatingCharacterName: "Director Wallace",
         turnGenerated: 5,
         isUrgent: false,
         responseOptions: [
-            EventResponse(id: "acknowledge", text: "Thank your patron for the warning", shortText: "Acknowledge", effects: [:]),
-            EventResponse(id: "ask", text: "Ask what you should do", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
+            EventResponse(id: "acknowledge", text: "Acknowledge the intelligence", shortText: "Acknowledge", effects: [:]),
+            EventResponse(id: "ask", text: "Ask for their assessment", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
             EventResponse(id: "dismiss", text: "Assure them you have everything under control", shortText: "Dismiss", effects: ["patronFavor": -5], riskLevel: .medium)
         ],
         iconName: "hand.raised.fill",

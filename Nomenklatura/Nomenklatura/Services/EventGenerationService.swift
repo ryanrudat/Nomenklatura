@@ -32,11 +32,11 @@ final class EventGenerationService {
         ]
 
         let texts = [
-            "\(patron.name) sends word through back channels. The tone is concerned:\n\n\"I have heard whispers, Comrade. Questions are being asked about your recent decisions. Questions I cannot easily deflect. You would do well to demonstrate your loyalty in the coming days.\"",
-            "A note arrives, written in \(patron.name)'s distinctive hand:\n\n\"Certain parties have taken notice of your... activities. I suggest you consider your position carefully. The General Secretary has a long memory.\"",
-            "\(patron.name) catches your eye across the ministry corridor and gestures subtly toward an empty office.\n\n\"Be careful,\" they say quietly. \"Your rivals are circling. I may not always be able to protect you.\"",
-            "A trusted aide delivers a verbal message from \(patron.name):\n\n\"The winds are shifting. Your recent performance has raised eyebrows in certain circles. Tread carefully, and remember who your friends are.\"",
-            "\(patron.name) pulls you aside after the morning briefing.\n\n\"I've been shielding you from some... criticism. But my influence has limits. You need to produce results soon, or I won't be able to help you.\""
+            "\(patron.name) sends word through back channels. The tone is concerned:\n\n\"Comrade General Secretary, I have heard whispers. Questions are being asked about your recent decisions on the Standing Committee. Our coalition needs reinforcement.\"",
+            "A note arrives, written in \(patron.name)'s distinctive hand:\n\n\"Certain members of the Committee have taken notice of recent policy shifts. The balance of power is more fragile than it appears. We should coordinate.\"",
+            "\(patron.name) catches your eye across the corridor and gestures toward a private office.\n\n\"Be careful,\" they say quietly. \"There is opposition building among the factions. I am doing what I can, but we need to show strength.\"",
+            "A trusted aide delivers a verbal message from \(patron.name):\n\n\"The winds are shifting, Comrade General Secretary. Your recent moves have unsettled some on the Committee. Tread carefully — and remember who stands with you.\"",
+            "\(patron.name) requests a private meeting after the morning briefing.\n\n\"I've been working to maintain our coalition's support, but there are limits to what I can do alone. We need a show of strength before the next plenum.\""
         ]
 
         eventLogger.info("Generated patron warning from \(patron.name)")
@@ -59,7 +59,7 @@ final class EventGenerationService {
                 ),
                 EventResponse(
                     id: "ask_advice",
-                    text: "Ask what you should do",
+                    text: "Ask for their assessment",
                     shortText: "Seek Guidance",
                     effects: ["patronFavor": 3]
                 ),

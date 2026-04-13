@@ -347,9 +347,9 @@ class CharacterAgencyService {
 
     private func generatePatronWarning(_ patron: GameCharacter, game: Game) -> DynamicEvent {
         let texts = [
-            "\(patron.name) catches your eye across the ministry corridor and gestures subtly toward an empty office.\n\n\"Be careful,\" they say quietly. \"Your rivals are circling. I may not always be able to protect you.\"",
-            "A note arrives, written in \(patron.name)'s distinctive hand:\n\n\"Certain parties have taken notice of your activities. I suggest you consider your position carefully.\"",
-            "\(patron.name) sends word through back channels. The tone is concerned:\n\n\"I have heard whispers, Comrade. Questions I cannot easily deflect. Demonstrate your loyalty soon.\""
+            "\(patron.name) catches your eye across the corridor and gestures toward a private office.\n\n\"Be careful, Comrade General Secretary,\" they say quietly. \"Opposition is building. Our coalition needs to show strength.\"",
+            "A note arrives from \(patron.name):\n\n\"Certain factions on the Committee have taken notice of recent shifts. We should coordinate before the situation deteriorates.\"",
+            "\(patron.name) sends word through back channels. The tone is concerned:\n\n\"Comrade General Secretary, there are whispers on the Committee. Our alliance needs reinforcement before the next session.\""
         ]
 
         return DynamicEvent(
@@ -363,7 +363,7 @@ class CharacterAgencyService {
             isUrgent: false,
             responseOptions: [
                 EventResponse(id: "acknowledge", text: "Acknowledge the intelligence", shortText: "Acknowledge", effects: [:]),
-                EventResponse(id: "ask", text: "Ask what you should do", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
+                EventResponse(id: "ask", text: "Ask for their assessment", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
                 EventResponse(id: "dismiss", text: "Assure them you have everything under control", shortText: "Dismiss", effects: ["patronFavor": -5])
             ],
             iconName: "hand.raised.fill",

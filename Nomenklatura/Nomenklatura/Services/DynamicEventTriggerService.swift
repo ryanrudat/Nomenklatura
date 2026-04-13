@@ -121,9 +121,9 @@ class DynamicEventTriggerService {
         ]
 
         let texts = [
-            "\(patron.name) sends word through back channels. The tone is concerned:\n\n\"I have heard whispers, Comrade. Questions are being asked about your recent decisions. Questions I cannot easily deflect. You would do well to demonstrate your loyalty in the coming days.\"",
-            "A note arrives, written in \(patron.name)'s distinctive hand:\n\n\"Certain parties have taken notice of your... activities. I suggest you consider your position carefully. The General Secretary has a long memory.\"",
-            "\(patron.name) catches your eye across the ministry corridor and gestures subtly toward an empty office.\n\n\"Be careful,\" they say quietly. \"Your rivals are circling. I may not always be able to protect you.\""
+            "\(patron.name) sends word through back channels. The tone is concerned:\n\n\"Comrade General Secretary, I have heard whispers. Questions are being asked about your recent decisions. Our coalition needs reinforcement before the next plenum.\"",
+            "A note arrives, written in \(patron.name)'s distinctive hand:\n\n\"Certain parties on the Standing Committee have taken notice of your recent moves. The balance of power is shifting. We should coordinate our response.\"",
+            "\(patron.name) catches your eye across the corridor and gestures toward a private office.\n\n\"Be careful,\" they say quietly. \"There is opposition building. I am doing what I can, but our alliance needs to show strength.\""
         ]
 
         return DynamicEvent(
@@ -137,7 +137,7 @@ class DynamicEventTriggerService {
             isUrgent: false,
             responseOptions: [
                 EventResponse(id: "acknowledge", text: "Acknowledge the intelligence", shortText: "Acknowledge", effects: [:]),
-                EventResponse(id: "ask_advice", text: "Ask what you should do", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
+                EventResponse(id: "ask_advice", text: "Ask for their assessment", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
                 EventResponse(id: "dismiss", text: "Assure them you have everything under control", shortText: "Dismiss Concerns", effects: ["patronFavor": -5])
             ],
             iconName: "hand.raised.fill",
