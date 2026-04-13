@@ -11,12 +11,27 @@ import SwiftData
 struct GameOverView: View {
     let game: Game
     let endReason: String
+    var victoryType: VictoryType?
     let onNewGame: () -> Void
     let onMainMenu: () -> Void
     @Environment(\.theme) var theme
 
     private var isVictory: Bool {
         game.currentStatus == .won
+    }
+
+    private var headerTitle: String {
+        if let vt = victoryType {
+            return vt.displayTitle
+        }
+        return isVictory ? "VICTORY" : "GAME OVER"
+    }
+
+    private var headerSubtitle: String {
+        if let vt = victoryType {
+            return vt.subtitle
+        }
+        return isVictory ? "YOU HAVE TRIUMPHED" : "YOUR CAREER HAS ENDED"
     }
 
     var body: some View {
@@ -33,7 +48,14 @@ struct GameOverView: View {
 
                 // Header stamp
                 VStack(spacing: 10) {
-                    Text(isVictory ? "VICTORY" : "GAME OVER")
+                    if let vt = victoryType {
+                        Image(systemName: vt.iconName)
+                            .font(.system(size: 28))
+                            .foregroundColor(theme.accentGold)
+                            .padding(.bottom, 4)
+                    }
+
+                    Text(headerTitle)
                         .font(.system(size: 36, weight: .black, design: .serif))
                         .tracking(4)
                         .foregroundColor(isVictory ? theme.accentGold : theme.stampRed)
@@ -42,7 +64,7 @@ struct GameOverView: View {
                         .fill(isVictory ? theme.accentGold : theme.stampRed)
                         .frame(width: 100, height: 3)
 
-                    Text(isVictory ? "YOU HAVE TRIUMPHED" : "YOUR CAREER HAS ENDED")
+                    Text(headerSubtitle)
                         .font(theme.labelFont)
                         .tracking(2)
                         .foregroundColor(theme.inkGray)
@@ -74,6 +96,11 @@ struct GameOverView: View {
                             Rectangle()
                                 .stroke(theme.borderTan, lineWidth: 1)
                         )
+
+                        // Victory scoring breakdown (only for wins)
+                        if isVictory {
+                            VictoryScoringCard(game: game, victoryType: victoryType)
+                        }
 
                         // Final stats summary
                         FinalStatsCard(game: game)
@@ -115,6 +142,99 @@ struct GameOverView: View {
                 }
                 .padding(20)
             }
+        }
+    }
+}
+
+// MARK: - Victory Scoring Card
+
+struct VictoryScoringCard: View {
+    let game: Game
+    let victoryType: VictoryType?
+    @Environment(\.theme) var theme
+
+    private var turnsInPower: Int {
+        game.intVariable("turns_as_leader")
+    }
+
+    private var powerLevel: String {
+        let score = game.powerConsolidationScore
+        switch score {
+        case 90...: return "Supreme Leader (\(score))"
+        case 70..<90: return "Dominant (\(score))"
+        case 50..<70: return "Established (\(score))"
+        case 30..<50: return "Consolidating (\(score))"
+        default: return "Vulnerable (\(score))"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SCORING BREAKDOWN")
+                .font(theme.labelFont)
+                .tracking(1)
+                .foregroundColor(theme.accentGold)
+
+            Rectangle()
+                .fill(theme.borderTan)
+                .frame(height: 1)
+
+            ScoringRow(label: "Turns in Power", value: "\(turnsInPower)")
+            ScoringRow(label: "Power Level", value: powerLevel)
+            ScoringRow(label: "Stability", value: "\(game.stability)")
+            ScoringRow(label: "Popular Support", value: "\(game.popularSupport)")
+            ScoringRow(label: "Industrial Output", value: "\(game.industrialOutput)")
+            ScoringRow(label: "Int'l Standing", value: "\(game.internationalStanding)")
+
+            if let vt = victoryType {
+                Rectangle()
+                    .fill(theme.borderTan)
+                    .frame(height: 1)
+                    .padding(.vertical, 4)
+
+                Text(victoryAchievementText(for: vt))
+                    .font(theme.bodyFontSmall)
+                    .foregroundColor(theme.accentGold)
+                    .lineSpacing(4)
+            }
+        }
+        .padding(15)
+        .background(theme.parchmentDark)
+        .overlay(
+            Rectangle()
+                .stroke(theme.accentGold.opacity(0.5), lineWidth: 1)
+        )
+    }
+
+    private func victoryAchievementText(for type: VictoryType) -> String {
+        switch type {
+        case .survival:
+            return "Achievement: Survived \(turnsInPower) turns at the pinnacle of power. The paranoid authoritarian who outlasted them all."
+        case .legacy:
+            return "Achievement: Maintained national prosperity for \(game.intVariable("consecutive_high_stat_turns")) consecutive turns. The benevolent dictator who built something lasting."
+        case .absolutePower:
+            return "Achievement: Held absolute power for \(game.intVariable("consecutive_supreme_leader_turns")) consecutive turns. The totalitarian who crushed all opposition."
+        case .reformer:
+            return "Achievement: Popular Support \(game.popularSupport), International Standing \(game.internationalStanding). The enlightened despot who chose a different path."
+        }
+    }
+}
+
+struct ScoringRow: View {
+    let label: String
+    let value: String
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(theme.bodyFontSmall)
+                .foregroundColor(theme.inkGray)
+            Spacer()
+            Text(value)
+                .font(theme.bodyFontSmall)
+                .fontWeight(.medium)
+                .foregroundColor(theme.inkBlack)
         }
     }
 }
@@ -218,49 +338,10 @@ struct CareerSummaryCard: View {
                 .fill(theme.borderTan)
                 .frame(height: 1)
 
-            HStack {
-                Text("Highest Position:")
-                    .font(theme.bodyFontSmall)
-                    .foregroundColor(theme.inkGray)
-                Spacer()
-                Text(positionTitle)
-                    .font(theme.bodyFontSmall)
-                    .fontWeight(.medium)
-                    .foregroundColor(theme.inkBlack)
-            }
-
-            HStack {
-                Text("Turns Survived:")
-                    .font(theme.bodyFontSmall)
-                    .foregroundColor(theme.inkGray)
-                Spacer()
-                Text("\(game.turnNumber)")
-                    .font(theme.bodyFontSmall)
-                    .fontWeight(.medium)
-                    .foregroundColor(theme.inkBlack)
-            }
-
-            HStack {
-                Text("Final Standing:")
-                    .font(theme.bodyFontSmall)
-                    .foregroundColor(theme.inkGray)
-                Spacer()
-                Text("\(game.standing)")
-                    .font(theme.bodyFontSmall)
-                    .fontWeight(.medium)
-                    .foregroundColor(game.standing >= 50 ? .statHigh : .statLow)
-            }
-
-            HStack {
-                Text("Network Size:")
-                    .font(theme.bodyFontSmall)
-                    .foregroundColor(theme.inkGray)
-                Spacer()
-                Text("\(game.network)")
-                    .font(theme.bodyFontSmall)
-                    .fontWeight(.medium)
-                    .foregroundColor(theme.inkBlack)
-            }
+            ScoringRow(label: "Highest Position", value: positionTitle)
+            ScoringRow(label: "Turns Survived", value: "\(game.turnNumber)")
+            ScoringRow(label: "Final Standing", value: "\(game.standing)")
+            ScoringRow(label: "Network Size", value: "\(game.network)")
         }
         .padding(15)
         .background(theme.parchmentDark)
