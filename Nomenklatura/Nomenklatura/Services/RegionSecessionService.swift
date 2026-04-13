@@ -254,7 +254,7 @@ class RegionSecessionService {
             region.popularLoyalty = min(100, region.popularLoyalty + 20)
             region.autonomyDesire = max(0, region.autonomyDesire - 15)
             region.partyControl = max(0, region.partyControl - 10)
-            game.applyStat("ideology", change: -5) // Seen as deviation
+            game.applyStat("reputationLoyal", change: -5) // Seen as ideological deviation
 
         case .amnesty:
             region.popularLoyalty = min(100, region.popularLoyalty + 25)
