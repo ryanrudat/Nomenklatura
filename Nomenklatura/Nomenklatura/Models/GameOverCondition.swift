@@ -603,6 +603,17 @@ class GameOverChecker {
     }
 }
 
+// MARK: - Threat Level Query
+
+extension GameOverChecker {
+
+    /// Returns the current threat level for each game-over vector without triggering game-over.
+    /// Use this to feed the ThreatDashboardView or any other UI that needs threat data.
+    static func getThreatLevels(game: Game) -> [ThreatLevel] {
+        ThreatCalculator.getThreatLevels(game: game)
+    }
+}
+
 // MARK: - Heir Designation
 
 struct HeirDesignation: Codable, Identifiable {
