@@ -66,7 +66,7 @@ class CharacterInteractionSystem {
         interactions.append(CharacterInteraction(
             id: "request_audience_patron",
             title: "Request Private Audience",
-            description: "Seek a one-on-one meeting with your patron",
+            description: "Request a private meeting with your ally",
             category: .diplomatic,
             riskLevel: .low,
             costAP: 1,
@@ -78,7 +78,7 @@ class CharacterInteractionSystem {
             ],
             failureNarratives: [
                 "\(character.name) is too busy to see you today. Perhaps tomorrow.",
-                "The secretary informs you that your patron's schedule is full."
+                "The secretary informs you that your ally's schedule is full."
             ],
             flavorText: "A chance to strengthen—or damage—your relationship."
         ))
@@ -87,7 +87,7 @@ class CharacterInteractionSystem {
         interactions.append(CharacterInteraction(
             id: "seek_guidance_patron",
             title: "Seek Guidance",
-            description: "Ask your patron for advice on a political matter",
+            description: "Consult your ally on a political matter",
             category: .diplomatic,
             riskLevel: .low,
             costAP: 1,
@@ -104,14 +104,14 @@ class CharacterInteractionSystem {
         interactions.append(CharacterInteraction(
             id: "warn_patron_threats",
             title: "Warn of Threats",
-            description: "Alert your patron to potential dangers (real or imagined)",
+            description: "Share intelligence about potential dangers (real or imagined)",
             category: .informing,
             riskLevel: .medium,
             costAP: 1,
             effects: ["patronFavor": 5, "reputationLoyal": 5],
             successNarratives: [
                 "\(character.name) nods gravely. 'I appreciate your vigilance, Comrade.'",
-                "'Interesting,' your patron murmurs, making a note. 'Very interesting.'",
+                "'Interesting,' your ally murmurs, making a note. 'Very interesting.'",
                 "Your warning is received well. \(character.name) values those who watch his back."
             ],
             failureNarratives: [
@@ -572,20 +572,20 @@ class CharacterInteractionSystem {
             interactions.append(CharacterInteraction(
                 id: "cultivate_patron_\(character.templateId)",
                 title: "Strengthen Bond",
-                description: "Reinforce your relationship with your patron through dedicated service",
+                description: "Reinforce your alliance through mutual support",
                 category: .diplomatic,
                 riskLevel: .low,
                 costAP: 1,
                 effects: [:],
                 successNarratives: [
                     "Your dedication is noticed. \(character.name) seems pleased with your loyalty.",
-                    "'You serve me well,' your patron says. 'I will remember that.'",
+                    "'You serve me well,' your ally says. 'I will remember that.'",
                     "The bond between patron and protégé grows stronger.",
                     "\(character.name) confides in you more freely. You have earned greater trust."
                 ],
                 failureNarratives: [
                     "\(character.name) seems preoccupied with other matters. Your efforts go unnoticed.",
-                    "'Not now,' your patron says dismissively. Perhaps your timing was poor.",
+                    "'Not now,' your ally says dismissively. Perhaps your timing was poor.",
                     "Your patron has other concerns. You remain in their shadow, waiting."
                 ],
                 flavorText: "A patron's favor is your greatest asset. Nurture it carefully."
@@ -1291,20 +1291,20 @@ class CharacterInteractionSystem {
             interactions.append(CharacterInteraction(
                 id: "secret_trade_patron_\(character.templateId)",
                 title: "Report to Patron",
-                description: "Share \(character.name)'s secrets with your patron for their use",
+                description: "Share \(character.name)'s secrets with your ally for their use",
                 category: .informing,
                 riskLevel: .low,
                 costAP: 1,
                 effects: ["patronFavor": 10, "reputationLoyal": 5],
                 successNarratives: [
                     "Your patron's eyes light up. 'This is... very useful. You've done well.'",
-                    "'I knew you had potential,' your patron says, filing away the information.",
+                    "'I knew you had potential,' your ally says, filing away the information.",
                     "Your patron nods slowly. 'This explains much. I'll handle it from here.'",
                     "'Good work. I won't forget this.' Your patron's gratitude is genuine."
                 ],
                 failureNarratives: [
-                    "'I already knew,' your patron says dismissively. Your information is stale.",
-                    "'This is dangerous information,' your patron warns. 'Never speak of it again.'"
+                    "'I already knew,' your ally says dismissively. Your information is stale.",
+                    "'This is dangerous information,' your ally warns. 'Never speak of it again.'"
                 ],
                 flavorText: "Your patron will use this knowledge as they see fit. You relinquish control."
             ))
@@ -2286,7 +2286,7 @@ struct DenounceResult {
             if madeEnemy {
                 return "Your denunciation failed. \(targetName) now knows you are their enemy."
             } else if patronAnger > 0 {
-                return "Your denunciation failed and angered your patron."
+                return "Your denunciation failed and angered your ally."
             } else {
                 return "Your denunciation failed. Your reputation suffers."
             }

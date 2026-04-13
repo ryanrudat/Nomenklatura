@@ -53,7 +53,7 @@ final class EventGenerationService {
             responseOptions: [
                 EventResponse(
                     id: "acknowledge",
-                    text: "Thank your patron for the warning",
+                    text: "Acknowledge the intelligence",
                     shortText: "Acknowledge",
                     effects: [:]
                 ),
@@ -79,28 +79,28 @@ final class EventGenerationService {
     func generatePatronOpportunity(patron: GameCharacter, game: Game) -> DynamicEvent {
         let opportunities = [
             (
-                title: "An Opportunity Presents Itself",
-                text: "\(patron.name) summons you to their office with unusual warmth.\n\n\"Your loyalty has not gone unnoticed, Comrade. A position on the Foreign Affairs Committee has opened. I have recommended you for consideration.\"",
+                title: "An Ally's Intelligence",
+                text: "\(patron.name) requests a private meeting.\n\n\"Comrade General Secretary, I have information you need. The Eastern bloc delegation is prepared to support your trade initiative — but they want concessions on agricultural quotas.\"",
                 effects: ["standing": 5, "patronFavor": 5]
             ),
             (
-                title: "A Gift from Your Patron",
-                text: "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Standing Committee meeting. Do not disappoint me.\"",
+                title: "A Political Opening",
+                text: "A message from \(patron.name): \"The Standing Committee session went well. Several members expressed support for your economic program. I've been building consensus behind the scenes.\"",
                 effects: ["standing": 8, "patronFavor": 3]
             ),
             (
                 title: "Favorable News",
-                text: "\(patron.name) pulls you aside after the morning briefing.\n\n\"Director Kowalski is retiring. His position could be yours, if you play your cards right. I will support your candidacy.\"",
+                text: "\(patron.name) pulls you aside after the morning briefing.\n\n\"Director Kowalski is retiring. I can ensure his replacement is loyal to you, if you wish. The Security Directorate is too important to leave to chance.\"",
                 effects: ["standing": 6, "patronFavor": 4]
             ),
             (
-                title: "A Door Opens",
-                text: "\(patron.name) catches you in the corridor with a rare smile.\n\n\"The inspection tour of the Eastern provinces needs a leader. I've put your name forward. It's a chance to distinguish yourself.\"",
+                title: "A Coalition Strengthens",
+                text: "\(patron.name) arrives with a rare smile.\n\n\"The regional secretaries are falling in line. Your infrastructure program won them over. Three more votes secured for the next plenum.\"",
                 effects: ["standing": 4, "patronFavor": 6]
             ),
             (
-                title: "Recognition",
-                text: "You receive a formal summons to \(patron.name)'s office.\n\n\"Your work on the agricultural report was exemplary. I've ensured it reached the General Secretary's desk with a personal recommendation.\"",
+                title: "An Ally's Praise",
+                text: "\(patron.name) requests a brief audience.\n\n\"Your handling of the agricultural crisis was masterful, Comrade General Secretary. The Party apparatus noticed. Your authority deepens.\"",
                 effects: ["standing": 5, "patronFavor": 5]
             )
         ]
@@ -121,7 +121,7 @@ final class EventGenerationService {
             responseOptions: [
                 EventResponse(
                     id: "accept_eager",
-                    text: "Accept eagerly and thank your patron",
+                    text: "Accept and acknowledge their support",
                     shortText: "Accept Eagerly",
                     effects: selected.effects
                 ),
@@ -211,7 +211,7 @@ final class EventGenerationService {
         return DynamicEvent(
             eventType: .patronDirective,
             priority: .urgent,
-            title: "URGENT: Summoned by Your Patron",
+            title: "URGENT: Your Ally Demands Audience",
             briefText: summons.randomElement()!,
             initiatingCharacterId: patron.id,
             initiatingCharacterName: patron.name,
@@ -297,7 +297,7 @@ final class EventGenerationService {
                 ),
                 EventResponse(
                     id: "report",
-                    text: "Report their behavior to your patron",
+                    text: "Report their behavior to your ally",
                     shortText: "Report",
                     effects: ["patronFavor": -2, "rivalThreat": -5]
                 ),
@@ -323,7 +323,7 @@ final class EventGenerationService {
             ),
             (
                 title: "Dangerous Maneuvering",
-                text: "You discover that \(rival.name) has been copying your correspondence—including messages to your patron.\n\n\"Looking for ammunition,\" your secretary observes grimly.",
+                text: "You discover that \(rival.name) has been copying your correspondence—including messages to your ally.\n\n\"Looking for ammunition,\" your secretary observes grimly.",
                 severity: "concerning"
             ),
             (
@@ -367,7 +367,7 @@ final class EventGenerationService {
                 ),
                 EventResponse(
                     id: "expose_plot",
-                    text: "Bring the plot to your patron's attention",
+                    text: "Bring the plot to your ally's attention",
                     shortText: "Expose",
                     effects: ["patronFavor": 5, "rivalThreat": -10]
                 )

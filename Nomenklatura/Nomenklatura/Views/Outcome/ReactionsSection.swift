@@ -645,7 +645,7 @@ struct ReactionsSection: View {
 
         default:
             if standingChange > 0 {
-                return ("You climb well, Comrade. But every ladder has a top.", .concern)
+                return ("You consolidate well, Comrade General Secretary. But power attracts challengers.", .concern)
             } else {
                 return ("Difficulties arise for all of us. Some more than others.", .approval)
             }

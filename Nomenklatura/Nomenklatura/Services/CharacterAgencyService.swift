@@ -362,7 +362,7 @@ class CharacterAgencyService {
             turnGenerated: game.turnNumber,
             isUrgent: false,
             responseOptions: [
-                EventResponse(id: "acknowledge", text: "Thank your patron for the warning", shortText: "Acknowledge", effects: [:]),
+                EventResponse(id: "acknowledge", text: "Acknowledge the intelligence", shortText: "Acknowledge", effects: [:]),
                 EventResponse(id: "ask", text: "Ask what you should do", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
                 EventResponse(id: "dismiss", text: "Assure them you have everything under control", shortText: "Dismiss", effects: ["patronFavor": -5])
             ],

@@ -171,14 +171,14 @@ enum StatDescriptions {
             key: "patronFavor",
             name: "Patron Favor",
             icon: "hand.thumbsup.fill",
-            description: "Your relationship with your patron - the senior figure who protects and promotes you.",
-            lowWarning: "Below 30: Your patron may abandon you, leaving you vulnerable. Promotion becomes impossible.",
-            highBenefit: "Above 70: Your patron actively promotes you, protects you from rivals, shares intelligence.",
+            description: "Your relationship with your key political ally — the figure whose support helped secure your position as General Secretary.",
+            lowWarning: "Below 30: Your ally may withdraw their support, weakening your coalition and emboldening rivals.",
+            highBenefit: "Above 70: Your ally actively defends you, shares intelligence, and rallies support among their faction.",
             tips: [
-                "Support your patron publicly",
-                "Deliver results they can claim credit for",
-                "Never outshine them too obviously",
-                "Warn them of threats"
+                "Acknowledge their contributions publicly",
+                "Include them in key decisions",
+                "Protect their interests within the apparatus",
+                "Share intelligence about mutual threats"
             ],
             isPersonal: true
         ),

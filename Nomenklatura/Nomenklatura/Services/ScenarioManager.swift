@@ -446,7 +446,7 @@ class ScenarioManager {
         switch game.playerFactionId {
         case "youth_league":
             factionContext = """
-            You rose through the Youth League — organizing harvest campaigns, building networks in drafty provincial halls, earning every promotion through results. No family connections opened doors. The Standing Committee chose you because you owe nothing to the old factions.
+            Your power base is the Youth League — you organized harvest campaigns, built networks in drafty provincial halls, and proved yourself through results, not connections. The Standing Committee chose you because you owe nothing to the old factions.
 
             "The Youth League cadres celebrate your election," Sasha notes. "The inner circles are less certain. They see an outsider in the General Secretary's chair."
             """

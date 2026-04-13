@@ -247,27 +247,27 @@ class GameEngine {
         // Generate contextual success text based on action
         switch action.id {
         case "plant_ally_security":
-            return "A junior clerk in State Security now reports to you. The information may prove invaluable."
+            return "A trusted operative within State Security now reports directly to your office. The intelligence may prove invaluable."
         case "cultivate_military":
-            return "You've made friends among the officer corps. They appreciate someone who understands their concerns."
+            return "The officer corps appreciates a General Secretary who understands their concerns. Loyalty deepens."
         case "gather_intel_rival":
-            return "Your sources have uncovered interesting details about Sullivan's activities. His position may not be as strong as it appears."
+            return "Your intelligence network has uncovered details about your rival's activities. Their position may not be as strong as it appears."
         case "leak_failures":
-            return "The press office received an anonymous tip about production shortfalls. Questions are being asked. Sullivan scrambles to explain."
+            return "The press office received materials about certain production shortfalls. Questions are being asked. Your rival scrambles to explain."
         case "frame_conspiracy":
-            return "Certain documents have found their way to the appropriate authorities. Sullivan will have difficult questions to answer."
+            return "Certain documents have found their way to the appropriate authorities. Difficult questions will follow."
         case "private_meeting_secretary":
-            return "The General Secretary received you warmly. 'It's good to know who our reliable comrades are,' he said."
+            return "Your private audience with your key ally went well. The alliance remains strong."
         case "public_praise_patron":
-            return "Your speech praising Wallace was well-received. He nods approvingly when your eyes meet. Some colleagues whisper about sycophancy."
+            return "Your speech acknowledging your ally's contributions was well-received. Their faction rallies behind you."
         case "prepare_dossier":
-            return "You've compiled records of your achievements and loyalty. Should accusations come, you'll be prepared."
+            return "You've compiled intelligence on potential threats to your leadership. Should a challenge come, you'll be prepared."
         case "propose_promotion":
-            return "Your candidacy for the vacant position has been formally submitted. Now the waiting begins."
+            return "Your chosen loyalist has been installed in the key position. The apparatus responds to your will."
         case "challenge_rival":
-            return "Your accusations ring through the chamber. Sullivan's face drains of color. The evidence is damning."
+            return "Your accusations ring through the Standing Committee chamber. Your rival's face drains of color. The evidence is damning."
         case "begin_coup":
-            return "Certain conversations have been had. Certain assurances given. The pieces are moving into position."
+            return "The plotters have been identified and neutralized before they could act. Your decisiveness sends a clear message."
         default:
             return "Your political maneuvering proceeds according to plan."
         }
@@ -335,7 +335,7 @@ class GameEngine {
             return PromotionCheck(
                 canPromote: false,
                 nextPosition: nextPosition,
-                reason: "You must prove yourself in your current role. \(turnsRemaining) more turns (~\(weeksRemaining) weeks) required."
+                reason: "Consolidation requires time. \(turnsRemaining) more turns (~\(weeksRemaining) weeks) in current role."
             )
         }
 

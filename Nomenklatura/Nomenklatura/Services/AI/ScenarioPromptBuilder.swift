@@ -807,7 +807,7 @@ struct ScenarioPromptBuilder {
             Documents and scenarios should come FROM subordinates seeking guidance, authorization, or favor.
             """
         default:
-            return "**Position Scope:** Generate decisions appropriate for a mid-level official."
+            return "**Position Scope:** Generate decisions appropriate for the General Secretary — supreme but fragile authority."
         }
     }
 

@@ -899,12 +899,10 @@ struct PromotionNotificationView: View {
 
     private var flavorText: String {
         switch position.index {
-        case 6: return "The Party, the State, the Nation—all answer to you now. But remember: the higher you climb, the further you can fall."
-        case 5: return "You stand at the threshold of ultimate power. One step remains. But many have fallen at this final hurdle."
-        case 4: return "The General Secretary himself acknowledges your importance. Your enemies grow more desperate."
-        case 3: return "Real power flows through your hands now. With it comes real danger."
-        case 2: return "You have proven your worth. The Party rewards loyalty—and punishes failure."
-        default: return "Your rise continues. The Politburo has noticed."
+        case 7...8: return "The Party, the State, the Nation — all answer to you now. Power is yours, but keeping it demands vigilance."
+        case 5...6: return "Your authority within the apparatus deepens. Allies and enemies alike take notice."
+        case 3...4: return "Real influence flows through your hands now. With it comes real danger."
+        default: return "Your consolidation of power continues. The apparatus responds."
         }
     }
 

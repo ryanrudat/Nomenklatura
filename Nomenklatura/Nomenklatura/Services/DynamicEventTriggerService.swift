@@ -136,7 +136,7 @@ class DynamicEventTriggerService {
             turnGenerated: game.turnNumber,
             isUrgent: false,
             responseOptions: [
-                EventResponse(id: "acknowledge", text: "Thank your patron for the warning", shortText: "Acknowledge", effects: [:]),
+                EventResponse(id: "acknowledge", text: "Acknowledge the intelligence", shortText: "Acknowledge", effects: [:]),
                 EventResponse(id: "ask_advice", text: "Ask what you should do", shortText: "Seek Guidance", effects: ["patronFavor": 3]),
                 EventResponse(id: "dismiss", text: "Assure them you have everything under control", shortText: "Dismiss Concerns", effects: ["patronFavor": -5])
             ],
@@ -147,15 +147,15 @@ class DynamicEventTriggerService {
 
     private func generatePatronOpportunity(patron: GameCharacter, game: Game) -> DynamicEvent {
         let titles = [
-            "An Opportunity Presents Itself",
-            "A Gift from Your Patron",
-            "Favorable News"
+            "An Ally's Proposal",
+            "A Political Opening",
+            "Coalition Intelligence"
         ]
 
         let texts = [
-            "\(patron.name) summons you to their office with unusual warmth.\n\n\"Your loyalty has not gone unnoticed, Comrade. A position on the Foreign Affairs Committee has opened. I have recommended you for consideration.\"",
-            "A message from \(patron.name): \"The General Secretary was impressed with your handling of recent matters. I have arranged for you to present at the next Standing Committee meeting. Do not disappoint me.\"",
-            "\(patron.name) pulls you aside after the morning briefing.\n\n\"Director Kowalski is retiring. His position could be yours, if you play your cards right. I will support your candidacy.\""
+            "\(patron.name) requests a private meeting.\n\n\"Comrade General Secretary, I've identified an opportunity. The foreign affairs portfolio needs restructuring. With your support, I can ensure loyal personnel fill the vacancies.\"",
+            "A message from \(patron.name): \"The Standing Committee session went well. Several members have signaled support for your economic program. I've been consolidating votes.\"",
+            "\(patron.name) catches you after the morning briefing.\n\n\"Director Kowalski is retiring. I can ensure his replacement is someone loyal to us. The Security Directorate is too important to leave to chance.\""
         ]
 
         return DynamicEvent(
@@ -168,9 +168,9 @@ class DynamicEventTriggerService {
             turnGenerated: game.turnNumber,
             isUrgent: false,
             responseOptions: [
-                EventResponse(id: "accept_eager", text: "Accept eagerly and thank your patron", shortText: "Accept Eagerly", effects: ["standing": 5, "patronFavor": 5]),
-                EventResponse(id: "accept_cautious", text: "Accept with appropriate caution", shortText: "Accept Cautiously", effects: ["standing": 3]),
-                EventResponse(id: "defer", text: "Suggest you are not yet ready", shortText: "Defer", effects: ["patronFavor": -3])
+                EventResponse(id: "accept_eager", text: "Approve and acknowledge their support", shortText: "Approve", effects: ["standing": 5, "patronFavor": 5]),
+                EventResponse(id: "accept_cautious", text: "Consider the proposal carefully", shortText: "Consider", effects: ["standing": 3]),
+                EventResponse(id: "defer", text: "Postpone the decision", shortText: "Defer", effects: ["patronFavor": -3])
             ],
             iconName: "star.fill",
             accentColor: "accentGold"
@@ -1392,7 +1392,7 @@ class DynamicEventTriggerService {
                 ),
                 EventResponse(
                     id: "report_to_patron",
-                    text: "Report this maneuvering to your patron.",
+                    text: "Report this maneuvering to your ally.",
                     shortText: "Report Up",
                     effects: ["patronFavor": 5, "reputationLoyal": 3],
                     riskLevel: .low,
@@ -1440,7 +1440,7 @@ class DynamicEventTriggerService {
                 ),
                 EventResponse(
                     id: "patron",
-                    text: "Contact your patron immediately",
+                    text: "Contact your ally immediately",
                     shortText: "Call Patron",
                     effects: ["patronFavor": -10],
                     followUpHint: "Uses significant political capital"

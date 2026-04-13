@@ -715,7 +715,7 @@ struct EventTypeHelpView: View {
             return "One of your rivals has made a move against you. They may be undermining your position, spreading rumors, or actively working to destroy you. Your response will determine whether you survive this challenge."
 
         case .patronDirective:
-            return "Your patron—the powerful figure who protects and advances your career—has contacted you with orders, advice, or a warning. Ignoring your patron's wishes is dangerous."
+            return "Your key political ally—the figure whose support secured your position—has contacted you with counsel, intelligence, or a request. Managing this relationship is essential to holding power."
 
         case .networkIntel:
             return "Your network of contacts has gathered intelligence that may be useful to you. Information is power in the Party, and knowing what others don't can mean the difference between promotion and purge."
@@ -752,7 +752,7 @@ struct EventTypeHelpView: View {
             return "When rivals attack, you must respond decisively. Showing weakness invites further aggression. But be careful—overreaction can make you look paranoid."
 
         case .patronDirective:
-            return "Your patron's favor is your lifeline. Keep them happy, follow their guidance, and never forget that they expect loyalty."
+            return "Your ally's support is a pillar of your authority. Maintain this relationship carefully — they helped put you in power and expect influence in return."
 
         case .networkIntel:
             return "Information is only valuable if you act on it. Consider how you can use what you've learned to advance your position."

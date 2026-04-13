@@ -66,7 +66,7 @@ enum DynamicEventType: String, Codable {
         case .urgentInterruption: return "Urgent"
         case .ambientTension: return "Whispers"
         case .rivalAction: return "Rival Move"
-        case .patronDirective: return "From Your Patron"
+        case .patronDirective: return "From Your Ally"
         case .networkIntel: return "Intelligence"
         case .allyRequest: return "Request"
         case .worldNews: return "News"

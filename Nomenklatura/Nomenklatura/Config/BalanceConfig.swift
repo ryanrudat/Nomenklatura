@@ -118,7 +118,7 @@ struct BalanceConfig {
     static var maxInteractionsPerTurn: Int = 2
 
     /// Starting position index for new games
-    static var startingPositionIndex: Int = 1
+    static var startingPositionIndex: Int = 8
 
     // MARK: - NPC Behavior
 
@@ -208,7 +208,7 @@ struct BalanceConfig {
         // Progression
         actionPointsPerTurn = 3
         maxInteractionsPerTurn = 2
-        startingPositionIndex = 1
+        startingPositionIndex = 8
 
         // NPC Behavior
         npcAmbientActionChance = 0.25
