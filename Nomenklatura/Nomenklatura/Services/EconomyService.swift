@@ -179,15 +179,16 @@ class EconomyService {
         var totalTrade = 0
 
         for country in game.foreignCountries {
-            // Only count trade from countries that aren't actively hostile
-            guard country.relationshipScore > -60 else { continue }  // Not hostile
+            // Embargoed/hostile nations provide no trade income
+            guard country.relationshipScore > -60 else { continue }
 
-            // Trade volume modified by relationship
+            // Trade volume modified by relationship quality
+            // (Trade agreement bonuses are in calculateTradeAgreementBonus)
             let relationshipMultiplier: Double = {
-                if country.relationshipScore > 60 { return 1.2 }       // Strong Ally
+                if country.relationshipScore > 60 { return 1.3 }       // Strong Ally
                 else if country.relationshipScore > 30 { return 1.0 }  // Friendly
-                else if country.relationshipScore > -30 { return 0.7 } // Neutral
-                else { return 0.4 }                                     // Unfriendly
+                else if country.relationshipScore > -30 { return 0.6 } // Neutral
+                else { return 0.3 }                                     // Unfriendly
             }()
 
             let effectiveTrade = Double(country.tradeVolume) * relationshipMultiplier
@@ -247,7 +248,7 @@ class EconomyService {
         // - Current military loyalty needs
         // - Any ongoing conflicts
 
-        var baseMilitary = 8  // Baseline military cost (reduced from 15)
+        var baseMilitary = max(5, game.gdpIndex / 12)  // Scale with GDP
 
         // Add for each hostile neighbor (relationshipScore < -60)
         let hostileCount = game.foreignCountries.filter { $0.relationshipScore < -60 }.count
@@ -270,7 +271,7 @@ class EconomyService {
         // Social spending affects popular support
         // Higher spending = more stability but less treasury
 
-        var baseSocial = 6  // Baseline social costs (reduced from 10)
+        var baseSocial = max(3, game.gdpIndex / 15)  // Scale with GDP
 
         // If popular support is low, pressure to spend more
         if game.popularSupport < 40 {
@@ -288,7 +289,7 @@ class EconomyService {
     private func calculateInfrastructureCosts(game: Game) -> Int {
         // Based on number of regions and their development
         let regionCount = game.regions.count
-        var infraCost = regionCount  // Reduced from regionCount * 2
+        var infraCost = regionCount * max(1, game.gdpIndex / 80)  // Scale with GDP
 
         // Additional costs for developed industrial regions
         let industrialRegions = game.regions.filter {
@@ -302,26 +303,27 @@ class EconomyService {
     private func calculateDebtPayments(game: Game) -> Int {
         // Check for debt flags
         if game.flags.contains("soviet_debt") {
-            return 5  // Paying back USSR for revolution support
+            return max(3, game.treasury / 20)  // Scale with treasury
         }
         return 0
     }
 
     private func calculateCrisisResponse(game: Game) -> Int {
-        // Ongoing crisis costs
+        // Ongoing crisis costs, scaled by GDP
         var crisisCost = 0
+        let gdpScale = max(1, game.gdpIndex / 100)
 
         if game.flags.contains("famine_ongoing") {
-            crisisCost += 15
+            crisisCost += 15 * gdpScale
         }
         if game.flags.contains("industrial_accident") {
-            crisisCost += 10
+            crisisCost += 10 * gdpScale
         }
         if game.flags.contains("natural_disaster") {
-            crisisCost += 12
+            crisisCost += 12 * gdpScale
         }
         if game.flags.contains("epidemic") {
-            crisisCost += 8
+            crisisCost += 8 * gdpScale
         }
 
         return crisisCost
@@ -342,12 +344,11 @@ class EconomyService {
 
         for country in game.foreignCountries {
             if country.relationshipScore < -60 {  // Hostile
-                // Lost trade potential based on their economic power
-                embargoLoss += country.economicPower / 20
+                embargoLoss += max(country.tradeVolume / 5, country.economicPower / 20)
 
-                // Extra penalty if they control key shipping lanes
-                if country.countryId == "uk" || country.countryId == "japan" {
-                    embargoLoss += 5  // Naval powers hurt trade more
+                // Military powers can enforce naval blockades
+                if country.militaryStrength > 70 {
+                    embargoLoss += 5
                 }
             }
         }
@@ -359,9 +360,11 @@ class EconomyService {
         var bonus = 0
 
         for country in game.foreignCountries {
-            // Check for active trade agreements via treaties
             if country.hasTreaty(of: .tradeAgreement) {
-                bonus += country.economicPower / 25
+                let tradeBonus = country.tradeVolume / 8
+                let economicBonus = country.economicPower / 25
+                let relationshipFactor = country.relationshipScore > 60 ? 2 : 1
+                bonus += (tradeBonus + economicBonus) * relationshipFactor
             }
         }
 
@@ -371,16 +374,14 @@ class EconomyService {
     private func calculateWarCosts(game: Game) -> Int {
         var warCost = 0
 
-        // Check for active conflicts
-        if game.flags.contains("war_with_canada") {
-            warCost += 25
+        // Check for active conflicts with any country (flags follow "war_with_<countryId>" pattern)
+        for country in game.foreignCountries {
+            if game.flags.contains("war_with_\(country.countryId)") {
+                // War cost scales with the target's military strength
+                warCost += max(10, country.militaryStrength / 3)
+            }
         }
-        if game.flags.contains("war_with_uk") {
-            warCost += 30
-        }
-        if game.flags.contains("war_with_japan") {
-            warCost += 20
-        }
+
         if game.flags.contains("intervention_abroad") {
             warCost += 15
         }

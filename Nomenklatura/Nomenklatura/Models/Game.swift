@@ -1148,6 +1148,10 @@ extension Game {
             oldValue = resistanceAccumulation
             resistanceAccumulation = clampStat(resistanceAccumulation + change)
             newValue = resistanceAccumulation
+        case "gdpIndex":
+            oldValue = gdpIndex
+            gdpIndex = max(50, min(200, gdpIndex + change))
+            newValue = gdpIndex
         default:
             oldValue = 0
             newValue = 0
