@@ -219,6 +219,25 @@ class GameEngine {
             effects["patronFavor"] = -15
             effects["rivalThreat"] = 15
             effects["reputationCunning"] = 5
+
+        case .purgeEnemies:
+            text = "\(discoverer) has learned of your purge preparations. Potential targets are now on high alert and building counter-alliances."
+            effects["rivalThreat"] = 20
+            effects["eliteLoyalty"] = -15
+            effects["reputationRuthless"] = 10
+
+        case .controlInformation:
+            text = "\(discoverer) has exposed your propaganda manipulation. Your credibility with the press and public takes a severe hit."
+            effects["popularSupport"] = -10
+            effects["reputationCunning"] = 5
+            effects["internationalStanding"] = -5
+
+        case .consolidatePower:
+            text = "\(discoverer) has uncovered your power consolidation schemes. The Standing Committee questions your intentions."
+            effects["eliteLoyalty"] = -20
+            effects["rivalThreat"] = 15
+            effects["standing"] = -10
+            flags.append("exposed_consolidation")
         }
 
         return (text, effects, flags)

@@ -12,11 +12,11 @@ import SwiftData
 // MARK: - SC Meeting Colors
 
 private enum SCColors {
-    static let approvedGreen = SCColors.approvedGreen
-    static let cardBackground = SCColors.cardBackground
-    static let darkBackground = SCColors.darkBackground
-    static let headerBackground = SCColors.headerBackground
-    static let neutralGray = SCColors.neutralGray
+    static let approvedGreen = Color(red: 0.2, green: 0.6, blue: 0.3)
+    static let cardBackground = Color(white: 0.12)
+    static let darkBackground = Color(white: 0.08)
+    static let headerBackground = Color(white: 0.15)
+    static let neutralGray = Color(white: 0.5)
 }
 
 // MARK: - SC Meeting View

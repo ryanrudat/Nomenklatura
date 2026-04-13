@@ -1231,8 +1231,8 @@ final class PersonalActionGenerator {
             requirements: ActionRequirements(
                 minStanding: 55,
                 minNetwork: 35,
-                minPowerConsolidation: 40,
-                forbiddenFlags: ["parallel_security_created"]
+                forbiddenFlags: ["parallel_security_created"],
+                minPowerConsolidation: 40
             ),
             effects: ["network": 12, "militaryLoyalty": -5, "eliteLoyalty": -5, "stability": -3, "reputationRuthless": 8],
             isLocked: false,

@@ -406,21 +406,21 @@ struct ThreatDashboardView: View {
 
 // MARK: - Preview
 
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Game.self, configurations: config)
-    let game = Game(campaignId: "coldwar")
-    game.militaryLoyalty = 25
-    game.stability = 30
-    game.popularSupport = 40
-    game.rivalThreat = 75
-    game.network = 25
-    container.mainContext.insert(game)
-
-    return VStack(spacing: 20) {
-        ThreatDashboardView(game: game)
-            .padding(.horizontal, 16)
-    }
-    .background(Color.black)
-    .modelContainer(container)
-}
+//#Preview {
+//    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+//    let container = try! ModelContainer(for: Game.self, configurations: config)
+//    let game = Game(campaignId: "coldwar")
+//    game.militaryLoyalty = 25
+//    game.stability = 30
+//    game.popularSupport = 40
+//    game.rivalThreat = 75
+//    game.network = 25
+//    container.mainContext.insert(game)
+//
+//    return VStack(spacing: 20) {
+//        ThreatDashboardView(game: game)
+//            .padding(.horizontal, 16)
+//    }
+//    .background(Color.black)
+//    .modelContainer(container)
+//}
