@@ -86,8 +86,45 @@ class NPCWorldActionService {
             applyWorldActionEffects(event: patronageEvent, game: game)
         }
 
-        // Limit to 1-2 events per turn (avoid overwhelming)
-        let limitedResults = Array(results.shuffled().prefix(2))
+        // 6. Private meetings (alliance signals visible to the player)
+        if let meetingEvent = checkPrivateMeetings(game: game) {
+            if shouldPlayerSeeEvent(event: meetingEvent, game: game) {
+                results.append(meetingEvent)
+            }
+        }
+
+        // 7. Public policy criticism (opposition signals)
+        if let criticismEvent = checkPolicyCriticism(game: game) {
+            if shouldPlayerSeeEvent(event: criticismEvent, game: game) {
+                results.append(criticismEvent)
+            }
+        }
+
+        // 8. Production report discrepancies (corruption signals)
+        if let corruptionEvent = checkProductionDiscrepancies(game: game) {
+            if shouldPlayerSeeEvent(event: corruptionEvent, game: game) {
+                results.append(corruptionEvent)
+            }
+        }
+
+        // 9. Trust-based coalition formation from CharacterAgencyService
+        let coalitionEvents = CharacterAgencyService.shared.evaluateCoalitionFormation(game: game)
+        for event in coalitionEvents {
+            if shouldPlayerSeeEvent(event: event, game: game) {
+                results.append(event)
+            }
+        }
+
+        // 10. Fear-driven informing from CharacterAgencyService
+        let informingEvents = CharacterAgencyService.shared.evaluateFearDrivenInforming(game: game)
+        for event in informingEvents {
+            if shouldPlayerSeeEvent(event: event, game: game) {
+                results.append(event)
+            }
+        }
+
+        // Allow up to 4 events per turn for a livelier political world
+        let limitedResults = Array(results.shuffled().prefix(4))
 
         // Log visible events to journal
         for event in limitedResults {
@@ -113,15 +150,14 @@ class NPCWorldActionService {
     // MARK: - Grudge-Driven Actions
 
     private func checkGrudgeActions(game: Game) -> NPCWorldActionResult? {
-        // Find NPCs with high grudges against other NPCs
+        // Find NPCs with grudges against other NPCs (lowered threshold for more activity)
         let grudgeRelationships = game.npcRelationships.filter { rel in
-            rel.grudgeLevel >= 60 && rel.disposition < -30
+            rel.grudgeLevel >= 40 && rel.disposition < -10
         }
 
         guard !grudgeRelationships.isEmpty else { return nil }
 
-        // Low chance per turn (5%)
-        guard Int.random(in: 1...100) <= 5 else { return nil }
+        guard Int.random(in: 1...100) <= 12 else { return nil }
 
         // Pick a random grudge relationship
         guard let relationship = grudgeRelationships.randomElement(),
@@ -159,8 +195,8 @@ class NPCWorldActionService {
     // MARK: - Alliance Events
 
     private func checkAllianceEvents(game: Game) -> NPCWorldActionResult? {
-        // 3% chance per turn
-        guard Int.random(in: 1...100) <= 3 else { return nil }
+        // 8% chance per turn - alliances form more readily
+        guard Int.random(in: 1...100) <= 8 else { return nil }
 
         // Check for alliance formation (shared enemies create alliances)
         if let formationEvent = checkAllianceFormation(game: game) {
@@ -246,8 +282,8 @@ class NPCWorldActionService {
     // MARK: - Position Competition
 
     private func checkPositionCompetition(game: Game) -> NPCWorldActionResult? {
-        // 4% chance per turn
-        guard Int.random(in: 1...100) <= 4 else { return nil }
+        // 10% chance per turn - ambitious NPCs compete openly
+        guard Int.random(in: 1...100) <= 10 else { return nil }
 
         // Find NPCs with seekPromotion goal at similar position levels
         let promotionSeekers = game.characters.filter { character in
@@ -283,8 +319,8 @@ class NPCWorldActionService {
     // MARK: - Faction Maneuvering
 
     private func checkFactionManeuvering(game: Game) -> NPCWorldActionResult? {
-        // 3% chance per turn
-        guard Int.random(in: 1...100) <= 3 else { return nil }
+        // 8% chance per turn - factions are always maneuvering
+        guard Int.random(in: 1...100) <= 8 else { return nil }
 
         // Find factions with significant power differences
         let factions = game.factions.filter { $0.power > 20 }
@@ -325,8 +361,8 @@ class NPCWorldActionService {
     // MARK: - Patronage Actions
 
     private func checkPatronageActions(game: Game) -> NPCWorldActionResult? {
-        // 3% chance per turn
-        guard Int.random(in: 1...100) <= 3 else { return nil }
+        // 7% chance per turn - patronage networks are active
+        guard Int.random(in: 1...100) <= 7 else { return nil }
 
         // Find patron-client relationships
         let patronRelations = game.npcRelationships.filter { $0.isPatron }
@@ -361,6 +397,128 @@ class NPCWorldActionService {
             details: action.2,
             visibilityLevel: action.3,
             involvedCharacters: [patron, client]
+        )
+    }
+
+    // MARK: - Private Meetings (Alliance Signals)
+
+    private func checkPrivateMeetings(game: Game) -> NPCWorldActionResult? {
+        // 10% chance per turn
+        guard Int.random(in: 1...100) <= 10 else { return nil }
+
+        let activeNPCs = game.characters.filter { $0.isActive && !$0.isPatron }
+        guard activeNPCs.count >= 2 else { return nil }
+
+        // Find pairs with high trust or shared faction who aren't already allied
+        let npc1 = activeNPCs.randomElement()!
+        let potentialPartners = activeNPCs.filter { npc in
+            npc.id != npc1.id &&
+            ((npc.factionId == npc1.factionId && npc.factionId != nil) ||
+             npc.trustLevel > 50)
+        }
+
+        guard let npc2 = potentialPartners.randomElement() else { return nil }
+
+        let locations = ["the government dacha", "a private dining room at the Metropol", "an unmarked office in the old quarter", "the Party archives reading room"]
+        let location = locations.randomElement()!
+
+        let subjects = [
+            "The subject of their conversation remains unknown, but both appeared pleased afterward.",
+            "Sources report they discussed upcoming personnel changes in the Central Committee.",
+            "They were reportedly comparing notes on your recent policy directives.",
+            "The meeting lasted over two hours. Your intelligence suggests they are coordinating strategy."
+        ]
+        let subject = subjects.randomElement()!
+
+        return NPCWorldActionResult(
+            eventType: .allianceFormed,
+            headline: "\(npc1.name) Met Privately with \(npc2.name)",
+            details: "Your sources report that \(npc1.name) and \(npc2.name) were observed meeting privately at \(location). \(subject)",
+            visibilityLevel: .intel,
+            involvedCharacters: [npc1, npc2]
+        )
+    }
+
+    // MARK: - Policy Criticism (Opposition Signals)
+
+    private func checkPolicyCriticism(game: Game) -> NPCWorldActionResult? {
+        // 8% chance per turn, higher during instability
+        let baseChance = game.stability < 50 ? 15 : 8
+        guard Int.random(in: 1...100) <= baseChance else { return nil }
+
+        // Find NPCs with low disposition or high aggression who might criticize
+        let critics = game.characters.filter { npc in
+            npc.isActive &&
+            (npc.disposition < 40 || npc.aggressionLevel > BalanceConfig.npcHighAggressionThreshold) &&
+            npc.fearLevel < BalanceConfig.npcHighFearThreshold  // Not too afraid to speak up
+        }
+
+        guard let critic = critics.randomElement() else { return nil }
+
+        let policies = [
+            "economic reform program",
+            "foreign policy direction",
+            "security apparatus expansion",
+            "agricultural collectivization targets",
+            "military modernization priorities",
+            "ideological education campaign"
+        ]
+        let policy = policies.randomElement()!
+
+        let criticisms: [(String, WorldActionVisibilityLevel)] = [
+            ("\(critic.name) publicly questioned the wisdom of your \(policy) during the morning briefing. Their remarks drew careful attention from several committee members.", .public),
+            ("In a pointed editorial submitted to the Party newspaper, \(critic.name) offered 'constructive criticism' of the \(policy). The subtext was unmistakable — this is a challenge to your authority.", .public),
+            ("Your sources report that \(critic.name) has been circulating a memorandum critiquing your \(policy) among senior officials. The document stops short of open opposition but lays groundwork for a formal challenge.", .intel),
+            ("\(critic.name) made disparaging remarks about your \(policy) at a private gathering. 'The General Secretary's approach shows a troubling detachment from reality,' they reportedly said.", .rumor)
+        ]
+        let (details, visibility) = criticisms.randomElement()!
+
+        return NPCWorldActionResult(
+            eventType: .positionCompetition,
+            headline: "\(critic.name) Criticizes Your Policy",
+            details: details,
+            visibilityLevel: visibility,
+            involvedCharacters: [critic]
+        )
+    }
+
+    // MARK: - Production Discrepancies (Corruption Signals)
+
+    private func checkProductionDiscrepancies(game: Game) -> NPCWorldActionResult? {
+        // 6% chance per turn
+        guard Int.random(in: 1...100) <= 6 else { return nil }
+
+        // Find NPCs with corrupt personality traits
+        let suspects = game.characters.filter { npc in
+            npc.isActive &&
+            npc.personalityCorrupt > 40 &&
+            (npc.positionIndex ?? 0) >= 2  // Must have enough position to embezzle
+        }
+
+        guard let suspect = suspects.randomElement() else { return nil }
+
+        let discrepancies: [(String, String, WorldActionVisibilityLevel)] = [
+            ("\(suspect.name)'s Production Reports Contain Discrepancies",
+             "An audit of \(suspect.name)'s ministry has revealed significant discrepancies between reported production figures and actual output. Grain reserves in their jurisdiction are 30% below stated levels. The numbers suggest either gross incompetence or deliberate falsification.",
+             .intel),
+            ("Unexplained Expenditures in \(suspect.name)'s Department",
+             "Budget analysts have flagged irregular expenditures in \(suspect.name)'s department. Large sums have been allocated to 'infrastructure maintenance' with no corresponding projects. \(suspect.name)'s lifestyle has also become notably more luxurious.",
+             .secret),
+            ("Supply Chain Irregularities Linked to \(suspect.name)",
+             "Reports indicate that state goods designated for distribution in \(suspect.name)'s region have been diverted. The quantities are significant enough to notice but not so large as to cause immediate crisis — suggesting a practiced hand.",
+             .intel),
+            ("\(suspect.name)'s Financial Records Under Question",
+             "Routine review of financial records has uncovered that \(suspect.name) authorized several unusual transfers to entities with no apparent connection to state operations. The amounts are modest individually but substantial in aggregate.",
+             .secret)
+        ]
+        let (headline, details, visibility) = discrepancies.randomElement()!
+
+        return NPCWorldActionResult(
+            eventType: .grudgeAttack,
+            headline: headline,
+            details: details,
+            visibilityLevel: visibility,
+            involvedCharacters: [suspect]
         )
     }
 

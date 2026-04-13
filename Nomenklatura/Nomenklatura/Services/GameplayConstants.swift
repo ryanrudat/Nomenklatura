@@ -127,20 +127,20 @@ enum GameplayConstants {
         static let minCautionModifier = 0.5
 
         /// Maximum goal-driven events per turn (to avoid overwhelming player)
-        static let maxGoalEventsPerTurn = 2
+        static let maxGoalEventsPerTurn = 4
     }
 
     // MARK: - Event Probabilities
 
     enum EventProbability {
         /// Chance of a quiet turn (no events)
-        static let quietTurnChance = 0.35
+        static let quietTurnChance = 0.20
 
         /// Maximum events per turn in normal circumstances
-        static let maxEventsPerTurnNormal = 2
+        static let maxEventsPerTurnNormal = 3
 
         /// Maximum events per turn during crisis
-        static let maxEventsPerTurnCrisis = 3
+        static let maxEventsPerTurnCrisis = 5
 
         /// Base cooldown for event types (turns)
         static let defaultEventCooldown = 3

@@ -18,16 +18,16 @@ struct BalanceConfig {
     // MARK: - Event Pacing
 
     /// Base chance of a quiet turn (no dynamic events)
-    static var quietTurnChance: Double = 0.35
+    static var quietTurnChance: Double = 0.20
 
     /// Additional quiet chance for early game (turns 1-3)
-    static var earlyGameQuietBonus: Double = 0.25
+    static var earlyGameQuietBonus: Double = 0.15
 
     /// Penalty to quiet chance during crisis (stability < 40)
-    static var crisisQuietPenalty: Double = 0.15
+    static var crisisQuietPenalty: Double = 0.20
 
     /// Consecutive event turns that force a quiet turn
-    static var forceQuietAfterEventTurns: Int = 2
+    static var forceQuietAfterEventTurns: Int = 4
 
     // MARK: - Rival Balance
 
@@ -38,10 +38,10 @@ struct BalanceConfig {
     static var rivalActionMaxChance: Double = 0.35
 
     /// Cooldown between rival events (turns)
-    static var rivalEventCooldown: Int = 5
+    static var rivalEventCooldown: Int = 3
 
     /// Rival threat threshold for aggressive actions
-    static var rivalAggressiveThreshold: Int = 50
+    static var rivalAggressiveThreshold: Int = 40
 
     // MARK: - Patron Balance
 
@@ -123,13 +123,31 @@ struct BalanceConfig {
     // MARK: - NPC Behavior
 
     /// Base ambient action chance per NPC per turn
-    static var npcAmbientActionChance: Double = 0.15
+    static var npcAmbientActionChance: Double = 0.25
 
     /// Maximum goal-driven events per turn
-    static var maxGoalEventsPerTurn: Int = 2
+    static var maxGoalEventsPerTurn: Int = 4
 
     /// Disposition decay per turn without interaction
     static var dispositionDecayPerTurn: Int = 1
+
+    /// Per-character cooldown between goal-driven actions (turns)
+    static var npcGoalActionCooldown: Int = 2
+
+    /// Grudge level threshold above which NPCs become hostile actors
+    static var npcHighGrudgeThreshold: Int = 60
+
+    /// Aggression level threshold above which NPCs initiate actions more often
+    static var npcHighAggressionThreshold: Int = 70
+
+    /// Fear level threshold above which NPCs are suppressed (won't act against player)
+    static var npcHighFearThreshold: Int = 70
+
+    /// Fear level threshold below which NPCs become bold against player
+    static var npcLowFearThreshold: Int = 30
+
+    /// Trust level threshold above which NPCs form visible coalitions
+    static var npcCoalitionTrustThreshold: Int = 60
 
     // MARK: - Economy
 
@@ -147,16 +165,16 @@ struct BalanceConfig {
     /// Reset all values to defaults
     static func resetToDefaults() {
         // Event Pacing
-        quietTurnChance = 0.35
-        earlyGameQuietBonus = 0.25
-        crisisQuietPenalty = 0.15
-        forceQuietAfterEventTurns = 2
+        quietTurnChance = 0.20
+        earlyGameQuietBonus = 0.15
+        crisisQuietPenalty = 0.20
+        forceQuietAfterEventTurns = 4
 
         // Rival Balance
         rivalActionBaseChance = 0.05
         rivalActionMaxChance = 0.35
-        rivalEventCooldown = 5
-        rivalAggressiveThreshold = 50
+        rivalEventCooldown = 3
+        rivalAggressiveThreshold = 40
 
         // Patron Balance
         patronWarningThreshold = 35
@@ -193,9 +211,15 @@ struct BalanceConfig {
         startingPositionIndex = 1
 
         // NPC Behavior
-        npcAmbientActionChance = 0.15
-        maxGoalEventsPerTurn = 2
+        npcAmbientActionChance = 0.25
+        maxGoalEventsPerTurn = 4
         dispositionDecayPerTurn = 1
+        npcGoalActionCooldown = 2
+        npcHighGrudgeThreshold = 60
+        npcHighAggressionThreshold = 70
+        npcHighFearThreshold = 70
+        npcLowFearThreshold = 30
+        npcCoalitionTrustThreshold = 60
 
         // Economy
         newspaperChanceAfterMajorEvent = 0.30

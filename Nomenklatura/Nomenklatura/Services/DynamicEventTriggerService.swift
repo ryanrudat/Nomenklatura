@@ -1104,11 +1104,11 @@ class DynamicEventTriggerService {
     }
 
     private func getMaxEventsForTurn(game: Game) -> Int {
-        // Normally 1, critical situations allow 2
+        // Normally 2, critical situations allow 3 for a livelier political world
         if game.stability < 25 || game.rivalThreat > 85 || game.patronFavor < 20 {
-            return 2
+            return 3
         }
-        return 1
+        return 2
     }
 
     private func filterByCooldowns(_ events: [DynamicEvent], game: Game) -> [DynamicEvent] {
