@@ -474,8 +474,9 @@ extension Game {
     }
 
     /// Whether player can participate in policy system at all
+    /// Player is General Secretary — always true
     var canParticipateInPolicies: Bool {
-        currentPositionIndex >= 1  // Junior Politburo or higher
+        true
     }
 
     /// The resolved ladder position for the player's current office and rank.

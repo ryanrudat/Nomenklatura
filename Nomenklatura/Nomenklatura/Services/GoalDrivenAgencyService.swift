@@ -59,19 +59,8 @@ final class GoalDrivenAgencyService {
             }
 
             if let event = evaluateCharacterGoals(character, game: game) {
-                // Filter by player position - ensure event is appropriate for their rank
-                guard event.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex) else {
-                    goalLogger.debug("Event type \(event.eventType.rawValue) not appropriate for position \(game.currentPositionIndex), skipping")
-                    continue
-                }
-
-                // Filter by goal type - ensure goal-driven content matches player's authority level
-                if let primaryGoal = character.primaryGoal {
-                    guard game.currentPositionIndex >= primaryGoal.goalType.minimumPositionIndex else {
-                        goalLogger.debug("Goal type \(primaryGoal.goalType.displayName) requires position \(primaryGoal.goalType.minimumPositionIndex), player at \(game.currentPositionIndex), skipping")
-                        continue
-                    }
-                }
+                // Player is General Secretary — all NPC events are surfaced
+                // Position and goal-type filters removed since player is always at top
 
                 events.append(event)
 
@@ -1832,13 +1821,8 @@ final class GoalDrivenAgencyService {
         // Only generate if player is close to the security official
         guard character.disposition >= 50 else { return nil }
 
-        // Security officials wouldn't ask junior players for cooperation
-        // Player must be at least position 2 and NPC can be at most 2 levels above
-        let npcPosition = character.positionIndex ?? 0
-        guard game.currentPositionIndex >= 2 && npcPosition <= game.currentPositionIndex + 2 else {
-            goalLogger.debug("\(character.name) at position \(npcPosition) won't ask player at position \(game.currentPositionIndex) for security cooperation")
-            return nil
-        }
+        // Player is General Secretary — all NPCs can request security cooperation
+        // (Position gate removed since player is always at top)
 
         return DynamicEvent(
             eventType: .networkIntel,

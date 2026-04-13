@@ -51,15 +51,11 @@ class DiplomaticActionService {
 
     // MARK: - Available Actions
 
-    /// Get all actions available to the player at their current position
+    /// Get all actions available to the player (General Secretary has access to all)
     func availableActions(for game: Game) -> [DiplomaticAction] {
-        let positionIndex = game.currentPositionIndex
         let track = game.currentExpandedTrack
 
         return DiplomaticAction.allActions.filter { action in
-            // Check position requirement
-            guard positionIndex >= action.minimumPositionIndex else { return false }
-
             // Check track requirement if specified
             if let requiredTrack = action.requiredTrack {
                 guard track == requiredTrack else { return false }
@@ -70,12 +66,9 @@ class DiplomaticActionService {
     }
 
     /// Get actions that are locked (not yet available) for preview
+    /// As General Secretary, no actions are position-locked
     func lockedActions(for game: Game) -> [DiplomaticAction] {
-        let positionIndex = game.currentPositionIndex
-
-        return DiplomaticAction.allActions.filter { action in
-            action.minimumPositionIndex > positionIndex
-        }
+        return []
     }
 
     /// Get actions on cooldown
@@ -101,10 +94,7 @@ class DiplomaticActionService {
         targetCountry: ForeignCountry?,
         for game: Game
     ) -> ActionValidationResult {
-        // Check position requirement
-        guard game.currentPositionIndex >= action.minimumPositionIndex else {
-            return .failure("Requires Position \(action.minimumPositionIndex) or higher")
-        }
+        // Player is General Secretary — no position gate needed
 
         // Check track requirement
         if let requiredTrack = action.requiredTrack {

@@ -26,23 +26,14 @@ struct MilitaryPortalView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            PortalHeader(
-                title: "MILITARY-POLITICAL BUREAU",
-                subtitle: "Central Military Commission Political Work Dept",
-                accentColor: Color(hex: "#8B0000")
-            )
-            .padding(.horizontal, 15)
-            .padding(.top, 10)
+            MilitaryPortalHeader()
+                .padding(.horizontal, 15)
+                .padding(.top, 10)
 
             // Section tabs
-            PortalSectionBar(
-                selectedSection: $selectedSection,
-                accessLevel: accessLevel,
-                featureCategory: .military,
-                accentColor: Color(hex: "#8B0000")
-            )
-            .padding(.horizontal, 15)
-            .padding(.vertical, 10)
+            MilitarySectionBar(selectedSection: $selectedSection, accessLevel: accessLevel)
+                .padding(.horizontal, 15)
+                .padding(.vertical, 10)
 
             // Content
             ScrollView {
@@ -59,9 +50,37 @@ struct MilitaryPortalView: View {
     }
 }
 
+// MARK: - Military Portal Header
+
+struct MilitaryPortalHeader: View {
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("MILITARY-POLITICAL BUREAU")
+                .font(.system(size: 14, weight: .bold))
+                .tracking(2)
+                .foregroundColor(theme.accentGold)
+
+            Text("Central Military Commission Political Work Dept")
+                .font(.system(size: 10, weight: .medium))
+                .tracking(0.5)
+                .foregroundColor(theme.inkGray)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(hex: "#8B0000").opacity(0.5), lineWidth: 1)
+        )
+    }
+}
+
 // MARK: - Military Sections
 
-enum MilitarySection: String, CaseIterable, PortalSection {
+enum MilitarySection: String, CaseIterable {
     case overview
     case campaigns
     case actions
@@ -91,6 +110,78 @@ enum MilitarySection: String, CaseIterable, PortalSection {
     }
 }
 
+// MARK: - Military Section Bar
+
+struct MilitarySectionBar: View {
+    @Binding var selectedSection: MilitarySection
+    let accessLevel: AccessLevel
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(MilitarySection.allCases, id: \.self) { section in
+                let hasAccess = accessLevel.effectiveLevel(for: .military) >= section.requiredLevel
+
+                MilitarySectionButton(
+                    section: section,
+                    isSelected: selectedSection == section,
+                    isLocked: !hasAccess
+                ) {
+                    if hasAccess {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedSection = section
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct MilitarySectionButton: View {
+    let section: MilitarySection
+    let isSelected: Bool
+    let isLocked: Bool
+    let onTap: () -> Void
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                ZStack {
+                    Image(systemName: section.icon)
+                        .font(.system(size: 16))
+
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                            .offset(x: 8, y: 8)
+                    }
+                }
+
+                Text(section.title.uppercased())
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.3)
+            }
+            .foregroundColor(
+                isLocked ? theme.inkLight :
+                    (isSelected ? .white : theme.inkGray)
+            )
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                isLocked ? theme.parchmentDark.opacity(0.5) :
+                    (isSelected ? Color(hex: "#8B0000") : theme.parchmentDark)
+            )
+            .cornerRadius(6)
+            .opacity(isLocked ? 0.6 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .disabled(isLocked)
+    }
+}
+
 // MARK: - Overview Section
 
 struct MilitaryOverviewSection: View {
@@ -106,7 +197,7 @@ struct MilitaryOverviewSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PortalPositionBanner(game: game, config: .military(accentColor: Color(hex: "#8B0000")))
+            MilitaryPositionBanner(game: game)
 
             // Military Situation Card
             MilitarySituationCard(game: game)
@@ -122,29 +213,82 @@ struct MilitaryOverviewSection: View {
     }
 }
 
-// MARK: - Military Position Banner Config
+struct MilitaryPositionBanner: View {
+    let game: Game
+    @Environment(\.theme) var theme
 
-extension PortalPositionBannerConfig {
-    static func military(accentColor: Color) -> PortalPositionBannerConfig {
-        PortalPositionBannerConfig(
-            track: .militaryPolitical,
-            accentColor: accentColor,
-            authorityLabel: "YOUR MILITARY RANK",
-            positionTitle: { position in
-                switch position {
-                case 0...1: return "Political Instructor"
-                case 2...3: return "Unit Commissar"
-                case 4...5: return "Division Command"
-                case 6: return "Theater Command"
-                default: return "CMC Authority"
+    private var isInTrack: Bool {
+        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+        return playerTrack == .militaryPolitical
+    }
+
+    private var isTopLeadership: Bool {
+        game.currentPositionIndex >= 7
+    }
+
+    private var hasAuthority: Bool {
+        isInTrack || isTopLeadership
+    }
+
+    private var categoryTitle: String {
+        guard hasAuthority else { return "Observer Only" }
+        let position = game.currentPositionIndex
+        switch position {
+        case 0...1: return "Political Instructor"
+        case 2...3: return "Unit Commissar"
+        case 4...5: return "Division Command"
+        case 6: return "Theater Command"
+        default: return "CMC Authority"
+        }
+    }
+
+    private var plaEquivalent: String {
+        guard hasAuthority else { return "No Military Authority" }
+        // Player is General Secretary — all categories are available
+        return MilitaryActionCategory.allCases.last?.plaEquivalent ?? "Political Instructor"
+    }
+
+    private var headerText: String {
+        hasAuthority ? "YOUR MILITARY RANK" : "ACCESS STATUS"
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headerText)
+                    .font(.system(size: 9, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Text(categoryTitle)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(hasAuthority ? theme.inkBlack : theme.inkLight)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                if hasAuthority {
+                    Text("POSITION \(game.currentPositionIndex)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#8B0000"))
+                } else {
+                    Text("VIEW ONLY")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(theme.inkLight)
                 }
-            },
-            equivalentTitle: { position in
-                MilitaryActionCategory.allCases
-                    .filter { position >= $0.minimumPositionIndex }
-                    .last?.plaEquivalent ?? "Political Instructor"
-            },
-            noAuthorityEquivalent: "No Military Authority"
+
+                Text(plaEquivalent)
+                    .font(.system(size: 9))
+                    .foregroundColor(theme.inkGray)
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(hasAuthority ? Color(hex: "#8B0000").opacity(0.3) : theme.inkLight.opacity(0.3), lineWidth: 1)
         )
     }
 }
@@ -198,9 +342,9 @@ struct MilitarySituationCard: View {
             }
 
             HStack(spacing: 16) {
-                PortalMetricView(label: "Loyalty", value: "\(game.militaryLoyalty)", color: game.militaryLoyalty >= 50 ? .green : .orange)
-                PortalMetricView(label: "Readiness", value: "\(effectiveReadiness)", color: effectiveReadiness >= 50 ? .green : .orange)
-                PortalMetricView(label: "Stability", value: "\(game.stability)", color: game.stability >= 50 ? .green : .orange)
+                MilitaryMetric(label: "Loyalty", value: "\(game.militaryLoyalty)", color: game.militaryLoyalty >= 50 ? .green : .orange)
+                MilitaryMetric(label: "Readiness", value: "\(effectiveReadiness)", color: effectiveReadiness >= 50 ? .green : .orange)
+                MilitaryMetric(label: "Stability", value: "\(game.stability)", color: game.stability >= 50 ? .green : .orange)
             }
 
             Divider()
@@ -218,6 +362,25 @@ struct MilitarySituationCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(theme.borderTan, lineWidth: 1)
         )
+    }
+}
+
+struct MilitaryMetric: View {
+    let label: String
+    let value: String
+    let color: Color
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.system(size: 9))
+                .foregroundColor(theme.inkGray)
+        }
     }
 }
 
@@ -403,7 +566,7 @@ struct MilitaryCampaignsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PortalPositionBanner(game: game, config: .military(accentColor: Color(hex: "#8B0000")))
+            MilitaryPositionBanner(game: game)
 
             // Active campaigns
             if !activeCampaigns.isEmpty {
@@ -430,11 +593,7 @@ struct MilitaryCampaignsSection: View {
                     }
                 }
             } else {
-                PortalEmptyStateView(
-                    icon: "flag.fill",
-                    title: "No Active Campaigns",
-                    message: "Launch ideological campaigns or purges from the Actions tab to begin political operations."
-                )
+                EmptyCampaignsView()
             }
         }
         .padding(.horizontal, 15)
@@ -518,9 +677,9 @@ struct CampaignCard: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    PortalDetailRow(label: "Turns Remaining", value: "\(turnsRemaining)")
-                    PortalDetailRow(label: "Success Chance", value: "\(campaign.successChance)%")
-                    PortalDetailRow(label: "Current Phase", value: campaign.phase.displayName)
+                    CampaignDetailRow(label: "Turns Remaining", value: "\(turnsRemaining)")
+                    CampaignDetailRow(label: "Success Chance", value: "\(campaign.successChance)%")
+                    CampaignDetailRow(label: "Current Phase", value: campaign.phase.displayName)
                 }
             }
 
@@ -559,6 +718,50 @@ struct CampaignCard: View {
     }
 }
 
+struct CampaignDetailRow: View {
+    let label: String
+    let value: String
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundColor(theme.inkGray)
+            Spacer()
+            Text(value)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(theme.inkBlack)
+        }
+    }
+}
+
+struct EmptyCampaignsView: View {
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "flag.fill")
+                .font(.system(size: 32))
+                .foregroundColor(theme.inkLight)
+
+            Text("No Active Campaigns")
+                .font(theme.bodyFont)
+                .fontWeight(.semibold)
+                .foregroundColor(theme.inkBlack)
+
+            Text("Launch ideological campaigns or purges from the Actions tab to begin political operations.")
+                .font(theme.tagFont)
+                .foregroundColor(theme.inkGray)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(theme.parchmentDark.opacity(0.5))
+        .cornerRadius(12)
+    }
+}
+
 // MARK: - Actions Section
 
 struct MilitaryActionsSection: View {
@@ -577,11 +780,13 @@ struct MilitaryActionsSection: View {
     }
 
     private var availableActions: [MilitaryAction] {
-        MilitaryAction.actions(forPosition: game.currentPositionIndex)
+        // Player is General Secretary — all actions are available
+        MilitaryAction.allActions
     }
 
     private var lockedActions: [MilitaryAction] {
-        MilitaryAction.allActions.filter { $0.minimumPositionIndex > game.currentPositionIndex }
+        // Player is General Secretary — no actions are position-locked
+        []
     }
 
     private var cooldowns: MilitaryCooldownTracker {
@@ -602,7 +807,7 @@ struct MilitaryActionsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PortalPositionBanner(game: game, config: .military(accentColor: Color(hex: "#8B0000")))
+            MilitaryPositionBanner(game: game)
 
             // Check track authority before showing actions
             if !hasTrackAuthority {
@@ -612,11 +817,7 @@ struct MilitaryActionsSection: View {
                     accentColor: Color(hex: "#8B0000")
                 )
             } else if availableActions.isEmpty {
-                PortalEmptyStateView(
-                    icon: "lock.fill",
-                    title: "No Actions Available",
-                    message: lockedActions.first.map { "Reach Position \($0.minimumPositionIndex) to unlock \"\($0.name)\"" } ?? "Advance in rank to unlock actions."
-                )
+                NoMilitaryActionsView(nextUnlock: lockedActions.first)
             } else {
                 // Available actions by category
                 ForEach(actionsByCategory, id: \.category) { category, actions in
@@ -881,6 +1082,35 @@ struct ActionDetailTag: View {
         .padding(.vertical, 4)
         .background(theme.parchmentDark)
         .cornerRadius(4)
+    }
+}
+
+struct NoMilitaryActionsView: View {
+    let nextUnlock: MilitaryAction?
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 32))
+                .foregroundColor(theme.inkLight)
+
+            Text("No Actions Available")
+                .font(theme.bodyFont)
+                .fontWeight(.semibold)
+                .foregroundColor(theme.inkBlack)
+
+            if let next = nextUnlock {
+                Text("Reach Position \(next.minimumPositionIndex) to unlock \"\(next.name)\"")
+                    .font(theme.tagFont)
+                    .foregroundColor(theme.inkGray)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(theme.parchmentDark.opacity(0.5))
+        .cornerRadius(12)
     }
 }
 

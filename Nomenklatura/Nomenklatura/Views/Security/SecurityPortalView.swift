@@ -469,8 +469,8 @@ struct ClassificationLegend: View {
 
             HStack(spacing: 8) {
                 ForEach(SecurityClassification.allCases, id: \.self) { classification in
-                    let hasAccess = currentPosition >= classification.minimumPositionIndex
-                    ClassificationBadge(classification: classification, hasAccess: hasAccess)
+                    // Player is General Secretary — has access to all classifications
+                    ClassificationBadge(classification: classification, hasAccess: true)
                 }
             }
         }
@@ -861,11 +861,13 @@ struct SecurityActionsSection: View {
     }
 
     private var availableActions: [SecurityAction] {
-        SecurityAction.actionsForPosition(game.currentPositionIndex)
+        // Player is General Secretary — all actions are available
+        SecurityAction.allActions
     }
 
     private var lockedActions: [SecurityAction] {
-        SecurityAction.allActions.filter { $0.effectiveMinimumPosition > game.currentPositionIndex }
+        // Player is General Secretary — no actions are position-locked
+        []
     }
 
     private var cooldowns: SecurityCooldownTracker {

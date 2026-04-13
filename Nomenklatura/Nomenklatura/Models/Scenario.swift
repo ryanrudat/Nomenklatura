@@ -98,6 +98,9 @@ enum ScenarioCategory: String, Codable, CaseIterable, Sendable {
     }
 
     /// Check if this category is appropriate for a given position
+    /// Note: Player starts as General Secretary (position 8). The maximumPositionIndex
+    /// gates (e.g., introduction, routineDay) intentionally still apply to suppress
+    /// content that is too low-level for a head of state.
     func isAppropriate(forPositionIndex index: Int) -> Bool {
         if index < minimumPositionIndex {
             return false

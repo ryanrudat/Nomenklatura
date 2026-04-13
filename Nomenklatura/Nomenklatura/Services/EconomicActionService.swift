@@ -34,33 +34,7 @@ final class EconomicActionService {
         targetSector: EconomicSector?,
         for game: Game
     ) -> ValidationResult {
-        let positionIndex = game.currentPositionIndex
-
-        // Check position requirement
-        guard positionIndex >= action.minimumPositionIndex else {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Position \(action.minimumPositionIndex) (you are Position \(positionIndex))",
-                successChance: 0,
-                requiresApproval: false,
-                treasuryCost: 0
-            )
-        }
-
-        // Check track requirement - must be in Economic Planning track (or top leadership 7+)
-        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
-        let isInEconomicTrack = playerTrack == .economicPlanning
-        let isTopLeadership = positionIndex >= 7  // Top leadership transcends tracks
-
-        if !isInEconomicTrack && !isTopLeadership {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Economic Planning career track",
-                successChance: 0,
-                requiresApproval: false,
-                treasuryCost: 0
-            )
-        }
+        // Player is General Secretary — no position or track gate needed
 
         // Check cooldown
         let cooldowns = getEconomicCooldowns(for: game)

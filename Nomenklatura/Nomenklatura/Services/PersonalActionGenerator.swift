@@ -777,8 +777,7 @@ final class PersonalActionGenerator {
         let hasSuccessor = game.successorRelationships.contains { $0.isActive }
         let successorCount = game.successorRelationships.filter { $0.isActive }.count
 
-        // Only available at higher positions
-        guard game.currentPositionIndex >= 3 else { return [] }
+        // Player is General Secretary — successor cultivation always available
 
         if !hasSuccessor {
             actions.append(PersonalAction(
@@ -844,8 +843,7 @@ final class PersonalActionGenerator {
     private func generateHighStakesActions(game: Game, patron: GameCharacter?, rival: GameCharacter?) -> [PersonalAction] {
         var actions: [PersonalAction] = []
 
-        // Only available at very high positions
-        guard game.currentPositionIndex >= 5 else { return [] }
+        // Player is General Secretary — high stakes actions always available
 
         if let rival = rival {
             actions.append(PersonalAction(
@@ -867,8 +865,8 @@ final class PersonalActionGenerator {
             ))
         }
 
-        // Ultimate play - only at highest levels
-        if game.currentPositionIndex >= 6 && game.standing >= 85 && game.network >= 70 {
+        // Ultimate play - player is General Secretary, gate on stats only
+        if game.standing >= 85 && game.network >= 70 {
             actions.append(PersonalAction(
                 id: "leadership_challenge",
                 category: .makeYourPlay,

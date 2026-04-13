@@ -292,8 +292,9 @@ struct EconomicAction: Identifiable, Codable {
     let failureEffects: EconomicEffects
 
     /// Check if action is available for position
+    /// Player is General Secretary — all actions are available regardless of position
     func isAvailable(forPosition position: Int, track: String?) -> Bool {
-        guard position >= minimumPositionIndex else { return false }
+        // Position gate removed: player always has access as General Secretary
         if let required = requiredTrack {
             return track == required || position >= 6  // High positions transcend track limits
         }

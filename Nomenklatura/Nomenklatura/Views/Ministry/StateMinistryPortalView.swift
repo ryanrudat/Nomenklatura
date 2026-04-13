@@ -25,22 +25,15 @@ struct StateMinistryPortalView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PortalHeader(
-                title: "STATE MINISTRY BUREAU",
-                subtitle: "Council of State Administration",
-                accentColor: Color(hex: "#2563EB")
-            )
-            .padding(.horizontal, 15)
-            .padding(.top, 10)
+            // Header
+            MinistryPortalHeader()
+                .padding(.horizontal, 15)
+                .padding(.top, 10)
 
-            PortalSectionBar(
-                selectedSection: $selectedSection,
-                accessLevel: accessLevel,
-                featureCategory: .administrative,
-                accentColor: Color(hex: "#2563EB")
-            )
-            .padding(.horizontal, 15)
-            .padding(.vertical, 10)
+            // Section tabs
+            MinistrySectionBar(selectedSection: $selectedSection, accessLevel: accessLevel)
+                .padding(.horizontal, 15)
+                .padding(.vertical, 10)
 
             // Content
             ScrollView {
@@ -57,9 +50,37 @@ struct StateMinistryPortalView: View {
     }
 }
 
+// MARK: - Ministry Portal Header
+
+struct MinistryPortalHeader: View {
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("STATE MINISTRY BUREAU")
+                .font(.system(size: 14, weight: .bold))
+                .tracking(2)
+                .foregroundColor(theme.accentGold)
+
+            Text("State Council General Office")
+                .font(.system(size: 10, weight: .medium))
+                .tracking(0.5)
+                .foregroundColor(theme.inkGray)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(hex: "#2563EB").opacity(0.5), lineWidth: 1)
+        )
+    }
+}
+
 // MARK: - Ministry Sections
 
-enum MinistrySection: String, CaseIterable, PortalSection {
+enum MinistrySection: String, CaseIterable {
     case overview
     case projects
     case actions
@@ -89,6 +110,78 @@ enum MinistrySection: String, CaseIterable, PortalSection {
     }
 }
 
+// MARK: - Ministry Section Bar
+
+struct MinistrySectionBar: View {
+    @Binding var selectedSection: MinistrySection
+    let accessLevel: AccessLevel
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(MinistrySection.allCases, id: \.self) { section in
+                let hasAccess = accessLevel.effectiveLevel(for: .administrative) >= section.requiredLevel
+
+                MinistrySectionButton(
+                    section: section,
+                    isSelected: selectedSection == section,
+                    isLocked: !hasAccess
+                ) {
+                    if hasAccess {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedSection = section
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct MinistrySectionButton: View {
+    let section: MinistrySection
+    let isSelected: Bool
+    let isLocked: Bool
+    let onTap: () -> Void
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                ZStack {
+                    Image(systemName: section.icon)
+                        .font(.system(size: 16))
+
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                            .offset(x: 8, y: 8)
+                    }
+                }
+
+                Text(section.title.uppercased())
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.3)
+            }
+            .foregroundColor(
+                isLocked ? theme.inkLight :
+                    (isSelected ? .white : theme.inkGray)
+            )
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                isLocked ? theme.parchmentDark.opacity(0.5) :
+                    (isSelected ? Color(hex: "#2563EB") : theme.parchmentDark)
+            )
+            .cornerRadius(6)
+            .opacity(isLocked ? 0.6 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .disabled(isLocked)
+    }
+}
+
 // MARK: - Overview Section
 
 struct MinistryOverviewSection: View {
@@ -104,7 +197,7 @@ struct MinistryOverviewSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PortalPositionBanner(game: game, config: .ministry(accentColor: Color(hex: "#2563EB")))
+            MinistryPositionBanner(game: game)
 
             // State Situation Card
             StateSituationCard(game: game)
@@ -120,28 +213,83 @@ struct MinistryOverviewSection: View {
     }
 }
 
-extension PortalPositionBannerConfig {
-    static func ministry(accentColor: Color) -> PortalPositionBannerConfig {
-        PortalPositionBannerConfig(
-            track: .stateMinistry,
-            accentColor: accentColor,
-            authorityLabel: "YOUR MINISTRY RANK",
-            positionTitle: { position in
-                switch position {
-                case 0...1: return "Ministry Staff"
-                case 2: return "Section Officer"
-                case 3: return "Division Director"
-                case 4...5: return "Vice Minister"
-                case 6: return "Minister Level"
-                default: return "Premier Level"
+struct MinistryPositionBanner: View {
+    let game: Game
+    @Environment(\.theme) var theme
+
+    private var isInTrack: Bool {
+        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+        return playerTrack == .stateMinistry
+    }
+
+    private var isTopLeadership: Bool {
+        game.currentPositionIndex >= 7
+    }
+
+    private var hasAuthority: Bool {
+        isInTrack || isTopLeadership
+    }
+
+    private var categoryTitle: String {
+        guard hasAuthority else { return "Observer Only" }
+        let position = game.currentPositionIndex
+        switch position {
+        case 0...1: return "Ministry Staff"
+        case 2: return "Section Officer"
+        case 3: return "Division Director"
+        case 4...5: return "Vice Minister"
+        case 6: return "Minister Level"
+        default: return "Premier Level"
+        }
+    }
+
+    private var stateCouncilEquivalent: String {
+        guard hasAuthority else { return "No Ministry Authority" }
+        // Player is General Secretary — all categories are available
+        return StateMinistryActionCategory.allCases.last?.stateCouncilEquivalent ?? "Administrative Staff"
+    }
+
+    private var headerText: String {
+        hasAuthority ? "YOUR MINISTRY RANK" : "ACCESS STATUS"
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headerText)
+                    .font(.system(size: 9, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Text(categoryTitle)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(hasAuthority ? theme.inkBlack : theme.inkLight)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                if hasAuthority {
+                    Text("POSITION \(game.currentPositionIndex)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#2563EB"))
+                } else {
+                    Text("VIEW ONLY")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(theme.inkLight)
                 }
-            },
-            equivalentTitle: { position in
-                StateMinistryActionCategory.allCases
-                    .filter { position >= $0.minimumPositionIndex }
-                    .last?.stateCouncilEquivalent ?? "Administrative Staff"
-            },
-            noAuthorityEquivalent: "No Ministry Authority"
+
+                Text(stateCouncilEquivalent)
+                    .font(.system(size: 9))
+                    .foregroundColor(theme.inkGray)
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(hasAuthority ? Color(hex: "#2563EB").opacity(0.3) : theme.inkLight.opacity(0.3), lineWidth: 1)
         )
     }
 }
@@ -190,17 +338,17 @@ struct StateSituationCard: View {
             }
 
             HStack(spacing: 16) {
-                PortalMetricView(label: "Stability", value: "\(game.stability)", color: game.stability >= 50 ? .green : .orange)
-                PortalMetricView(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= 50 ? .green : .orange)
-                PortalMetricView(label: "Industry", value: "\(game.industrialOutput)", color: game.industrialOutput >= 50 ? .green : .orange)
+                MinistryMetric(label: "Stability", value: "\(game.stability)", color: game.stability >= 50 ? .green : .orange)
+                MinistryMetric(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= 50 ? .green : .orange)
+                MinistryMetric(label: "Industry", value: "\(game.industrialOutput)", color: game.industrialOutput >= 50 ? .green : .orange)
             }
 
             Divider()
 
             HStack(spacing: 12) {
-                PortalStatusIndicator(label: "Budget", isStrong: game.treasury >= 60)
-                PortalStatusIndicator(label: "Admin", isStrong: game.stability >= 60)
-                PortalStatusIndicator(label: "Output", isStrong: game.industrialOutput >= 60)
+                MinistryIndicator(label: "Budget", isStrong: game.treasury >= 60)
+                MinistryIndicator(label: "Admin", isStrong: game.stability >= 60)
+                MinistryIndicator(label: "Output", isStrong: game.industrialOutput >= 60)
             }
         }
         .padding(12)
@@ -210,6 +358,44 @@ struct StateSituationCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(theme.borderTan, lineWidth: 1)
         )
+    }
+}
+
+struct MinistryMetric: View {
+    let label: String
+    let value: String
+    let color: Color
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundColor(theme.inkGray)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct MinistryIndicator: View {
+    let label: String
+    let isStrong: Bool
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(isStrong ? Color.green : Color.orange)
+                .frame(width: 6, height: 6)
+
+            Text(label)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundColor(theme.inkGray)
+        }
     }
 }
 
@@ -357,11 +543,7 @@ struct MinistryProjectsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if activeProjects.isEmpty {
-                PortalEmptyStateView(
-                    icon: "building.2.crop.circle",
-                    title: "No Active Projects",
-                    message: "Launch state projects from the Actions tab"
-                )
+                NoProjectsView()
             } else {
                 ForEach(activeProjects) { project in
                     MinistryProjectCard(project: project, game: game)
@@ -370,6 +552,31 @@ struct MinistryProjectsSection: View {
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
+    }
+}
+
+struct NoProjectsView: View {
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "building.2.crop.circle")
+                .font(.system(size: 32))
+                .foregroundColor(theme.inkLight)
+
+            Text("No Active Projects")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(theme.inkGray)
+
+            Text("Launch state projects from the Actions tab")
+                .font(.system(size: 11))
+                .foregroundColor(theme.inkLight)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
     }
 }
 
@@ -498,8 +705,8 @@ struct MinistryActionsSection: View {
     }
 
     private var availableActions: [StateMinistryAction] {
-        let position = game.currentPositionIndex
-        return StateMinistryAction.allActions.filter { $0.minimumPositionIndex <= position }
+        // Player is General Secretary — all actions are available
+        return StateMinistryAction.allActions
     }
 
     private var groupedActions: [(StateMinistryActionCategory, [StateMinistryAction])] {
@@ -513,7 +720,7 @@ struct MinistryActionsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PortalPositionBanner(game: game, config: .ministry(accentColor: Color(hex: "#2563EB")))
+            MinistryPositionBanner(game: game)
 
             // Check track authority before showing actions
             if !hasTrackAuthority {
@@ -523,11 +730,7 @@ struct MinistryActionsSection: View {
                     accentColor: Color(hex: "#2563EB")
                 )
             } else if groupedActions.isEmpty {
-                PortalEmptyStateView(
-                    icon: "building.columns.fill",
-                    title: "No Ministry Actions Available",
-                    message: "Advance in position to unlock state ministry actions."
-                )
+                NoMinistryActionsView()
             } else {
                 ForEach(groupedActions, id: \.0) { category, actions in
                     MinistryActionCategorySection(
@@ -541,6 +744,32 @@ struct MinistryActionsSection: View {
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
+    }
+}
+
+struct NoMinistryActionsView: View {
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "building.columns.fill")
+                .font(.system(size: 32))
+                .foregroundColor(theme.inkLight)
+
+            Text("No Ministry Actions Available")
+                .font(theme.bodyFont)
+                .fontWeight(.semibold)
+                .foregroundColor(theme.inkBlack)
+
+            Text("Advance in position to unlock state ministry actions.")
+                .font(theme.tagFont)
+                .foregroundColor(theme.inkGray)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(theme.parchmentDark.opacity(0.5))
+        .cornerRadius(12)
     }
 }
 

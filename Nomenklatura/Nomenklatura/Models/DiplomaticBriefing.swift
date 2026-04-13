@@ -154,17 +154,11 @@ struct DiplomaticBriefingItem: Codable, Identifiable {
     // MARK: - Position-Gated Content Access
 
     /// Get the appropriate content for the given position level
+    /// Note: Player starts as General Secretary (position 8) so always has full access.
+    /// The position parameter is kept for NPC/data compatibility.
     func content(forPositionIndex positionIndex: Int) -> BriefingContent {
-        // Check if player has access at all
-        guard positionIndex >= classification.minimumPositionIndex else {
-            return BriefingContent(
-                headline: "[CLASSIFIED - \(classification.rawValue)]",
-                body: "You do not have clearance to access this briefing.",
-                showsData: false,
-                showsSource: false,
-                showsRecommendations: false
-            )
-        }
+        // General Secretary (position 8+) always has full access to all briefings
+        let effectivePosition = max(positionIndex, 8)
 
         var body = headline
         var showsData = false
@@ -172,24 +166,24 @@ struct DiplomaticBriefingItem: Codable, Identifiable {
         var showsRecommendations = false
 
         // Add summary for Position 3+
-        if positionIndex >= 3, let summary = summary {
+        if effectivePosition >= 3, let summary = summary {
             body = summary
         }
 
         // Add full details for Position 5+
-        if positionIndex >= 5, let fullDetails = fullDetails {
+        if effectivePosition >= 5, let fullDetails = fullDetails {
             body = fullDetails
             showsData = sensitiveData != nil
         }
 
         // Add raw intelligence for Position 6+
-        if positionIndex >= 6, let rawIntelligence = rawIntelligence {
+        if effectivePosition >= 6, let rawIntelligence = rawIntelligence {
             body = rawIntelligence
             showsSource = sourceAttribution != nil
         }
 
         // Show recommendations for Position 4+ (those who can propose actions)
-        if positionIndex >= 4 {
+        if effectivePosition >= 4 {
             showsRecommendations = recommendedActions != nil && !recommendedActions!.isEmpty
         }
 
@@ -227,8 +221,10 @@ struct DailyDiplomaticBriefing: Codable, Identifiable {
     }
 
     /// Get items visible at the given position level
+    /// Player is General Secretary — all items are visible
     func visibleItems(forPositionIndex positionIndex: Int) -> [DiplomaticBriefingItem] {
-        items.filter { $0.classification.minimumPositionIndex <= positionIndex }
+        // General Secretary sees all briefing items regardless of classification
+        items
     }
 
     /// Get items by category

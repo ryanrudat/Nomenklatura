@@ -35,33 +35,7 @@ final class SecurityActionService {
         targetFaction: GameFaction?,
         for game: Game
     ) -> ValidationResult {
-        let positionIndex = game.currentPositionIndex
-
-        // Check position requirement
-        guard positionIndex >= action.effectiveMinimumPosition else {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Position \(action.effectiveMinimumPosition) (you are Position \(positionIndex))",
-                successChance: 0,
-                requiresApproval: false,
-                targetTooSenior: false
-            )
-        }
-
-        // Check track requirement - must be in Security Services track (or top leadership 7+)
-        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
-        let isInSecurityTrack = playerTrack == .securityServices
-        let isTopLeadership = positionIndex >= 7  // Top leadership transcends tracks
-
-        if !isInSecurityTrack && !isTopLeadership {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Security Services career track",
-                successChance: 0,
-                requiresApproval: false,
-                targetTooSenior: false
-            )
-        }
+        // Player is General Secretary — no position or track gate needed
 
         // Check cooldown
         let cooldowns = getSecurityCooldowns(for: game)

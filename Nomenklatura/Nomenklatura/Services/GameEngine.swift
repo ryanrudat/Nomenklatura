@@ -1273,28 +1273,26 @@ class GameEngine {
             sponsorName = "Standing Committee"
         }
 
-        // Only notify high-level players directly
-        if game.currentPositionIndex >= 5 {
-            let event = DynamicEvent(
-                eventType: .institutionalChange,
-                priority: priority,
-                title: title,
-                briefText: briefText,
-                initiatingCharacterName: sponsorName,
-                turnGenerated: game.turnNumber,
-                isUrgent: priority == .urgent,
-                responseOptions: [
-                    EventResponse(
-                        id: "acknowledge",
-                        text: "Acknowledge and prepare",
-                        shortText: "Acknowledge",
-                        effects: [:]
-                    )
-                ],
-                iconName: "building.columns.fill"
-            )
-            game.queueDynamicEvent(event)
-        }
+        // Player is General Secretary — always receive institutional change notifications
+        let event = DynamicEvent(
+            eventType: .institutionalChange,
+            priority: priority,
+            title: title,
+            briefText: briefText,
+            initiatingCharacterName: sponsorName,
+            turnGenerated: game.turnNumber,
+            isUrgent: priority == .urgent,
+            responseOptions: [
+                EventResponse(
+                    id: "acknowledge",
+                    text: "Acknowledge and prepare",
+                    shortText: "Acknowledge",
+                    effects: [:]
+                )
+            ],
+            iconName: "building.columns.fill"
+        )
+        game.queueDynamicEvent(event)
     }
 
     /// Process NPC behavior system updates each turn
@@ -1352,13 +1350,11 @@ class GameEngine {
                 turn: game.turnNumber
             )
 
-            // Generate intelligence reports for high-level players
-            if game.currentPositionIndex >= 6 {
-                _ = WorldSimulationService.shared.generateIntelligenceReports(
-                    events: worldEvents,
-                    game: game
-                )
-            }
+            // Player is General Secretary — always generate intelligence reports
+            _ = WorldSimulationService.shared.generateIntelligenceReports(
+                events: worldEvents,
+                game: game
+            )
         }
     }
 
