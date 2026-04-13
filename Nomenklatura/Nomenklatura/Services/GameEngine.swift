@@ -632,8 +632,9 @@ class GameEngine {
         // Random events that affect stats
         applyRandomEvents(game: game)
 
-        // World simulation - dynamic world events (RDR2-style living world)
-        simulateWorldEvents(game: game)
+        // International dynamics - foreign relations, treaties, espionage, world tension
+        // (Runs early so diplomatic actions are reflected before world events generate)
+        processInternationalDynamics(game: game)
 
         // NPC Behavior System - process decay, detection, and updates
         processNPCBehaviorSystem(game: game)
@@ -647,8 +648,9 @@ class GameEngine {
         // Position offers - check expirations and generate new offers
         processPositionOffers(game: game)
 
-        // International dynamics - foreign relations, treaties, espionage, world tension
-        processInternationalDynamics(game: game)
+        // World simulation - dynamic world events (RDR2-style living world)
+        // (Runs after diplomatic state is updated so events reflect current relations)
+        simulateWorldEvents(game: game)
 
         // Regional dynamics - stability, secession progress, territorial integrity
         processRegionalDynamics(game: game)
@@ -668,11 +670,12 @@ class GameEngine {
     /// Extended end-of-turn processing that includes Codex and Consequence integration
     /// Call this instead of endTurnUpdates when you have a ModelContext available
     func endTurnUpdatesWithContext(game: Game, ladder: [LadderPosition], context: ModelContext) async {
+        // Resolve multi-turn bureau operations first so diplomatic action
+        // results are visible to turn processing (e.g. world event generation).
+        processBureauOperations(game: game, context: context)
+
         // Run standard end-of-turn updates
         endTurnUpdates(game: game, ladder: ladder, recordHistory: false)
-
-        // Resolve multi-turn bureau operations after core turn systems run.
-        processBureauOperations(game: game, context: context)
 
         // Process consequences and generate Codex reactions
         let firedConsequences = ConsequenceEngine.shared.processConsequences(game: game)
