@@ -14,6 +14,21 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Economic Thresholds
+
+/// Named constants for economic health assessment thresholds
+private enum EconomicThresholds {
+    /// Score at or above this is "excellent"
+    static let excellent = 70
+    /// Score at or above this is "stable"
+    static let stable = 50
+    /// Score at or above this is "concerning"; below is "critical"
+    static let concerning = 30
+
+    /// Maximum concurrent economic projects
+    static let maxActiveProjects = 3
+}
+
 struct EconomicPortalView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
@@ -205,8 +220,17 @@ struct EconomicOverviewSection: View {
             // Quick Stats
             EconomicQuickStats(game: game, projectCount: activeProjects.count)
 
+            // Macro Economic Indicators
+            MacroEconomicIndicatorsCard(game: game)
+
             // Sector Performance
             SectorPerformanceCard(game: game)
+
+            // Five-Year Plan Progress
+            FiveYearPlanCard(game: game)
+
+            // Trade Partners Summary
+            TradePartnersSummaryCard(game: game)
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
@@ -298,22 +322,24 @@ struct EconomicSituationCard: View {
     let game: Game
     @Environment(\.theme) var theme
 
+    private var avgScore: Int {
+        (game.industrialOutput + game.foodSupply + min(100, max(0, game.treasury))) / 3
+    }
+
     private var economicRating: String {
-        let avgScore = (game.industrialOutput + game.foodSupply + min(100, max(0, game.treasury))) / 3
         switch avgScore {
-        case 70...: return "EXCELLENT"
-        case 50..<70: return "STABLE"
-        case 30..<50: return "CONCERNING"
+        case EconomicThresholds.excellent...: return "EXCELLENT"
+        case EconomicThresholds.stable..<EconomicThresholds.excellent: return "STABLE"
+        case EconomicThresholds.concerning..<EconomicThresholds.stable: return "CONCERNING"
         default: return "CRITICAL"
         }
     }
 
     private var ratingColor: String {
-        let avgScore = (game.industrialOutput + game.foodSupply + min(100, max(0, game.treasury))) / 3
         switch avgScore {
-        case 70...: return "#22c55e"
-        case 50..<70: return "#3b82f6"
-        case 30..<50: return "#f59e0b"
+        case EconomicThresholds.excellent...: return "#22c55e"
+        case EconomicThresholds.stable..<EconomicThresholds.excellent: return "#3b82f6"
+        case EconomicThresholds.concerning..<EconomicThresholds.stable: return "#f59e0b"
         default: return "#ef4444"
         }
     }
@@ -338,17 +364,17 @@ struct EconomicSituationCard: View {
             }
 
             HStack(spacing: 16) {
-                EconomicMetric(label: "Industrial", value: "\(game.industrialOutput)", color: game.industrialOutput >= 50 ? .green : .orange)
-                EconomicMetric(label: "Food Supply", value: "\(game.foodSupply)", color: game.foodSupply >= 50 ? .green : .orange)
-                EconomicMetric(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= 50 ? .green : .orange)
+                EconomicMetric(label: "Industrial", value: "\(game.industrialOutput)", color: game.industrialOutput >= EconomicThresholds.stable ? .green : .orange)
+                EconomicMetric(label: "Food Supply", value: "\(game.foodSupply)", color: game.foodSupply >= EconomicThresholds.stable ? .green : .orange)
+                EconomicMetric(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= EconomicThresholds.stable ? .green : .orange)
             }
 
             Divider()
 
             HStack(spacing: 12) {
-                SectorIndicator(label: "Industry", isStrong: game.industrialOutput >= 60)
-                SectorIndicator(label: "Agriculture", isStrong: game.foodSupply >= 60)
-                SectorIndicator(label: "Trade", isStrong: game.treasury >= 60)
+                SectorIndicator(label: "Industry", isStrong: game.industrialOutput >= EconomicThresholds.stable)
+                SectorIndicator(label: "Agriculture", isStrong: game.foodSupply >= EconomicThresholds.stable)
+                SectorIndicator(label: "Trade", isStrong: game.treasury >= EconomicThresholds.stable)
             }
         }
         .padding(12)
@@ -461,7 +487,7 @@ struct SectorPerformanceCard: View {
                 .tracking(1)
                 .foregroundColor(theme.inkGray)
 
-            ForEach(EconomicSector.allCases.prefix(4), id: \.self) { sector in
+            ForEach(EconomicSector.allCases, id: \.self) { sector in
                 SectorRow(sector: sector, performance: sectorPerformance(sector))
             }
         }
@@ -471,13 +497,18 @@ struct SectorPerformanceCard: View {
     }
 
     private func sectorPerformance(_ sector: EconomicSector) -> Int {
+        let raw: Int
         switch sector {
-        case .heavyIndustry: return min(100, max(0, game.industrialOutput + 10))
-        case .agriculture: return game.foodSupply
-        case .energy: return min(100, max(0, game.industrialOutput - 5))
-        case .defense: return min(100, max(0, game.militaryLoyalty))
-        default: return min(100, max(0, (game.industrialOutput + game.stability) / 2))
+        case .heavyIndustry: raw = game.industrialOutput
+        case .agriculture: raw = game.foodSupply
+        case .energy: raw = (game.industrialOutput + game.treasury) / 2
+        case .mining: raw = (game.industrialOutput * 2 + game.stability) / 3
+        case .construction: raw = (game.treasury + game.stability) / 2
+        case .transport: raw = (game.industrialOutput + game.foodSupply) / 2
+        case .defense: raw = game.militaryLoyalty
+        case .lightIndustry: raw = (game.industrialOutput + game.popularSupport) / 2
         }
+        return min(100, max(0, raw))
     }
 }
 
@@ -521,9 +552,274 @@ struct SectorRow: View {
 
     private var performanceColor: Color {
         switch performance {
-        case 70...: return .green
-        case 40..<70: return .orange
+        case EconomicThresholds.excellent...: return .green
+        case EconomicThresholds.concerning..<EconomicThresholds.excellent: return .orange
         default: return .red
+        }
+    }
+}
+
+// MARK: - Macro Economic Indicators
+
+struct MacroEconomicIndicatorsCard: View {
+    let game: Game
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("MACRO ECONOMIC INDICATORS")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundColor(theme.inkGray)
+
+            HStack(spacing: 0) {
+                MacroIndicator(
+                    label: "GDP Index",
+                    value: "\(game.gdpIndex)",
+                    color: game.gdpIndex >= 100 ? FiftiesColors.approvedGreen : theme.sovietRed
+                )
+                MacroIndicator(
+                    label: "Inflation",
+                    value: "\(game.inflationRate)%",
+                    color: game.inflationRate <= 10 ? FiftiesColors.approvedGreen : (game.inflationRate <= 25 ? .orange : theme.sovietRed)
+                )
+                MacroIndicator(
+                    label: "Unemploy.",
+                    value: "\(game.unemploymentRate)%",
+                    color: game.unemploymentRate <= 5 ? FiftiesColors.approvedGreen : (game.unemploymentRate <= 12 ? .orange : theme.sovietRed)
+                )
+                MacroIndicator(
+                    label: "Trade Bal.",
+                    value: "\(game.tradeBalance > 0 ? "+" : "")\(game.tradeBalance)",
+                    color: game.tradeBalance >= 0 ? FiftiesColors.approvedGreen : theme.sovietRed
+                )
+                MacroIndicator(
+                    label: "Gini",
+                    value: "\(game.giniCoefficient)",
+                    color: game.giniCoefficient <= 30 ? FiftiesColors.approvedGreen : (game.giniCoefficient <= 45 ? .orange : theme.sovietRed)
+                )
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+    }
+}
+
+struct MacroIndicator: View {
+    let label: String
+    let value: String
+    let color: Color
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundColor(theme.inkGray)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Five-Year Plan
+
+struct FiveYearPlanCard: View {
+    let game: Game
+    @Environment(\.theme) var theme
+
+    private var planOrdinal: String {
+        game.currentFiveYearPlan.ordinalString
+    }
+
+    private var progressFraction: Double {
+        Double(game.fiveYearPlanYear) / 5.0
+    }
+
+    private var performanceColor: Color {
+        switch game.planPerformanceScore {
+        case EconomicThresholds.excellent...: return FiftiesColors.approvedGreen
+        case EconomicThresholds.stable..<EconomicThresholds.excellent: return .orange
+        default: return .red
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("FIVE-YEAR PLAN")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+
+                Text("\(planOrdinal) Five-Year Plan")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(theme.accentGold)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Year \(game.fiveYearPlanYear) of 5")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(theme.inkBlack)
+                    Spacer()
+                    Text("\(Int(progressFraction * 100))%")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.inkBlack)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(theme.parchment)
+                            .frame(height: 10)
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(theme.accentGold)
+                            .frame(width: geo.size.width * progressFraction, height: 10)
+                    }
+                }
+                .frame(height: 10)
+            }
+
+            HStack(spacing: 0) {
+                VStack(spacing: 2) {
+                    Text("\(game.planTargetsMet)")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.accentGold)
+                    Text("Targets Met")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(theme.inkGray)
+                }
+                .frame(maxWidth: .infinity)
+
+                VStack(spacing: 2) {
+                    Text("\(game.planPerformanceScore)")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(performanceColor)
+                    Text("Performance")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(theme.inkGray)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.accentGold.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Trade Partners Summary
+
+struct TradePartnersSummaryCard: View {
+    let game: Game
+    @Environment(\.theme) var theme
+
+    private var topTradePartners: [ForeignCountry] {
+        Array(
+            game.foreignCountries
+                .filter { $0.tradeVolume > 0 }
+                .sorted { $0.tradeVolume > $1.tradeVolume }
+                .prefix(5)
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("TOP TRADE PARTNERS")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundColor(theme.inkGray)
+
+            if topTradePartners.isEmpty {
+                Text("No active trade relationships established.")
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.inkLight)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(topTradePartners, id: \.id) { country in
+                    TradePartnerRow(country: country)
+                }
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+    }
+}
+
+struct TradePartnerRow: View {
+    let country: ForeignCountry
+    @Environment(\.theme) var theme
+
+    private var blocColor: Color {
+        switch country.politicalBloc {
+        case .socialist: return .red
+        case .capitalist: return .blue
+        case .nonAligned: return FiftiesColors.approvedGreen
+        case .rival: return .orange
+        }
+    }
+
+    private var relationshipLabel: String {
+        switch country.relationshipScore {
+        case 50...: return "Friendly"
+        case 0..<50: return "Neutral"
+        case -50..<0: return "Cool"
+        default: return "Hostile"
+        }
+    }
+
+    private var relationshipColor: Color {
+        switch country.relationshipScore {
+        case 50...: return FiftiesColors.approvedGreen
+        case 0..<50: return theme.inkGray
+        case -50..<0: return .orange
+        default: return .red
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(blocColor)
+                .frame(width: 8, height: 8)
+
+            Text(country.name)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(theme.inkBlack)
+                .lineLimit(1)
+
+            Spacer()
+
+            Text("Vol: \(country.tradeVolume)")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(theme.accentGold)
+
+            Text(relationshipLabel)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(relationshipColor)
+                .frame(width: 50, alignment: .trailing)
         }
     }
 }
@@ -560,7 +856,7 @@ struct EconomicProjectsSection: View {
 
                         Spacer()
 
-                        Text("\(activeProjects.count)/3")
+                        Text("\(activeProjects.count)/\(EconomicThresholds.maxActiveProjects)")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(theme.inkGray)
                     }
