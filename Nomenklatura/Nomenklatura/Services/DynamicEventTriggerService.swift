@@ -55,6 +55,9 @@ class DynamicEventTriggerService {
         candidates.append(contentsOf: checkShowTrialEvents(game: game))
         candidates.append(contentsOf: checkCorruptionEvents(game: game))
 
+        // International events
+        candidates.append(contentsOf: checkInternationalEvents(game: game))
+
         // Filter by player position - ensure events are appropriate for their rank
         let positionFiltered = candidates.filter { event in
             event.eventType.isAppropriate(forPositionIndex: game.currentPositionIndex)
@@ -1450,4 +1453,194 @@ class DynamicEventTriggerService {
             accentColor: "stampRed"
         )
     }
+
+    // MARK: - International Events
+
+    /// Check if enough turns have passed since the last flag with the given prefix.
+    /// Returns a cooldown flag to set if the check passes, or nil if still on cooldown.
+    private func internationalCooldownFlag(prefix: String, interval: Int, game: Game) -> String? {
+        let alignedTurn = game.turnNumber / interval * interval
+        let flag = "\(prefix)\(alignedTurn)"
+        let lastTurn = game.flags
+            .filter { $0.hasPrefix(prefix) }
+            .compactMap { Int($0.dropFirst(prefix.count)) }
+            .max() ?? 0
+        guard game.turnNumber - lastTurn >= interval else { return nil }
+        return flag
+    }
+
+    private func checkInternationalEvents(game: Game) -> [DynamicEvent] {
+        var events: [DynamicEvent] = []
+
+        let worldTension = game.worldTension
+
+        // World tension crisis (cooldown: every 3 turns minimum)
+        if worldTension > 70,
+           let cooldownFlag = internationalCooldownFlag(prefix: "international_crisis_warned_turn_", interval: 3, game: game) {
+                events.append(DynamicEvent(
+                    eventType: .urgentInterruption,
+                    priority: .urgent,
+                    title: "DIPLOMATIC CRISIS: World tension at critical levels",
+                    briefText: "An urgent briefing arrives from the Foreign Ministry. World tension has reached \(worldTension)/100 — the international situation is extremely dangerous.\n\nMilitary attaches report increased troop movements along borders. Radio intercepts suggest Western powers are raising their readiness levels. The Soviet ambassador has requested an emergency consultation.\n\nThe People's Congress expects a response to the deteriorating situation.",
+                    turnGenerated: game.turnNumber,
+                    isUrgent: true,
+                    responseOptions: [
+                        EventResponse(
+                            id: "diplomatic_outreach",
+                            text: "Launch diplomatic offensive to reduce tensions",
+                            shortText: "Diplomacy",
+                            effects: ["internationalStanding": 5],
+                            setsFlag: cooldownFlag
+                        ),
+                        EventResponse(
+                            id: "military_readiness",
+                            text: "Raise military readiness and fortify borders",
+                            shortText: "Fortify",
+                            effects: ["militaryLoyalty": 5, "treasury": -5],
+                            setsFlag: cooldownFlag
+                        ),
+                        EventResponse(
+                            id: "internal_focus",
+                            text: "Focus inward — strengthen domestic stability first",
+                            shortText: "Stabilize",
+                            effects: ["stability": 3],
+                            setsFlag: cooldownFlag
+                        )
+                    ],
+                    iconName: "globe.americas.fill",
+                    accentColor: "stampRed"
+                ))
+        }
+
+        // Border flashpoints with specific countries (cooldown: every 3 turns)
+        let flashpointCountries = game.foreignCountries.filter { $0.diplomaticTension > 80 }
+        for country in flashpointCountries {
+            guard let cooldownFlag = internationalCooldownFlag(
+                prefix: "border_alert_\(country.countryId)_turn_", interval: 3, game: game
+            ) else { continue }
+
+            events.append(DynamicEvent(
+                eventType: .urgentInterruption,
+                priority: .elevated,
+                title: "BORDER ALERT: Tensions with \(country.name) approaching flashpoint",
+                briefText: "Intelligence reports that diplomatic tensions with \(country.name) have reached \(country.diplomaticTension)/100 — dangerously close to a breaking point.\n\n\(country.name)'s military has been conducting exercises near our border. Their state media has escalated rhetoric against the PSR. Our ambassador reports being summoned for increasingly hostile meetings.",
+                turnGenerated: game.turnNumber,
+                isUrgent: false,
+                responseOptions: [
+                    EventResponse(
+                        id: "engage_diplomacy",
+                        text: "Open back-channel negotiations with \(country.name)",
+                        shortText: "Negotiate",
+                        effects: ["internationalStanding": 3],
+                        setsFlag: cooldownFlag
+                    ),
+                    EventResponse(
+                        id: "show_strength",
+                        text: "Conduct military exercises of our own as deterrence",
+                        shortText: "Show Strength",
+                        effects: ["militaryLoyalty": 3, "internationalStanding": -3],
+                        setsFlag: cooldownFlag
+                    ),
+                    EventResponse(
+                        id: "seek_allies",
+                        text: "Request Soviet mediation in the dispute",
+                        shortText: "Seek Mediation",
+                        effects: ["internationalStanding": 2],
+                        setsFlag: cooldownFlag
+                    )
+                ],
+                iconName: "shield.lefthalf.filled",
+                accentColor: "accentGold"
+            ))
+            break  // Only one border alert per evaluation
+        }
+
+        // Alliance crisis with socialist allies (cooldown: every 5 turns)
+        let strainingAllies = game.foreignCountries.filter {
+            $0.politicalBloc == .socialist && $0.relationshipScore < 20
+        }
+        for ally in strainingAllies {
+            guard let cooldownFlag = internationalCooldownFlag(
+                prefix: "alliance_crisis_\(ally.countryId)_turn_", interval: 5, game: game
+            ) else { continue }
+
+            events.append(DynamicEvent(
+                eventType: .worldNews,
+                priority: .elevated,
+                title: "ALLIANCE CRISIS: \(ally.name) questioning solidarity",
+                briefText: "Reports from our embassy in \(ally.name) paint a troubling picture. Relations have deteriorated to \(ally.relationshipScore)/100.\n\n\(ally.name)'s leadership has begun questioning the value of socialist solidarity with the PSR. Trade delegations have been postponed. Cultural exchanges cancelled. Their state newspaper ran an editorial criticizing our \"revisionist tendencies.\"\n\nIf this continues, a key alliance may fracture.",
+                turnGenerated: game.turnNumber,
+                isUrgent: false,
+                responseOptions: [
+                    EventResponse(
+                        id: "send_envoy",
+                        text: "Send a high-level envoy to repair relations",
+                        shortText: "Send Envoy",
+                        effects: ["internationalStanding": 3, "treasury": -3],
+                        setsFlag: cooldownFlag
+                    ),
+                    EventResponse(
+                        id: "trade_concessions",
+                        text: "Offer trade concessions to demonstrate goodwill",
+                        shortText: "Trade Offer",
+                        effects: ["treasury": -5, "internationalStanding": 5],
+                        setsFlag: cooldownFlag
+                    ),
+                    EventResponse(
+                        id: "accept_distance",
+                        text: "Accept the growing distance — focus on other allies",
+                        shortText: "Accept",
+                        effects: ["internationalStanding": -3],
+                        setsFlag: cooldownFlag
+                    )
+                ],
+                iconName: "person.2.slash.fill",
+                accentColor: "accentGold"
+            ))
+            break  // Only one alliance crisis per evaluation
+        }
+
+        // Trade disruption (2+ countries with tradeVolume < 5)
+        let tradeCollapseCountries = game.foreignCountries.filter { $0.tradeVolume < 5 }
+        if tradeCollapseCountries.count >= 2,
+           let cooldownFlag = internationalCooldownFlag(prefix: "trade_disruption_turn_", interval: 3, game: game) {
+                let affectedNames = tradeCollapseCountries.prefix(3).map { $0.name }.joined(separator: ", ")
+                events.append(DynamicEvent(
+                    eventType: .worldNews,
+                    priority: .normal,
+                    title: "TRADE DISRUPTION: Multiple trade partners near collapse",
+                    briefText: "The Economic Planning Committee reports alarming figures. Trade volumes with \(affectedNames) have collapsed to near-zero levels.\n\nFactories are reporting raw material shortages. The harbor at Red Harbor sits increasingly empty. Without trade, the Five-Year Plan targets are unreachable.\n\nThe Treasury Minister requests emergency consultation.",
+                    turnGenerated: game.turnNumber,
+                    isUrgent: false,
+                    responseOptions: [
+                        EventResponse(
+                            id: "emergency_trade",
+                            text: "Pursue emergency trade negotiations with all partners",
+                            shortText: "Negotiate",
+                            effects: ["treasury": -3, "internationalStanding": 3],
+                            setsFlag: cooldownFlag
+                        ),
+                        EventResponse(
+                            id: "self_sufficiency",
+                            text: "Accelerate domestic self-sufficiency programs",
+                            shortText: "Self-Sufficiency",
+                            effects: ["industrialOutput": 3, "treasury": -5],
+                            setsFlag: cooldownFlag
+                        ),
+                        EventResponse(
+                            id: "new_partners",
+                            text: "Seek new trading partners among non-aligned nations",
+                            shortText: "New Partners",
+                            effects: ["internationalStanding": 2],
+                            setsFlag: cooldownFlag
+                        )
+                    ],
+                    iconName: "shippingbox.fill",
+                    accentColor: "inkGray"
+                ))
+        }
+
+        return events
+    }
+
 }

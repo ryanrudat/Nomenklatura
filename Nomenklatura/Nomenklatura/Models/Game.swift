@@ -1716,6 +1716,25 @@ extension Game {
         let avgRelation = foreignCountries.reduce(0) { $0 + $1.relationshipScore } / foreignCountries.count
         return max(0, min(100, 50 + avgRelation / 2))
     }
+
+    /// Overall world tension level (0-100) derived from hostile relationships and instability
+    var worldTension: Int {
+        var tension = 30  // Base Cold War tension
+
+        let hostileCount = foreignCountries.filter {
+            $0.status == .hostile || $0.status == .atWar
+        }.count
+        tension += hostileCount * 8
+
+        let highTensionCount = foreignCountries.filter { $0.diplomaticTension > 70 }.count
+        tension += highTensionCount * 5
+
+        if stability < 40 {
+            tension += 10
+        }
+
+        return min(100, max(0, tension))
+    }
 }
 
 // MARK: - World Event Helpers

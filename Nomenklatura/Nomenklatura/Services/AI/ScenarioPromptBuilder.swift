@@ -74,6 +74,14 @@ struct ScenarioPromptBuilder {
             }
         }
 
+        // World tension can force crisis scenarios
+        let worldTension = game.worldTension
+        if worldTension > 70 && Double.random(in: 0...1) < 0.60 {
+            return .crisis
+        } else if worldTension > 50 && Double.random(in: 0...1) < 0.30 {
+            return .crisis
+        }
+
         // Build weighted selection
         let recentCategories = game.recentScenarioCategories.compactMap {
             ScenarioCategory(rawValue: $0)
@@ -161,6 +169,17 @@ struct ScenarioPromptBuilder {
     private static func buildCategoryRequirement(category: ScenarioCategory, game: Game) -> String {
         switch category {
         case .crisis:
+            var crisisHints = ""
+            let hostileCountries = game.foreignCountries.filter { $0.relationshipScore < -60 }
+            if !hostileCountries.isEmpty {
+                let names = hostileCountries.map { $0.name }.joined(separator: ", ")
+                crisisHints += "\n\n            Consider involving hostile nations (\(names)) as a source of crisis - border provocations, espionage discoveries, trade embargoes, or diplomatic ultimatums."
+            }
+            let worldTension = game.worldTension
+            if worldTension > 70 {
+                crisisHints += "\n\n            World tension is CRITICAL (\(worldTension)/100). The crisis should reflect the dangerous international climate - proxy conflicts, arms races, or superpower brinkmanship."
+            }
+
             return """
             ## REQUIRED SCENARIO TYPE: CRISIS
 
@@ -168,7 +187,7 @@ struct ScenarioPromptBuilder {
             This should feel like an emergency: protests, shortages, military incidents, factional struggles.
             The stakes are high and the player must act decisively.
 
-            DO NOT generate a routine governance scenario or opportunity.
+            DO NOT generate a routine governance scenario or opportunity.\(crisisHints)
             """
 
         case .routine:
@@ -287,6 +306,7 @@ struct ScenarioPromptBuilder {
         - Industrial Output: \(game.industrialOutput)/100 \(statWarning(game.industrialOutput))
         - Food Supply: \(game.foodSupply)/100 \(statWarning(game.foodSupply))
         - International Standing: \(game.internationalStanding)/100 \(statWarning(game.internationalStanding))
+        - World Tension: \(game.worldTension)/100 \(worldTensionLabel(game.worldTension))
 
         **Player's Personal Stats:**
         - Standing: \(game.standing)/100 (political capital and reputation)
@@ -1082,6 +1102,47 @@ struct ScenarioPromptBuilder {
 
         """
 
+        // World tension assessment
+        let worldTension = game.worldTension
+        section += "**WORLD TENSION LEVEL:** \(worldTension)/100 \(worldTensionLabel(worldTension))\n"
+        if worldTension > 70 {
+            section += "The international situation is extremely dangerous. Any provocation could escalate into open conflict. Diplomatic channels are strained to breaking point.\n"
+        } else if worldTension > 50 {
+            section += "International tensions are elevated. Careful diplomacy is required to prevent escalation.\n"
+        } else {
+            section += "The international situation is relatively stable, though Cold War rivalries simmer beneath the surface.\n"
+        }
+        section += "\n"
+
+        // Hostile nations summary
+        let hostileCountries = game.foreignCountries.filter { $0.relationshipScore < -60 }
+        if !hostileCountries.isEmpty {
+            section += "**HOSTILE NATIONS (relationship < -60):**\n"
+            for country in hostileCountries {
+                section += "- \(country.name): Relations \(country.relationshipScore)/100, Tension \(country.diplomaticTension)/100"
+                if country.diplomaticTension > 80 {
+                    section += " [FLASHPOINT]"
+                }
+                section += "\n"
+            }
+            section += "\n"
+        }
+
+        // Diplomatic action flags
+        let diplomaticFlags = game.flags.filter {
+            $0.hasPrefix("diplomatic_") || $0.hasPrefix("embassy_") ||
+            $0.hasPrefix("trade_") || $0.hasPrefix("sanction_") ||
+            $0.hasPrefix("alliance_") || $0.hasPrefix("treaty_")
+        }
+        if !diplomaticFlags.isEmpty {
+            section += "**ACTIVE DIPLOMATIC SITUATIONS:**\n"
+            for flag in diplomaticFlags.prefix(8) {
+                let readable = flag.replacingOccurrences(of: "_", with: " ").capitalized
+                section += "- \(readable)\n"
+            }
+            section += "\n"
+        }
+
         // Group by bloc
         let socialistAllies = game.foreignCountries.filter { $0.politicalBloc == .socialist }
         let capitalistEnemies = game.foreignCountries.filter { $0.politicalBloc == .capitalist }
@@ -1592,6 +1653,11 @@ struct ScenarioPromptBuilder {
         }
 
         // International concerns
+        let worldTension = game.worldTension
+        if worldTension > 70 {
+            concerns.append("World tension critical (\(worldTension)/100)")
+        }
+
         let highTensionCountries = game.foreignCountries.filter { $0.diplomaticTension > 80 }
         if !highTensionCountries.isEmpty {
             concerns.append("Diplomatic crisis (\(highTensionCountries.first?.name ?? "unknown"))")
@@ -1602,12 +1668,24 @@ struct ScenarioPromptBuilder {
             concerns.append("Alliance strain (\(strainingAllies.first?.name ?? "unknown"))")
         }
 
+        // Trade collapse
+        let tradeCollapseCountries = game.foreignCountries.filter { $0.tradeVolume < 5 && $0.politicalBloc == .socialist }
+        if tradeCollapseCountries.count >= 2 {
+            concerns.append("Trade collapse (\(tradeCollapseCountries.count) partners)")
+        }
+
         // Power concerns
         if game.powerConsolidationScore < 20 && game.currentPositionIndex >= 6 {
             concerns.append("Weak power base")
         }
 
         return concerns.isEmpty ? "None critical" : concerns.joined(separator: ", ")
+    }
+
+    private static func worldTensionLabel(_ tension: Int) -> String {
+        if tension > 70 { return "[CRITICAL]" }
+        if tension > 50 { return "[ELEVATED]" }
+        return "[MANAGEABLE]"
     }
 
     private static func describePersonality(_ character: GameCharacter) -> String {
