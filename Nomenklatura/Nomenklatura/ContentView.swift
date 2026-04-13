@@ -588,7 +588,7 @@ struct GameView: View {
                 onDossierTap: { selectedTab = .dossier },  // Navigate to Dossier from memo tray
                 onLedgerTap: { selectedTab = .ledger },    // Navigate to Ledger from stats
                 onLadderTap: { selectedTab = .ladder },    // Navigate to Ladder from standing
-                onEndTurn: { transitionToPersonalAction() }  // Proper turn ending through game phases
+                onEndTurn: { transitionToDirectivePhase() }  // End turn goes to directive phase
             )
 
         case .outcome:
@@ -600,7 +600,7 @@ struct GameView: View {
                     statChanges: outcome.statChanges,
                     optionArchetype: outcome.optionChosen.archetype
                 ) {
-                    transitionToPersonalAction()
+                    transitionToDirectivePhase()
                 }
             } else {
                 // Fallback if no outcome data (shouldn't happen)
@@ -609,8 +609,14 @@ struct GameView: View {
                     outcomeText: "The consequences of your decision unfold...",
                     statChanges: []
                 ) {
-                    transitionToPersonalAction()
+                    transitionToDirectivePhase()
                 }
+            }
+
+        case .directive:
+            // Show directive phase where player issues bureau orders
+            DirectivePhaseView(game: game) {
+                transitionToPersonalAction()
             }
 
         case .personalAction:
@@ -625,8 +631,22 @@ struct GameView: View {
         }
     }
 
+    private func transitionToDirectivePhase() {
+        // Check for game end conditions before entering directive phase
+        let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
+        if endCheck.gameOver {
+            endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 0.3)) {
+            game.directivePoints = 2  // Reset directive points for this turn
+            game.phase = GamePhase.directive.rawValue
+        }
+    }
+
     private func transitionToPersonalAction() {
-        // Check for game end conditions after outcome
+        // Check for game end conditions after directive phase
         let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
         if endCheck.gameOver {
             endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
