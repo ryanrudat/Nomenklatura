@@ -48,6 +48,17 @@ final class NewspaperGenerator {
             return eventHeadline
         }
 
+        // Player diplomatic actions take priority over generic headlines
+        if let diplomaticHeadline = generatePlayerDiplomacyHeadline(for: game) {
+            return diplomaticHeadline
+        }
+
+        // World tension headline when tension is critical (50% chance to allow variety)
+        let worldTension = worldTensionValue(for: game)
+        if worldTension > 60, Int.random(in: 1...100) <= 50 {
+            return generateWorldTensionHeadline(tension: worldTension)
+        }
+
         // Check for follow-up headlines referencing past events (20% chance)
         if Int.random(in: 1...100) <= 20,
            let followUp = generateFollowUpHeadline(for: game) {
@@ -216,6 +227,143 @@ final class NewspaperGenerator {
         }
 
         return nil
+    }
+
+    // MARK: - Player Diplomatic Action Headlines
+
+    /// Generate a headline from recent player diplomatic actions recorded in game.flags
+    private func generatePlayerDiplomacyHeadline(for game: Game) -> HeadlineStory? {
+        let recentActions = recentDiplomaticActions(for: game, turnsBack: 1)
+        guard let (actionType, countryId, _) = recentActions.last else { return nil }
+
+        let country = game.foreignCountries.first { $0.countryId == countryId }
+        let countryName = country?.name ?? "foreign nation"
+
+        switch actionType {
+        case .economicSanctions:
+            return HeadlineStory(
+                headline: "PSR SANCTIONS AGAINST \(countryName.uppercased()) SEND SHOCKWAVES",
+                subheadline: "Economic Measures Demonstrate Socialist Resolve",
+                body: "The government has imposed economic sanctions against \(countryName) in response to continued provocations. Trade restrictions are expected to pressure the \(countryName) regime into compliance with international norms. Workers across the Republic express full support for the decisive action.",
+                category: .international
+            )
+
+        case .diplomaticProtest:
+            return HeadlineStory(
+                headline: "FOREIGN MINISTRY ISSUES STERN PROTEST TO \(countryName.uppercased())",
+                subheadline: "Diplomatic Note Demands Immediate Rectification",
+                body: "The Foreign Ministry has delivered a formal protest to the government of \(countryName), demanding an immediate end to hostile actions. The note, described as 'firm but measured,' reflects the Socialist Republic's commitment to principled diplomacy.",
+                category: .international
+            )
+
+        case .recallAmbassador:
+            return HeadlineStory(
+                headline: "AMBASSADOR RECALLED FROM \(countryName.uppercased())",
+                subheadline: "Diplomatic Relations Downgraded Amid Crisis",
+                body: "In a dramatic escalation, the Socialist Republic has recalled its ambassador from \(countryName). The unprecedented step signals the gravity of the current dispute. The Foreign Ministry stated that normal relations cannot continue under present circumstances.",
+                category: .international
+            )
+
+        case .militaryThreat:
+            return HeadlineStory(
+                headline: "DEFENSE FORCES ON HIGH ALERT NEAR \(countryName.uppercased()) BORDER",
+                subheadline: "Military Readiness Demonstrates Socialist Strength",
+                body: "The Ministry of Defense has ordered heightened alert along the frontier with \(countryName). Military exercises are underway to ensure the People's Armed Forces remain prepared to defend the motherland. The measure sends an unmistakable message to aggressors.",
+                category: .military
+            )
+
+        case .tradeNegotiation:
+            return HeadlineStory(
+                headline: "HISTORIC TRADE AGREEMENT WITH \(countryName.uppercased())",
+                subheadline: "Economic Cooperation Enters New Phase",
+                body: "Negotiations with \(countryName) have produced a comprehensive trade agreement that will benefit workers in both nations. The deal strengthens economic ties and demonstrates the advantages of socialist economic planning on the world stage.",
+                category: .economic
+            )
+
+        case .sendAid:
+            return HeadlineStory(
+                headline: "PSR EXTENDS FRATERNAL AID TO \(countryName.uppercased())",
+                subheadline: "Socialist Solidarity in Action",
+                body: "The Socialist Republic has dispatched economic assistance to \(countryName), fulfilling its duty of international solidarity. The aid package demonstrates the generosity and strength of the socialist system, standing in stark contrast to capitalist exploitation.",
+                category: .international
+            )
+
+        case .culturalExchange:
+            return HeadlineStory(
+                headline: "CULTURAL TIES WITH \(countryName.uppercased()) FLOURISH",
+                subheadline: "Delegations Strengthen People-to-People Bonds",
+                body: "A major cultural exchange program with \(countryName) has been launched, featuring artists, scholars, and youth representatives. The initiative deepens mutual understanding between our peoples and showcases the achievements of socialist culture.",
+                category: .international
+            )
+
+        case .militaryCooperation:
+            return HeadlineStory(
+                headline: "HISTORIC AGREEMENT: PSR SIGNS MILITARY PACT WITH \(countryName.uppercased())",
+                subheadline: "Defense Cooperation Strengthens Socialist Camp",
+                body: "A landmark military cooperation agreement with \(countryName) has been signed, enhancing collective defense capabilities. Joint exercises and equipment sharing will strengthen the fraternal alliance against imperialist aggression.",
+                category: .military
+            )
+
+        case .sabotage:
+            // Covert action -- reported obliquely to avoid revealing PSR involvement
+            return HeadlineStory(
+                headline: "INDUSTRIAL DIFFICULTIES REPORTED IN \(countryName.uppercased())",
+                subheadline: "Economic Setbacks Plague Hostile Regime",
+                body: "Reports from \(countryName) indicate significant disruptions to industrial and military infrastructure. Foreign analysts attribute the difficulties to systemic failures inherent in their political system.",
+                category: .international
+            )
+
+        case .supportDissidents:
+            // Covert action -- reported obliquely to avoid revealing PSR involvement
+            return HeadlineStory(
+                headline: "WORKERS IN \(countryName.uppercased()) DEMAND CHANGE",
+                subheadline: "Opposition Voices Grow Louder",
+                body: "Growing unrest among the working class in \(countryName) signals deepening crisis. Progressive forces within the country call for fundamental reforms. International observers note the inevitable march of history.",
+                category: .international
+            )
+
+        case .plantAssets, .propaganda:
+            // Covert actions -- generic headline to avoid revealing details
+            return HeadlineStory(
+                headline: "DIPLOMATIC DEVELOPMENTS WITH \(countryName.uppercased())",
+                subheadline: "Foreign Ministry Reports on International Situation",
+                body: "The Foreign Ministry has announced developments in relations with \(countryName). The diplomatic initiative reflects the Party's wise stewardship of international affairs and commitment to advancing socialist interests on the world stage.",
+                category: .international
+            )
+        }
+    }
+
+    private func generateWorldTensionHeadline(tension: Int) -> HeadlineStory {
+        let tensionLevel: String
+        if tension > 85 {
+            tensionLevel = "CRITICAL"
+        } else if tension > 75 {
+            tensionLevel = "DANGEROUS"
+        } else {
+            tensionLevel = "ELEVATED"
+        }
+
+        let headlines = [
+            HeadlineStory(
+                headline: "WORLD TENSION RISES TO \(tensionLevel) LEVELS",
+                subheadline: "Imperialist Provocations Threaten Global Peace",
+                body: "International tensions have reached \(tensionLevel.lowercased()) levels as aggressive posturing by Western powers threatens global stability. The Socialist Republic calls on all peace-loving nations to resist imperialist warmongering. The People's Armed Forces remain vigilant.",
+                category: .international
+            ),
+            HeadlineStory(
+                headline: "COLD WAR TENSIONS ESCALATE",
+                subheadline: "Global Powers on Edge as Crisis Deepens",
+                body: "The international situation has deteriorated significantly, with military readiness increasing across multiple nations. The Socialist Republic maintains its principled stance for peace while preparing to defend the achievements of socialism against any aggressor.",
+                category: .international
+            ),
+            HeadlineStory(
+                headline: "PARTY CALLS FOR VIGILANCE AS GLOBAL TENSIONS MOUNT",
+                subheadline: "Central Committee Issues Statement on International Situation",
+                body: "The Central Committee has issued a statement urging citizens to maintain revolutionary vigilance as international tensions intensify. Civil defense preparations continue while the Foreign Ministry pursues all diplomatic avenues for de-escalation.",
+                category: .international
+            )
+        ]
+        return headlines.randomElement() ?? headlines[0]
     }
 
     /// Format a world event for newspaper presentation (state propaganda spin)
@@ -565,6 +713,11 @@ final class NewspaperGenerator {
             }
         }
 
+        // Add international situation stories based on diplomatic state
+        if stories.count < count {
+            stories.append(contentsOf: generateInternationalSituationStories(for: game, limit: count - stories.count))
+        }
+
         // Fill remaining slots with standard stories
         let standardStories = [
             NewspaperStory(
@@ -683,6 +836,93 @@ final class NewspaperGenerator {
         }
     }
 
+    // MARK: - International Situation Stories
+
+    /// Generate secondary stories based on the current diplomatic world state
+    private func generateInternationalSituationStories(for game: Game, limit: Int) -> [NewspaperStory] {
+        var stories: [NewspaperStory] = []
+        let worldTension = worldTensionValue(for: game)
+
+        if worldTension > 60 {
+            stories.append(NewspaperStory(
+                headline: "Cold War Tensions Escalate",
+                brief: "Global powers on edge as international tension index reaches \(worldTension). The Socialist Republic calls for peaceful resolution.",
+                importance: 4
+            ))
+        }
+
+        if let strongAlly = game.foreignCountries.first(where: { $0.isAlly && $0.relationshipScore > 80 }) {
+            stories.append(NewspaperStory(
+                headline: "Socialist Solidarity with \(strongAlly.name)",
+                brief: "Strong fraternal ties with \(strongAlly.name) continue to deepen, exemplifying the unity of the socialist camp.",
+                importance: 3
+            ))
+        }
+
+        if let warCountry = game.foreignCountries.first(where: { $0.status == .atWar }) {
+            stories.append(NewspaperStory(
+                headline: "Conflict Report: \(warCountry.name)",
+                brief: "The military situation involving \(warCountry.name) remains tense. The Foreign Ministry monitors developments closely.",
+                importance: 4
+            ))
+        }
+
+        let highTradeCountries = game.foreignCountries.filter { $0.tradeVolume > 60 }
+        if highTradeCountries.count >= 2 {
+            stories.append(NewspaperStory(
+                headline: "Economic Ties Strengthen Across Bloc",
+                brief: "Trade volumes with \(highTradeCountries.count) partner nations exceed targets, demonstrating the vitality of socialist economic cooperation.",
+                importance: 3
+            ))
+        }
+
+        // Ripple effect coverage -- reactions to player diplomatic actions from recent turns
+        let pastActions = recentDiplomaticActions(for: game, turnsBack: 2)
+            .filter { $0.turn < game.turnNumber }
+
+        if !pastActions.isEmpty {
+            let allies = game.alliedCountries
+            let hostiles = game.hostileCountries
+            let hasHostileAction = pastActions.contains { Self.hostileActionTypes.contains($0.action) }
+
+            if hasHostileAction {
+                if let ally = allies.randomElement() {
+                    stories.append(NewspaperStory(
+                        headline: "Bloc Responds to PSR Diplomatic Initiative",
+                        brief: "\(ally.name) increases cooperation following the Socialist Republic's firm stance on the international stage.",
+                        importance: 3
+                    ))
+                }
+
+                if let hostile = hostiles.randomElement() {
+                    stories.append(NewspaperStory(
+                        headline: "Western Powers Condemn PSR Actions",
+                        brief: "\(hostile.name) and allied nations issue predictable protests against the Socialist Republic's sovereign decisions.",
+                        importance: 2
+                    ))
+                }
+            } else {
+                if let ally = allies.randomElement() {
+                    stories.append(NewspaperStory(
+                        headline: "Fraternal Nations Welcome PSR Diplomacy",
+                        brief: "\(ally.name) praises the Socialist Republic's constructive engagement on the world stage.",
+                        importance: 3
+                    ))
+                }
+            }
+
+            if worldTension > 40 {
+                stories.append(NewspaperStory(
+                    headline: "Military Readiness: Border Regions on Alert",
+                    brief: "Frontier forces maintain heightened vigilance following recent diplomatic developments. The People's Army stands ready.",
+                    importance: 3
+                ))
+            }
+        }
+
+        return Array(stories.sorted { $0.importance > $1.importance }.prefix(limit))
+    }
+
     // MARK: - Character Fate Reports
 
     private func generateCharacterFateReport(for game: Game) -> CharacterFateReport? {
@@ -761,6 +1001,11 @@ final class NewspaperGenerator {
             return formatEventAsInternationalNews(event: event, country: country, game: game)
         }
 
+        // Check for diplomatic-state-driven international news
+        if let diplomaticNews = generateDiplomaticInternationalNews(for: game) {
+            return diplomaticNews
+        }
+
         // Fall back to dynamic news using actual country names
         let hostileCountries = game.hostileCountries
         let hostileName1 = hostileCountries.first?.name ?? "United Kingdom"
@@ -776,6 +1021,39 @@ final class NewspaperGenerator {
         ]
 
         return news.randomElement()
+    }
+
+    /// Generate international news driven by the current diplomatic landscape
+    private func generateDiplomaticInternationalNews(for game: Game) -> String? {
+        var candidates: [String] = []
+        let worldTension = worldTensionValue(for: game)
+
+        let strainedCountries = game.foreignCountries.filter {
+            $0.status == .strained || $0.status == .hostile
+        }
+        if let strained = strainedCountries.randomElement() {
+            candidates.append("Diplomatic relations with \(strained.name) remain strained. The Foreign Ministry continues efforts to resolve outstanding disputes through principled negotiation.")
+        }
+
+        let allies = game.alliedCountries
+        if allies.count >= 3 {
+            let allyNames = allies.prefix(3).map { $0.name }.joined(separator: ", ")
+            candidates.append("The socialist bloc stands united: \(allyNames) and other fraternal nations reaffirm their commitment to collective defense and economic cooperation.")
+        }
+
+        if let tensionCountry = game.foreignCountries.first(where: { $0.diplomaticTension > 70 }) {
+            candidates.append("Tensions with \(tensionCountry.name) have reached concerning levels. Military observers report increased activity along shared borders.")
+        }
+
+        if worldTension > 80 {
+            candidates.append("Global tensions approach crisis levels. Civil defense authorities urge citizens to familiarize themselves with emergency procedures. The Party assures the people that socialism will prevail.")
+        }
+
+        if let adversary = game.foreignCountries.first(where: { $0.relationshipScore < -75 }) {
+            candidates.append("Relations with \(adversary.name) have deteriorated sharply. The aggressive posture of the \(adversary.name) regime necessitates heightened vigilance on all fronts.")
+        }
+
+        return candidates.randomElement()
     }
 
     /// Format a world event as brief international news
@@ -1395,9 +1673,41 @@ final class NewspaperGenerator {
     // MARK: - Helpers
 
     private func formatDate(for turnNumber: Int) -> String {
-        // Use Revolutionary Calendar with revolutionary month names
         RevolutionaryCalendar.formatTurnFull(turnNumber)
     }
+
+    /// Parse world tension from game variables
+    private func worldTensionValue(for game: Game) -> Int {
+        Int(game.variables["world_tension"] ?? "0") ?? 0
+    }
+
+    /// Parse recent diplomatic action flags into structured tuples.
+    /// Flag format: `diplomatic_action_{actionType}_{countryId}_{turnNumber}`
+    private func recentDiplomaticActions(
+        for game: Game,
+        turnsBack: Int
+    ) -> [(action: DiplomaticActionType, countryId: String, turn: Int)] {
+        let minTurn = game.turnNumber - turnsBack
+        return game.flags.compactMap { flag in
+            guard flag.hasPrefix("diplomatic_action_") else { return nil }
+            let stripped = String(flag.dropFirst("diplomatic_action_".count))
+            let parts = stripped.split(separator: "_")
+            guard parts.count >= 3,
+                  let turn = Int(String(parts.last!)),
+                  turn >= minTurn else { return nil }
+
+            // First segment is actionType (camelCase, no underscores); rest minus last is countryId
+            let actionRaw = String(parts.first!)
+            let countryId = parts.dropFirst().dropLast().joined(separator: "_")
+            guard let action = DiplomaticActionType(rawValue: actionRaw) else { return nil }
+            return (action, countryId, turn)
+        }
+    }
+
+    private static let hostileActionTypes: Set<DiplomaticActionType> = [
+        .economicSanctions, .militaryThreat, .recallAmbassador,
+        .diplomaticProtest, .sabotage, .supportDissidents
+    ]
 
     private func weightedRandomSelection<T>(from items: [(T, Int)]) -> T {
         let totalWeight = items.reduce(0) { $0 + $1.1 }
