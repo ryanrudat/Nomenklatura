@@ -245,9 +245,8 @@ struct MinistryPositionBanner: View {
 
     private var stateCouncilEquivalent: String {
         guard hasAuthority else { return "No Ministry Authority" }
-        return StateMinistryActionCategory.allCases
-            .filter { game.currentPositionIndex >= $0.minimumPositionIndex }
-            .last?.stateCouncilEquivalent ?? "Administrative Staff"
+        // Player is General Secretary — all categories are available
+        return StateMinistryActionCategory.allCases.last?.stateCouncilEquivalent ?? "Administrative Staff"
     }
 
     private var headerText: String {
@@ -706,8 +705,8 @@ struct MinistryActionsSection: View {
     }
 
     private var availableActions: [StateMinistryAction] {
-        let position = game.currentPositionIndex
-        return StateMinistryAction.allActions.filter { $0.minimumPositionIndex <= position }
+        // Player is General Secretary — all actions are available
+        return StateMinistryAction.allActions
     }
 
     private var groupedActions: [(StateMinistryActionCategory, [StateMinistryAction])] {

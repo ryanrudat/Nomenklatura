@@ -244,9 +244,8 @@ struct EconomicPositionBanner: View {
 
     private var gosplanEquivalent: String {
         guard hasAuthority else { return "No Economic Authority" }
-        return EconomicActionCategory.allCases
-            .filter { game.currentPositionIndex >= $0.minimumPositionIndex }
-            .last?.gosplanEquivalent ?? "Worker"
+        // Player is General Secretary — all categories are available
+        return EconomicActionCategory.allCases.last?.gosplanEquivalent ?? "Worker"
     }
 
     private var headerText: String {
@@ -757,11 +756,13 @@ struct EconomicActionsSection: View {
     }
 
     private var availableActions: [EconomicAction] {
-        EconomicAction.actions(forPosition: game.currentPositionIndex)
+        // Player is General Secretary — all actions are available
+        EconomicAction.allActions
     }
 
     private var lockedActions: [EconomicAction] {
-        EconomicAction.allActions.filter { $0.minimumPositionIndex > game.currentPositionIndex }
+        // Player is General Secretary — no actions are position-locked
+        []
     }
 
     private var cooldowns: EconomicCooldownTracker {

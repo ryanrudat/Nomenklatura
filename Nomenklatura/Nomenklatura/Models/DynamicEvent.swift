@@ -138,7 +138,12 @@ enum DynamicEventType: String, Codable {
     }
 
     /// Check if this event type is appropriate for given position
+    /// Note: Player starts as General Secretary (position 8), so position gates
+    /// are effectively bypassed. The minimum/maximum fields are preserved for NPC use.
     func isAppropriate(forPositionIndex index: Int) -> Bool {
+        // General Secretary (position 8) sees all event types
+        if index >= 8 { return true }
+
         if index < minimumPositionIndex {
             return false
         }

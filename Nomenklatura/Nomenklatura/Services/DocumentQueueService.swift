@@ -375,8 +375,8 @@ class DocumentQueueService: ObservableObject {
             count += 1
         }
 
-        // Higher position = more documents
-        if game.currentPositionIndex >= 3 && Double.random(in: 0...1) < 0.4 {
+        // General Secretary always gets the extra document load
+        if Double.random(in: 0...1) < 0.4 {
             count += 1
         }
 
@@ -451,16 +451,23 @@ class DocumentQueueService: ObservableObject {
     }
 
     /// Apply role-based document weighting based on player's track and position
-    /// This implements HARD FILTERING - documents outside your bureau jurisdiction are excluded
+    /// General Secretary sees all document types with balanced weighting
     private func applyRoleBasedWeights(_ weights: inout [DocumentCategory: Double], game: Game) {
         let playerTrack = game.currentCommittedTrack
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // HARD FILTERING: Bureau-specific documents should only go to relevant bureaus
-        // A Security Services official shouldn't receive Planning Commission resource allocation requests
-        // Cross-bureau documents should be rare and represent interdepartmental matters
-        if let track = playerTrack {
-            switch track {
+        // General Secretary oversees all bureaus — skip track-based hard filtering
+        // Documents are weighted slightly toward the GS's original track but nothing is excluded
+        guard game.currentPositionIndex < 7, let track = playerTrack else {
+            // Top leadership: boost personnel and diplomatic slightly (head-of-state concerns)
+            weights[.personnel] = (weights[.personnel] ?? 15) * 1.3
+            weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.2
+            return
+        }
+
+        // Below General Secretary: bureau-specific filtering applies
+        // (preserved for NPC systems or future use)
+        switch track {
             case .securityServices:
                 // Security track: Focus on security documents
                 weights[.security] = (weights[.security] ?? 15) * 2.5
@@ -535,7 +542,6 @@ class DocumentQueueService: ObservableObject {
                 // These are junior officials who see general administrative work
                 break
             }
-        }
 
         // Clearance-based filtering
         // Low clearance players don't see crisis or high-sensitivity documents

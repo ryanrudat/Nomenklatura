@@ -244,9 +244,8 @@ struct MilitaryPositionBanner: View {
 
     private var plaEquivalent: String {
         guard hasAuthority else { return "No Military Authority" }
-        return MilitaryActionCategory.allCases
-            .filter { game.currentPositionIndex >= $0.minimumPositionIndex }
-            .last?.plaEquivalent ?? "Political Instructor"
+        // Player is General Secretary — all categories are available
+        return MilitaryActionCategory.allCases.last?.plaEquivalent ?? "Political Instructor"
     }
 
     private var headerText: String {
@@ -781,11 +780,13 @@ struct MilitaryActionsSection: View {
     }
 
     private var availableActions: [MilitaryAction] {
-        MilitaryAction.actions(forPosition: game.currentPositionIndex)
+        // Player is General Secretary — all actions are available
+        MilitaryAction.allActions
     }
 
     private var lockedActions: [MilitaryAction] {
-        MilitaryAction.allActions.filter { $0.minimumPositionIndex > game.currentPositionIndex }
+        // Player is General Secretary — no actions are position-locked
+        []
     }
 
     private var cooldowns: MilitaryCooldownTracker {

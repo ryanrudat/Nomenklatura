@@ -35,29 +35,7 @@ final class MilitaryActionService {
     ) -> ValidationResult {
         let positionIndex = game.currentPositionIndex
 
-        // Check position requirement
-        guard positionIndex >= action.minimumPositionIndex else {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Position \(action.minimumPositionIndex) (you are Position \(positionIndex))",
-                successChance: 0,
-                requiresApproval: false
-            )
-        }
-
-        // Check track requirement - must be in Military-Political track (or top leadership 7+)
-        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
-        let isInMilitaryTrack = playerTrack == .militaryPolitical
-        let isTopLeadership = positionIndex >= 7  // Top leadership transcends tracks
-
-        if !isInMilitaryTrack && !isTopLeadership {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Military-Political career track",
-                successChance: 0,
-                requiresApproval: false
-            )
-        }
+        // Player is General Secretary — no position or track gate needed
 
         // Check cooldown
         let cooldowns = getMilitaryCooldowns(for: game)

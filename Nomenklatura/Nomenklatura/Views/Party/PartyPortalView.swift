@@ -245,9 +245,8 @@ struct PartyPositionBanner: View {
 
     private var ccpEquivalent: String {
         guard hasAuthority else { return "No Party Apparatus Authority" }
-        return PartyActionCategory.allCases
-            .filter { game.currentPositionIndex >= $0.minimumPositionIndex }
-            .last?.ccpEquivalent ?? "Grassroots Party Member"
+        // Player is General Secretary — all categories are available
+        return PartyActionCategory.allCases.last?.ccpEquivalent ?? "Grassroots Party Member"
     }
 
     private var headerText: String {
@@ -675,8 +674,8 @@ struct PartyActionsSection: View {
     }
 
     private var availableActions: [PartyAction] {
-        let position = game.currentPositionIndex
-        return PartyAction.allActions.filter { $0.minimumPositionIndex <= position }
+        // Player is General Secretary — all actions are available
+        return PartyAction.allActions
     }
 
     private var groupedActions: [(PartyActionCategory, [PartyAction])] {

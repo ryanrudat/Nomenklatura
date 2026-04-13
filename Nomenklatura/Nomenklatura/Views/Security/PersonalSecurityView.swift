@@ -34,15 +34,11 @@ struct PersonalSecurityView: View {
             // Personal vulnerability indicators
             vulnerabilitySection
 
-            // Threat assessment (Position 3+)
-            if game.currentPositionIndex >= 3 {
-                threatAssessmentSection
-            }
+            // Threat assessment — always shown for General Secretary
+            threatAssessmentSection
 
-            // Network security (Position 5+)
-            if game.currentPositionIndex >= 5 {
-                networkSecuritySection
-            }
+            // Network security — always shown for General Secretary
+            networkSecuritySection
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
@@ -193,35 +189,24 @@ struct PersonalSecurityView: View {
 
                 Divider()
 
-                // Suspicion indicators (you might not know exactly)
-                if game.currentPositionIndex >= 2 {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("KNOWN INDICATORS")
-                            .font(.system(size: 9, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundColor(theme.inkGray)
+                // Suspicion indicators — always shown for General Secretary
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("KNOWN INDICATORS")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(0.5)
+                        .foregroundColor(theme.inkGray)
 
-                        SuspicionIndicator(
-                            label: "Evidence File",
-                            value: game.corruptionEvidence,
-                            description: evidenceDescription
-                        )
+                    SuspicionIndicator(
+                        label: "Evidence File",
+                        value: game.corruptionEvidence,
+                        description: evidenceDescription
+                    )
 
-                        SuspicionIndicator(
-                            label: "Visibility Level",
-                            value: game.wealthVisibility,
-                            description: visibilityDescription
-                        )
-                    }
-                } else {
-                    HStack {
-                        Image(systemName: "eye.slash")
-                            .foregroundColor(theme.inkLight)
-                        Text("Detailed indicators require Position 2+")
-                            .font(.system(size: 10))
-                            .foregroundColor(theme.inkGray)
-                            .italic()
-                    }
+                    SuspicionIndicator(
+                        label: "Visibility Level",
+                        value: game.wealthVisibility,
+                        description: visibilityDescription
+                    )
                 }
             }
             .padding(12)
@@ -421,20 +406,8 @@ struct PersonalSecurityView: View {
     }
 
     private var accessibleBureaus: [String] {
-        var bureaus = ["Personnel Files", "Public Reports"]
-        if game.currentPositionIndex >= 2 {
-            bureaus.append("Economic Data")
-        }
-        if game.currentPositionIndex >= 3 {
-            bureaus.append("Security Intel")
-        }
-        if game.currentPositionIndex >= 5 {
-            bureaus.append("Foreign Intel")
-        }
-        if game.currentPositionIndex >= 7 {
-            bureaus.append("Politburo Files")
-        }
-        return bureaus
+        // General Secretary has access to all bureaus
+        return ["Personnel Files", "Public Reports", "Economic Data", "Security Intel", "Foreign Intel", "Politburo Files"]
     }
 
     private var investigationStatus: (label: String, color: Color) {

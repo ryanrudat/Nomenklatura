@@ -17,10 +17,8 @@ class CharacterInteractionSystem {
     func getAvailableInteractions(for character: GameCharacter, game: Game) -> [CharacterInteraction] {
         var interactions: [CharacterInteraction] = []
 
-        // Leader powers (position 5+ = Deputy General Secretary or higher)
-        if game.currentPositionIndex >= 5 {
-            interactions.append(contentsOf: getLeaderPowers(character: character, game: game))
-        }
+        // Leader powers — player is General Secretary, always available
+        interactions.append(contentsOf: getLeaderPowers(character: character, game: game))
 
         // Patron-specific interactions
         if character.isPatron {
@@ -103,28 +101,26 @@ class CharacterInteractionSystem {
         ))
 
         // Warn of Threats (higher risk, higher reward)
-        if game.currentPositionIndex >= 2 {
-            interactions.append(CharacterInteraction(
-                id: "warn_patron_threats",
-                title: "Warn of Threats",
-                description: "Alert your patron to potential dangers (real or imagined)",
-                category: .informing,
-                riskLevel: .medium,
-                costAP: 1,
-                effects: ["patronFavor": 5, "reputationLoyal": 5],
-                successNarratives: [
-                    "\(character.name) nods gravely. 'I appreciate your vigilance, Comrade.'",
-                    "'Interesting,' your patron murmurs, making a note. 'Very interesting.'",
-                    "Your warning is received well. \(character.name) values those who watch his back."
-                ],
-                failureNarratives: [
-                    "'You waste my time with rumors?' \(character.name)'s displeasure is evident.",
-                    "Your patron dismisses your concerns. Perhaps you've cried wolf too often."
-                ],
-                flavorText: "Information is currency. Spend it wisely.",
-                minPositionIndex: 2
-            ))
-        }
+        interactions.append(CharacterInteraction(
+            id: "warn_patron_threats",
+            title: "Warn of Threats",
+            description: "Alert your patron to potential dangers (real or imagined)",
+            category: .informing,
+            riskLevel: .medium,
+            costAP: 1,
+            effects: ["patronFavor": 5, "reputationLoyal": 5],
+            successNarratives: [
+                "\(character.name) nods gravely. 'I appreciate your vigilance, Comrade.'",
+                "'Interesting,' your patron murmurs, making a note. 'Very interesting.'",
+                "Your warning is received well. \(character.name) values those who watch his back."
+            ],
+            failureNarratives: [
+                "'You waste my time with rumors?' \(character.name)'s displeasure is evident.",
+                "Your patron dismisses your concerns. Perhaps you've cried wolf too often."
+            ],
+            flavorText: "Information is currency. Spend it wisely.",
+            minPositionIndex: 2
+        ))
 
         return interactions
     }
@@ -134,8 +130,8 @@ class CharacterInteractionSystem {
     private func getRivalInteractions(character: GameCharacter, game: Game) -> [CharacterInteraction] {
         var interactions: [CharacterInteraction] = []
 
-        // Public Confrontation (high risk)
-        if game.currentPositionIndex >= 2 && game.standing >= 40 {
+        // Public Confrontation (high risk) — position gate removed, stat gate kept
+        if game.standing >= 40 {
             interactions.append(CharacterInteraction(
                 id: "confront_rival_public",
                 title: "Public Confrontation",
@@ -269,29 +265,27 @@ class CharacterInteractionSystem {
             flavorText: "Your contact's access has its limits, but every scrap helps."
         ))
 
-        // Request Surveillance
-        if game.currentPositionIndex >= 2 {
-            interactions.append(CharacterInteraction(
-                id: "request_surveillance_\(character.templateId)",
-                title: "Request Surveillance",
-                description: "Ask your contact to watch someone specific",
-                category: .intelligence,
-                riskLevel: .medium,
-                costAP: 2,
-                effects: ["rivalThreat": -3, "network": 1],
-                successNarratives: [
-                    "\(character.name) agrees to keep eyes on your target.",
-                    "'I can do this,' your contact says, 'but it won't be easy.'",
-                    "Your contact begins their assignment. Information will follow."
-                ],
-                failureNarratives: [
-                    "'Too risky,' \(character.name) says. 'I could be exposed.'",
-                    "Your contact refuses. The target is too well-protected."
-                ],
-                flavorText: "Everyone watches everyone. That's how things work here.",
-                minPositionIndex: 2
-            ))
-        }
+        // Request Surveillance — always available for General Secretary
+        interactions.append(CharacterInteraction(
+            id: "request_surveillance_\(character.templateId)",
+            title: "Request Surveillance",
+            description: "Ask your contact to watch someone specific",
+            category: .intelligence,
+            riskLevel: .medium,
+            costAP: 2,
+            effects: ["rivalThreat": -3, "network": 1],
+            successNarratives: [
+                "\(character.name) agrees to keep eyes on your target.",
+                "'I can do this,' your contact says, 'but it won't be easy.'",
+                "Your contact begins their assignment. Information will follow."
+            ],
+            failureNarratives: [
+                "'Too risky,' \(character.name) says. 'I could be exposed.'",
+                "Your contact refuses. The target is too well-protected."
+            ],
+            flavorText: "Everyone watches everyone. That's how things work here.",
+            minPositionIndex: 2
+        ))
 
         return interactions
     }
@@ -1218,7 +1212,8 @@ class CharacterInteractionSystem {
         // Check if player's current position track is security services
         // This would be set based on career choices
         // For now, approximate by checking if they have high network + certain position
-        return game.network >= 60 && game.currentPositionIndex >= 3
+        // Player is General Secretary — position gate removed, only check network
+        return game.network >= 60
     }
 
     // MARK: - Secrets Leverage System
@@ -1831,9 +1826,7 @@ class CharacterInteractionSystem {
         // Can't use leader powers on yourself or the General Secretary (if not you)
         guard character.currentRole != .leader else { return interactions }
 
-        let isGeneralSecretary = game.currentPositionIndex >= 6
-
-        // Order Investigation (Deputy General Secretary+)
+        // Order Investigation
         interactions.append(CharacterInteraction(
             id: "order_investigation_\(character.templateId)",
             title: "Order Investigation",
@@ -1855,9 +1848,8 @@ class CharacterInteractionSystem {
             minPositionIndex: 5
         ))
 
-        // Order Arrest (General Secretary only, or Deputy with high support)
-        if isGeneralSecretary || (game.currentPositionIndex == 5 && game.network >= 70) {
-            interactions.append(CharacterInteraction(
+        // Order Arrest
+        interactions.append(CharacterInteraction(
                 id: "order_arrest_\(character.templateId)",
                 title: "Order Arrest",
                 description: "Have \(character.name) detained for questioning",
@@ -1877,94 +1869,91 @@ class CharacterInteractionSystem {
                 flavorText: "Arrest first, find evidence later. The Party way.",
                 minPositionIndex: 5
             ))
-        }
 
-        // Order Execution (General Secretary only)
-        if isGeneralSecretary {
-            interactions.append(CharacterInteraction(
-                id: "order_execution_\(character.templateId)",
-                title: "Order Execution",
-                description: "Sign the order for \(character.name)'s execution",
-                category: .hostile,
-                riskLevel: .high,
-                costAP: 2,
-                effects: ["stability": -10, "eliteLoyalty": -15, "reputationRuthless": 15],
-                successNarratives: [
-                    "The sentence is carried out at dawn. \(character.name) is no more.",
-                    "'Crimes against the state.' The tribunal was brief. The execution briefer.",
-                    "\(character.name) joins the ranks of those who underestimated your resolve."
-                ],
-                failureNarratives: [
-                    "The Politburo blocks the execution. Even your power has limits.",
-                    "International pressure stays your hand. \(character.name) lives—for now."
-                ],
-                flavorText: "The ultimate power. Use it wisely, or not at all.",
-                minPositionIndex: 6
-            ))
+        // Order Execution
+        interactions.append(CharacterInteraction(
+            id: "order_execution_\(character.templateId)",
+            title: "Order Execution",
+            description: "Sign the order for \(character.name)'s execution",
+            category: .hostile,
+            riskLevel: .high,
+            costAP: 2,
+            effects: ["stability": -10, "eliteLoyalty": -15, "reputationRuthless": 15],
+            successNarratives: [
+                "The sentence is carried out at dawn. \(character.name) is no more.",
+                "'Crimes against the state.' The tribunal was brief. The execution briefer.",
+                "\(character.name) joins the ranks of those who underestimated your resolve."
+            ],
+            failureNarratives: [
+                "The Politburo blocks the execution. Even your power has limits.",
+                "International pressure stays your hand. \(character.name) lives—for now."
+            ],
+            flavorText: "The ultimate power. Use it wisely, or not at all.",
+            minPositionIndex: 6
+        ))
 
-            // Order Exile (less severe than execution)
-            interactions.append(CharacterInteraction(
-                id: "order_exile_\(character.templateId)",
-                title: "Order Exile",
-                description: "Banish \(character.name) to a distant region",
-                category: .hostile,
-                riskLevel: .medium,
-                costAP: 1,
-                effects: ["stability": -3, "eliteLoyalty": -5],
-                successNarratives: [
-                    "\(character.name) will contribute to agricultural development in the Plains Zone.",
-                    "'For health reasons,' the announcement says. \(character.name) departs within the hour.",
-                    "A one-way ticket to the Northern Reaches. \(character.name)'s career in the Capital is over."
-                ],
-                failureNarratives: [
-                    "\(character.name) has too many allies. The exile order is quietly shelved.",
-                    "The People's Congress finds your reasoning 'insufficient.' \(character.name) remains."
-                ],
-                flavorText: "Not death, but close enough. The Northern Reaches are very cold this time of year.",
-                minPositionIndex: 6
-            ))
+        // Order Exile (less severe than execution)
+        interactions.append(CharacterInteraction(
+            id: "order_exile_\(character.templateId)",
+            title: "Order Exile",
+            description: "Banish \(character.name) to a distant region",
+            category: .hostile,
+            riskLevel: .medium,
+            costAP: 1,
+            effects: ["stability": -3, "eliteLoyalty": -5],
+            successNarratives: [
+                "\(character.name) will contribute to agricultural development in the Plains Zone.",
+                "'For health reasons,' the announcement says. \(character.name) departs within the hour.",
+                "A one-way ticket to the Northern Reaches. \(character.name)'s career in the Capital is over."
+            ],
+            failureNarratives: [
+                "\(character.name) has too many allies. The exile order is quietly shelved.",
+                "The People's Congress finds your reasoning 'insufficient.' \(character.name) remains."
+            ],
+            flavorText: "Not death, but close enough. The Northern Reaches are very cold this time of year.",
+            minPositionIndex: 6
+        ))
 
-            // Forced Retirement (mildest option)
+        // Forced Retirement (mildest option)
+        interactions.append(CharacterInteraction(
+            id: "force_retirement_\(character.templateId)",
+            title: "Force Retirement",
+            description: "Pressure \(character.name) to retire 'for health reasons'",
+            category: .hostile,
+            riskLevel: .low,
+            costAP: 1,
+            effects: ["eliteLoyalty": -3],
+            successNarratives: [
+                "\(character.name) announces retirement, citing health concerns. No one believes it.",
+                "'I have served the Party faithfully,' \(character.name) says in their farewell. Bitterness barely concealed.",
+                "A pension and a dacha. \(character.name) should be grateful for your mercy."
+            ],
+            failureNarratives: [
+                "\(character.name) refuses to go quietly. 'I will not be pushed out!'",
+                "The old guard rallies around \(character.name). Forcing them out would cost too much."
+            ],
+            flavorText: "A gentle push toward the exit. Or not so gentle.",
+            minPositionIndex: 6
+        ))
+
+        // Rehabilitate (if investigating/detained - shows mercy)
+        if character.currentStatus == .underInvestigation || character.currentStatus == .detained {
             interactions.append(CharacterInteraction(
-                id: "force_retirement_\(character.templateId)",
-                title: "Force Retirement",
-                description: "Pressure \(character.name) to retire 'for health reasons'",
-                category: .hostile,
+                id: "rehabilitate_\(character.templateId)",
+                title: "Order Rehabilitation",
+                description: "Clear \(character.name) of all charges and restore them",
+                category: .diplomatic,
                 riskLevel: .low,
                 costAP: 1,
-                effects: ["eliteLoyalty": -3],
+                effects: ["eliteLoyalty": 5, "reputationLoyal": 3],
                 successNarratives: [
-                    "\(character.name) announces retirement, citing health concerns. No one believes it.",
-                    "'I have served the Party faithfully,' \(character.name) says in their farewell. Bitterness barely concealed.",
-                    "A pension and a dacha. \(character.name) should be grateful for your mercy."
+                    "\(character.name) is released. 'Errors were made,' the statement reads.",
+                    "The investigation found nothing. \(character.name) returns to their duties, grateful.",
+                    "Mercy is remembered. \(character.name) owes you their life."
                 ],
-                failureNarratives: [
-                    "\(character.name) refuses to go quietly. 'I will not be pushed out!'",
-                    "The old guard rallies around \(character.name). Forcing them out would cost too much."
-                ],
-                flavorText: "A gentle push toward the exit. Or not so gentle.",
+                flavorText: "Showing mercy can be as powerful as showing strength.",
                 minPositionIndex: 6
             ))
-
-            // Rehabilitate (if investigating/detained - shows mercy)
-            if character.currentStatus == .underInvestigation || character.currentStatus == .detained {
-                interactions.append(CharacterInteraction(
-                    id: "rehabilitate_\(character.templateId)",
-                    title: "Order Rehabilitation",
-                    description: "Clear \(character.name) of all charges and restore them",
-                    category: .diplomatic,
-                    riskLevel: .low,
-                    costAP: 1,
-                    effects: ["eliteLoyalty": 5, "reputationLoyal": 3],
-                    successNarratives: [
-                        "\(character.name) is released. 'Errors were made,' the statement reads.",
-                        "The investigation found nothing. \(character.name) returns to their duties, grateful.",
-                        "Mercy is remembered. \(character.name) owes you their life."
-                    ],
-                    flavorText: "Showing mercy can be as powerful as showing strength.",
-                    minPositionIndex: 6
-                ))
-            }
         }
 
         return interactions

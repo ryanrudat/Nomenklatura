@@ -35,29 +35,7 @@ final class PartyActionService {
     ) -> ValidationResult {
         let positionIndex = game.currentPositionIndex
 
-        // Check position requirement
-        guard positionIndex >= action.minimumPositionIndex else {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Position \(action.minimumPositionIndex) (you are Position \(positionIndex))",
-                successChance: 0,
-                requiresApproval: false
-            )
-        }
-
-        // Check track requirement - must be in Party Apparatus track (or top leadership 7+)
-        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
-        let isInPartyTrack = playerTrack == .partyApparatus
-        let isTopLeadership = positionIndex >= 7  // Top leadership transcends tracks
-
-        if !isInPartyTrack && !isTopLeadership {
-            return ValidationResult(
-                canExecute: false,
-                reason: "Requires Party Apparatus career track",
-                successChance: 0,
-                requiresApproval: false
-            )
-        }
+        // Player is General Secretary — no position or track gate needed
 
         // Check cooldown
         let cooldowns = getPartyCooldowns(for: game)

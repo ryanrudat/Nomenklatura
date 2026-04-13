@@ -254,9 +254,8 @@ final class PolicySlot {
             return (false, "Requires \(option.minimumPowerRequired) power consolidation")
         }
 
-        if playerPosition < option.minimumPositionIndex {
-            return (false, "Requires higher position")
-        }
+        // Player is General Secretary — no position gate on policy options
+        // (minimumPositionIndex field preserved for NPC/data compatibility)
 
         if let requiredSupport = option.requiredFactionSupport {
             for (factionId, minStanding) in requiredSupport {
