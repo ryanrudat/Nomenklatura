@@ -407,6 +407,7 @@ final class Game {
 
 enum GamePhase: String, Codable, CaseIterable {
     case briefing
+    case standingCommittee
     case decision
     case outcome
     case personalAction
