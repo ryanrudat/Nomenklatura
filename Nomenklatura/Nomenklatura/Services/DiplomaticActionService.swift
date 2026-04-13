@@ -278,6 +278,7 @@ class DiplomaticActionService {
         applyEffects(effects, targetCountry: targetCountry, game: game)
 
         if let country = targetCountry {
+            // Cascade immediate ripple effects to allies, trade, world tension
             DiplomaticRippleService.shared.processRipples(
                 relationshipChange: effects.relationshipChange,
                 tensionChange: effects.tensionChange,
@@ -285,6 +286,17 @@ class DiplomaticActionService {
                 wasHostile: effects.relationshipChange < 0,
                 game: game
             )
+
+            // Schedule delayed diplomatic consequences (retaliation, alliance response)
+            if effects.relationshipChange != 0 || effects.tensionChange != 0 {
+                ConsequenceEngine.shared.generateDiplomaticConsequences(
+                    wasHostile: effects.relationshipChange < 0,
+                    targetCountryName: country.name,
+                    relationshipChange: effects.relationshipChange,
+                    tensionChange: effects.tensionChange,
+                    game: game
+                )
+            }
         }
 
         // Handle treaty creation

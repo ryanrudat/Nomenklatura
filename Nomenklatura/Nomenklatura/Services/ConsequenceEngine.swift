@@ -297,6 +297,83 @@ class ConsequenceEngine {
         return consequences
     }
 
+    // MARK: - Diplomatic Consequence Generation
+
+    /// Generate delayed consequences for diplomatic actions.
+    /// Batches all consequences before writing to avoid repeated encode/decode cycles.
+    func generateDiplomaticConsequences(
+        wasHostile: Bool,
+        targetCountryName: String,
+        relationshipChange: Int,
+        tensionChange: Int,
+        game: Game
+    ) {
+        var consequences: [ScheduledConsequence] = []
+        let currentTurn = game.turnNumber
+
+        if wasHostile {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + Int.random(in: 2...3),
+                type: .diplomaticRetaliation,
+                magnitude: abs(relationshipChange),
+                description: "\(targetCountryName) retaliates against PSR diplomatic actions",
+                statEffects: [
+                    "internationalStanding": Int.random(in: -10 ... -5),
+                    "treasury": Int.random(in: -8 ... -3)
+                ]
+            ))
+
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + Int.random(in: 1...2),
+                type: .allianceResponse,
+                magnitude: abs(relationshipChange) / 2,
+                description: "\(targetCountryName)'s allies express concern over PSR aggression",
+                statEffects: [
+                    "internationalStanding": Int.random(in: -5 ... -3)
+                ]
+            ))
+
+            // Severe hostility triggers military buildup
+            if tensionChange >= 15 || relationshipChange <= -15 {
+                consequences.append(ScheduledConsequence(
+                    triggerTurn: currentTurn + Int.random(in: 3...5),
+                    type: .militaryBuildupResponse,
+                    magnitude: tensionChange,
+                    description: "\(targetCountryName) begins military buildup along PSR borders",
+                    statEffects: [
+                        "militaryReadiness": -5,
+                        "stability": Int.random(in: -5 ... -3)
+                    ]
+                ))
+            }
+        } else {
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + 1,
+                type: .tradeAdjustmentFeedback,
+                magnitude: relationshipChange,
+                description: "Trade benefits from improved relations with \(targetCountryName) begin flowing",
+                statEffects: [
+                    "treasury": Int.random(in: 5...10)
+                ]
+            ))
+
+            consequences.append(ScheduledConsequence(
+                triggerTurn: currentTurn + Int.random(in: 1...2),
+                type: .allianceResponse,
+                magnitude: relationshipChange / 2,
+                description: "Relations warm across the \(targetCountryName) political bloc",
+                statEffects: [
+                    "internationalStanding": Int.random(in: 2...3)
+                ]
+            ))
+        }
+
+        // Batch-write all consequences in a single encode cycle
+        var current = game.documentConsequences
+        current.append(contentsOf: consequences)
+        game.documentConsequences = current
+    }
+
     // MARK: - Consequence Processing
 
     /// Process all due consequences for a turn (both law-based and document-based)
@@ -438,6 +515,42 @@ class ConsequenceEngine {
                 Not all battles are won on the front lines. Some are fought in corridors and committee rooms.
                 """
 
+        case .diplomaticRetaliation:
+            return """
+                DIPLOMATIC RETALIATION
+
+                \(consequence.description)
+
+                Our adversaries have responded in kind. The cost of confrontation continues to mount.
+                """
+
+        case .allianceResponse:
+            return """
+                ALLIANCE RESPONSE
+
+                \(consequence.description)
+
+                The ripples of our diplomatic actions spread through the blocs. Allies and enemies alike take notice.
+                """
+
+        case .tradeAdjustmentFeedback:
+            return """
+                TRADE ADJUSTMENT
+
+                \(consequence.description)
+
+                The economic machinery responds to improved diplomatic ties. New channels of commerce open.
+                """
+
+        case .militaryBuildupResponse:
+            return """
+                MILITARY BUILDUP DETECTED
+
+                \(consequence.description)
+
+                Intelligence reports increased military activity near our borders. Our provocations have not gone unanswered.
+                """
+
         default:
             // Fall through to the general consequence description
             return """
@@ -569,10 +682,12 @@ class ConsequenceEngine {
                 Not all of them appreciate the attention.
                 """
 
-        // Document consequence types (handled by generateDocumentConsequenceNarrative)
+        // Document and diplomatic consequence types (handled by generateDocumentConsequenceNarrative)
         case .bureaucraticBlowback, .investigationOpened, .gratitude, .resentment,
              .resourceShortage, .operationalSuccess, .operationalFailure,
-             .politicalFavor, .politicalEnmity:
+             .politicalFavor, .politicalEnmity,
+             .diplomaticRetaliation, .allianceResponse,
+             .tradeAdjustmentFeedback, .militaryBuildupResponse:
             return consequence.description
         }
     }
@@ -640,6 +755,19 @@ class ConsequenceEngine {
         case .politicalEnmity:
             iconName = "bolt.fill"
             priority = 7
+        // Diplomatic consequence types
+        case .diplomaticRetaliation:
+            iconName = "arrow.uturn.left.circle.fill"
+            priority = 7
+        case .allianceResponse:
+            iconName = "person.3.sequence.fill"
+            priority = 6
+        case .tradeAdjustmentFeedback:
+            iconName = "shippingbox.fill"
+            priority = 5
+        case .militaryBuildupResponse:
+            iconName = "shield.lefthalf.filled"
+            priority = 8
         }
 
         // Convert priority Int to EventPriority
