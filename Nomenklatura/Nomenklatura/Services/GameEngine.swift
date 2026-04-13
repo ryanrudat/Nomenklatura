@@ -659,6 +659,9 @@ class GameEngine {
         // Intelligence leaks - generate secret intel based on Network stat
         processIntelligenceLeaks(game: game)
 
+        // Threat pre-warnings - alert player when threats approach critical
+        generateThreatWarnings(game: game)
+
         if recordHistory {
             // Record stat history for sparklines (at end of turn after all processing)
             game.recordAllStatHistory()
@@ -1570,6 +1573,95 @@ struct GameEndCheck {
     var gameOver: Bool
     var result: GameStatus?
     var reason: String?
+}
+
+// MARK: - Threat Pre-Warning System
+
+extension GameEngine {
+
+    /// Generate intelligence alerts when threat vectors approach dangerous levels.
+    /// Uses ThreatCalculator to evaluate all five threat vectors and fires
+    /// alerts at the "elevated" (0.5) and "high" (0.75) severity thresholds.
+    /// Deduplication is handled by flag-based cooldowns: each threat/severity
+    /// combo fires at most once per 5 turns.
+    func generateThreatWarnings(game: Game) {
+        guard game.turnNumber > 5 else { return }
+
+        let threats = ThreatCalculator.getThreatLevels(game: game)
+
+        for threat in threats {
+            if threat.severity >= 0.75 {
+                emitThreatAlert(game: game, threat: threat, tier: .high)
+            } else if threat.severity >= 0.50 {
+                emitThreatAlert(game: game, threat: threat, tier: .elevated)
+            } else if threat.severity < 0.25 {
+                // Clear flags when threat subsides so warnings can re-fire later
+                let highFlag = "threat_warning_high_\(threat.id)"
+                let elevatedFlag = "threat_warning_elevated_\(threat.id)"
+                game.flags.removeAll { $0 == highFlag || $0 == elevatedFlag }
+            }
+        }
+    }
+
+    private func emitThreatAlert(game: Game, threat: ThreatLevel, tier: WarningSeverity) {
+        let tierKey = tier == .high ? "high" : "elevated"
+        let flag = "threat_warning_\(tierKey)_\(threat.id)"
+        let cooldownKey = "threat_cooldown_\(threat.id)_\(tierKey)"
+        let lastWarningTurn = Int(game.variables[cooldownKey] ?? "0") ?? 0
+
+        guard game.turnNumber - lastWarningTurn >= 5, !game.flags.contains(flag) else { return }
+
+        IntelligenceAlertService.shared.createAlert(
+            for: game,
+            category: .secretIntelligence,
+            title: tier == .high ? "URGENT INTELLIGENCE BRIEF" : "INTELLIGENCE BRIEF",
+            content: threatWarningMessage(threat: threat, severity: tier),
+            importance: tier == .high ? 9 : 7
+        )
+        game.variables[cooldownKey] = "\(game.turnNumber)"
+        game.flags.append(flag)
+    }
+
+    private enum WarningSeverity {
+        case elevated, high
+    }
+
+    private func threatWarningMessage(threat: ThreatLevel, severity: WarningSeverity) -> String {
+        switch (threat.id, severity) {
+        // Military Coup
+        case ("military_coup", .elevated):
+            return "Military officers are expressing discontent with civilian leadership. Loyalty among the General Staff is eroding. Consider strengthening military ties before the situation deteriorates further."
+        case ("military_coup", .high):
+            return "CRITICAL: Senior military commanders are holding unauthorized meetings. Sources report discussions of 'restoring order.' A coup attempt is a real possibility. Immediate action required."
+
+        // Popular Revolution
+        case ("revolution", .elevated):
+            return "Underground opposition networks are growing in major cities. Worker dissatisfaction is spreading. The security apparatus reports increasing difficulty containing unrest."
+        case ("revolution", .high):
+            return "CRITICAL: Mass demonstrations are being planned. Opposition leaders are coordinating across regions. The popular mood is dangerously volatile. The regime's grip is slipping."
+
+        // Assassination
+        case ("assassination", .elevated):
+            return "Your rival is consolidating support among disaffected elements. Intelligence suggests they may be exploring 'direct action' against your person. Strengthen your protective network."
+        case ("assassination", .high):
+            return "CRITICAL: Credible intelligence indicates an assassination plot is being organized. Your rival's network has penetrated close to your inner circle. Your personal security is gravely compromised."
+
+        // State Collapse
+        case ("state_collapse", .elevated):
+            return "Multiple national indicators are approaching critical thresholds simultaneously. The state's capacity to maintain basic functions is under severe strain."
+        case ("state_collapse", .high):
+            return "CRITICAL: The state is on the verge of systemic failure. Essential services are collapsing in multiple sectors. Without immediate intervention, total state dissolution is imminent."
+
+        // SC Revolt / Party Purge
+        case ("sc_revolt", .elevated):
+            return "Establishment figures are expressing dissatisfaction with your leadership. Whispered conversations in the corridors of power suggest a loss of confidence. Shore up your political alliances."
+        case ("sc_revolt", .high):
+            return "CRITICAL: Party elites are actively discussing your removal. A vote of no confidence within the Standing Committee is being organized. Your position is in immediate danger."
+
+        default:
+            return "Threat conditions are developing in the \(threat.name.lowercased()) sector. Monitoring continues."
+        }
+    }
 }
 
 // MARK: - Assassination Risk System

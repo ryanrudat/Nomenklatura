@@ -130,6 +130,9 @@ struct DeskView: View {
                                 onRivalTap: openRivalSheet
                             )
 
+                            // Threat Assessment Dashboard
+                            ThreatDashboardView(game: game)
+
                             if let report = latestEconomicReport {
                                 treasuryBriefingSection(report: report)
                             }
