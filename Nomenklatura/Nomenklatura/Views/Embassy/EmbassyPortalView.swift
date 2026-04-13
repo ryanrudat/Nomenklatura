@@ -87,81 +87,122 @@ enum EmbassySection: String, CaseIterable, PortalSection {
 struct NationDossiersSection: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
-    @State private var selectedNation: NationIdentifier?
+    @State private var selectedCountry: ForeignCountry?
 
-    // Foreign nations in the PSR world (real 1950s)
-    private let nations = [
-        ("soviet_union", "Soviet Union", "Revolutionary Ally", "socialist"),
-        ("china", "China", "Fellow Revolutionary", "socialist"),
-        ("united_states", "United States", "Capitalist Superpower", "hostile"),
-        ("united_kingdom", "United Kingdom", "Former Colonial Power", "hostile"),
-        ("united_kingdom", "United Kingdom", "Imperial Adversary", "capitalist"),
-        ("france", "France", "Unstable Republic", "capitalist"),
-        ("japan", "Japan", "Pacific Occupier", "hostile"),
-        ("mexico", "Mexico", "Neutral Neighbor", "neutral"),
-        ("italy", "Italy", "Fascist State", "fascist"),
-        ("spain", "Spain", "Fascist State", "fascist"),
-        ("china", "China", "Contested Territory", "neutral")
-    ]
+    private var countriesByBloc: [(bloc: String, countries: [ForeignCountry])] {
+        let grouped = Dictionary(grouping: game.foreignCountries) { $0.politicalBloc.rawValue }
+        let order = ["socialist", "rivalSocialist", "nonAligned", "capitalist"]
+        return order.compactMap { bloc in
+            guard let countries = grouped[bloc], !countries.isEmpty else { return nil }
+            return (bloc, countries.sorted { $0.name < $1.name })
+        }
+    }
 
     var body: some View {
-        LazyVStack(spacing: 12) {
-            ForEach(nations, id: \.0) { nation in
-                NationDossierRow(
-                    id: nation.0,
-                    name: nation.1,
-                    description: nation.2,
-                    bloc: nation.3,
-                    game: game
-                ) {
-                    selectedNation = NationIdentifier(id: nation.0)
+        LazyVStack(spacing: 16) {
+            if game.foreignCountries.isEmpty {
+                Text("No foreign nations in the current campaign.")
+                    .font(theme.bodyFont)
+                    .foregroundColor(theme.inkLight)
+                    .padding()
+            } else {
+                ForEach(countriesByBloc, id: \.bloc) { group in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(blocDisplayName(group.bloc))
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundColor(blocColor(group.bloc))
+                            .padding(.horizontal, 4)
+
+                        ForEach(group.countries, id: \.countryId) { country in
+                            CountryDossierRow(country: country) {
+                                selectedCountry = country
+                            }
+                        }
+                    }
                 }
             }
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
-        .sheet(item: $selectedNation) { nation in
-            NationDossierDetailView(nationId: nation.id, game: game)
+        .sheet(item: $selectedCountry) { country in
+            CountryDossierDetailView(country: country, game: game)
+        }
+    }
+
+    private func blocDisplayName(_ bloc: String) -> String {
+        switch bloc {
+        case "socialist": return "SOCIALIST BLOC"
+        case "rivalSocialist": return "RIVAL SOCIALIST STATES"
+        case "nonAligned": return "NON-ALIGNED NATIONS"
+        case "capitalist": return "CAPITALIST POWERS"
+        default: return bloc.uppercased()
+        }
+    }
+
+    private func blocColor(_ bloc: String) -> Color {
+        switch bloc {
+        case "socialist": return Color(hex: "CD5C5C")
+        case "rivalSocialist": return Color(hex: "FF8C00")
+        case "nonAligned": return Color(hex: "808080")
+        case "capitalist": return Color(hex: "4169E1")
+        default: return .gray
         }
     }
 }
 
-struct NationIdentifier: Identifiable {
-    let id: String
-}
-
-struct NationDossierRow: View {
-    let id: String
-    let name: String
-    let description: String
-    let bloc: String
-    @Bindable var game: Game
+struct CountryDossierRow: View {
+    let country: ForeignCountry
     let onTap: () -> Void
     @Environment(\.theme) var theme
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Bloc indicator
+                // Status indicator
                 Circle()
-                    .fill(blocColor)
-                    .frame(width: 12, height: 12)
+                    .fill(statusColor)
+                    .frame(width: 10, height: 10)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name)
+                    Text(country.name)
                         .font(theme.bodyFont)
                         .fontWeight(.semibold)
                         .foregroundColor(theme.inkBlack)
 
-                    Text(description)
-                        .font(theme.tagFont)
-                        .foregroundColor(theme.inkGray)
+                    HStack(spacing: 8) {
+                        Text(country.relationshipCategory)
+                            .font(theme.tagFont)
+                            .foregroundColor(theme.inkGray)
+
+                        if country.hasNuclearWeapons {
+                            Text("NUCLEAR")
+                                .font(.system(size: 7, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color(hex: "8B0000"))
+                                .cornerRadius(2)
+                        }
+                    }
                 }
 
                 Spacer()
 
+                // Relationship score gauge
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(country.relationshipScore)")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(relationshipColor)
+
+                    Text(country.leaderName.isEmpty ? "Unknown" : country.leaderName)
+                        .font(.system(size: 8, design: .monospaced))
+                        .foregroundColor(theme.inkLight)
+                        .lineLimit(1)
+                }
+
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
+                    .font(.system(size: 10))
                     .foregroundColor(theme.inkLight)
             }
             .padding(12)
@@ -175,70 +216,126 @@ struct NationDossierRow: View {
         .buttonStyle(.plain)
     }
 
-    private var blocColor: Color {
-        switch bloc {
-        case "socialist": return Color(hex: "CD5C5C")     // Red - socialist allies
-        case "capitalist": return Color(hex: "4169E1")    // Blue - capitalist powers
-        case "neutral": return Color(hex: "808080")       // Gray - neutral nations
-        case "hostile": return Color(hex: "8B0000")       // Dark red - active enemies
-        case "fascist": return Color(hex: "2F2F2F")       // Dark gray - fascist states
-        default: return Color.gray
+    private var statusColor: Color {
+        switch country.status {
+        case .allied: return Color(hex: "228B22")
+        case .friendly: return Color(hex: "32CD32")
+        case .neutral: return .gray
+        case .strained: return .orange
+        case .hostile: return Color(hex: "CD5C5C")
+        case .atWar: return Color(hex: "8B0000")
+        case .noRelations: return Color(hex: "2F2F2F")
         }
+    }
+
+    private var relationshipColor: Color {
+        if country.relationshipScore > 30 { return Color(hex: "228B22") }
+        if country.relationshipScore > -30 { return .gray }
+        return Color(hex: "CD5C5C")
     }
 }
 
-// MARK: - Nation Dossier Detail View
+// MARK: - Country Dossier Detail View
 
-struct NationDossierDetailView: View {
-    let nationId: String
+struct CountryDossierDetailView: View {
+    let country: ForeignCountry
     @Bindable var game: Game
     @Environment(\.dismiss) var dismiss
     @Environment(\.theme) var theme
-
-    private var accessLevel: AccessLevel {
-        AccessLevel(game: game)
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Header - always visible
-                    Text("Detailed dossier for \(nationId.capitalized) would appear here with position-gated information.")
-                        .font(theme.bodyFont)
-                        .foregroundColor(theme.inkBlack)
+                    // Header
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(country.officialName.isEmpty ? country.name : country.officialName)
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundColor(theme.inkBlack)
 
-                    // Relationship data (Position 4+)
-                    AccessGatedView(
-                        requirement: .relationshipData,
-                        accessLevel: accessLevel
-                    ) {
-                        InfoSection(title: "RELATIONSHIP METRICS") {
-                            Text("Relationship scores, diplomatic status, trade volumes...")
+                        HStack(spacing: 8) {
+                            Text(country.governmentType.displayName)
+                                .font(theme.tagFont)
+                                .foregroundColor(theme.inkGray)
+
+                            Text("•")
+                                .foregroundColor(theme.inkLight)
+
+                            Text(country.politicalBloc.displayName)
+                                .font(theme.tagFont)
+                                .foregroundColor(theme.inkGray)
+
+                            if !country.leaderName.isEmpty {
+                                Text("•")
+                                    .foregroundColor(theme.inkLight)
+                                Text("\(country.leaderTitle) \(country.leaderName)")
+                                    .font(theme.tagFont)
+                                    .foregroundColor(theme.inkGray)
+                            }
+                        }
+                    }
+
+                    if !country.countryDescription.isEmpty {
+                        Text(country.countryDescription)
+                            .font(theme.bodyFont)
+                            .foregroundColor(theme.inkBlack)
+                    }
+
+                    Divider()
+
+                    // Diplomatic Status
+                    dossierSection(title: "DIPLOMATIC STATUS") {
+                        dossierRow("Status", country.status.displayName)
+                        dossierRow("Relationship", "\(country.relationshipScore) (\(country.relationshipCategory))")
+                        dossierRow("Tension", "\(country.diplomaticTension)%")
+                        dossierRow("Trade Volume", "\(country.tradeVolume)")
+                    }
+
+                    // Military Assessment
+                    dossierSection(title: "MILITARY ASSESSMENT") {
+                        dossierRow("Strength", "\(country.militaryStrength)/100")
+                        dossierRow("Nuclear Capable", country.hasNuclearWeapons ? "YES" : "No")
+                        dossierRow("Our Bases Present", country.hasOurMilitaryBases ? "YES" : "No")
+                    }
+
+                    // Economic Profile
+                    dossierSection(title: "ECONOMIC PROFILE") {
+                        dossierRow("Economic Power", "\(country.economicPower)/100")
+                        dossierRow("GDP Growth", "\(country.gdpGrowth)%")
+                        dossierRow("Inflation", "\(country.countryInflationRate)%")
+                        dossierRow("Trade Balance", "\(country.countryTradeBalance)")
+                        if !country.strategicResources.isEmpty {
+                            dossierRow("Resources", country.strategicResources.joined(separator: ", "))
+                        }
+                    }
+
+                    // Intelligence
+                    dossierSection(title: "INTELLIGENCE") {
+                        dossierRow("Their Espionage", "\(country.espionageActivity)/100")
+                        dossierRow("Our Assets", "\(country.ourIntelligenceAssets)/100")
+                    }
+
+                    // Treaties
+                    if !country.treaties.isEmpty {
+                        dossierSection(title: "ACTIVE TREATIES") {
+                            ForEach(country.treaties, id: \.type) { treaty in
+                                dossierRow(treaty.type.displayName, "Active")
+                            }
+                        }
+                    }
+
+                    // Strategic Assessment
+                    if !country.strategicImportance.isEmpty {
+                        dossierSection(title: "STRATEGIC ASSESSMENT") {
+                            Text(country.strategicImportance)
                                 .font(theme.bodyFont)
                                 .foregroundColor(theme.inkBlack)
                         }
                     }
 
-                    // Intelligence (Position 6+)
-                    AccessGatedView(
-                        requirement: .intelligenceReports,
-                        accessLevel: accessLevel
-                    ) {
-                        InfoSection(title: "INTELLIGENCE ASSESSMENT") {
-                            Text("Internal stability, military readiness, economic indicators...")
-                                .font(theme.bodyFont)
-                                .foregroundColor(theme.inkBlack)
-                        }
-                    }
-
-                    // Classified (Position 8 only)
-                    AccessGatedView(
-                        requirement: .classifiedCables,
-                        accessLevel: accessLevel
-                    ) {
-                        InfoSection(title: "CLASSIFIED CABLES") {
-                            Text("TOP SECRET diplomatic communications...")
+                    if !country.relationshipHistory.isEmpty {
+                        dossierSection(title: "RELATIONSHIP HISTORY") {
+                            Text(country.relationshipHistory)
                                 .font(theme.bodyFont)
                                 .foregroundColor(theme.inkBlack)
                         }
@@ -247,7 +344,7 @@ struct NationDossierDetailView: View {
                 .padding(20)
             }
             .background(theme.parchment)
-            .navigationTitle(nationId.capitalized)
+            .navigationTitle(country.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -255,6 +352,40 @@ struct NationDossierDetailView: View {
                         .foregroundColor(theme.sovietRed)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func dossierSection(title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(theme.inkGray)
+
+            VStack(alignment: .leading, spacing: 6) {
+                content()
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.parchmentDark)
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(theme.borderTan, lineWidth: 1)
+            )
+        }
+    }
+
+    private func dossierRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(theme.inkGray)
+            Spacer()
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundColor(theme.inkBlack)
         }
     }
 }
@@ -265,30 +396,61 @@ struct TreatiesSection: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
 
-    private var accessLevel: AccessLevel {
-        AccessLevel(game: game)
+    private var allTreaties: [(countryName: String, treaty: ActiveTreaty)] {
+        game.foreignCountries.flatMap { country in
+            country.treaties.map { (country.name, $0) }
+        }.sorted { $0.countryName < $1.countryName }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            AccessGatedView(
-                requirement: .treatyDetails,
-                accessLevel: accessLevel
-            ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("ACTIVE TREATIES")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1)
-                        .foregroundColor(theme.inkGray)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ACTIVE TREATIES")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(theme.inkGray)
 
-                    // Placeholder
-                    Text("No active treaties.")
-                        .font(theme.bodyFont)
-                        .foregroundColor(theme.inkLight)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(8)
+            if allTreaties.isEmpty {
+                Text("No active treaties with foreign nations.")
+                    .font(theme.bodyFont)
+                    .foregroundColor(theme.inkLight)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(theme.parchmentDark)
+                    .cornerRadius(8)
+            } else {
+                ForEach(allTreaties, id: \.treaty.type) { item in
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.text.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(theme.inkGray)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(item.treaty.type.displayName)
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundColor(theme.inkBlack)
+
+                            Text("with \(item.countryName)")
+                                .font(theme.tagFont)
+                                .foregroundColor(theme.inkGray)
+                        }
+
+                        Spacer()
+
+                        Text("ACTIVE")
+                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                            .foregroundColor(Color(hex: "228B22"))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(hex: "228B22").opacity(0.1))
+                            .cornerRadius(3)
+                    }
+                    .padding(12)
+                    .background(theme.parchmentDark)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(theme.borderTan, lineWidth: 1)
+                    )
                 }
             }
         }
@@ -303,35 +465,129 @@ struct IntelligenceSection: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
 
-    private var accessLevel: AccessLevel {
-        AccessLevel(game: game)
+    private var hostileCountries: [ForeignCountry] {
+        game.foreignCountries.filter { $0.espionageActivity > 50 }
+            .sorted { $0.espionageActivity > $1.espionageActivity }
+    }
+
+    private var highValueAssets: [ForeignCountry] {
+        game.foreignCountries.filter { $0.ourIntelligenceAssets > 40 }
+            .sorted { $0.ourIntelligenceAssets > $1.ourIntelligenceAssets }
+    }
+
+    private var threats: [ForeignCountry] {
+        game.foreignCountries.filter { $0.isThreat }
+            .sorted { $0.militaryStrength > $1.militaryStrength }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            AccessGatedView(
-                requirement: .intelligenceReports,
-                accessLevel: accessLevel
-            ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("INTELLIGENCE REPORTS")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1)
-                        .foregroundColor(theme.inkGray)
-
-                    // Placeholder
-                    Text("No new intelligence reports.")
+        VStack(alignment: .leading, spacing: 16) {
+            // Espionage threats
+            intelSection(title: "HOSTILE INTELLIGENCE ACTIVITY", icon: "exclamationmark.triangle.fill") {
+                if hostileCountries.isEmpty {
+                    Text("No significant foreign espionage activity detected.")
                         .font(theme.bodyFont)
                         .foregroundColor(theme.inkLight)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(8)
+                } else {
+                    ForEach(hostileCountries, id: \.countryId) { country in
+                        intelRow(
+                            country.name,
+                            detail: "Espionage: \(country.espionageActivity)%",
+                            severity: country.espionageActivity > 70 ? .high : .medium
+                        )
+                    }
+                }
+            }
+
+            // Our assets abroad
+            intelSection(title: "OUR INTELLIGENCE ASSETS", icon: "eye.fill") {
+                if highValueAssets.isEmpty {
+                    Text("No significant intelligence assets in place.")
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkLight)
+                } else {
+                    ForEach(highValueAssets, id: \.countryId) { country in
+                        intelRow(
+                            country.name,
+                            detail: "Asset strength: \(country.ourIntelligenceAssets)%",
+                            severity: .info
+                        )
+                    }
+                }
+            }
+
+            // Military threats
+            intelSection(title: "MILITARY THREAT ASSESSMENT", icon: "shield.lefthalf.filled") {
+                if threats.isEmpty {
+                    Text("No immediate military threats identified.")
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkLight)
+                } else {
+                    ForEach(threats, id: \.countryId) { country in
+                        intelRow(
+                            country.name,
+                            detail: "Strength: \(country.militaryStrength) | \(country.hasNuclearWeapons ? "NUCLEAR" : "Conventional")",
+                            severity: country.hasNuclearWeapons ? .high : .medium
+                        )
+                    }
                 }
             }
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
+    }
+
+    private enum IntelSeverity {
+        case info, medium, high
+        var color: Color {
+            switch self {
+            case .info: return Color(hex: "4169E1")
+            case .medium: return .orange
+            case .high: return Color(hex: "CD5C5C")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func intelSection(title: String, icon: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.inkGray)
+                Text(title)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1.5)
+                    .foregroundColor(theme.inkGray)
+            }
+
+            VStack(spacing: 6) {
+                content()
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.parchmentDark)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(theme.borderTan, lineWidth: 1)
+            )
+        }
+    }
+
+    private func intelRow(_ name: String, detail: String, severity: IntelSeverity) -> some View {
+        HStack {
+            Circle()
+                .fill(severity.color)
+                .frame(width: 6, height: 6)
+            Text(name)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundColor(theme.inkBlack)
+            Spacer()
+            Text(detail)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(theme.inkGray)
+        }
     }
 }
 
