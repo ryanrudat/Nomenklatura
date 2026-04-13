@@ -287,6 +287,16 @@ class DiplomaticActionService {
 
         applyEffects(effects, targetCountry: targetCountry, game: game)
 
+        if let country = targetCountry {
+            DiplomaticRippleService.shared.processRipples(
+                relationshipChange: effects.relationshipChange,
+                tensionChange: effects.tensionChange,
+                targetCountry: country,
+                wasHostile: effects.relationshipChange < 0,
+                game: game
+            )
+        }
+
         // Handle treaty creation
         if succeeded, let treatyType = effects.triggersTreaty, let country = targetCountry {
             createTreaty(type: treatyType, with: country, game: game)
