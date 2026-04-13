@@ -26,14 +26,23 @@ struct EconomicPortalView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            EconomicPortalHeader()
-                .padding(.horizontal, 15)
-                .padding(.top, 10)
+            PortalHeader(
+                title: "ECONOMIC PLANNING BUREAU",
+                subtitle: "State Planning Committee (Gosplan)",
+                accentColor: theme.accentGold
+            )
+            .padding(.horizontal, 15)
+            .padding(.top, 10)
 
             // Section tabs
-            EconomicSectionBar(selectedSection: $selectedSection, accessLevel: accessLevel)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 10)
+            PortalSectionBar(
+                selectedSection: $selectedSection,
+                accessLevel: accessLevel,
+                featureCategory: .economic,
+                accentColor: theme.accentGold
+            )
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
 
             // Content
             ScrollView {
@@ -50,37 +59,9 @@ struct EconomicPortalView: View {
     }
 }
 
-// MARK: - Economic Portal Header
-
-struct EconomicPortalHeader: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text("ECONOMIC PLANNING BUREAU")
-                .font(.system(size: 14, weight: .bold))
-                .tracking(2)
-                .foregroundColor(theme.accentGold)
-
-            Text("State Planning Committee (Gosplan)")
-                .font(.system(size: 10, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkGray)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.accentGold.opacity(0.3), lineWidth: 1)
-        )
-    }
-}
-
 // MARK: - Economic Sections
 
-enum EconomicSection: String, CaseIterable {
+enum EconomicSection: String, CaseIterable, PortalSection {
     case overview
     case projects
     case actions
@@ -110,78 +91,6 @@ enum EconomicSection: String, CaseIterable {
     }
 }
 
-// MARK: - Economic Section Bar
-
-struct EconomicSectionBar: View {
-    @Binding var selectedSection: EconomicSection
-    let accessLevel: AccessLevel
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(EconomicSection.allCases, id: \.self) { section in
-                let hasAccess = accessLevel.effectiveLevel(for: .economic) >= section.requiredLevel
-
-                EconomicSectionButton(
-                    section: section,
-                    isSelected: selectedSection == section,
-                    isLocked: !hasAccess
-                ) {
-                    if hasAccess {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedSection = section
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct EconomicSectionButton: View {
-    let section: EconomicSection
-    let isSelected: Bool
-    let isLocked: Bool
-    let onTap: () -> Void
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 4) {
-                ZStack {
-                    Image(systemName: section.icon)
-                        .font(.system(size: 16))
-
-                    if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: 8, y: 8)
-                    }
-                }
-
-                Text(section.title.uppercased())
-                    .font(.system(size: 9, weight: .semibold))
-                    .tracking(0.3)
-            }
-            .foregroundColor(
-                isLocked ? theme.inkLight :
-                    (isSelected ? .white : theme.inkGray)
-            )
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(
-                isLocked ? theme.parchmentDark.opacity(0.5) :
-                    (isSelected ? theme.accentGold : theme.parchmentDark)
-            )
-            .cornerRadius(6)
-            .opacity(isLocked ? 0.6 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
-    }
-}
-
 // MARK: - Overview Section
 
 struct EconomicOverviewSection: View {
@@ -197,7 +106,7 @@ struct EconomicOverviewSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            EconomicPositionBanner(game: game)
+            PortalPositionBanner(game: game, config: .economic(accentColor: theme.accentGold))
 
             // Economic Situation Card
             EconomicSituationCard(game: game)
@@ -213,83 +122,29 @@ struct EconomicOverviewSection: View {
     }
 }
 
-struct EconomicPositionBanner: View {
-    let game: Game
-    @Environment(\.theme) var theme
+// MARK: - Economic Position Banner Config
 
-    private var isInTrack: Bool {
-        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
-        return playerTrack == .economicPlanning
-    }
-
-    private var isTopLeadership: Bool {
-        game.currentPositionIndex >= 7
-    }
-
-    private var hasAuthority: Bool {
-        isInTrack || isTopLeadership
-    }
-
-    private var categoryTitle: String {
-        guard hasAuthority else { return "Observer Only" }
-        let position = game.currentPositionIndex
-        switch position {
-        case 0...1: return "Factory Floor"
-        case 2...3: return "Planning Office"
-        case 4...5: return "Sector Directorate"
-        case 6: return "Deputy Chairman"
-        default: return "Gosplan Chairman"
-        }
-    }
-
-    private var gosplanEquivalent: String {
-        guard hasAuthority else { return "No Economic Authority" }
-        return EconomicActionCategory.allCases
-            .filter { game.currentPositionIndex >= $0.minimumPositionIndex }
-            .last?.gosplanEquivalent ?? "Worker"
-    }
-
-    private var headerText: String {
-        hasAuthority ? "YOUR ECONOMIC RANK" : "ACCESS STATUS"
-    }
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(headerText)
-                    .font(.system(size: 9, weight: .bold))
-                    .tracking(1)
-                    .foregroundColor(theme.inkGray)
-
-                Text(categoryTitle)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(hasAuthority ? theme.inkBlack : theme.inkLight)
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 2) {
-                if hasAuthority {
-                    Text("POSITION \(game.currentPositionIndex)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(theme.accentGold)
-                } else {
-                    Text("VIEW ONLY")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(theme.inkLight)
+extension PortalPositionBannerConfig {
+    static func economic(accentColor: Color) -> PortalPositionBannerConfig {
+        PortalPositionBannerConfig(
+            track: .economicPlanning,
+            accentColor: accentColor,
+            authorityLabel: "YOUR ECONOMIC RANK",
+            positionTitle: { position in
+                switch position {
+                case 0...1: return "Factory Floor"
+                case 2...3: return "Planning Office"
+                case 4...5: return "Sector Directorate"
+                case 6: return "Deputy Chairman"
+                default: return "Gosplan Chairman"
                 }
-
-                Text(gosplanEquivalent)
-                    .font(.system(size: 9))
-                    .foregroundColor(theme.inkGray)
-            }
-        }
-        .padding(12)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(hasAuthority ? theme.accentGold.opacity(0.3) : theme.inkLight.opacity(0.3), lineWidth: 1)
+            },
+            equivalentTitle: { position in
+                EconomicActionCategory.allCases
+                    .filter { position >= $0.minimumPositionIndex }
+                    .last?.gosplanEquivalent ?? "Worker"
+            },
+            noAuthorityEquivalent: "No Economic Authority"
         )
     }
 }
@@ -338,9 +193,9 @@ struct EconomicSituationCard: View {
             }
 
             HStack(spacing: 16) {
-                EconomicMetric(label: "Industrial", value: "\(game.industrialOutput)", color: game.industrialOutput >= 50 ? .green : .orange)
-                EconomicMetric(label: "Food Supply", value: "\(game.foodSupply)", color: game.foodSupply >= 50 ? .green : .orange)
-                EconomicMetric(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= 50 ? .green : .orange)
+                PortalMetricView(label: "Industrial", value: "\(game.industrialOutput)", color: game.industrialOutput >= 50 ? .green : .orange)
+                PortalMetricView(label: "Food Supply", value: "\(game.foodSupply)", color: game.foodSupply >= 50 ? .green : .orange)
+                PortalMetricView(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= 50 ? .green : .orange)
             }
 
             Divider()
@@ -358,25 +213,6 @@ struct EconomicSituationCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(theme.borderTan, lineWidth: 1)
         )
-    }
-}
-
-struct EconomicMetric: View {
-    let label: String
-    let value: String
-    let color: Color
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(color)
-
-            Text(label)
-                .font(.system(size: 9))
-                .foregroundColor(theme.inkGray)
-        }
     }
 }
 
@@ -543,7 +379,7 @@ struct EconomicProjectsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            EconomicPositionBanner(game: game)
+            PortalPositionBanner(game: game, config: .economic(accentColor: theme.accentGold))
 
             // Active projects
             if !activeProjects.isEmpty {
@@ -570,7 +406,11 @@ struct EconomicProjectsSection: View {
                     }
                 }
             } else {
-                EmptyProjectsView()
+                PortalEmptyStateView(
+                    icon: "building.2.fill",
+                    title: "No Active Projects",
+                    message: "Initiate economic projects from the Actions tab to begin construction programs."
+                )
             }
         }
         .padding(.horizontal, 15)
@@ -654,9 +494,9 @@ struct ProjectCard: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    ProjectDetailRow(label: "Turns Remaining", value: "\(turnsRemaining)")
-                    ProjectDetailRow(label: "Success Chance", value: "\(project.successChance)%")
-                    ProjectDetailRow(label: "Current Phase", value: project.phase.displayName)
+                    PortalDetailRow(label: "Turns Remaining", value: "\(turnsRemaining)")
+                    PortalDetailRow(label: "Success Chance", value: "\(project.successChance)%")
+                    PortalDetailRow(label: "Current Phase", value: project.phase.displayName)
                 }
             }
 
@@ -692,50 +532,6 @@ struct ProjectCard: View {
         case .completed: return .green
         case .failed: return .red
         }
-    }
-}
-
-struct ProjectDetailRow: View {
-    let label: String
-    let value: String
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 10))
-                .foregroundColor(theme.inkGray)
-            Spacer()
-            Text(value)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(theme.inkBlack)
-        }
-    }
-}
-
-struct EmptyProjectsView: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "building.2.fill")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Active Projects")
-                .font(theme.bodyFont)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.inkBlack)
-
-            Text("Initiate economic projects from the Actions tab to begin construction programs.")
-                .font(theme.tagFont)
-                .foregroundColor(theme.inkGray)
-                .multilineTextAlignment(.center)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(12)
     }
 }
 
@@ -782,7 +578,7 @@ struct EconomicActionsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            EconomicPositionBanner(game: game)
+            PortalPositionBanner(game: game, config: .economic(accentColor: theme.accentGold))
 
             // Check track authority before showing actions
             if !hasTrackAuthority {
@@ -792,7 +588,11 @@ struct EconomicActionsSection: View {
                     accentColor: theme.accentGold
                 )
             } else if availableActions.isEmpty {
-                NoEconomicActionsView(nextUnlock: lockedActions.first)
+                PortalEmptyStateView(
+                    icon: "lock.fill",
+                    title: "No Actions Available",
+                    message: lockedActions.first.map { "Next unlock at Position \($0.minimumPositionIndex): \($0.name)" } ?? "Advance in rank to unlock actions."
+                )
             } else {
                 // Available actions by category
                 ForEach(actionsByCategory, id: \.category) { category, actions in
@@ -1054,35 +854,6 @@ struct ActionInfoBadge: View {
         .padding(.vertical, 3)
         .background(theme.parchmentDark)
         .cornerRadius(4)
-    }
-}
-
-struct NoEconomicActionsView: View {
-    let nextUnlock: EconomicAction?
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Actions Available")
-                .font(theme.bodyFont)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.inkBlack)
-
-            if let next = nextUnlock {
-                Text("Next unlock at Position \(next.minimumPositionIndex): \(next.name)")
-                    .font(theme.tagFont)
-                    .foregroundColor(theme.inkGray)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(12)
     }
 }
 

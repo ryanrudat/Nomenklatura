@@ -20,9 +20,14 @@ struct EmbassyPortalView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Section tabs
-            EmbassySectionBar(selectedSection: $selectedSection, accessLevel: accessLevel)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 10)
+            PortalSectionBar(
+                selectedSection: $selectedSection,
+                accessLevel: accessLevel,
+                featureCategory: .diplomatic,
+                accentColor: theme.sovietRed
+            )
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
 
             // Content
             ScrollView {
@@ -43,7 +48,7 @@ struct EmbassyPortalView: View {
 
 // MARK: - Embassy Sections
 
-enum EmbassySection: String, CaseIterable {
+enum EmbassySection: String, CaseIterable, PortalSection {
     case dossiers
     case treaties
     case intelligence
@@ -74,78 +79,6 @@ enum EmbassySection: String, CaseIterable {
         case .intelligence: return 6    // Position 6+
         case .actions: return 1         // Position 1+ (all can access, limited actions)
         }
-    }
-}
-
-// MARK: - Embassy Section Bar
-
-struct EmbassySectionBar: View {
-    @Binding var selectedSection: EmbassySection
-    let accessLevel: AccessLevel
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(EmbassySection.allCases, id: \.self) { section in
-                let hasAccess = accessLevel.effectiveLevel(for: .diplomatic) >= section.requiredLevel
-
-                EmbassySectionButton(
-                    section: section,
-                    isSelected: selectedSection == section,
-                    isLocked: !hasAccess
-                ) {
-                    if hasAccess {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedSection = section
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct EmbassySectionButton: View {
-    let section: EmbassySection
-    let isSelected: Bool
-    let isLocked: Bool
-    let onTap: () -> Void
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 4) {
-                ZStack {
-                    Image(systemName: section.icon)
-                        .font(.system(size: 16))
-
-                    if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: 8, y: 8)
-                    }
-                }
-
-                Text(section.title.uppercased())
-                    .font(.system(size: 9, weight: .semibold))
-                    .tracking(0.3)
-            }
-            .foregroundColor(
-                isLocked ? theme.inkLight :
-                    (isSelected ? .white : theme.inkGray)
-            )
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(
-                isLocked ? theme.parchmentDark.opacity(0.5) :
-                    (isSelected ? theme.sovietRed : theme.parchmentDark)
-            )
-            .cornerRadius(6)
-            .opacity(isLocked ? 0.6 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
     }
 }
 
@@ -447,7 +380,11 @@ struct DiplomaticActionsSection: View {
 
             if availableActions.isEmpty {
                 // No actions available - show locked message
-                NoActionsAvailableView(nextUnlock: lockedActions.first)
+                PortalEmptyStateView(
+                    icon: "lock.fill",
+                    title: "No Diplomatic Actions Available",
+                    message: lockedActions.first.map { "Advance to Position \($0.minimumPositionIndex) to unlock \"\($0.name)\"" } ?? "Advance in rank to unlock diplomatic actions."
+                )
             } else {
                 // Available actions by category
                 ForEach(actionsByCategory, id: \.category) { category, actions in
@@ -557,41 +494,6 @@ struct PositionIndicatorBanner: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(theme.borderTan, lineWidth: 1)
         )
-    }
-}
-
-// MARK: - No Actions Available View
-
-struct NoActionsAvailableView: View {
-    let nextUnlock: DiplomaticAction?
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Diplomatic Actions Available")
-                .font(theme.bodyFont)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.inkBlack)
-
-            if let next = nextUnlock {
-                Text("Advance to Position \(next.minimumPositionIndex) to unlock \"\(next.name)\"")
-                    .font(theme.tagFont)
-                    .foregroundColor(theme.inkGray)
-                    .multilineTextAlignment(.center)
-            } else {
-                Text("Advance in rank to unlock diplomatic actions.")
-                    .font(theme.tagFont)
-                    .foregroundColor(theme.inkGray)
-            }
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(12)
     }
 }
 

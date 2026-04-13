@@ -149,17 +149,7 @@ class ScenarioManager {
         if loadingState.turnNumber != currentTurn {
             loadingState.clearCache()
             loadingState.turnNumber = currentTurn
-        }
-
-        // Check for pre-generated content (from smart pre-generation)
-        if applyPreGeneratedContent(for: currentTurn) {
-            scenarioLogger.info("⚡ Using pre-generated content for turn \(currentTurn) - INSTANT LOAD!")
-            // Still need to check for dynamic events
-            if let dynamicEvent = checkDynamicEvents() {
-                loadingState.cachedDynamicEvent = dynamicEvent
-                loadingState.cachedScenario = nil  // Dynamic event takes priority
-            }
-            return
+            clearPreGenerationCache()
         }
 
         // Cancel any existing background task
@@ -278,93 +268,12 @@ class ScenarioManager {
     /// Cache for pre-generated content (keyed by turn number)
     private var preGeneratedCache: [Int: PreGeneratedContent] = [:]
 
-    /// Pre-generate scenario for the NEXT turn while player reads current content
-    /// This runs silently without showing loading indicators
-    /// Call this when transitioning to outcome phase or when player is reading non-decision content
+    /// Pre-generation for next-turn content is intentionally disabled until the
+    /// game has a single authoritative turn-finalization path. Generating next-turn
+    /// briefings from mid-turn state leads to stale cached content.
     @MainActor
     func preGenerateForNextTurn(game: Game, config: CampaignConfig) {
-        let nextTurn = game.turnNumber + 1
-
-        // Don't pre-generate if we already have content for next turn
-        if preGeneratedCache[nextTurn] != nil {
-            #if DEBUG
-            print("[ScenarioManager] Pre-generated content already exists for turn \(nextTurn)")
-            #endif
-            return
-        }
-
-        // Don't pre-generate if already pre-generating
-        if preGenerateTask != nil {
-            #if DEBUG
-            print("[ScenarioManager] Pre-generation already in progress")
-            #endif
-            return
-        }
-
-        scenarioLogger.info("🚀 Starting pre-generation for turn \(nextTurn) (current: \(game.turnNumber))")
-        let pregenStartTime = Date()
-
-        // Extract all needed data from Game on MainActor BEFORE starting detached task
-        // This prevents SwiftData faulting issues when game object is captured across task boundaries
-        let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
-        let cacheKey = "pregenerate_turn_\(nextTurn)"
-        let useAI = Secrets.isAIEnabled && nextTurn > onboardingTurns
-
-        // Pre-generate fallback scenario on MainActor before detaching
-        // This avoids accessing Game inside the detached task
-        let fallbackScenario = self.getFallbackScenario(for: game)
-
-        // Create silent background task - game is NOT captured, only extracted values
-        preGenerateTask = Task.detached { [weak self] in
-            guard let self = self else { return }
-
-            var scenario: Scenario?
-            var wasAIGenerated = false
-            var generatedMetadata: ScenarioNarrativeMetadata?
-
-            if useAI {
-                // Try AI generation
-                let result = await AIScenarioGenerator.shared.generateScenario(prompt: prompt, cacheKey: cacheKey)
-
-                switch result {
-                case .success(let aiScenario, let narrativeMetadata):
-                    scenario = aiScenario
-                    wasAIGenerated = true
-                    generatedMetadata = narrativeMetadata
-                    #if DEBUG
-                    print("[ScenarioManager] Pre-generation via AI successful for turn \(nextTurn)")
-                    #endif
-
-                case .fallback(let reason):
-                    #if DEBUG
-                    print("[ScenarioManager] Pre-generation AI fallback: \(reason)")
-                    #endif
-                    scenario = fallbackScenario
-                }
-            } else {
-                scenario = fallbackScenario
-            }
-
-            // Cache the pre-generated content
-            if let scenario = scenario {
-                // Capture values before crossing actor boundary
-                let metadataToCache = generatedMetadata
-                let wasAI = wasAIGenerated
-                await MainActor.run {
-                    self.preGeneratedCache[nextTurn] = PreGeneratedContent(
-                        scenario: scenario,
-                        metadata: metadataToCache,
-                        isAIGenerated: wasAI
-                    )
-                    let duration = Date().timeIntervalSince(pregenStartTime)
-                    scenarioLogger.info("✅ Pre-generated content cached for turn \(nextTurn) in \(duration, format: .fixed(precision: 1))s")
-                }
-            }
-
-            await MainActor.run {
-                self.preGenerateTask = nil
-            }
-        }
+        clearPreGenerationCache()
     }
 
     /// Check if pre-generated content exists for a turn and apply it to loading state

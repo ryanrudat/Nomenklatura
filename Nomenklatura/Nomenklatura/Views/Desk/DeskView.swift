@@ -72,9 +72,12 @@ struct DeskView: View {
         if isTransitioning || loadingState.isLoading {
             return true
         }
-        // Also shows as fallback when no content and no documents
+        // Before the turn's content resolves, fall back to loading if the desk is empty.
         let visibleDocuments = documentQueue.getVisibleDocuments(for: game)
-        if currentNewspaper == nil && currentScenario == nil && visibleDocuments.isEmpty {
+        if currentNewspaper == nil &&
+            currentScenario == nil &&
+            visibleDocuments.isEmpty &&
+            !hasDisplayedContentForTurn {
             return true
         }
         return false

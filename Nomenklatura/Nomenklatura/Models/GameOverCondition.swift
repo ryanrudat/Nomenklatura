@@ -342,8 +342,8 @@ class GameOverChecker {
 
         guard game.stability <= BalanceConfig.coupStabilityThreshold else { return nil }
 
-        // Check military loyalty (from variables)
-        let militaryLoyalty = Int(game.variables["military_loyalty"] ?? "50") ?? 50
+        // Use the canonical stat instead of a stale variable mirror.
+        let militaryLoyalty = game.militaryLoyalty
         guard militaryLoyalty <= BalanceConfig.coupMilitaryLoyaltyThreshold else { return nil }
 
         // Check for coup flag
@@ -384,7 +384,7 @@ class GameOverChecker {
         guard game.flags.contains("corruption_exposed") else { return nil }
 
         // High corruption + low protection = arrest
-        let corruptionLevel = Int(game.variables["corruption_level"] ?? "0") ?? 0
+        let corruptionLevel = game.corruptionEvidence
         let protectionLevel = game.patronFavor + game.standing
 
         if corruptionLevel >= 70 && protectionLevel < 50 {
@@ -473,6 +473,10 @@ class GameOverChecker {
     // MARK: - Helpers
 
     private static func hasViableHeir(game: Game) -> Bool {
+        if game.resolveHeirForContinuation() != nil {
+            return true
+        }
+
         // Check if player has designated an heir who is still viable
         guard let heirId = game.variables["designated_heir_id"] else {
             // No designated heir - check if law allows SC selection
@@ -495,7 +499,8 @@ class GameOverChecker {
         }
 
         // Check law-based eligibility
-        let isFamily = game.variables["heir_is_family"] == "true"
+        let isFamily = game.currentHeirRelationship?.isFamily
+            ?? (game.variables["heir_is_family"] == "true")
         let eligibility = SuccessionLawService.shared.isHeirEligible(
             heir: heir,
             isFamily: isFamily,

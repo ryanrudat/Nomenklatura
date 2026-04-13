@@ -502,10 +502,22 @@ class GameEngine {
     }
 
     private func checkLossConditions(game: Game) -> GameEndCheck? {
+        // Structured system-collapse failures from the richer game-over model
+        // should end the run immediately, regardless of the simpler balance checks below.
+        if let structuredSystemLoss = checkStructuredSystemLossConditions(game: game) {
+            return structuredSystemLoss
+        }
+
+        // Explicit personal-failure flags that were previously dormant in the active flow.
+        if let flaggedPersonalLoss = checkFlaggedPersonalLossConditions(game: game) {
+            return flaggedPersonalLoss
+        }
+
         // EARLY GAME PROTECTION: Don't trigger loss conditions in first 5 turns
         // This gives players time to understand the game and recover from initial events
         // Exception: Catastrophic failures (state collapse) can still end the game
         let earlyGameProtection = game.turnNumber <= 5
+        let canUseImmediateHeirSuccession = hasImmediateHeirSuccessionPath(game: game)
 
         // LOSS: Patron turns on you (purge)
         // Threshold lowered to 10 (from 15) to give more margin
@@ -514,7 +526,8 @@ class GameEngine {
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
-                reason: "Your patron has turned against you. Wallace's men arrive at dawn. Your political career—and perhaps your life—is over."
+                reason: "Your patron has turned against you. Wallace's men arrive at dawn. Your political career—and perhaps your life—is over.",
+                allowsHeirSuccession: canUseImmediateHeirSuccession
             )
         }
 
@@ -524,7 +537,8 @@ class GameEngine {
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
-                reason: "Your standing has collapsed. You are quietly removed from all positions and reassigned to a minor posting in the Eastern Territories. Your political career is finished."
+                reason: "Your standing has collapsed. You are quietly removed from all positions and reassigned to a minor posting in the Eastern Territories. Your political career is finished.",
+                allowsHeirSuccession: canUseImmediateHeirSuccession
             )
         }
 
@@ -536,7 +550,8 @@ class GameEngine {
                 return GameEndCheck(
                     gameOver: true,
                     result: .lost,
-                    reason: "Your rivals have outmaneuvered you completely. At the next Politburo meeting, you find yourself facing accusations of counter-revolutionary activity. The vote is unanimous."
+                    reason: "Your rivals have outmaneuvered you completely. At the next Politburo meeting, you find yourself facing accusations of counter-revolutionary activity. The vote is unanimous.",
+                    allowsHeirSuccession: canUseImmediateHeirSuccession
                 )
             }
         }
@@ -583,6 +598,76 @@ class GameEngine {
         }
 
         return nil
+    }
+
+    private func checkStructuredSystemLossConditions(game: Game) -> GameEndCheck? {
+        guard let condition = GameOverChecker.checkGameOver(game: game) else {
+            return nil
+        }
+
+        switch condition.type {
+        case .nuclearWar, .territorialDisintegration, .capitalFalls, .foreignInvasion:
+            return GameEndCheck(
+                gameOver: true,
+                result: .lost,
+                reason: systemLossReason(for: condition)
+            )
+        default:
+            return nil
+        }
+    }
+
+    private func checkFlaggedPersonalLossConditions(game: Game) -> GameEndCheck? {
+        let canUseImmediateHeirSuccession = hasImmediateHeirSuccessionPath(game: game)
+
+        if game.flags.contains("player_death_imminent") {
+            let cause = game.variables["death_cause"] ?? "Natural causes"
+            let reason = canUseImmediateHeirSuccession
+                ? "Your predecessor has died. Official reports cite \(cause.lowercased())."
+                : "Time claims all comrades eventually. Without a successor to continue your work, your influence dies with you."
+
+            return GameEndCheck(
+                gameOver: true,
+                result: .lost,
+                reason: reason,
+                allowsHeirSuccession: canUseImmediateHeirSuccession
+            )
+        }
+
+        let protectionLevel = game.patronFavor + game.standing
+        if game.flags.contains("corruption_exposed"),
+           game.corruptionEvidence >= 70,
+           protectionLevel < 50 {
+            let reason = canUseImmediateHeirSuccession
+                ? "The evidence against your predecessor is undeniable. Security forces move before the scandal can be contained."
+                : "The evidence was undeniable. Your corruption was laid bare for all to see. The Party makes examples of such betrayals."
+
+            return GameEndCheck(
+                gameOver: true,
+                result: .lost,
+                reason: reason,
+                allowsHeirSuccession: canUseImmediateHeirSuccession
+            )
+        }
+
+        return nil
+    }
+
+    private func hasImmediateHeirSuccessionPath(game: Game) -> Bool {
+        game.resolveHeirForContinuation() != nil
+    }
+
+    private func systemLossReason(for condition: GameOverCondition) -> String {
+        let cause = condition.cause.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cause.isEmpty else {
+            return condition.type.epitaph
+        }
+
+        if cause.hasSuffix(".") || cause.hasSuffix("!") || cause.hasSuffix("?") {
+            return "\(cause) \(condition.type.epitaph)"
+        }
+
+        return "\(cause). \(condition.type.epitaph)"
     }
 
     private func checkWinConditions(game: Game, ladder: [LadderPosition]) -> GameEndCheck? {
@@ -1570,6 +1655,7 @@ struct GameEndCheck {
     var gameOver: Bool
     var result: GameStatus?
     var reason: String?
+    var allowsHeirSuccession: Bool = false
 }
 
 // MARK: - Assassination Risk System

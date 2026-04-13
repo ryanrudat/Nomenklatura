@@ -27,14 +27,23 @@ struct SecurityPortalView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            SecurityPortalHeader()
-                .padding(.horizontal, 15)
-                .padding(.top, 10)
+            PortalHeader(
+                title: "STATE PROTECTION BUREAU",
+                subtitle: "Central Commission for Discipline Inspection",
+                accentColor: theme.sovietRed
+            )
+            .padding(.horizontal, 15)
+            .padding(.top, 10)
 
             // Section tabs
-            SecuritySectionBar(selectedSection: $selectedSection, accessLevel: accessLevel)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 10)
+            PortalSectionBar(
+                selectedSection: $selectedSection,
+                accessLevel: accessLevel,
+                featureCategory: .intelligence,
+                accentColor: theme.sovietRed
+            )
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
 
             // Content
             ScrollView {
@@ -55,37 +64,9 @@ struct SecurityPortalView: View {
     }
 }
 
-// MARK: - Security Portal Header
-
-struct SecurityPortalHeader: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text("STATE PROTECTION BUREAU")
-                .font(.system(size: 14, weight: .bold))
-                .tracking(2)
-                .foregroundColor(theme.sovietRed)
-
-            Text("Central Commission for Discipline Inspection")
-                .font(.system(size: 10, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkGray)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.sovietRed.opacity(0.3), lineWidth: 1)
-        )
-    }
-}
-
 // MARK: - Security Sections
 
-enum SecuritySection: String, CaseIterable {
+enum SecuritySection: String, CaseIterable, PortalSection {
     case personal
     case operations
     case intelligence
@@ -120,78 +101,6 @@ enum SecuritySection: String, CaseIterable {
         case .detention: return 3       // Position 3+ (case officers)
         case .actions: return 1         // Position 1+ (limited actions)
         }
-    }
-}
-
-// MARK: - Security Section Bar
-
-struct SecuritySectionBar: View {
-    @Binding var selectedSection: SecuritySection
-    let accessLevel: AccessLevel
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(SecuritySection.allCases, id: \.self) { section in
-                let hasAccess = accessLevel.effectiveLevel(for: .intelligence) >= section.requiredLevel
-
-                SecuritySectionButton(
-                    section: section,
-                    isSelected: selectedSection == section,
-                    isLocked: !hasAccess
-                ) {
-                    if hasAccess {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedSection = section
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct SecuritySectionButton: View {
-    let section: SecuritySection
-    let isSelected: Bool
-    let isLocked: Bool
-    let onTap: () -> Void
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 4) {
-                ZStack {
-                    Image(systemName: section.icon)
-                        .font(.system(size: 16))
-
-                    if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: 8, y: 8)
-                    }
-                }
-
-                Text(section.title.uppercased())
-                    .font(.system(size: 9, weight: .semibold))
-                    .tracking(0.3)
-            }
-            .foregroundColor(
-                isLocked ? theme.inkLight :
-                    (isSelected ? .white : theme.inkGray)
-            )
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(
-                isLocked ? theme.parchmentDark.opacity(0.5) :
-                    (isSelected ? theme.sovietRed : theme.parchmentDark)
-            )
-            .cornerRadius(6)
-            .opacity(isLocked ? 0.6 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
     }
 }
 
@@ -766,7 +675,11 @@ struct SecurityDetentionSection: View {
                     }
                 }
             } else {
-                EmptyDetentionView()
+                PortalEmptyStateView(
+                    icon: "lock.open.fill",
+                    title: "No Active Detentions",
+                    message: "Use security actions to initiate shuanggui detention of suspects."
+                )
             }
         }
         .padding(.horizontal, 15)
@@ -883,15 +796,15 @@ struct DetentionCard: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    DetailRow(label: "Location", value: detention.location.displayName)
-                    DetailRow(label: "Duration", value: "\(detention.turnsInDetention * 2) weeks")
-                    DetailRow(label: "Guards", value: "\(detention.accompanyingProtectors)")
-                    DetailRow(label: "Confession", value: detention.confessionObtained ? "OBTAINED" : "Not yet")
-                    DetailRow(label: "Suicide Watch", value: detention.suicideWatchActive ? "Active" : "Inactive")
-                    DetailRow(label: "Lawyer Access", value: detention.lawyerAccessDenied ? "DENIED" : "Allowed")
+                    PortalDetailRow(label: "Location", value: detention.location.displayName)
+                    PortalDetailRow(label: "Duration", value: "\(detention.turnsInDetention * 2) weeks")
+                    PortalDetailRow(label: "Guards", value: "\(detention.accompanyingProtectors)")
+                    PortalDetailRow(label: "Confession", value: detention.confessionObtained ? "OBTAINED" : "Not yet")
+                    PortalDetailRow(label: "Suicide Watch", value: detention.suicideWatchActive ? "Active" : "Inactive")
+                    PortalDetailRow(label: "Lawyer Access", value: detention.lawyerAccessDenied ? "DENIED" : "Allowed")
 
                     if !detention.implicatedCharacterIds.isEmpty {
-                        DetailRow(label: "Implicated", value: "\(detention.implicatedCharacterIds.count) others")
+                        PortalDetailRow(label: "Implicated", value: "\(detention.implicatedCharacterIds.count) others")
                     }
                 }
             }
@@ -927,50 +840,6 @@ struct DetentionCard: View {
         case .documentation: return .green
         case .referral: return .gray
         }
-    }
-}
-
-struct DetailRow: View {
-    let label: String
-    let value: String
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 10))
-                .foregroundColor(theme.inkGray)
-            Spacer()
-            Text(value)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(theme.inkBlack)
-        }
-    }
-}
-
-struct EmptyDetentionView: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lock.open.fill")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Active Detentions")
-                .font(theme.bodyFont)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.inkBlack)
-
-            Text("Use security actions to initiate shuanggui detention of suspects.")
-                .font(theme.tagFont)
-                .foregroundColor(theme.inkGray)
-                .multilineTextAlignment(.center)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(12)
     }
 }
 
@@ -1027,7 +896,11 @@ struct SecurityActionsSection: View {
                     accentColor: theme.sovietRed
                 )
             } else if availableActions.isEmpty {
-                NoSecurityActionsView(nextUnlock: lockedActions.first)
+                PortalEmptyStateView(
+                    icon: "lock.fill",
+                    title: "No Security Actions Available",
+                    message: lockedActions.first.map { "Advance to Position \($0.effectiveMinimumPosition) to unlock \"\($0.name)\"" } ?? "Advance in rank to unlock security actions."
+                )
             } else {
                 // Available actions by category
                 ForEach(actionsByCategory, id: \.category) { category, actions in
@@ -1256,39 +1129,6 @@ struct SecurityActionCard: View {
         case .high: return .red
         case .extreme: return .purple
         }
-    }
-}
-
-struct NoSecurityActionsView: View {
-    let nextUnlock: SecurityAction?
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Security Actions Available")
-                .font(theme.bodyFont)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.inkBlack)
-
-            if let next = nextUnlock {
-                Text("Advance to Position \(next.effectiveMinimumPosition) to unlock \"\(next.name)\"")
-                    .font(theme.tagFont)
-                    .foregroundColor(theme.inkGray)
-                    .multilineTextAlignment(.center)
-            } else {
-                Text("Advance in rank to unlock security actions.")
-                    .font(theme.tagFont)
-                    .foregroundColor(theme.inkGray)
-            }
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(12)
     }
 }
 

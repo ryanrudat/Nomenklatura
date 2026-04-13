@@ -195,16 +195,9 @@ struct CareerSummaryCard: View {
     @Environment(\.theme) var theme
 
     private var positionTitle: String {
-        let titles = [
-            "Party Official",
-            "Junior Politburo Member",
-            "Deputy Department Head",
-            "Department Head",
-            "Senior Politburo Member",
-            "Deputy General Secretary",
-            "General Secretary"
-        ]
-        return titles[safe: game.currentPositionIndex] ?? "Unknown"
+        let ladder = CampaignLoader.shared.loadCampaign(id: game.campaignId)?.ladder
+            ?? CampaignLoader.shared.getColdWarCampaign().ladder
+        return ladder.first(where: { $0.index == game.currentPositionIndex })?.title ?? "Unknown"
     }
 
     var body: some View {

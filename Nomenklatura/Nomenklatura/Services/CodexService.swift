@@ -880,12 +880,12 @@ final class CodexService: ObservableObject {
 
         // Apply patron favor change
         if effects.patronFavorChange != 0 {
-            game.patronFavor = max(0, min(100, game.patronFavor + effects.patronFavorChange))
+            game.applyStat("patronFavor", change: effects.patronFavorChange)
         }
 
         // Apply rival threat change
         if effects.rivalThreatChange != 0 {
-            game.rivalThreat = max(0, min(100, game.rivalThreat + effects.rivalThreatChange))
+            game.applyStat("rivalThreat", change: effects.rivalThreatChange)
         }
     }
 

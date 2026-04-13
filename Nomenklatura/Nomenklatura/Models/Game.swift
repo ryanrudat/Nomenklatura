@@ -42,6 +42,8 @@ final class Game {
     var industrialOutput: Int
     var foodSupply: Int
     var internationalStanding: Int
+    var worldTension: Int = 30             // 0-100, Cold War baseline tension (HIGH is bad)
+    var militaryReadiness: Int = 50        // 0-100, armed forces preparedness
 
     // Personal Stats (0-100)
     var standing: Int
@@ -257,6 +259,8 @@ final class Game {
         self.industrialOutput = 50
         self.foodSupply = 45
         self.internationalStanding = 50
+        self.worldTension = 30
+        self.militaryReadiness = 50
 
         // Default personal stats
         self.standing = 20
@@ -474,10 +478,43 @@ extension Game {
         currentPositionIndex >= 1  // Junior Politburo or higher
     }
 
+    /// The resolved ladder position for the player's current office and rank.
+    var resolvedCurrentPosition: LadderPosition? {
+        let config = CampaignLoader.shared.loadCampaign(id: campaignId)
+            ?? CampaignLoader.shared.getColdWarCampaign()
+        let positionsAtIndex = config.ladder.filter { $0.index == currentPositionIndex }
+
+        guard !positionsAtIndex.isEmpty else { return nil }
+        if positionsAtIndex.count == 1 { return positionsAtIndex[0] }
+
+        if let exactTrackMatch = positionsAtIndex.first(where: { $0.expandedTrack == playerExpandedTrack }) {
+            return exactTrackMatch
+        }
+
+        if let committedTrack = currentCommittedTrack,
+           let committedMatch = positionsAtIndex.first(where: { $0.expandedTrack == committedTrack }) {
+            return committedMatch
+        }
+
+        return positionsAtIndex.first(where: { $0.expandedTrack == .shared }) ?? positionsAtIndex[0]
+    }
+
+    /// The player's effective office track for authority/document routing.
+    var effectiveOfficeTrack: ExpandedCareerTrack {
+        if currentPositionIndex >= 7 {
+            return .shared
+        }
+
+        if playerExpandedTrack != .shared {
+            return playerExpandedTrack
+        }
+
+        return currentCommittedTrack ?? .shared
+    }
+
     /// The player's current position title from the campaign ladder
     var currentPositionName: String {
-        let config = CampaignLoader.shared.getColdWarCampaign()
-        return config.ladder.first(where: { $0.index == currentPositionIndex })?.title ?? "Party Official"
+        resolvedCurrentPosition?.title ?? "Party Official"
     }
 
     var nationalStats: [(name: String, value: Int, key: String)] {
@@ -1148,6 +1185,23 @@ extension Game {
             oldValue = resistanceAccumulation
             resistanceAccumulation = clampStat(resistanceAccumulation + change)
             newValue = resistanceAccumulation
+        case "gdpIndex":
+            oldValue = gdpIndex
+            gdpIndex = max(0, min(300, gdpIndex + change))
+            newValue = gdpIndex
+        case "worldTension":
+            oldValue = worldTension
+            worldTension = clampStat(worldTension + change)
+            newValue = worldTension
+        case "militaryReadiness":
+            oldValue = militaryReadiness
+            militaryReadiness = clampStat(militaryReadiness + change)
+            newValue = militaryReadiness
+        case "reputation":
+            // Legacy alias — maps to internationalStanding
+            oldValue = internationalStanding
+            internationalStanding = clampStat(internationalStanding + change)
+            newValue = internationalStanding
         default:
             oldValue = 0
             newValue = 0
@@ -1169,7 +1223,7 @@ extension Game {
         let highThreshold = 75
 
         // Stats where HIGH is bad
-        let negativeStats = ["rivalThreat", "wealthVisibility", "corruptionEvidence", "coalitionStrength", "resistanceAccumulation"]
+        let negativeStats = ["rivalThreat", "wealthVisibility", "corruptionEvidence", "coalitionStrength", "resistanceAccumulation", "worldTension"]
 
         if negativeStats.contains(key) {
             // For negative stats, crossing above highThreshold is critical
@@ -1216,6 +1270,12 @@ extension Game {
         case "personalWealth": return "Personal Wealth"
         case "wealthVisibility": return "Wealth Visibility"
         case "corruptionEvidence": return "Corruption Evidence"
+        case "gdpIndex": return "GDP Index"
+        case "worldTension": return "World Tension"
+        case "militaryReadiness": return "Military Readiness"
+        case "reputation": return "International Standing"
+        case "coalitionStrength": return "Coalition Strength"
+        case "resistanceAccumulation": return "Resistance"
         default: return key
         }
     }
@@ -1514,6 +1574,7 @@ extension Game {
 
         // Store in variables for game over check compatibility
         variables["designated_heir_id"] = character.id.uuidString
+        variables["heir_is_family"] = relationship.isFamily ? "true" : "false"
 
         updatedAt = Date()
     }
@@ -1523,32 +1584,37 @@ extension Game {
         designatedHeirId = nil
         heirRelationship = nil
         variables.removeValue(forKey: "designated_heir_id")
+        variables.removeValue(forKey: "heir_is_family")
         updatedAt = Date()
     }
 
-    /// Process succession to heir (called when player dies but has heir)
-    func processSuccessionToHeir() -> Bool {
+    /// Process succession to heir after a personal defeat removes the current ruler.
+    func processSuccessionToHeir(storyTransition: String? = nil) -> Bool {
         guard let heir = designatedHeir,
               heir.status == CharacterStatus.active.rawValue,
               let relationship = currentHeirRelationship else {
             return false
         }
 
-        // Calculate inheritance
+        // Calculate inheritance via applyStat so clamping, notifications, and
+        // history recording all fire correctly.
         let inheritMultiplier = relationship.inheritanceMultiplier
 
-        // Apply succession penalty
-        let newStanding = Int(Double(standing) * inheritMultiplier)
-        let newNetwork = Int(Double(network) * inheritMultiplier)
+        let targetStanding = max(15, Int(Double(standing) * inheritMultiplier))
+        applyStat("standing", change: targetStanding - standing)
 
-        standing = max(15, newStanding)  // Minimum standing to not immediately fail
-        network = max(5, newNetwork)
+        let targetNetwork = max(5, Int(Double(network) * inheritMultiplier))
+        applyStat("network", change: targetNetwork - network)
 
         // Patron favor resets (new person, new relationships)
-        patronFavor = 40
+        applyStat("patronFavor", change: 40 - patronFavor)
 
         // Rival threat reduced (new target)
-        rivalThreat = max(20, rivalThreat - 30)
+        let targetRival = max(20, rivalThreat - 30)
+        applyStat("rivalThreat", change: targetRival - rivalThreat)
+
+        // A new ruler is beginning their tenure in the inherited office.
+        turnsInCurrentPosition = 0
 
         // Record succession
         dynastySuccessions += 1
@@ -1563,9 +1629,12 @@ extension Game {
         designatedHeirId = nil
         heirRelationship = nil
         variables.removeValue(forKey: "designated_heir_id")
+        variables.removeValue(forKey: "heir_is_family")
 
         // Update story
-        appendToStorySummary("Following the death of their predecessor, \(heir.name) has taken control of the political dynasty.")
+        let transitionText = storyTransition
+            ?? "Following the fall of their predecessor, \(heir.name) has taken control of the political dynasty."
+        appendToStorySummary(transitionText)
 
         updatedAt = Date()
         return true

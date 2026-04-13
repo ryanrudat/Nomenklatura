@@ -111,3 +111,93 @@ Template:
 - Verified: ...
 - Remaining risk: ...
 ```
+
+### 2026-04-13
+- Files: `Views/Ledger/ActionableTasksSection.swift`
+- Change: Removed a stray leading `d` from the file header so the branch compiles past the first Swift syntax error.
+- Verified: `xcodebuild -project ../Nomenklatura.xcodeproj -scheme Nomenklatura -configuration Debug -destination 'platform=macOS' -derivedDataPath /tmp/NomenklaturaDerivedData CODE_SIGNING_ALLOWED=NO build` no longer fails on `ActionableTasksSection.swift`; the next blocker is asset catalog compilation for the iPhone/iPad target configuration in this environment.
+- Remaining risk: Turn-flow issues and project platform/build configuration issues remain unresolved, so runtime validation is still blocked here.
+
+### 2026-04-13
+- Files: `Views/Desk/DeskView+TurnManagement.swift`
+- Change: Routed the visible desk `END TURN` button through `processEndTurnWithConsequences()` so it uses the same canonical turn pipeline as the confirmation-sheet flow instead of bypassing into direct desk turn advancement.
+- Verified: Re-ran `xcodebuild -project ../Nomenklatura.xcodeproj -scheme Nomenklatura -configuration Debug -destination 'platform=macOS' -derivedDataPath /tmp/NomenklaturaDerivedData CODE_SIGNING_ALLOWED=NO build`; no new Swift source compile failure surfaced from the desk change, and the build still stops at the existing asset catalog/simulator-runtime blocker.
+- Remaining risk: Quiet-turn paths (`continueFromNarrativeEvent` / `continueFromNewspaper`) still bypass the canonical end-turn pipeline.
+
+### 2026-04-13
+- Files: `Views/Desk/DeskView+ScenarioHandling.swift`
+- Change: Stopped informational narrative/newspaper flows from incrementing `turnNumber` directly. They now clear the current content, keep the player on the same turn when desk documents remain, and only hand off to `processEndTurnWithConsequences()` when the desk is clear so non-decision turns rejoin the canonical flow.
+- Verified: `swiftc -parse Views/Desk/DeskView+ScenarioHandling.swift`, `swiftc -parse Views/Desk/DeskView+TurnManagement.swift`, and `xcodebuild -project ../Nomenklatura.xcodeproj -scheme Nomenklatura -configuration Debug -destination 'platform=macOS' -derivedDataPath /tmp/NomenklaturaDerivedData CODE_SIGNING_ALLOWED=NO build`; no new Swift syntax/source error surfaced, and the build still stops at the existing asset catalog/simulator-runtime blocker.
+- Remaining risk: Scenario pre-generation still snapshots next-turn content before final turn state is settled, so stale-content issues remain possible.
+
+### 2026-04-13
+- Files: `Services/ScenarioManager.swift`
+- Change: Disabled use of next-turn pre-generated content for now. `startBackgroundLoading(...)` no longer applies pre-generated cache entries, and `preGenerateForNextTurn(...)` now clears any pending pre-generation instead of snapshotting mid-turn state into stale next-turn content.
+- Verified: `swiftc -parse Services/ScenarioManager.swift` and `xcodebuild -project ../Nomenklatura.xcodeproj -scheme Nomenklatura -configuration Debug -destination 'platform=macOS' -derivedDataPath /tmp/NomenklaturaDerivedData CODE_SIGNING_ALLOWED=NO build`; no new Swift source failure surfaced, and the build still stops at the existing asset catalog/simulator-runtime blocker.
+- Remaining risk: This favors correctness over instant next-turn loads; if pre-generation is reintroduced later, it should happen only after final end-of-turn state is authoritative.
+
+### 2026-04-13
+- Files: `Views/GameOver/GameOverView.swift`
+- Change: Replaced the hardcoded endgame rank title list with a lookup against the active campaign ladder via `CampaignLoader`, so late-game positions like Deputy General Secretary and General Secretary render from real config data.
+- Verified: `swiftc -parse Views/GameOver/GameOverView.swift`
+- Remaining risk: The game over summary still reflects `currentPositionIndex`, so if you later want “highest position ever held” instead of final position, that will need a separate position-history based change.
+
+### 2026-04-13
+- Files: `Views/Desk/DeskView.swift`, `Views/Desk/DeskView+TurnManagement.swift`
+- Change: Fixed the cleared-desk UI state so once turn content has resolved and no scenario/newspaper is active, the desk shows the end-turn section instead of falling back to the immersive loading placeholder.
+- Verified: `swiftc -parse Views/Desk/DeskView.swift`, `swiftc -parse Views/Desk/DeskView+TurnManagement.swift`, and `xcodebuild -project ../Nomenklatura.xcodeproj -scheme Nomenklatura -configuration Debug -destination 'platform=macOS' -derivedDataPath /tmp/NomenklaturaDerivedData CODE_SIGNING_ALLOWED=NO build`; no new Swift source failure surfaced, and the build still stops at the existing asset catalog/simulator-runtime blocker.
+- Remaining risk: Promotion timing is still evaluated before the completed turn increments `turnsInCurrentPosition`, so promotion gates may remain off by one turn.
+
+### 2026-04-13
+- Files: `ContentView.swift`
+- Change: Fixed promotion timing so `completePersonalAction()` counts the just-finished turn in `turnsInCurrentPosition` before checking promotion eligibility. This removes the off-by-one delay where the completed turn did not count toward promotion requirements.
+- Verified: `swiftc -parse ContentView.swift` and `xcodebuild -project ../Nomenklatura.xcodeproj -scheme Nomenklatura -configuration Debug -destination 'platform=macOS' -derivedDataPath /tmp/NomenklaturaDerivedData CODE_SIGNING_ALLOWED=NO build`; no new Swift source failure surfaced, and the build still stops at the existing asset catalog/simulator-runtime blocker.
+- Remaining risk: The recorded “Turn X begins” event in `completePersonalAction()` is still emitted outside the async end-turn block, so its timing/turn number may still be slightly misleading even though progression state is now correct.
+
+### 2026-04-13
+- Files: `Services/CodexService.swift`, `Views/Desk/DeskView+TurnManagement.swift`
+- Change: Replaced the remaining live gameplay direct stat writes with `game.applyStat(...)`. Codex reply effects now update `patronFavor`/`rivalThreat` through the canonical stat path, and expired-document penalties now apply all stat losses through the same API instead of mutating game fields directly.
+- Verified: `swiftc -parse Services/CodexService.swift`, `swiftc -parse Views/Desk/DeskView+TurnManagement.swift`, plus a repo sweep for direct gameplay stat assignment. The remaining direct writes are limited to previews and test-scenario setup paths.
+- Remaining risk: `applyStat("rivalThreat", ...)` still does not record a dedicated “last rival interaction” timestamp because the model currently only tracks patron contact explicitly. If rival-neglect pacing ever needs symmetry, that should be added at the model layer rather than reintroducing direct mutation.
+
+### 2026-04-13
+- Files: `ContentView.swift`
+- Change: Moved the “Turn X begins” event logging into the finalized end-of-turn transition so it is created only after `turnNumber`, phase, and turn-reset state have been advanced, and tagged it as `.narrative` instead of `.crisis`. This prevents the journal from recording the next-turn marker against the previous turn while async end-turn work is still in flight and stops normal turn starts from being presented as crises.
+- Verified: `swiftc -parse ContentView.swift`
+- Remaining risk: Turn markers are still logged from `ContentView` rather than a fully centralized turn reducer, so if turn advancement is consolidated later this event creation should move with it.
+
+### 2026-04-13
+- Files: `Models/Game.swift`, `Models/GameOverCondition.swift`
+- Change: Fixed heir-state consistency so designating/removing/consuming an heir keeps both `designated_heir_id` and `heir_is_family` in sync, and heir eligibility now prefers the canonical `currentHeirRelationship` model state instead of trusting the variable mirror alone.
+- Verified: `swiftc -parse Models/Game.swift`, `swiftc -parse Models/GameOverCondition.swift`
+- Remaining risk: The larger succession feature is still only partially wired. `GameEngine.checkLossConditions(...)` remains the live game-over path, while `GameOverCondition` / `GameContinuation` / `processSuccessionToHeir()` still are not integrated into that active flow.
+
+### 2026-04-13
+- Files: `Services/GameEngine.swift`, `Models/Game.swift`, `ContentView.swift`
+- Change: Wired designated-heir succession into the live loss flow for personal defeats. Patron collapse, standing collapse, and rival takedown now mark themselves as succession-eligible; the game completes end-turn processing, transfers control to the heir, resets inherited tenure timing, advances to the next turn, and shows an in-game succession notification instead of hard-ending the run.
+- Verified: `swiftc -parse Services/GameEngine.swift`, `swiftc -parse Models/Game.swift`, `swiftc -parse ContentView.swift`
+- Remaining risk: This is a minimum viable integration for designated heirs in the active game loop. The broader dormant continuation system (`GameOverCondition`, `GameContinuation`, non-designated successor selection, imprisonment/rehabilitation transitions) is still not reconciled with the live `GameEngine` path.
+
+### 2026-04-13
+- Files: `Services/GameEngine.swift`, `ContentView.swift`
+- Change: Expanded the live game-over path so it now honors previously dormant catastrophic and flagged failures. The active engine recognizes structured system-collapse losses from `GameOverChecker` for nuclear war, territorial disintegration, capital loss, and foreign invasion, and it also activates the unused death/corruption personal-failure flags in the live flow. Succession recovery now clears predecessor-only fatal flags (`player_death_imminent`, `corruption_exposed`, related variables) so an heir who saves the run does not immediately die to stale state on the next check.
+- Verified: `swiftc -parse Services/GameEngine.swift`, `swiftc -parse ContentView.swift`
+- Remaining risk: The live game still preserves its original simple balance rules for patron/standing/rival collapse, revolution, and military coup rather than fully replacing them with `GameOverChecker` semantics. That keeps current pacing stable, but it means end-condition logic is still only partially centralized.
+
+### 2026-04-13
+- Files: `Models/GameContinuation.swift`, `Services/GameEngine.swift`, `ContentView.swift`
+- Change: Closed the non-designated succession gap. `getAvailableHeirs()` now returns real committee/election candidates instead of only cultivated proteges, the live recovery path resolves the best legal successor even when the player never formally designated one, and succession notifications now distinguish designated heirs from Standing Committee / Party-election continuity picks.
+- Verified: `swiftc -parse Models/GameContinuation.swift`, `swiftc -parse Services/GameEngine.swift`, `swiftc -parse ContentView.swift`
+- Remaining risk: This is still an automatic resolution path rather than a player-facing heir-selection screen. It makes the continuation rules actually work in live play, but the dormant multi-candidate selection UX is still not exposed.
+
+### 2026-04-13
+- Files: `Models/GameOverCondition.swift`, `Models/GameContinuation.swift`
+- Change: Aligned the richer dormant game-over checker with canonical game state. Military coup checks now read `game.militaryLoyalty`, corruption exposure reads `game.corruptionEvidence`, and heir viability now uses the same resolved-succession logic as the live continuation flow instead of separate variable-mirror heuristics.
+- Verified: `swiftc -parse Models/GameOverCondition.swift`, `swiftc -parse Models/GameContinuation.swift`
+- Remaining risk: `GameOverChecker` still is not the single authoritative end-condition engine for every loss type. The live game continues to use its legacy patron/standing/rival threshold losses and simplified revolution/coup path alongside the richer checker.
+
+### 2026-04-13
+- Files: `Services/DocumentQueueService.swift`, `Models/World/AccessLevel.swift`, `Models/Game.swift`
+- Change: Reworked desk document generation so “awaiting action” prompts are tied to the player’s actual current office and authority, not just raw rank or stale committed-track history. Document categories are now hard-filtered by active office track, top leadership gets more cross-bureau strategic material and less routine clerical paperwork, template selection now prefers the top two tiers available at the player’s current authority level, and `AuthorityLanguage` now resolves real ladder titles/track-aware authority instead of using the outdated generic rank mapping.
+- Verified: `swiftc -parse Services/DocumentQueueService.swift`, `swiftc -parse Models/World/AccessLevel.swift`, `swiftc -parse Models/Game.swift`
+- Remaining risk: This fixes routing and tiering logic, but the underlying document template library is still uneven across bureaus. Once Xcode/device testing is available, the next pass should be qualitative: check whether each track has enough genuinely role-specific prompt variety, especially for Party, Regional, and top-leadership desks.

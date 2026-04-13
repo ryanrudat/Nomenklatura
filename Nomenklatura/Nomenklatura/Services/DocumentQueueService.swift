@@ -450,91 +450,118 @@ class DocumentQueueService: ObservableObject {
         return .political // Default fallback
     }
 
+    private func activeDocumentTrack(for game: Game) -> ExpandedCareerTrack {
+        game.effectiveOfficeTrack
+    }
+
+    private func allowedDocumentCategories(for game: Game) -> Set<DocumentCategory> {
+        if game.currentPositionIndex >= 7 {
+            return Set(DocumentCategory.allCases)
+        }
+
+        switch activeDocumentTrack(for: game) {
+        case .securityServices:
+            return [.security, .political, .personnel, .crisis, .personal]
+        case .economicPlanning:
+            return [.economic, .political, .personnel, .crisis, .personal]
+        case .partyApparatus:
+            return [.political, .personnel, .crisis, .personal]
+        case .foreignAffairs:
+            return [.diplomatic, .political, .personnel, .crisis, .personal]
+        case .stateMinistry:
+            return [.economic, .political, .personnel, .crisis, .personal]
+        case .militaryPolitical:
+            return [.military, .political, .personnel, .crisis, .personal]
+        case .regional:
+            return [.economic, .political, .personnel, .crisis, .personal]
+        case .shared:
+            if game.currentPositionIndex <= 1 {
+                return [.economic, .political, .personnel, .personal]
+            }
+            return [.economic, .political, .personnel, .crisis, .personal]
+        }
+    }
+
     /// Apply role-based document weighting based on player's track and position
     /// This implements HARD FILTERING - documents outside your bureau jurisdiction are excluded
     private func applyRoleBasedWeights(_ weights: inout [DocumentCategory: Double], game: Game) {
-        let playerTrack = game.currentCommittedTrack
+        let playerTrack = activeDocumentTrack(for: game)
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+        let allowedCategories = allowedDocumentCategories(for: game)
+
+        for category in DocumentCategory.allCases where !allowedCategories.contains(category) {
+            weights[category] = 0
+        }
+
+        if game.currentPositionIndex >= 7 {
+            weights[.crisis] = (weights[.crisis] ?? 3) * 4.0
+            weights[.security] = (weights[.security] ?? 15) * 1.8
+            weights[.economic] = (weights[.economic] ?? 20) * 1.8
+            weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.8
+            weights[.military] = (weights[.military] ?? 15) * 1.6
+            weights[.political] = (weights[.political] ?? 20) * 0.7
+            weights[.personnel] = (weights[.personnel] ?? 15) * 0.6
+            weights[.personal] = (weights[.personal] ?? 2) * 0.4
+            return
+        }
 
         // HARD FILTERING: Bureau-specific documents should only go to relevant bureaus
         // A Security Services official shouldn't receive Planning Commission resource allocation requests
         // Cross-bureau documents should be rare and represent interdepartmental matters
-        if let track = playerTrack {
-            switch track {
-            case .securityServices:
-                // Security track: Focus on security documents
-                weights[.security] = (weights[.security] ?? 15) * 2.5
-                weights[.crisis] = (weights[.crisis] ?? 3) * 2.0
-                // Hard filter: No direct economic planning documents (not our bureau)
-                weights[.economic] = 0
-                // Minimal diplomatic (only security-relevant)
-                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 0.2
-                // Some military (intelligence overlap)
-                weights[.military] = (weights[.military] ?? 15) * 0.5
+        switch playerTrack {
+        case .securityServices:
+            weights[.security] = (weights[.security] ?? 15) * 3.0
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.6
+            weights[.political] = (weights[.political] ?? 20) * 0.9
+            weights[.personnel] = (weights[.personnel] ?? 15) * 0.8
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
 
-            case .economicPlanning:
-                // Economic track: Focus on economic documents
-                weights[.economic] = (weights[.economic] ?? 20) * 2.5
-                // Hard filter: No direct security documents (not our bureau)
-                weights[.security] = 0
-                // Minimal military (logistics overlap only)
-                weights[.military] = (weights[.military] ?? 15) * 0.3
-                // Some diplomatic (trade matters)
-                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 0.5
+        case .economicPlanning:
+            weights[.economic] = (weights[.economic] ?? 20) * 3.0
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.3
+            weights[.political] = (weights[.political] ?? 20) * 0.8
+            weights[.personnel] = (weights[.personnel] ?? 15) * 0.9
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
 
-            case .militaryPolitical:
-                // Military track: Focus on military documents
-                weights[.military] = (weights[.military] ?? 15) * 2.5
-                // Some security (military intelligence overlap)
-                weights[.security] = (weights[.security] ?? 15) * 0.5
-                // Hard filter: No direct economic planning
-                weights[.economic] = 0
-                // Some diplomatic (military attaché matters)
-                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 0.4
+        case .militaryPolitical:
+            weights[.military] = (weights[.military] ?? 15) * 3.0
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.8
+            weights[.political] = (weights[.political] ?? 20) * 0.8
+            weights[.personnel] = (weights[.personnel] ?? 15) * 0.8
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
 
-            case .partyApparatus:
-                // Party track: Focus on political and personnel documents
-                weights[.political] = (weights[.political] ?? 20) * 2.0
-                weights[.personnel] = (weights[.personnel] ?? 15) * 2.0
-                // Reduced but present: oversight role sees everything at lower rate
-                weights[.economic] = (weights[.economic] ?? 20) * 0.3
-                weights[.security] = (weights[.security] ?? 15) * 0.3
-                weights[.military] = (weights[.military] ?? 15) * 0.3
+        case .partyApparatus:
+            weights[.political] = (weights[.political] ?? 20) * 2.5
+            weights[.personnel] = (weights[.personnel] ?? 15) * 2.1
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.2
+            weights[.personal] = (weights[.personal] ?? 2) * 0.6
 
-            case .foreignAffairs:
-                // Foreign Affairs track: Focus on diplomatic documents
-                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 3.0
-                // Some economic (trade negotiations)
-                weights[.economic] = (weights[.economic] ?? 20) * 0.4
-                // Hard filter: No direct security documents
-                weights[.security] = 0
-                // Minimal military (arms treaties only)
-                weights[.military] = (weights[.military] ?? 15) * 0.2
+        case .foreignAffairs:
+            weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 3.2
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.3
+            weights[.political] = (weights[.political] ?? 20) * 0.9
+            weights[.personnel] = (weights[.personnel] ?? 15) * 0.7
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
 
-            case .stateMinistry:
-                // State Ministry: Administrative matters, economic and political
-                weights[.economic] = (weights[.economic] ?? 20) * 1.5
-                weights[.political] = (weights[.political] ?? 20) * 1.5
-                weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
-                // Reduced specialized bureau documents
-                weights[.security] = (weights[.security] ?? 15) * 0.3
-                weights[.military] = (weights[.military] ?? 15) * 0.3
+        case .stateMinistry:
+            weights[.economic] = (weights[.economic] ?? 20) * 1.9
+            weights[.personnel] = (weights[.personnel] ?? 15) * 1.8
+            weights[.political] = (weights[.political] ?? 20) * 1.4
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.3
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
 
-            case .regional:
-                // Regional track: Local matters - economic, personnel, some political
-                weights[.economic] = (weights[.economic] ?? 20) * 1.5
-                weights[.personnel] = (weights[.personnel] ?? 15) * 1.5
-                weights[.political] = (weights[.political] ?? 20) * 1.2
-                // Hard filter: No direct security or military (handled by central bureaus)
-                weights[.security] = (weights[.security] ?? 15) * 0.1
-                weights[.military] = (weights[.military] ?? 15) * 0.1
-                weights[.diplomatic] = 0
+        case .regional:
+            weights[.economic] = (weights[.economic] ?? 20) * 1.8
+            weights[.personnel] = (weights[.personnel] ?? 15) * 1.7
+            weights[.political] = (weights[.political] ?? 20) * 1.3
+            weights[.crisis] = (weights[.crisis] ?? 3) * 1.6
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
 
-            case .shared:
-                // Shared track (early career): Balanced documents, no specialization yet
-                // These are junior officials who see general administrative work
-                break
-            }
+        case .shared:
+            weights[.political] = (weights[.political] ?? 20) * 1.4
+            weights[.personnel] = (weights[.personnel] ?? 15) * 1.3
+            weights[.economic] = (weights[.economic] ?? 20) * 1.1
+            weights[.personal] = (weights[.personal] ?? 2) * 0.5
         }
 
         // Clearance-based filtering
@@ -552,6 +579,27 @@ class DocumentQueueService: ObservableObject {
         if clearanceLevel >= 6 {
             weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.2
         }
+    }
+
+    /// Prefer the top two document tiers currently available so senior players stop seeing
+    /// junior-clerk paperwork as often as leadership-level material.
+    private func selectTemplateGenerator(
+        clearanceLevel: Int,
+        templates: [(minClearance: Int, generator: (Game) -> DeskDocument)]
+    ) -> ((Game) -> DeskDocument)? {
+        let available = templates.filter { $0.minClearance <= clearanceLevel }
+        guard !available.isEmpty else { return nil }
+
+        let highestTier = available.map(\.minClearance).max() ?? 1
+        let preferredFloor = max(1, highestTier - 1)
+        let preferred = available.filter { $0.minClearance >= preferredFloor }
+
+        let weighted = preferred.flatMap { template -> [(Game) -> DeskDocument] in
+            let weight = template.minClearance == highestTier ? 3 : 2
+            return Array(repeating: template.generator, count: weight)
+        }
+
+        return weighted.randomElement() ?? preferred.last?.generator ?? available.last?.generator
     }
 
     // MARK: - Category-Specific Document Generators
@@ -572,16 +620,7 @@ class DocumentQueueService: ObservableObject {
             (5, generateIntelligenceHandlerReport) // Intelligence - Level 5+ (running assets is senior work)
         ]
 
-        // Filter templates available at current clearance
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // Weighted selection preferring appropriate challenge level
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
             return generator(game)
         }
 
@@ -990,15 +1029,7 @@ class DocumentQueueService: ObservableObject {
             (5, generateMilitaryReadinessAssessment) // Level 5+ (strategic oversight)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // Weighted selection preferring appropriate challenge level
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
             return generator(game)
         }
 
@@ -1419,18 +1450,8 @@ class DocumentQueueService: ObservableObject {
             (5, generateResourceAllocationRequest) // Complex - Level 5+
         ]
 
-        // Filter templates available at current clearance
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // Prefer templates closer to player's level for appropriate challenge
-        let weighted = available.flatMap { template -> [(Int, (Game) -> DeskDocument)] in
-            // Weight higher-level documents more heavily if player can handle them
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: (template.minClearance, template.generator), count: weight)
-        }
-
-        if let selected = weighted.randomElement() {
-            return selected.1(game)
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
+            return generator(game)
         }
 
         // Fallback to simplest
@@ -1848,14 +1869,7 @@ class DocumentQueueService: ObservableObject {
             (3, generatePropagandaDirective),         // Complex - Level 3+
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
             return generator(game)
         }
 
@@ -2067,14 +2081,7 @@ class DocumentQueueService: ObservableObject {
             (6, generateDiplomaticIncidentReport)    // Level 6+ (sensitive matters)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
             return generator(game)
         }
 
@@ -2496,12 +2503,7 @@ class DocumentQueueService: ObservableObject {
         let availableClearances = available.map { $0.minClearance }
         documentLog.info("📋 [Personnel] Available templates: \(availableClearances.count) with clearances: \(availableClearances)")
 
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
             let doc = generator(game)
             documentLog.info("📋 [Personnel] Generated document: \(doc.title)")
             return doc
@@ -2980,14 +2982,7 @@ class DocumentQueueService: ObservableObject {
             (6, generateRegionalUnrestCrisis)        // Level 6+ (widespread unrest)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
+        if let generator = selectTemplateGenerator(clearanceLevel: clearanceLevel, templates: templates) {
             return generator(game)
         }
 

@@ -28,8 +28,7 @@ extension DeskView {
         if let onEndTurn = onEndTurn {
             onEndTurn()
         } else {
-            // Fallback: direct turn advancement (shouldn't normally happen)
-            advanceTurnFromDesk()
+            assertionFailure("DeskView.onEndTurn callback must be provided by the parent view")
         }
     }
 
@@ -43,10 +42,10 @@ extension DeskView {
         switch document.urgencyEnum {
         case .critical:
             penalty = -8
-            game.standing = max(0, game.standing - 5)  // Standing hit for ignoring critical items
+            game.applyStat("standing", change: -5)  // Standing hit for ignoring critical items
         case .urgent:
             penalty = -5
-            game.standing = max(0, game.standing - 2)
+            game.applyStat("standing", change: -2)
         case .priority:
             penalty = -3
         case .routine:
@@ -56,22 +55,22 @@ extension DeskView {
         // Apply the penalty to relevant stats based on document category
         switch document.categoryEnum {
         case .political:
-            game.eliteLoyalty = max(0, game.eliteLoyalty + penalty)
+            game.applyStat("eliteLoyalty", change: penalty)
         case .economic:
-            game.treasury = max(0, game.treasury + penalty * 10)
+            game.applyStat("treasury", change: penalty * 10)
         case .security:
-            game.stability = max(0, game.stability + penalty)
+            game.applyStat("stability", change: penalty)
         case .diplomatic:
-            game.internationalStanding = max(0, game.internationalStanding + penalty)
+            game.applyStat("internationalStanding", change: penalty)
         case .military:
-            game.militaryLoyalty = max(0, game.militaryLoyalty + penalty)
+            game.applyStat("militaryLoyalty", change: penalty)
         case .personnel:
-            game.network = max(0, game.network + penalty / 2)
+            game.applyStat("network", change: penalty / 2)
         case .crisis:
-            game.stability = max(0, game.stability + penalty)
-            game.standing = max(0, game.standing - 3)  // Crisis neglect hurts standing
+            game.applyStat("stability", change: penalty)
+            game.applyStat("standing", change: -3)  // Crisis neglect hurts standing
         case .personal:
-            game.patronFavor = max(0, game.patronFavor + penalty)
+            game.applyStat("patronFavor", change: penalty)
         }
 
         // Log the consequence
@@ -124,11 +123,11 @@ extension DeskView {
                 physicalNewspaperCard(newspaper: newspaper)
             } else if let scenario = currentScenario {
                 physicalScenarioCards(scenario: scenario)
-            } else if visibleDocuments.isEmpty {
-                // Only show loading if no documents either
+            } else if visibleDocuments.isEmpty && !hasDisplayedContentForTurn {
+                // If the desk is still resolving this turn, keep the loading state visible.
                 immersiveLoadingSection
             } else {
-                // Documents exist but no scenario/newspaper - show End Turn option
+                // No scenario/newspaper is active, so the player can wrap the turn from the desk.
                 endTurnSection
             }
         }
@@ -147,7 +146,7 @@ extension DeskView {
 
             // End Turn button styled like 1950s office
             Button {
-                advanceTurnFromDesk()
+                processEndTurnWithConsequences()
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.right.circle.fill")
@@ -276,31 +275,4 @@ extension DeskView {
         return FiftiesColors.fadedInk
     }
 
-    /// Advance turn when player clicks End Turn from desk
-    func advanceTurnFromDesk() {
-        // Log turn end event
-        let event = GameEvent(
-            turnNumber: game.turnNumber,
-            eventType: .narrative,
-            summary: "Completed administrative duties"
-        )
-        event.game = game
-        game.events.append(event)
-
-        // Pre-generate content for next turn
-        ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
-
-        // Advance turn
-        game.turnNumber += 1
-        game.turnsInCurrentPosition += 1
-
-        // Reset state for new turn
-        currentScenario = nil
-        currentNewspaper = nil
-        hasDisplayedContentForTurn = false
-        isTransitioning = true
-
-        // Generate new documents for the new turn
-        documentQueue.generateDocumentsForTurn(game: game)
-    }
 }

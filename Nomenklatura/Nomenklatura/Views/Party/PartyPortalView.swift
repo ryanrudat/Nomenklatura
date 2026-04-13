@@ -26,14 +26,23 @@ struct PartyPortalView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            PartyPortalHeader()
-                .padding(.horizontal, 15)
-                .padding(.top, 10)
+            PortalHeader(
+                title: "PARTY APPARATUS BUREAU",
+                subtitle: "Central Committee Organization Department",
+                accentColor: Color(hex: "#CC0000")
+            )
+            .padding(.horizontal, 15)
+            .padding(.top, 10)
 
             // Section tabs
-            PartySectionBar(selectedSection: $selectedSection, accessLevel: accessLevel)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 10)
+            PortalSectionBar(
+                selectedSection: $selectedSection,
+                accessLevel: accessLevel,
+                featureCategory: .administrative,
+                accentColor: Color(hex: "#CC0000")
+            )
+            .padding(.horizontal, 15)
+            .padding(.vertical, 10)
 
             // Content
             ScrollView {
@@ -50,37 +59,9 @@ struct PartyPortalView: View {
     }
 }
 
-// MARK: - Party Portal Header
-
-struct PartyPortalHeader: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text("PARTY APPARATUS BUREAU")
-                .font(.system(size: 14, weight: .bold))
-                .tracking(2)
-                .foregroundColor(theme.accentGold)
-
-            Text("Central Committee Organization Department")
-                .font(.system(size: 10, weight: .medium))
-                .tracking(0.5)
-                .foregroundColor(theme.inkGray)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(hex: "#CC0000").opacity(0.5), lineWidth: 1)
-        )
-    }
-}
-
 // MARK: - Party Sections
 
-enum PartySection: String, CaseIterable {
+enum PartySection: String, CaseIterable, PortalSection {
     case overview
     case campaigns
     case actions
@@ -110,78 +91,6 @@ enum PartySection: String, CaseIterable {
     }
 }
 
-// MARK: - Party Section Bar
-
-struct PartySectionBar: View {
-    @Binding var selectedSection: PartySection
-    let accessLevel: AccessLevel
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(PartySection.allCases, id: \.self) { section in
-                let hasAccess = accessLevel.effectiveLevel(for: .administrative) >= section.requiredLevel
-
-                PartySectionButton(
-                    section: section,
-                    isSelected: selectedSection == section,
-                    isLocked: !hasAccess
-                ) {
-                    if hasAccess {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedSection = section
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct PartySectionButton: View {
-    let section: PartySection
-    let isSelected: Bool
-    let isLocked: Bool
-    let onTap: () -> Void
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 4) {
-                ZStack {
-                    Image(systemName: section.icon)
-                        .font(.system(size: 16))
-
-                    if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 8))
-                            .foregroundColor(.white)
-                            .offset(x: 8, y: 8)
-                    }
-                }
-
-                Text(section.title.uppercased())
-                    .font(.system(size: 9, weight: .semibold))
-                    .tracking(0.3)
-            }
-            .foregroundColor(
-                isLocked ? theme.inkLight :
-                    (isSelected ? .white : theme.inkGray)
-            )
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(
-                isLocked ? theme.parchmentDark.opacity(0.5) :
-                    (isSelected ? Color(hex: "#CC0000") : theme.parchmentDark)
-            )
-            .cornerRadius(6)
-            .opacity(isLocked ? 0.6 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .disabled(isLocked)
-    }
-}
-
 // MARK: - Overview Section
 
 struct PartyOverviewSection: View {
@@ -197,7 +106,7 @@ struct PartyOverviewSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PartyPositionBanner(game: game)
+            PortalPositionBanner(game: game, config: .party(accentColor: Color(hex: "#CC0000")))
 
             // Party Situation Card
             PartySituationCard(game: game)
@@ -213,84 +122,30 @@ struct PartyOverviewSection: View {
     }
 }
 
-struct PartyPositionBanner: View {
-    let game: Game
-    @Environment(\.theme) var theme
+// MARK: - Party Position Banner Config
 
-    private var isInTrack: Bool {
-        let playerTrack = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
-        return playerTrack == .partyApparatus
-    }
-
-    private var isTopLeadership: Bool {
-        game.currentPositionIndex >= 7
-    }
-
-    private var hasAuthority: Bool {
-        isInTrack || isTopLeadership
-    }
-
-    private var categoryTitle: String {
-        guard hasAuthority else { return "Observer Only" }
-        let position = game.currentPositionIndex
-        switch position {
-        case 0...1: return "Party Worker"
-        case 2: return "Party Secretary"
-        case 3: return "Department Cadre"
-        case 4...5: return "Bureau Director"
-        case 6: return "Provincial Level"
-        default: return "Central Level"
-        }
-    }
-
-    private var ccpEquivalent: String {
-        guard hasAuthority else { return "No Party Apparatus Authority" }
-        return PartyActionCategory.allCases
-            .filter { game.currentPositionIndex >= $0.minimumPositionIndex }
-            .last?.ccpEquivalent ?? "Grassroots Party Member"
-    }
-
-    private var headerText: String {
-        hasAuthority ? "YOUR PARTY RANK" : "ACCESS STATUS"
-    }
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(headerText)
-                    .font(.system(size: 9, weight: .bold))
-                    .tracking(1)
-                    .foregroundColor(theme.inkGray)
-
-                Text(categoryTitle)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(hasAuthority ? theme.inkBlack : theme.inkLight)
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 2) {
-                if hasAuthority {
-                    Text("POSITION \(game.currentPositionIndex)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(Color(hex: "#CC0000"))
-                } else {
-                    Text("VIEW ONLY")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(theme.inkLight)
+extension PortalPositionBannerConfig {
+    static func party(accentColor: Color) -> PortalPositionBannerConfig {
+        PortalPositionBannerConfig(
+            track: .partyApparatus,
+            accentColor: accentColor,
+            authorityLabel: "YOUR PARTY RANK",
+            positionTitle: { position in
+                switch position {
+                case 0...1: return "Party Worker"
+                case 2: return "Party Secretary"
+                case 3: return "Department Cadre"
+                case 4...5: return "Bureau Director"
+                case 6: return "Provincial Level"
+                default: return "Central Level"
                 }
-
-                Text(ccpEquivalent)
-                    .font(.system(size: 9))
-                    .foregroundColor(theme.inkGray)
-            }
-        }
-        .padding(12)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(hasAuthority ? Color(hex: "#CC0000").opacity(0.3) : theme.inkLight.opacity(0.3), lineWidth: 1)
+            },
+            equivalentTitle: { position in
+                PartyActionCategory.allCases
+                    .filter { position >= $0.minimumPositionIndex }
+                    .last?.ccpEquivalent ?? "Grassroots Party Member"
+            },
+            noAuthorityEquivalent: "No Party Apparatus Authority"
         )
     }
 }
@@ -339,17 +194,17 @@ struct PartySituationCard: View {
             }
 
             HStack(spacing: 16) {
-                PartyMetric(label: "Elite Loyalty", value: "\(game.eliteLoyalty)", color: game.eliteLoyalty >= 50 ? .green : .orange)
-                PartyMetric(label: "Stability", value: "\(game.stability)", color: game.stability >= 50 ? .green : .orange)
-                PartyMetric(label: "Support", value: "\(game.popularSupport)", color: game.popularSupport >= 50 ? .green : .orange)
+                PortalMetricView(label: "Elite Loyalty", value: "\(game.eliteLoyalty)", color: game.eliteLoyalty >= 50 ? .green : .orange)
+                PortalMetricView(label: "Stability", value: "\(game.stability)", color: game.stability >= 50 ? .green : .orange)
+                PortalMetricView(label: "Support", value: "\(game.popularSupport)", color: game.popularSupport >= 50 ? .green : .orange)
             }
 
             Divider()
 
             HStack(spacing: 12) {
-                PartyIndicator(label: "Centralism", isStrong: game.eliteLoyalty >= 60)
-                PartyIndicator(label: "Discipline", isStrong: game.stability >= 60)
-                PartyIndicator(label: "Mass Line", isStrong: game.popularSupport >= 60)
+                PortalStatusIndicator(label: "Centralism", isStrong: game.eliteLoyalty >= 60)
+                PortalStatusIndicator(label: "Discipline", isStrong: game.stability >= 60)
+                PortalStatusIndicator(label: "Mass Line", isStrong: game.popularSupport >= 60)
             }
         }
         .padding(12)
@@ -359,44 +214,6 @@ struct PartySituationCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(theme.borderTan, lineWidth: 1)
         )
-    }
-}
-
-struct PartyMetric: View {
-    let label: String
-    let value: String
-    let color: Color
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(color)
-
-            Text(label)
-                .font(.system(size: 8, weight: .medium))
-                .foregroundColor(theme.inkGray)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-struct PartyIndicator: View {
-    let label: String
-    let isStrong: Bool
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(isStrong ? Color.green : Color.orange)
-                .frame(width: 6, height: 6)
-
-            Text(label)
-                .font(.system(size: 8, weight: .medium))
-                .foregroundColor(theme.inkGray)
-        }
     }
 }
 
@@ -530,7 +347,11 @@ struct PartyCampaignsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if activeCampaigns.isEmpty {
-                NoCampaignsView()
+                PortalEmptyStateView(
+                    icon: "flag.slash",
+                    title: "No Active Campaigns",
+                    message: "Launch ideological campaigns from the Actions tab"
+                )
             } else {
                 ForEach(activeCampaigns) { campaign in
                     PartyCampaignCard(campaign: campaign, game: game)
@@ -539,31 +360,6 @@ struct PartyCampaignsSection: View {
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
-    }
-}
-
-struct NoCampaignsView: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "flag.slash")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Active Campaigns")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(theme.inkGray)
-
-            Text("Launch ideological campaigns from the Actions tab")
-                .font(.system(size: 11))
-                .foregroundColor(theme.inkLight)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
     }
 }
 
@@ -690,7 +486,7 @@ struct PartyActionsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Position indicator
-            PartyPositionBanner(game: game)
+            PortalPositionBanner(game: game, config: .party(accentColor: Color(hex: "#CC0000")))
 
             // Check track authority before showing actions
             if !hasTrackAuthority {
@@ -700,7 +496,11 @@ struct PartyActionsSection: View {
                     accentColor: Color(hex: "#CC0000")
                 )
             } else if groupedActions.isEmpty {
-                NoPartyActionsView()
+                PortalEmptyStateView(
+                    icon: "person.crop.circle.badge.xmark",
+                    title: "No Party Actions Available",
+                    message: "Advance in position to unlock party apparatus actions."
+                )
             } else {
                 ForEach(groupedActions, id: \.0) { category, actions in
                     PartyActionCategorySection(
@@ -714,32 +514,6 @@ struct PartyActionsSection: View {
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
-    }
-}
-
-struct NoPartyActionsView: View {
-    @Environment(\.theme) var theme
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "person.crop.circle.badge.xmark")
-                .font(.system(size: 32))
-                .foregroundColor(theme.inkLight)
-
-            Text("No Party Actions Available")
-                .font(theme.bodyFont)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.inkBlack)
-
-            Text("Advance in position to unlock party apparatus actions.")
-                .font(theme.tagFont)
-                .foregroundColor(theme.inkGray)
-                .multilineTextAlignment(.center)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(theme.parchmentDark.opacity(0.5))
-        .cornerRadius(12)
     }
 }
 

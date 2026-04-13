@@ -443,6 +443,7 @@ struct GameView: View {
     // Promotion notification state
     @State private var showPromotionNotification = false
     @State private var promotionPosition: LadderPosition?
+    @State private var successionNotification: SuccessionNotificationData?
 
     // Journal navigation state (for toast -> dossier navigation)
     @State private var navigateToJournalEntry: JournalEntry?
@@ -559,6 +560,18 @@ struct GameView: View {
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
+
+            if let successionNotification {
+                SuccessionNotificationView(
+                    data: successionNotification,
+                    onDismiss: {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            self.successionNotification = nil
+                        }
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
         }
         .journalToastOverlay(onNavigateToEntry: { entry in
             navigateToJournalEntry = entry
@@ -629,6 +642,9 @@ struct GameView: View {
         // Check for game end conditions after outcome
         let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
         if endCheck.gameOver {
+            if trySuccessionRecovery(from: endCheck, requiresEndTurnProcessing: true) {
+                return
+            }
             endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
             return
         }
@@ -647,37 +663,134 @@ struct GameView: View {
             await MainActor.run {
                 let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
                 if endCheck.gameOver {
+                    if trySuccessionRecovery(from: endCheck, requiresEndTurnProcessing: false) {
+                        return
+                    }
                     endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
                     return
                 }
 
-                // Check for promotion eligibility
-                let promotionCheck = GameEngine.shared.checkPromotionEligibility(game: game, ladder: campaignConfig.ladder)
-                if promotionCheck.canPromote, let nextPosition = promotionCheck.nextPosition {
-                    // Execute promotion and show notification
-                    GameEngine.shared.executePromotion(game: game, to: nextPosition)
-                    promotionPosition = nextPosition
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        showPromotionNotification = true
+                advanceToNextTurn()
+            }
+        }
+    }
+
+    private func trySuccessionRecovery(from endCheck: GameEndCheck, requiresEndTurnProcessing: Bool) -> Bool {
+        guard endCheck.gameOver,
+              endCheck.result == .lost,
+              endCheck.allowsHeirSuccession else {
+            return false
+        }
+
+        if requiresEndTurnProcessing {
+            Task {
+                await GameEngine.shared.endTurnUpdatesWithContext(game: game, ladder: campaignConfig.ladder, context: modelContext)
+                await MainActor.run {
+                    if completeHeirSuccession(after: endCheck.reason ?? "Your predecessor has fallen from power.") {
+                        advanceToNextTurn(countCompletedTurnTowardPosition: false)
+                    } else {
+                        endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
                     }
                 }
+            }
+            return true
+        }
 
-                // Clear outcome data
-                currentOutcome = nil
+        if completeHeirSuccession(after: endCheck.reason ?? "Your predecessor has fallen from power.") {
+            advanceToNextTurn(countCompletedTurnTowardPosition: false)
+            return true
+        }
 
-                // Advance turn
-                game.phase = GamePhase.briefing.rawValue
-                game.turnNumber += 1
-                game.turnsInCurrentPosition += 1  // Track time in current position
-                game.actionPoints = 2  // Reset AP for next turn
-                game.usedActionsThisTurn = []  // Clear used actions for new turn
+        return false
+    }
+
+    private func completeHeirSuccession(after reason: String) -> Bool {
+        guard let resolvedSuccessor = game.resolveHeirForContinuation() else {
+            return false
+        }
+
+        if !resolvedSuccessor.wasPreDesignated ||
+            game.designatedHeirId != resolvedSuccessor.heir.id.uuidString ||
+            game.currentHeirRelationship != resolvedSuccessor.relationship {
+            game.designateHeir(resolvedSuccessor.heir, relationship: resolvedSuccessor.relationship)
+        }
+
+        let transitionSummary: String
+        if resolvedSuccessor.wasPreDesignated {
+            transitionSummary = "Following the fall of their predecessor, \(resolvedSuccessor.heir.name) has taken control of the political dynasty."
+        } else {
+            transitionSummary = "Following the fall of their predecessor, \(resolvedSuccessor.heir.name) emerges through \(resolvedSuccessor.successionSource.lowercased()) to preserve the dynasty."
+        }
+
+        guard game.processSuccessionToHeir(storyTransition: transitionSummary) else {
+            return false
+        }
+
+        let successionEvent = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .narrative,
+            summary: "\(resolvedSuccessor.heir.name) carries the dynasty forward."
+        )
+        successionEvent.importance = 8
+        successionEvent.details["reason"] = reason
+        successionEvent.details["relationship"] = resolvedSuccessor.relationship.displayName
+        successionEvent.details["source"] = resolvedSuccessor.successionSource
+        successionEvent.game = game
+        game.events.append(successionEvent)
+
+        currentOutcome = nil
+        selectedTab = .desk
+        clearResolvedSuccessionFailureState()
+
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.82)) {
+            successionNotification = SuccessionNotificationData(
+                heirName: resolvedSuccessor.heir.name,
+                relationshipName: resolvedSuccessor.relationship.displayName,
+                sourceLabel: resolvedSuccessor.successionSource,
+                reason: reason
+            )
+        }
+
+        return true
+    }
+
+    private func clearResolvedSuccessionFailureState() {
+        game.flags.removeAll { flag in
+            flag == "player_death_imminent" || flag == "corruption_exposed"
+        }
+        game.variables.removeValue(forKey: "death_cause")
+        game.variables.removeValue(forKey: "corruption_level")
+    }
+
+    private func advanceToNextTurn(countCompletedTurnTowardPosition: Bool = true) {
+        if countCompletedTurnTowardPosition {
+            // Count the completed turn before evaluating promotion timing.
+            game.turnsInCurrentPosition += 1
+
+            // Check for promotion eligibility
+            let promotionCheck = GameEngine.shared.checkPromotionEligibility(game: game, ladder: campaignConfig.ladder)
+            if promotionCheck.canPromote, let nextPosition = promotionCheck.nextPosition {
+                // Execute promotion and show notification
+                GameEngine.shared.executePromotion(game: game, to: nextPosition)
+                promotionPosition = nextPosition
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    showPromotionNotification = true
+                }
             }
         }
 
-        // Log turn event
+        currentOutcome = nil
+
+        // Advance turn
+        game.phase = GamePhase.briefing.rawValue
+        game.turnNumber += 1
+        game.actionPoints = 2  // Reset AP for next turn
+        game.usedActionsThisTurn = []  // Clear used actions for new turn
+
+        // Log the new turn only after progression state is finalized.
         let turnEvent = GameEvent(
             turnNumber: game.turnNumber,
-            eventType: .crisis,
+            eventType: .narrative,
             summary: "Turn \(game.turnNumber) begins."
         )
         turnEvent.importance = 3
@@ -842,6 +955,131 @@ struct PromotionNotificationView: View {
         }
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                showContent = true
+            }
+        }
+    }
+}
+
+struct SuccessionNotificationData {
+    let heirName: String
+    let relationshipName: String
+    let sourceLabel: String
+    let reason: String
+}
+
+struct SuccessionNotificationView: View {
+    let data: SuccessionNotificationData
+    let onDismiss: () -> Void
+    @Environment(\.theme) var theme
+    @State private var showContent = false
+
+    private var titleText: String {
+        "THE DYNASTY ENDURES"
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onDismiss()
+                }
+
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(theme.sovietRed)
+                    .frame(height: 4)
+
+                VStack(spacing: 20) {
+                    Image(systemName: "person.2.crop.square.stack.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(theme.sovietRed)
+                        .shadow(color: theme.sovietRed.opacity(0.35), radius: 10)
+                        .scaleEffect(showContent ? 1.0 : 0.5)
+                        .opacity(showContent ? 1.0 : 0)
+
+                    Text(titleText)
+                        .font(.system(size: 22, weight: .black))
+                        .tracking(3)
+                        .foregroundColor(theme.sovietRed)
+                        .multilineTextAlignment(.center)
+                        .opacity(showContent ? 1.0 : 0)
+                        .offset(y: showContent ? 0 : 20)
+
+                    Text(data.heirName.uppercased())
+                        .font(theme.headerFont)
+                        .tracking(2)
+                        .foregroundColor(theme.inkBlack)
+                        .opacity(showContent ? 1.0 : 0)
+                        .offset(y: showContent ? 0 : 20)
+
+                    Text(data.sourceLabel.uppercased())
+                        .font(theme.labelFont)
+                        .tracking(2)
+                        .foregroundColor(theme.sovietRed)
+                        .opacity(showContent ? 1.0 : 0)
+                        .offset(y: showContent ? 0 : 20)
+
+                    Text(data.relationshipName.uppercased())
+                        .font(theme.labelFont)
+                        .tracking(2)
+                        .foregroundColor(theme.inkGray)
+                        .opacity(showContent ? 1.0 : 0)
+                        .offset(y: showContent ? 0 : 20)
+
+                    Rectangle()
+                        .fill(theme.borderTan)
+                        .frame(width: 120, height: 1)
+                        .opacity(showContent ? 1.0 : 0)
+
+                    Text(data.sourceLabel == "Standing Committee Selection" || data.sourceLabel == "Party Election Winner"
+                         ? "Your predecessor has fallen, but the apparatus refuses a vacuum. The Party has elevated a successor to preserve continuity and keep the machine in motion."
+                         : "Your predecessor has fallen, but the apparatus does not forget old loyalties. The family network, favors, and habits of power now gather around a new figure.")
+                        .font(theme.bodyFont)
+                        .foregroundColor(theme.inkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .opacity(showContent ? 1.0 : 0)
+                        .offset(y: showContent ? 0 : 20)
+
+                    Text(data.reason)
+                        .font(theme.bodyFontSmall)
+                        .italic()
+                        .foregroundColor(theme.inkLight)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .opacity(showContent ? 1.0 : 0)
+                        .offset(y: showContent ? 0 : 20)
+
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Text("CONTINUE THE LINE")
+                            .font(theme.labelFont)
+                            .fontWeight(.bold)
+                            .tracking(1)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 30)
+                            .padding(.vertical, 12)
+                            .background(theme.sovietRed)
+                    }
+                    .opacity(showContent ? 1.0 : 0)
+                    .scaleEffect(showContent ? 1.0 : 0.9)
+                    .padding(.top, 10)
+                }
+                .padding(30)
+                .background(theme.parchment)
+
+                Rectangle()
+                    .fill(theme.sovietRed)
+                    .frame(height: 4)
+            }
+            .frame(maxWidth: 360)
+            .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.72).delay(0.1)) {
                 showContent = true
             }
         }

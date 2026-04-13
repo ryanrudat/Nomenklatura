@@ -178,13 +178,10 @@ extension DeskView {
         event.game = game
         game.events.append(event)
 
-        ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
-
-        game.turnNumber += 1
-        game.turnsInCurrentPosition += 1
-
         currentScenario = nil
         selectedOptionId = nil
+
+        continueInformationalTurnIfDeskIsClear()
     }
 
     func continueFromNewspaper() {
@@ -198,14 +195,16 @@ extension DeskView {
         event.game = game
         game.events.append(event)
 
-        ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
-
-        game.turnNumber += 1
-        game.turnsInCurrentPosition += 1
-
         currentNewspaper = nil
         currentSamizdat = nil
         currentScenario = nil
         selectedOptionId = nil
+
+        continueInformationalTurnIfDeskIsClear()
+    }
+
+    private func continueInformationalTurnIfDeskIsClear() {
+        guard documentQueue.getActiveDocuments(for: game).isEmpty else { return }
+        processEndTurnWithConsequences()
     }
 }
