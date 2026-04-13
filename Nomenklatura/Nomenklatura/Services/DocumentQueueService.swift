@@ -348,6 +348,11 @@ class DocumentQueueService: ObservableObject {
                 }
             }
         }
+
+        // Inject crisis documents driven by actual world state, bypassing random
+        // category selection so urgent situations (high tension, hostile countries,
+        // trade collapse) always surface on the player's desk.
+        injectWorldStateDocuments(game: game)
     }
 
     /// Check if a crisis document was generated this turn (for event coordination)
@@ -566,6 +571,406 @@ class DocumentQueueService: ObservableObject {
                 weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.2
             }
         }
+    }
+
+    // MARK: - World Tension Calculation
+
+    /// Calculate current world tension from diplomatic state.
+    /// NOTE: Mirrors SituationMapView.calculateWorldTension() -- keep in sync.
+    private func calculateWorldTension(for game: Game) -> Int {
+        var tension = 30 // Base Cold War tension
+
+        let hostileCount = game.foreignCountries.filter {
+            $0.status == .hostile || $0.status == .atWar
+        }.count
+        tension += hostileCount * 8
+
+        let activeCrises = game.recentWorldEvents(turns: 3).filter {
+            $0.severity == .critical || $0.severity == .major
+        }.count
+        tension += activeCrises * 5
+
+        if game.stability < 40 {
+            tension += 10
+        }
+
+        return min(100, max(0, tension))
+    }
+
+    // MARK: - World-State-Aware Document Injection
+
+    /// Inject crisis documents based on actual world state after normal document generation.
+    /// Uses cooldown flags to prevent spamming the same crisis type every turn.
+    private func injectWorldStateDocuments(game: Game) {
+        let currentCount = getActiveDocuments(for: game).count
+        guard currentCount < maxQueueSize else { return }
+
+        let worldTension = calculateWorldTension(for: game)
+        let clearanceLevel = min(game.currentPositionIndex + 1, 8)
+        let turn = game.turnNumber
+
+        // 1. High World Tension → Diplomatic Crisis Document
+        if worldTension > 70 && clearanceLevel >= 4 {
+            let cooldownFlag = "world_tension_doc_turn_\(turn / 3)" // Once per 3 turns
+            if !game.flags.contains(cooldownFlag)
+                && !categoriesGeneratedThisTurn.contains(.diplomatic) {
+                let mostHostile = game.foreignCountries
+                    .min { $0.relationshipScore < $1.relationshipScore }
+                let doc = generateWorldTensionCrisisDocument(
+                    for: game,
+                    worldTension: worldTension,
+                    hostileCountry: mostHostile
+                )
+                doc.game = game
+                game.deskDocuments.append(doc)
+                game.flags.append(cooldownFlag)
+                categoriesGeneratedThisTurn.insert(.diplomatic)
+                crisisDocumentGeneratedThisTurn = true
+                documentLog.info("📄 [DocQueue] Injected world tension crisis doc (tension: \(worldTension))")
+            }
+        }
+
+        // 2. Hostile Country Crisis → Country-Specific Document
+        if clearanceLevel >= 5,
+           let hostileCountry = game.foreignCountries.first(where: {
+               $0.relationshipScore < -60 && $0.diplomaticTension > 70
+           }) {
+            let cooldownFlag = "hostile_crisis_\(hostileCountry.countryId)_turn_\(turn / 4)" // Once per 4 turns per country
+            if !game.flags.contains(cooldownFlag) {
+                let doc = generateHostileCountryCrisisDocument(
+                    for: game,
+                    hostileCountry: hostileCountry
+                )
+                doc.game = game
+                game.deskDocuments.append(doc)
+                game.flags.append(cooldownFlag)
+                crisisDocumentGeneratedThisTurn = true
+                documentLog.info("📄 [DocQueue] Injected hostile country crisis doc for \(hostileCountry.name)")
+            }
+        }
+
+        // 3. Trade Collapse → Economic Crisis Document
+        if clearanceLevel >= 3,
+           !categoriesGeneratedThisTurn.contains(.economic) {
+            let collapsedTrade = game.foreignCountries.filter {
+                $0.tradeVolume < 5 && $0.politicalBloc == .socialist
+            }
+            let cooldownFlag = "trade_collapse_doc_turn_\(turn / 5)" // Once per 5 turns
+            if collapsedTrade.count >= 2
+                && !game.flags.contains(cooldownFlag) {
+                let doc = generateTradeCollapseCrisisDocument(
+                    for: game,
+                    collapsedCountries: collapsedTrade
+                )
+                doc.game = game
+                game.deskDocuments.append(doc)
+                game.flags.append(cooldownFlag)
+                categoriesGeneratedThisTurn.insert(.economic)
+                documentLog.info("📄 [DocQueue] Injected trade collapse crisis doc (\(collapsedTrade.count) countries)")
+            }
+        }
+    }
+
+    // MARK: - World-State Crisis Document Generators
+
+    /// Generate a diplomatic crisis document driven by high world tension
+    private func generateWorldTensionCrisisDocument(
+        for game: Game,
+        worldTension: Int,
+        hostileCountry: ForeignCountry?
+    ) -> DeskDocument {
+        let tensionLevel: String
+        let urgency: DocumentUrgency
+        if worldTension > 85 {
+            tensionLevel = "CRITICAL"
+            urgency = .critical
+        } else {
+            tensionLevel = "ELEVATED"
+            urgency = .urgent
+        }
+
+        let countryReference: String
+        let hostileName = hostileCountry?.name ?? "Western powers"
+        let hostileLeader = hostileCountry?.leaderName ?? "hostile leadership"
+
+        if let country = hostileCountry, country.hasNuclearWeapons {
+            countryReference = "\(country.name) (nuclear-armed) has placed strategic forces on heightened alert"
+        } else if let country = hostileCountry {
+            countryReference = "\(country.name) has increased military deployments along contested borders"
+        } else {
+            countryReference = "Multiple foreign powers have escalated military postures"
+        }
+
+        let body = """
+        DIPLOMATIC SITUATION REPORT - \(tensionLevel)
+        CLASSIFICATION: TOP SECRET
+
+        WORLD TENSION INDEX: \(worldTension)/100
+
+        SUMMARY: International tensions have reached \(tensionLevel.lowercased()) levels. \(countryReference).
+
+        KEY DEVELOPMENTS:
+        - \(hostileName) diplomatic communications have become increasingly hostile
+        - \(hostileLeader) issued public statements condemning our government
+        - Military intelligence reports unusual troop movements near our borders
+        - Allied nations are requesting guidance on coordinated response
+
+        ASSESSMENT: The current trajectory risks escalation to direct confrontation within weeks.
+
+        RECOMMENDED ACTIONS REQUIRED.
+        """
+
+        return DeskDocument.builder()
+            .withTemplateId("world_tension_\(UUID().uuidString.prefix(6))")
+            .ofType(.intelligence)
+            .titled("SITUATION REPORT: International Tensions \(tensionLevel)")
+            .from("Foreign Ministry", title: "Crisis Analysis Desk")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(urgency)
+            .inCategory(.diplomatic)
+            .classified(as: "TOP SECRET")
+            .withBody(body)
+            .withGenerationReason("world_tension_\(worldTension)")
+            .requiresDecision(true)
+            .addOption(
+                id: "diplomatic_channel",
+                text: "OPEN DIPLOMATIC CHANNEL - Propose emergency talks with \(hostileName)",
+                shortDescription: "Proposed emergency diplomatic talks",
+                effects: ["internationalStanding": 5],
+                archetype: .negotiate
+            )
+            .addOption(
+                id: "military_alert",
+                text: "RAISE MILITARY ALERT - Place forces on standby",
+                shortDescription: "Raised military readiness",
+                effects: ["militaryLoyalty": 5, "treasury": -10],
+                archetype: .mobilize
+            )
+            .addOption(
+                id: "intelligence_priority",
+                text: "INTELLIGENCE PRIORITY - Redirect assets to monitor \(hostileName)",
+                shortDescription: "Redirected intelligence focus",
+                effects: ["security": 5],
+                archetype: .surveil
+            )
+            .addOption(
+                id: "public_calm",
+                text: "MAINTAIN CALM - Issue reassuring public statement",
+                shortDescription: "Issued calming statement",
+                effects: ["stability": 3, "patronFavor": -3],
+                archetype: .administrative
+            )
+            .build()
+    }
+
+    /// Generate a crisis document about a specific hostile country
+    private func generateHostileCountryCrisisDocument(
+        for game: Game,
+        hostileCountry: ForeignCountry
+    ) -> DeskDocument {
+        let hasBorder = hostileCountry.borderingRegionId != nil
+        let isMilitaryThreat = hostileCountry.militaryStrength > 60
+
+        let templateVariant = Int.random(in: 0...2)
+        let title: String
+        let docType: DocumentType
+        let body: String
+
+        switch templateVariant {
+        case 0 where hasBorder && isMilitaryThreat:
+            title = "URGENT: \(hostileCountry.name) Forces Detected Near Border"
+            docType = .intelligence
+            body = """
+            MILITARY INTELLIGENCE FLASH REPORT
+            CLASSIFICATION: SECRET
+
+            SUBJECT: \(hostileCountry.name) Military Buildup
+
+            SOURCE: Border Observation Posts / Signals Intelligence
+
+            Our border observation posts report significant \(hostileCountry.name) military activity:
+
+            - Armored units repositioned within 50km of our border
+            - Communications intercepts indicate \(hostileCountry.leaderName) has authorized "enhanced readiness" posture
+            - \(hostileCountry.name) military strength assessed at \(hostileCountry.militaryStrength)/100
+            - Current diplomatic tension: \(hostileCountry.diplomaticTension)/100
+            - Bilateral relationship: \(hostileCountry.relationshipScore) (severely deteriorated)
+
+            BORDER GARRISON ASSESSMENT: Our forces in the region are currently at standard peacetime deployment. Reinforcement would require 48-72 hours.
+
+            IMMEDIATE GUIDANCE REQUESTED.
+            """
+        case 1:
+            title = "DIPLOMATIC CABLE: \(hostileCountry.name) Ambassador Recalled"
+            docType = .cable
+            body = """
+            DECODED CABLE - IMMEDIATE
+            FROM: Embassy, \(hostileCountry.name)
+            CLASSIFICATION: SECRET
+
+            \(hostileCountry.name) has formally recalled their ambassador for "consultations" - a clear signal of diplomatic breakdown.
+
+            BACKGROUND:
+            - Relationship score: \(hostileCountry.relationshipScore)/100 (hostile)
+            - Diplomatic tension: \(hostileCountry.diplomaticTension)/100
+            - \(hostileCountry.leaderName) (\(hostileCountry.leaderTitle)) has made public statements condemning our policies
+            - Their espionage activity against us assessed at: \(hostileCountry.espionageActivity)/100
+
+            Our ambassador reports increasing hostility from \(hostileCountry.name) officials. Staff safety is becoming a concern.
+
+            The recall of an ambassador is traditionally the last step before severing diplomatic relations entirely.
+
+            AWAITING INSTRUCTIONS ON EMBASSY POSTURE.
+            """
+        default:
+            title = "FORMAL PROTEST: \(hostileCountry.name) Government Statement"
+            docType = .cable
+            body = """
+            DIPLOMATIC COMMUNICATION
+            CLASSIFICATION: CONFIDENTIAL
+
+            \(hostileCountry.name) has formally protested our government's actions through official channels.
+
+            The protest, signed by \(hostileCountry.leaderName), cites:
+            - "Unacceptable provocations" along shared areas of interest
+            - "Interference in the internal affairs" of \(hostileCountry.name)
+            - Demands for immediate cessation of intelligence activities
+
+            CURRENT BILATERAL STATUS:
+            - Relationship: \(hostileCountry.relationshipScore)/100
+            - Tension level: \(hostileCountry.diplomaticTension)/100
+            - Trade volume: \(hostileCountry.tradeVolume) (trade has been severely impacted)
+
+            \(hostileCountry.politicalBloc == .socialist ? "NOTE: As a fellow socialist state, this rift risks fracturing bloc unity and may draw attention from Moscow." : "NOTE: This escalation may embolden other \(hostileCountry.politicalBloc.displayName) nations.")
+
+            RESPONSE REQUIRED WITHIN 48 HOURS.
+            """
+        }
+
+        let urgency: DocumentUrgency = hostileCountry.diplomaticTension > 80 ? .critical : .urgent
+
+        return DeskDocument.builder()
+            .withTemplateId("hostile_crisis_\(hostileCountry.countryId)_\(UUID().uuidString.prefix(6))")
+            .ofType(docType)
+            .titled(title)
+            .from("Foreign Ministry", title: "Crisis Desk")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(urgency)
+            .inCategory(.diplomatic)
+            .classified(as: "SECRET")
+            .withBody(body)
+            .withGenerationReason("hostile_country_\(hostileCountry.countryId)")
+            .requiresDecision(true)
+            .addOption(
+                id: "firm_response",
+                text: "FIRM RESPONSE - Issue counter-protest to \(hostileCountry.name)",
+                shortDescription: "Issued firm counter-protest",
+                effects: ["patronFavor": 3, "internationalStanding": -3],
+                archetype: .international
+            )
+            .addOption(
+                id: "conciliatory",
+                text: "CONCILIATORY - Propose bilateral meeting with \(hostileCountry.leaderName)",
+                shortDescription: "Proposed bilateral talks",
+                effects: ["internationalStanding": 5, "patronFavor": -5],
+                archetype: .negotiate
+            )
+            .addOption(
+                id: "escalate_security",
+                text: "SECURITY ESCALATION - Increase surveillance of \(hostileCountry.name) assets",
+                shortDescription: "Escalated intelligence operations",
+                effects: ["security": 5, "treasury": -5],
+                archetype: .surveil
+            )
+            .build()
+    }
+
+    /// Generate an economic crisis document about trade collapse with socialist allies
+    private func generateTradeCollapseCrisisDocument(
+        for game: Game,
+        collapsedCountries: [ForeignCountry]
+    ) -> DeskDocument {
+        let countryNames = collapsedCountries.prefix(4).map { $0.name }
+        let countryList = countryNames.joined(separator: ", ")
+
+        let totalLostTrade = collapsedCountries.reduce(0) { $0 + max(0, 20 - $1.tradeVolume) }
+
+        let affectedResources = collapsedCountries
+            .flatMap { $0.strategicResources }
+            .prefix(5)
+        let resourceList = affectedResources.isEmpty
+            ? "various industrial goods"
+            : affectedResources.joined(separator: ", ")
+
+        let body = """
+        ECONOMIC ALERT - PRIORITY
+        MINISTRY OF TRADE AND ECONOMIC COOPERATION
+
+        SUBJECT: Trade Disruption with Socialist Allies
+
+        SITUATION: Trade volumes with \(collapsedCountries.count) allied socialist nations have fallen to critically low levels.
+
+        AFFECTED COUNTRIES:
+        \(collapsedCountries.prefix(4).map { country in
+            "  - \(country.name): Trade volume \(country.tradeVolume) (relationship: \(country.relationshipScore))"
+        }.joined(separator: "\n"))
+
+        ESTIMATED TRADE DEFICIT: \(totalLostTrade) units below normal levels
+
+        STRATEGIC RESOURCES AT RISK: \(resourceList)
+
+        IMPACT ASSESSMENT:
+        - Industrial output may decline without imported materials from \(countryList)
+        - Food supply chains partially dependent on allied trade networks
+        - Failure to maintain socialist bloc trade commitments risks ideological credibility
+
+        The Planning Commission requires immediate guidance on emergency resource allocation.
+
+        RESPONSE REQUIRED.
+        """
+
+        let urgency: DocumentUrgency = collapsedCountries.count >= 3 ? .urgent : .priority
+
+        return DeskDocument.builder()
+            .withTemplateId("trade_collapse_\(UUID().uuidString.prefix(6))")
+            .ofType(.report)
+            .titled("ECONOMIC ALERT: Socialist Bloc Trade Disrupted")
+            .from("Ministry of Trade", title: "Planning Commission")
+            .receivedOnTurn(game.turnNumber)
+            .withUrgency(urgency)
+            .inCategory(.economic)
+            .withBody(body)
+            .withGenerationReason("trade_collapse_\(collapsedCountries.count)_countries")
+            .requiresDecision(true)
+            .addOption(
+                id: "emergency_allocation",
+                text: "EMERGENCY ALLOCATION - Redirect domestic resources to fill gaps",
+                shortDescription: "Redirected domestic resources",
+                effects: ["treasury": -15, "industrialOutput": -5],
+                archetype: .administrative
+            )
+            .addOption(
+                id: "diplomatic_trade_mission",
+                text: "TRADE MISSION - Send delegations to \(countryNames.first ?? "allied nations") to restore commerce",
+                shortDescription: "Launched trade restoration mission",
+                effects: ["internationalStanding": 3, "treasury": -5],
+                archetype: .negotiate
+            )
+            .addOption(
+                id: "self_sufficiency",
+                text: "SELF-SUFFICIENCY - Accelerate domestic production programs",
+                shortDescription: "Prioritized domestic production",
+                effects: ["industrialOutput": 5, "treasury": -20],
+                archetype: .administrative
+            )
+            .addOption(
+                id: "seek_capitalist_trade",
+                text: "ALTERNATIVE MARKETS - Quietly explore trade with non-aligned nations",
+                shortDescription: "Explored alternative trade partners",
+                effects: ["internationalStanding": 5, "patronFavor": -10],
+                archetype: .international
+            )
+            .build()
     }
 
     // MARK: - Category-Specific Document Generators
