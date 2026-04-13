@@ -245,7 +245,7 @@ struct DeskView: View {
 
     var positionTitle: String {
         let config = CampaignLoader.shared.getColdWarCampaign()
-        return config.ladder.first(where: { $0.index == game.currentPositionIndex })?.title ?? "Party Official"
+        return config.ladder.first(where: { $0.index == game.currentPositionIndex })?.title ?? "General Secretary"
     }
 
     var clearanceLevel: Int {

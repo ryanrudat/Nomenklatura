@@ -531,8 +531,8 @@ class DocumentQueueService: ObservableObject {
                 weights[.diplomatic] = 0
 
             case .shared:
-                // Shared track (early career): Balanced documents, no specialization yet
-                // These are junior officials who see general administrative work
+                // Shared track: Balanced documents across all categories
+                // At General Secretary level, this means the player sees everything
                 break
             }
         }
@@ -543,14 +543,22 @@ class DocumentQueueService: ObservableObject {
             weights[.crisis] = 0  // No crisis documents for low-level officials
         }
 
-        // Higher positions see more personnel matters (promotions, transfers, etc.)
-        if clearanceLevel >= 5 {
-            weights[.personnel] = (weights[.personnel] ?? 15) * 1.3
-        }
+        // General Secretary (position 7+) sees everything — boost high-level categories
+        if clearanceLevel >= 8 {
+            weights[.crisis] = (weights[.crisis] ?? 3) * 2.0  // Crises escalate to the top
+            weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.5  // Foreign affairs are central
+            weights[.personnel] = (weights[.personnel] ?? 15) * 1.3  // Senior appointments
+            weights[.military] = (weights[.military] ?? 15) * 1.3  // Military readiness
+        } else {
+            // Higher positions see more personnel matters (promotions, transfers, etc.)
+            if clearanceLevel >= 5 {
+                weights[.personnel] = (weights[.personnel] ?? 15) * 1.3
+            }
 
-        // Very high positions see more diplomatic matters
-        if clearanceLevel >= 6 {
-            weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.2
+            // Very high positions see more diplomatic matters
+            if clearanceLevel >= 6 {
+                weights[.diplomatic] = (weights[.diplomatic] ?? 10) * 1.2
+            }
         }
     }
 
@@ -560,16 +568,17 @@ class DocumentQueueService: ObservableObject {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
         // Templates with minimum clearance requirements
-        // Security clearances should reflect actual operational responsibility:
-        // - Levels 1-2: Administrative security (forwarding reports, loyalty matters)
-        // - Levels 3-4: Security oversight (surveillance, investigations)
-        // - Levels 5+: Intelligence operations (running assets, covert ops)
+        // As General Secretary, the player receives high-level security briefings:
+        // - Denunciations are forwarded from BPS with recommendations
+        // - Surveillance reports require General Secretary authorization
+        // - Arrest warrants need the leader's signature
+        // - Intelligence operations report directly to the top
         let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateDenunciationLetter),      // Simple - Level 1+ (just forward accusations)
-            (2, generateSecurityConcernReport),   // Entry - Level 2+ (minor security concerns)
-            (3, generateSurveillanceReport),      // Security - Level 3+ (approve/deny surveillance)
-            (4, generateArrestAuthorization),     // High stakes - Level 4+ (life-altering decision)
-            (5, generateIntelligenceHandlerReport) // Intelligence - Level 5+ (running assets is senior work)
+            (1, generateDenunciationLetter),      // Forwarded from BPS with recommendation
+            (2, generateSecurityConcernReport),   // Security concern requiring attention
+            (3, generateSurveillanceReport),      // Surveillance authorization request
+            (4, generateArrestAuthorization),     // Arrest warrant for signature
+            (5, generateIntelligenceHandlerReport) // Intelligence operation briefing
         ]
 
         // Filter templates available at current clearance
@@ -615,24 +624,27 @@ class DocumentQueueService: ObservableObject {
         let accusation = accusations.randomElement()!
 
         let body = """
-        CONFIDENTIAL - CITIZEN REPORT
-        ORIGIN: \(location.zoneName)
+        FOR THE ATTENTION OF THE GENERAL SECRETARY
+        BUREAU OF PEOPLE'S SECURITY — CITIZEN DENUNCIATION SUMMARY
 
+        ORIGIN: \(location.zoneName)
         Subject: \(name.uppercased())
         Position: \(job), \(workplace)
 
-        "\(name) \(accusation). Several coworkers have noticed this behavior over the past weeks. His/her attitude is concerning to those of us who take our socialist duties seriously."
+        BPS Assessment: A citizen denunciation has been received alleging that \(name) \(accusation). Multiple corroborating reports from workplace informants suggest the behavior has continued for several weeks.
 
-        This report is submitted out of duty to the Party and the State.
+        This matter has been forwarded to your office as the subject has connections to \(["a Standing Committee member's family", "the Foreign Ministry", "a regional Party organization", "the Defense Ministry"].randomElement()!), making disposition politically sensitive.
 
-        - A Concerned Patriot
+        Comrade General Secretary, we require your guidance on how to proceed.
+
+        - Bureau of People's Security, Directorate of Internal Affairs
         """
 
         return DeskDocument.builder()
             .withTemplateId("denunciation_\(UUID().uuidString.prefix(6))")
             .ofType(.denunciation)
-            .titled("Citizen Report: \(name)")
-            .from("Anonymous", title: "Concerned Citizen, \(location.shortName)")
+            .titled("BPS Report: \(name)")
+            .from("Director Wallace", title: "Bureau of People's Security")
             .receivedOnTurn(game.turnNumber)
             .withUrgency(.routine)
             .inCategory(.security)
@@ -663,13 +675,13 @@ class DocumentQueueService: ObservableObject {
             )
             .addOption(
                 id: "forward",
-                text: "FORWARD - Pass to superior (covers you)",
-                shortDescription: "Forwarded to superiors",
-                effects: ["patronFavor": -3],
+                text: "DELEGATE TO BPS - Let Security handle disposition",
+                shortDescription: "Delegated to security services",
+                effects: ["patronFavor": 3],
                 archetype: .deflect
             )
             .withConsequenceIfIgnored(
-                "The report sat on your desk. If \(name) later causes trouble, questions will be asked.",
+                "The BPS report sat on the General Secretary's desk, unanswered. If \(name) later causes trouble, the Standing Committee will note your inaction.",
                 effects: ["security": -5]
             )
             .build()
@@ -977,17 +989,16 @@ class DocumentQueueService: ObservableObject {
     private func generateMilitaryDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Military clearances reflect operational responsibility:
-        // - Levels 1-2: Administrative filing, supply paperwork
-        // - Levels 3-4: Unit discipline, equipment allocation
-        // - Levels 5+: Border incidents, tactical decisions
+        // Military templates for General Secretary level:
+        // - Requisitions come from division commanders seeking authorization
+        // - Discipline cases escalated to highest authority
+        // - Border incidents require immediate strategic decisions
+        // - Readiness assessments are strategic intelligence
         let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateSupplyFilingRequest),       // Level 1+ (routine filing)
-            (1, generateMaintenanceLogReview),      // Level 1+ (basic admin)
-            (2, generateRequisitionRequest),        // Level 2+ (resource allocation)
-            (3, generateDisciplineCase),            // Level 3+ (personnel matters)
-            (4, generateBorderIncidentReport),      // Level 4+ (high-stakes tactical)
-            (5, generateMilitaryReadinessAssessment) // Level 5+ (strategic oversight)
+            (2, generateRequisitionRequest),        // Division commander requests
+            (3, generateDisciplineCase),            // Courts-martial requiring approval
+            (4, generateBorderIncidentReport),      // Border crises needing orders
+            (5, generateMilitaryReadinessAssessment) // Strategic readiness briefings
         ]
 
         let available = templates.filter { $0.minClearance <= clearanceLevel }
@@ -1002,10 +1013,10 @@ class DocumentQueueService: ObservableObject {
             return generator(game)
         }
 
-        return generateSupplyFilingRequest(for: game)
+        return generateRequisitionRequest(for: game)
     }
 
-    /// Level 1+: Basic administrative filing
+    /// Level 1+: Basic administrative filing (legacy — retained for follow-up chains)
     private func generateSupplyFilingRequest(for game: Game) -> DeskDocument {
         let items = [
             ("Winter boots", "23rd Infantry", "47 pairs"),
@@ -1408,15 +1419,20 @@ class DocumentQueueService: ObservableObject {
     private func generateEconomicDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Templates with minimum clearance requirements
-        // (minClearance, generator)
+        // Economic templates for General Secretary level:
+        // - Budget reports summarize national economic performance
+        // - Supply shortages require strategic allocation decisions
+        // - Quota adjustments from Planning Commission
+        // - Factory directors appeal to the highest authority
+        // - Production discrepancies may indicate sabotage or corruption
+        // - Resource allocation requires General Secretary authorization
         let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateRoutineBudgetReport),       // Simple - Level 1+
-            (1, generateSupplyShortageNotice),     // Simple - Level 1+
-            (2, generateQuotaAdjustmentRequest),   // Medium - Level 2+
-            (3, generateFactoryDirectorAppeal),    // Medium-Complex - Level 3+
-            (4, generateProductionDiscrepancy),    // Complex - Level 4+
-            (5, generateResourceAllocationRequest) // Complex - Level 5+
+            (1, generateRoutineBudgetReport),       // National budget summary
+            (1, generateSupplyShortageNotice),     // Critical shortage alert
+            (2, generateQuotaAdjustmentRequest),   // Planning Commission request
+            (3, generateFactoryDirectorAppeal),    // Director appeals to the top
+            (4, generateProductionDiscrepancy),    // Possible sabotage/corruption
+            (5, generateResourceAllocationRequest) // Strategic resource decisions
         ]
 
         // Filter templates available at current clearance
@@ -1840,12 +1856,16 @@ class DocumentQueueService: ObservableObject {
     private func generatePoliticalDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Templates with minimum clearance requirements
+        // Political templates for General Secretary level:
+        // - Meeting notices are Standing Committee agendas
+        // - Slogan updates are propaganda strategy decisions
+        // - Loyalty matters affect factional balance
+        // - Propaganda directives shape national messaging
         let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateMeetingAttendanceNotice),     // Simple - Level 1+
-            (1, generateSloganUpdateMemo),            // Simple - Level 1+
-            (2, generateLoyaltyPledgeReminder),       // Medium - Level 2+
-            (3, generatePropagandaDirective),         // Complex - Level 3+
+            (1, generateMeetingAttendanceNotice),     // Standing Committee agendas
+            (1, generateSloganUpdateMemo),            // Propaganda strategy
+            (2, generateLoyaltyPledgeReminder),       // Factional loyalty matters
+            (3, generatePropagandaDirective),         // National messaging directive
         ]
 
         let available = templates.filter { $0.minClearance <= clearanceLevel }
@@ -2053,18 +2073,16 @@ class DocumentQueueService: ObservableObject {
     private func generateDiplomaticDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Diplomatic clearances reflect international exposure:
-        // - Levels 1-2: Translation filing, visitor logs (clerical)
-        // - Levels 3-4: Visa processing, cultural exchange coordination
-        // - Levels 5-6: Embassy communications, ambassador cables
-        // - Levels 7+: Treaty negotiations, international incidents
+        // Diplomatic templates for General Secretary level:
+        // - Embassy cables from ambassadors reporting to the leader
+        // - Cultural exchange requests requiring authorization
+        // - Diplomatic incidents demanding strategic response
+        // - Visa issues only when politically sensitive
         let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateTranslationFiling),          // Level 1+ (routine clerical)
-            (2, generateVisitorLogReview),           // Level 2+ (low-level security)
-            (3, generateVisaApplicationReview),      // Level 3+ (minor decisions)
-            (4, generateCulturalExchangeCoordination), // Level 4+ (inter-ministry)
-            (5, generateEmbassyCable),               // Level 5+ (confidential comms)
-            (6, generateDiplomaticIncidentReport)    // Level 6+ (sensitive matters)
+            (3, generateVisaApplicationReview),      // Politically sensitive visa cases
+            (4, generateCulturalExchangeCoordination), // Inter-ministry diplomatic coordination
+            (5, generateEmbassyCable),               // Ambassador cables — eyes only
+            (6, generateDiplomaticIncidentReport)    // International incidents requiring response
         ]
 
         let available = templates.filter { $0.minClearance <= clearanceLevel }
@@ -2477,17 +2495,16 @@ class DocumentQueueService: ObservableObject {
         // DEBUG: Log clearance level
         documentLog.info("📋 [Personnel] Position Index: \(game.currentPositionIndex), Clearance Level: \(clearanceLevel)")
 
-        // Personnel clearances reflect administrative scope:
-        // - Levels 1-2: Leave requests, timesheet verification
-        // - Levels 3-4: Minor transfers, training assignments
-        // - Levels 5+: Senior appointments, politically sensitive transfers
+        // Personnel templates for General Secretary level:
+        // - Training assignments for senior cadre development
+        // - Transfer requests for key positions requiring approval
+        // - Senior appointments with political implications
+        // - Nepotism/patronage requests from powerful figures
         let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateLeaveRequestFiling),         // Level 1+ (routine admin)
-            (1, generateTimesheetVerification),      // Level 1+ (basic clerical)
-            (2, generateTrainingAssignment),         // Level 2+ (minor decisions)
-            (3, generateMinorTransferRequest),       // Level 3+ (standard transfers)
-            (4, generateSeniorTransferRequest),      // Level 4+ (sensitive transfers)
-            (5, generateNepotismTransferRequest)     // Level 5+ (politically charged)
+            (2, generateTrainingAssignment),         // Cadre development decisions
+            (3, generateMinorTransferRequest),       // Ministerial transfers
+            (4, generateSeniorTransferRequest),      // Politically sensitive appointments
+            (5, generateNepotismTransferRequest)     // Patronage and nepotism dilemmas
         ]
 
         let available = templates.filter { $0.minClearance <= clearanceLevel }
@@ -2507,7 +2524,7 @@ class DocumentQueueService: ObservableObject {
             return doc
         }
 
-        return generateLeaveRequestFiling(for: game)
+        return generateTrainingAssignment(for: game)
     }
 
     /// Level 1+: Basic leave request filing
@@ -2758,7 +2775,7 @@ class DocumentQueueService: ObservableObject {
         // FAILSAFE: This requires clearance 3+
         if clearance < 3 {
             documentLog.error("🚨 [MinorTransfer] FAILSAFE - Redirecting at clearance \(clearance)")
-            return generateLeaveRequestFiling(for: game)
+            return generateTrainingAssignment(for: game)
         }
 
         let transfers = [
@@ -2826,7 +2843,7 @@ class DocumentQueueService: ObservableObject {
         // FAILSAFE: This requires clearance 4+
         if clearance < 4 {
             documentLog.error("🚨 [SeniorTransfer] FAILSAFE - Redirecting at clearance \(clearance)")
-            return generateLeaveRequestFiling(for: game)
+            return generateTrainingAssignment(for: game)
         }
 
         let transfers = [
@@ -2903,10 +2920,10 @@ class DocumentQueueService: ObservableObject {
         // Assert in debug builds to catch this issue
         assert(clearance >= 5, "NEPOTISM document generated at clearance \(clearance) - should only appear at 5+")
 
-        // FAILSAFE: If somehow called at wrong clearance, generate a simple leave request instead
+        // FAILSAFE: If somehow called at wrong clearance, generate a training assignment instead
         if clearance < 5 {
-            documentLog.error("🚨 [NEPOTISM] FAILSAFE TRIGGERED - Redirecting to leave request at clearance \(clearance)")
-            return generateLeaveRequestFiling(for: game)
+            documentLog.error("🚨 [NEPOTISM] FAILSAFE TRIGGERED - Redirecting to training assignment at clearance \(clearance)")
+            return generateTrainingAssignment(for: game)
         }
 
         let body = """
@@ -4038,7 +4055,7 @@ class DocumentQueueService: ObservableObject {
             .withUrgency(.routine)
             .inCategory(appealType == "resource" ? .economic : appealType == "personnel" ? .personnel : .economic)
             .withBody(body)
-            .withFootnote("This is their second appeal. A third will go to your superiors.")
+            .withFootnote("This is their second appeal. A third will be raised at the Standing Committee session.")
             .requiresDecision(true)
             .addOption(id: "reconsider", text: "RECONSIDER - Grant the appeal", shortDescription: "Granted appeal",
                       effects: appealType == "resource" ? ["treasury": -30, "stability": 5] : ["stability": 5], archetype: .appease)

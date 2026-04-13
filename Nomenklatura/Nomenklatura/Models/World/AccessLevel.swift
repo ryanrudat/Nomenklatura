@@ -366,13 +366,13 @@ struct AuthorityLanguage {
     func authorizationPhrase(action: String) -> String {
         switch positionIndex {
         case 7...8:
-            return "You \(decisionVerb) \(action)."
+            return "You \(decisionVerb) \(action). Your word is law."
         case 5...6:
             return "You \(decisionVerb) \(action), pending General Secretary review."
         case 3...4:
             return "You \(decisionVerb) \(action) to the Politburo."
         default:
-            return "You \(decisionVerb) \(action) to your superiors."
+            return "You \(decisionVerb) \(action) to the Standing Committee."
         }
     }
 
@@ -382,13 +382,13 @@ struct AuthorityLanguage {
     var approvalChain: String {
         switch positionIndex {
         case 8: return "Your decision is final."
-        case 7: return "Subject to Politburo Standing Committee review if challenged."
+        case 7: return "Your decision is final, though the Standing Committee may challenge it."
         case 6: return "Requires General Secretary approval for implementation."
         case 5: return "Requires Politburo vote for final authorization."
         case 4: return "Must be forwarded to full Politburo for consideration."
         case 3: return "Requires Central Committee Secretary endorsement."
         case 2: return "Must be approved by your department superior."
-        default: return "Requires approval from Party officials above you."
+        default: return "Requires approval from the Standing Committee."
         }
     }
 
@@ -396,13 +396,13 @@ struct AuthorityLanguage {
     var reportsTo: String {
         switch positionIndex {
         case 8: return "the Politburo Standing Committee"
-        case 7: return "the General Secretary"
+        case 7: return "the Standing Committee (formally)"
         case 6: return "the Deputy General Secretary"
         case 5: return "the Politburo"
         case 4: return "senior Politburo members"
         case 3: return "the Central Committee"
         case 2: return "your department head"
-        default: return "your superiors"
+        default: return "the Standing Committee"
         }
     }
 
@@ -528,7 +528,7 @@ struct AuthorityLanguage {
         case 3: return "As a Central Committee Secretary"
         case 2: return "As a department head"
         case 1: return "As a Party official"
-        default: return "As a junior cadre"
+        default: return "As a Party cadre"
         }
     }
 
