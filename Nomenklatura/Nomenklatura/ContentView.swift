@@ -347,8 +347,9 @@ struct ContentView: View {
             modelContext.insert(slot)
         }
 
-        // Initialize Standing Committee
+        // Initialize Standing Committee with player as Chairman
         let committee = StandingCommitteeService.shared.initializeCommittee(for: newGame)
+        committee.addPlayer(as: .chairman)
         modelContext.insert(committee)
         newGame.standingCommittee = committee
 

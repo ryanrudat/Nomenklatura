@@ -423,7 +423,8 @@ final class StandingCommitteeMeetingService {
         var voteScore = 50  // Neutral starting point
 
         // Disposition toward player affects alignment with player's vote
-        let dispositionBonus = (member.disposition - 50) / 3
+        // Members who dislike the player actively oppose their preferred outcome
+        let dispositionBonus = (member.disposition - 50) / 2
         switch playerVote {
         case .for:
             voteScore += dispositionBonus
@@ -433,44 +434,71 @@ final class StandingCommitteeMeetingService {
             break
         }
 
-        // Same faction as sponsor? Support it
+        // Same faction as sponsor? Strong support
         if let sponsorId = item.sponsorId,
            let sponsor = game.characters.first(where: { $0.templateId == sponsorId }),
            sponsor.factionId == member.factionId {
             voteScore += 20
         }
 
-        // Category alignment with personality
+        // OPPOSING faction to sponsor? Push against
+        if let sponsorId = item.sponsorId,
+           let sponsor = game.characters.first(where: { $0.templateId == sponsorId }),
+           sponsor.factionId != member.factionId && sponsor.factionId != nil {
+            voteScore -= 10  // Inter-faction rivalry creates opposition
+        }
+
+        // Category alignment with personality — also creates opposition for misaligned members
         switch item.category {
         case .security:
-            voteScore += member.personalityRuthless / 5
+            voteScore += (member.personalityRuthless - 50) / 4  // Can go negative if not ruthless
         case .personnel:
-            voteScore += member.personalityAmbitious / 5
+            voteScore += (member.personalityAmbitious - 50) / 4
         case .economic:
-            voteScore += member.personalityCompetent / 5
+            voteScore += (member.personalityCompetent - 50) / 4
         case .ideological:
-            voteScore += member.personalityLoyal / 5
+            voteScore += (member.personalityLoyal - 50) / 4
         default:
             break
         }
 
-        // Loyal members tend to follow the chair
-        if member.templateId != committee.chairId {
-            let chairDisposition = member.personalityLoyal / 4
-            voteScore += chairDisposition
+        // Ambitious members may oppose to position themselves as alternatives
+        if member.personalityAmbitious > 65 && member.disposition < 60 {
+            voteScore -= 12
         }
 
-        // Paranoid members hedge
+        // Loyal personality: follow the chair's lead (only if chair voted)
+        if member.templateId != committee.chairId && playerVote != .abstain {
+            let loyaltyInfluence = max(0, member.personalityLoyal - 40) / 5
+            switch playerVote {
+            case .for: voteScore += loyaltyInfluence
+            case .against: voteScore += loyaltyInfluence  // Follow chair either way
+            case .abstain: break
+            }
+        }
+
+        // Paranoid members hedge — wider abstention range
         if member.personalityParanoid > 60 {
-            voteScore = max(35, min(65, voteScore))  // Pull toward abstention
+            voteScore = max(30, min(70, voteScore))
         }
 
-        // Random variance
-        voteScore += Int.random(in: -12...12)
+        // Grudge against player: oppose their vote
+        if member.grudgeLevel < -40 {
+            let grudgePenalty = abs(member.grudgeLevel) / 5
+            switch playerVote {
+            case .for: voteScore -= grudgePenalty
+            case .against: voteScore += grudgePenalty
+            case .abstain: break
+            }
+        }
 
-        if voteScore > 58 {
+        // Random variance — wider for early game uncertainty
+        let variance = game.turnNumber < 5 ? Int.random(in: -18...18) : Int.random(in: -12...12)
+        voteScore += variance
+
+        if voteScore > 55 {
             return .for
-        } else if voteScore < 42 {
+        } else if voteScore < 45 {
             return .against
         } else {
             return .abstain
