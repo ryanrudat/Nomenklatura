@@ -103,6 +103,22 @@ struct LeadershipConfig: Codable {
         )
     }
 
+    /// First Among Equals: the GS chairs the committee and sets the agenda,
+    /// but needs consensus and can be overridden by a determined majority.
+    /// Appropriate for a newly elected General Secretary who hasn't consolidated power.
+    static var firstAmongEquals: LeadershipConfig {
+        LeadershipConfig(
+            generalSecretaryPower: 0.5,
+            gsVoteWeight: 1,
+            gsCanDecree: true,
+            decreeCostMultiplier: 1.5,
+            meetingFrequency: 5,
+            minimumAgendaItems: 1,
+            scCanOverrideGs: true,
+            overrideThreshold: 0.65
+        )
+    }
+
     static var absoluteLeader: LeadershipConfig {
         LeadershipConfig(
             generalSecretaryPower: 1.0,
@@ -434,11 +450,11 @@ class CampaignLoader {
             id: "coldwar",
             name: "Nomenklatura",
             era: "Cold War Era",
-            description: "You are a cog in the Party machine. Survive purges, outmaneuver rivals, and climb the ranks of the nomenklatura toward ultimate power.",
+            description: "You have just been elected General Secretary by a divided Standing Committee. Consolidate your fragile authority, outmaneuver rivals, and survive the intrigues of the nomenklatura to keep supreme power.",
             nationName: "The People's Socialist Republic",
             leaderTitle: "General Secretary",
             currencyName: "rubles",
-            startingPosition: 1,
+            startingPosition: 8,  // General Secretary — the game is about keeping power
             startingStats: StartingStats(
                 stability: 50,
                 popularSupport: 50,
@@ -450,10 +466,10 @@ class CampaignLoader {
                 internationalStanding: 50
             ),
             startingPersonalStats: StartingPersonalStats(
-                standing: 20,
-                patronFavor: 50,
-                rivalThreat: 30,
-                network: 10
+                standing: 65,       // Elected, not dominant
+                patronFavor: 50,    // Establishment support
+                rivalThreat: 60,    // Rivals are active from day 1
+                network: 40         // Existing connections as new leader
             ),
             tone: "grim_bureaucratic",
             toneKeywords: ["comrade", "party", "socialism", "counter-revolutionary", "politburo", "quota", "collective", "struggle"],
@@ -468,7 +484,8 @@ class CampaignLoader {
             ladder: createExpandedLadder(),
             startingCharacters: createStartingCharacters(),
             personalActions: createColdWarActions(),
-            playerFactions: PlayerFactionConfig.allFactions
+            playerFactions: PlayerFactionConfig.allFactions,
+            leadershipConfig: .firstAmongEquals
         )
     }
 

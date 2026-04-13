@@ -262,15 +262,15 @@ final class Game {
         self.worldTension = 30
         self.militaryReadiness = 50
 
-        // Default personal stats
-        self.standing = 20
-        self.patronFavor = 50
-        self.rivalThreat = 30
-        self.network = 10
+        // Default personal stats (General Secretary starting values)
+        self.standing = 65           // Elected, not dominant
+        self.patronFavor = 50        // Establishment support (repurposed from patron concept)
+        self.rivalThreat = 60        // Rivals are active from day 1
+        self.network = 40            // Existing connections as new leader
 
         // Default reputation
-        self.reputationCompetent = 50
-        self.reputationLoyal = 50
+        self.reputationCompetent = 55
+        self.reputationLoyal = 60
         self.reputationCunning = 20
         self.reputationRuthless = 20
 
@@ -279,9 +279,9 @@ final class Game {
         self.wealthVisibility = 0
         self.corruptionEvidence = 0
 
-        self.currentPositionIndex = 1  // Junior Politburo Member
+        self.currentPositionIndex = 8  // General Secretary — the game is about keeping power
         self.currentTrack = CareerTrack.shared.rawValue
-        self.currentExpandedTrack = ExpandedCareerTrack.shared.rawValue  // No specific bureau yet
+        self.currentExpandedTrack = ExpandedCareerTrack.shared.rawValue  // Gen Sec is on shared track
         self.actionPoints = 2
 
         // Policy/Resistance system
@@ -329,7 +329,7 @@ final class Game {
         self.dynamicEventCooldownsData = nil
 
         // Narrative Memory system
-        self.storySummary = "A new official begins their career in the Party apparatus."
+        self.storySummary = "A new General Secretary has been elected by a divided Standing Committee following the sudden death of the previous leader. The nation watches with uncertainty as competing factions maneuver for influence."
         self.activePlotThreadsData = nil
         self.resolvedPlotThreadsData = nil
         self.keyNarrativeMoments = []
@@ -353,7 +353,7 @@ final class Game {
         self.dynastyStartTurn = 1
 
         // Power Consolidation
-        self.powerConsolidationScore = 0
+        self.powerConsolidationScore = 20  // Some initial power as new GS, but far from absolute
         self.lawsModifiedCount = 0
         self.termLimitsAbolished = false
 

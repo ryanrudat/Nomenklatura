@@ -295,7 +295,7 @@ struct ContentView: View {
         let startEvent = GameEvent(
             turnNumber: 1,
             eventType: .gameStart,
-            summary: "You begin your political career as a member of the \(factionName)."
+            summary: "You have been elected General Secretary by a divided Standing Committee. As a figure from the \(factionName), your hold on power is fragile. The real work begins now."
         )
         startEvent.importance = 10
         modelContext.insert(startEvent)
