@@ -505,8 +505,8 @@ struct GameView: View {
                     }
                 }
 
-                // Bottom navigation (hidden during outcome phase for focus)
-                if game.currentPhase != .outcome {
+                // Bottom navigation (hidden during outcome and SC meeting phases for focus)
+                if game.currentPhase != .outcome && game.currentPhase != .standingCommittee {
                     VStack {
                         Spacer()
                         BottomNavBar(selectedTab: $selectedTab) {
@@ -588,8 +588,14 @@ struct GameView: View {
                 onDossierTap: { selectedTab = .dossier },  // Navigate to Dossier from memo tray
                 onLedgerTap: { selectedTab = .ledger },    // Navigate to Ledger from stats
                 onLadderTap: { selectedTab = .ladder },    // Navigate to Ladder from standing
-                onEndTurn: { transitionToPersonalAction() }  // Proper turn ending through game phases
+                onEndTurn: { transitionToStandingCommitteeOrPersonalAction() }  // Check SC before ending
             )
+
+        case .standingCommittee:
+            // Standing Committee meeting phase
+            SCMeetingView(game: game) {
+                transitionToPersonalAction()
+            }
 
         case .outcome:
             // Show outcome screen
@@ -600,7 +606,7 @@ struct GameView: View {
                     statChanges: outcome.statChanges,
                     optionArchetype: outcome.optionChosen.archetype
                 ) {
-                    transitionToPersonalAction()
+                    transitionToStandingCommitteeOrPersonalAction()
                 }
             } else {
                 // Fallback if no outcome data (shouldn't happen)
@@ -609,7 +615,7 @@ struct GameView: View {
                     outcomeText: "The consequences of your decision unfold...",
                     statChanges: []
                 ) {
-                    transitionToPersonalAction()
+                    transitionToStandingCommitteeOrPersonalAction()
                 }
             }
 
@@ -622,6 +628,26 @@ struct GameView: View {
             ) {
                 completePersonalAction()
             }
+        }
+    }
+
+    /// Check if a Standing Committee meeting is due this turn.
+    /// If so, transition to the SC phase; otherwise skip to personal action.
+    private func transitionToStandingCommitteeOrPersonalAction() {
+        // Check for game end conditions first
+        let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
+        if endCheck.gameOver {
+            endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.")
+            return
+        }
+
+        // Check if SC meeting is scheduled for this turn
+        if StandingCommitteeMeetingService.shared.shouldHaveMeeting(game: game) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                game.phase = GamePhase.standingCommittee.rawValue
+            }
+        } else {
+            transitionToPersonalAction()
         }
     }
 

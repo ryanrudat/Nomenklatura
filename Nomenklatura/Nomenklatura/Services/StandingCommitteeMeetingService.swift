@@ -1,0 +1,576 @@
+//
+//  StandingCommitteeMeetingService.swift
+//  Nomenklatura
+//
+//  Service for managing Standing Committee meeting phase gameplay.
+//  Generates agenda items from current game state, resolves votes,
+//  and handles vote-of-no-confidence challenges.
+//
+
+import Foundation
+import os.log
+
+private let meetingLogger = Logger(subsystem: "com.ryanrudat.Nomenklatura", category: "SCMeeting")
+
+// MARK: - Standing Committee Meeting Service
+
+@MainActor
+final class StandingCommitteeMeetingService {
+    static let shared = StandingCommitteeMeetingService()
+
+    private init() {}
+
+    // MARK: - Meeting Scheduling
+
+    /// Check if a Standing Committee meeting should occur this turn
+    func shouldHaveMeeting(game: Game) -> Bool {
+        guard let committee = game.standingCommittee else { return false }
+
+        let config = CampaignLoader.shared.getColdWarCampaign()
+        let frequency = config.leadershipConfig?.meetingFrequency ?? 4
+        let turnsSinceLastMeeting = game.turnNumber - committee.lastMeetingTurn
+
+        // Crisis override: always meet if stability is critical
+        if game.stability < 25 && turnsSinceLastMeeting >= 2 {
+            return true
+        }
+
+        // Regular schedule
+        return turnsSinceLastMeeting >= frequency
+    }
+
+    // MARK: - Agenda Generation
+
+    /// Generate agenda items based on the current game state.
+    /// This supplements any pending agenda already on the committee.
+    func generateStateBasedAgenda(game: Game) -> [CommitteeAgendaItem] {
+        var items: [CommitteeAgendaItem] = []
+        let turn = game.turnNumber
+
+        // Economic crisis -> budget/reform proposal
+        if game.treasury < 2000 || game.industrialOutput < 30 {
+            items.append(CommitteeAgendaItem(
+                title: "Emergency Economic Measures",
+                description: "The State Planning Commission reports critical shortfalls. Industrial output and treasury reserves demand urgent intervention from the Standing Committee.",
+                category: .economic,
+                priority: game.treasury < 1000 ? .critical : .urgent,
+                sponsorId: findEconomicSponsor(game: game),
+                turnSubmitted: turn,
+                effects: ["treasury": 300, "industrialOutput": 5, "popularSupport": -3]
+            ))
+        }
+
+        // Food crisis
+        if game.foodSupply < 35 {
+            items.append(CommitteeAgendaItem(
+                title: "Food Supply Emergency",
+                description: "Collective farm output has fallen below acceptable levels. Rationing may be necessary. The Agricultural Ministry requests emergency procurement authority.",
+                category: .economic,
+                priority: .critical,
+                sponsorId: findEconomicSponsor(game: game),
+                turnSubmitted: turn,
+                effects: ["foodSupply": 8, "treasury": -200, "popularSupport": -5]
+            ))
+        }
+
+        // Military threat -> defense proposal
+        if game.militaryLoyalty < 40 {
+            items.append(CommitteeAgendaItem(
+                title: "Military Readiness Review",
+                description: "Reports of declining discipline and loyalty within the armed forces require committee attention. The General Staff requests increased funding and political commissar reinforcements.",
+                category: .security,
+                priority: .urgent,
+                sponsorId: findMilitarySponsor(game: game),
+                turnSubmitted: turn,
+                effects: ["militaryLoyalty": 8, "treasury": -300]
+            ))
+        }
+
+        // Low stability -> order restoration
+        if game.stability < 40 {
+            items.append(CommitteeAgendaItem(
+                title: "Restoration of Public Order",
+                description: "Unrest and dissatisfaction threaten the stability of the state. The Security Ministry proposes expanded surveillance and public reassurance campaigns.",
+                category: .security,
+                priority: game.stability < 25 ? .critical : .important,
+                sponsorId: findSecuritySponsor(game: game),
+                turnSubmitted: turn,
+                effects: ["stability": 6, "popularSupport": -4]
+            ))
+        }
+
+        // Low international standing -> diplomatic initiative
+        if game.internationalStanding < 35 {
+            items.append(CommitteeAgendaItem(
+                title: "Diplomatic Offensive",
+                description: "Our international position has weakened considerably. The Foreign Ministry proposes a new round of bilateral negotiations and cultural exchanges to restore our standing among nations.",
+                category: .foreign,
+                priority: .important,
+                sponsorId: findDiplomaticSponsor(game: game),
+                turnSubmitted: turn,
+                effects: ["internationalStanding": 7, "treasury": -150]
+            ))
+        }
+
+        // Low popular support -> populist measures
+        if game.popularSupport < 35 {
+            items.append(CommitteeAgendaItem(
+                title: "Consumer Goods Initiative",
+                description: "Public dissatisfaction is growing. The Council of Ministers proposes redirecting resources to consumer goods production to demonstrate the Party's commitment to the people's welfare.",
+                category: .policy,
+                priority: .important,
+                sponsorId: nil,
+                turnSubmitted: turn,
+                effects: ["popularSupport": 8, "industrialOutput": -3, "treasury": -200]
+            ))
+        }
+
+        // Low elite loyalty -> patronage/promotion measures
+        if game.eliteLoyalty < 40 {
+            items.append(CommitteeAgendaItem(
+                title: "Cadre Rotation and Appointments",
+                description: "Loyalty among the Party elite has declined. The Organizational Department proposes a rotation of key appointments to reinforce patronage networks and reward faithful service.",
+                category: .personnel,
+                priority: .important,
+                sponsorId: findChairSponsor(game: game),
+                turnSubmitted: turn,
+                effects: ["eliteLoyalty": 7, "stability": -2]
+            ))
+        }
+
+        // Limit to max 3 state-based items per meeting
+        return Array(items.sorted { priorityValue($0.priority) > priorityValue($1.priority) }.prefix(3))
+    }
+
+    // MARK: - Player Actions
+
+    /// Create a player-proposed agenda item
+    func createPlayerProposal(
+        title: String,
+        description: String,
+        category: CommitteeAgendaItem.AgendaCategory,
+        effects: [String: Int],
+        game: Game
+    ) -> CommitteeAgendaItem {
+        CommitteeAgendaItem(
+            title: title,
+            description: description,
+            category: category,
+            priority: .important,
+            sponsorId: "player",
+            turnSubmitted: game.turnNumber,
+            effects: effects
+        )
+    }
+
+    // MARK: - Vote Resolution
+
+    /// Resolve a vote on an agenda item, returning the result.
+    /// The player's influence is weighted by powerConsolidationScore.
+    func resolveVote(
+        item: CommitteeAgendaItem,
+        playerVote: PlayerVote,
+        game: Game
+    ) -> SCMeetingVoteResult {
+        guard let committee = game.standingCommittee else {
+            return SCMeetingVoteResult(
+                item: item,
+                passed: false,
+                votesFor: [],
+                votesAgainst: [],
+                abstentions: [],
+                playerInfluenceApplied: false
+            )
+        }
+
+        let config = CampaignLoader.shared.getColdWarCampaign()
+        let leadershipConfig = config.leadershipConfig ?? LeadershipConfig()
+
+        // Get all SC members as characters
+        let members = committee.memberIds.compactMap { memberId in
+            game.characters.first { $0.templateId == memberId && $0.isAlive }
+        }
+
+        var votesFor: [SCMemberVote] = []
+        var votesAgainst: [SCMemberVote] = []
+        var abstentions: [SCMemberVote] = []
+
+        // Determine each member's vote
+        for member in members {
+            let vote = determineMemberVote(
+                member: member,
+                item: item,
+                playerVote: playerVote,
+                committee: committee,
+                game: game
+            )
+
+            let memberVote = SCMemberVote(
+                characterId: member.templateId,
+                characterName: member.name,
+                factionId: member.factionId,
+                isChair: member.templateId == committee.chairId
+            )
+
+            switch vote {
+            case .for:
+                votesFor.append(memberVote)
+            case .against:
+                votesAgainst.append(memberVote)
+            case .abstain:
+                abstentions.append(memberVote)
+            }
+        }
+
+        // Apply player's vote weight (influenced by power consolidation)
+        var playerInfluenceApplied = false
+        if committee.playerIsOnCommittee {
+            let playerWeight = max(1, leadershipConfig.gsVoteWeight)
+            let playerMemberVote = SCMemberVote(
+                characterId: "player",
+                characterName: "You",
+                factionId: game.playerFactionId,
+                isChair: committee.playerIsChair
+            )
+
+            // Player's power consolidation gives bonus influence
+            let bonusWeight = game.powerConsolidationScore > 60 ? 1 : 0
+            let totalWeight = playerWeight + bonusWeight
+
+            for _ in 0..<totalWeight {
+                switch playerVote {
+                case .for:
+                    votesFor.append(playerMemberVote)
+                case .against:
+                    votesAgainst.append(playerMemberVote)
+                case .abstain:
+                    abstentions.append(playerMemberVote)
+                }
+            }
+
+            playerInfluenceApplied = totalWeight > 1
+        }
+
+        let passed = votesFor.count > votesAgainst.count
+
+        return SCMeetingVoteResult(
+            item: item,
+            passed: passed,
+            votesFor: votesFor,
+            votesAgainst: votesAgainst,
+            abstentions: abstentions,
+            playerInfluenceApplied: playerInfluenceApplied
+        )
+    }
+
+    /// Apply the effects of a passed agenda item to the game
+    func applyItemEffects(item: CommitteeAgendaItem, game: Game) {
+        for (stat, change) in item.effects {
+            game.applyStat(stat, change: change)
+        }
+    }
+
+    // MARK: - Vote of No Confidence
+
+    /// Check if hostile SC members will propose a vote of no confidence.
+    /// This triggers when enough members have low disposition toward the player.
+    func checkNoConfidenceRisk(game: Game) -> NoConfidenceCheck {
+        guard let committee = game.standingCommittee,
+              committee.playerIsOnCommittee else {
+            return NoConfidenceCheck(isTriggered: false, hostileMembers: [], hostileCount: 0, threshold: 0)
+        }
+
+        let members = committee.memberIds.compactMap { memberId in
+            game.characters.first { $0.templateId == memberId && $0.isAlive }
+        }
+
+        // Count hostile members (disposition < 25 toward player)
+        let hostileMembers = members.filter { $0.disposition < 25 }
+        let votingMembers = members.filter { committee.fullMemberIds.contains($0.templateId) }
+        let threshold = (votingMembers.count / 2) + 1
+
+        // Need a majority of full members hostile to trigger
+        let hostileFullMembers = hostileMembers.filter { committee.fullMemberIds.contains($0.templateId) }
+
+        return NoConfidenceCheck(
+            isTriggered: hostileFullMembers.count >= threshold,
+            hostileMembers: hostileMembers,
+            hostileCount: hostileFullMembers.count,
+            threshold: threshold
+        )
+    }
+
+    /// Resolve a vote of no confidence against the player
+    func resolveNoConfidenceVote(game: Game) -> NoConfidenceResult {
+        guard let committee = game.standingCommittee else {
+            return NoConfidenceResult(passed: false, votesFor: 0, votesAgainst: 0, narrative: "")
+        }
+
+        let members = committee.fullMemberIds.compactMap { memberId in
+            game.characters.first { $0.templateId == memberId && $0.isAlive }
+        }
+
+        var votesForRemoval = 0
+        var votesAgainstRemoval = 0
+
+        for member in members {
+            let dispositionToPlayer = member.disposition
+
+            // Hostile members vote for removal
+            // Loyal members defend player
+            // Paranoid/cautious members may abstain or follow the majority
+            var voteScore = dispositionToPlayer
+
+            // Loyal personality bonus for player
+            voteScore += member.personalityLoyal / 4
+
+            // Same faction as player = more likely to defend
+            if member.factionId == game.playerFactionId {
+                voteScore += 20
+            }
+
+            // Ambitious members may see opportunity in removal
+            if member.personalityAmbitious > 70 {
+                voteScore -= 15
+            }
+
+            // Random variance
+            voteScore += Int.random(in: -10...10)
+
+            if voteScore >= 50 {
+                votesAgainstRemoval += 1  // Defend player
+            } else {
+                votesForRemoval += 1      // Remove player
+            }
+        }
+
+        let passed = votesForRemoval > votesAgainstRemoval
+
+        let narrative: String
+        if passed {
+            narrative = "The Standing Committee has voted to remove you from your position. The vote was \(votesForRemoval) to \(votesAgainstRemoval). Your allies were insufficient to prevent the motion."
+        } else {
+            narrative = "The vote of no confidence failed \(votesForRemoval) to \(votesAgainstRemoval). Your position is secure for now, but the challenge has exposed dangerous fractures within the Committee."
+        }
+
+        return NoConfidenceResult(
+            passed: passed,
+            votesFor: votesForRemoval,
+            votesAgainst: votesAgainstRemoval,
+            narrative: narrative
+        )
+    }
+
+    // MARK: - Meeting Completion
+
+    /// Record the meeting results and update committee state
+    func completeMeeting(results: [SCMeetingVoteResult], game: Game) {
+        guard let committee = game.standingCommittee else { return }
+
+        // Record the meeting
+        let atmosphere = determineAtmosphere(results: results, game: game)
+        let meeting = CommitteeMeeting(
+            turnHeld: game.turnNumber,
+            attendeeIds: committee.memberIds,
+            itemsDiscussed: results.map { $0.item.id },
+            decisionsReached: results.map { result in
+                let outcome: CommitteeDecision.DecisionOutcome = result.passed ? .approved : .rejected
+                return CommitteeDecision(
+                    agendaItemId: result.item.id,
+                    outcome: outcome,
+                    votingRecord: VotingRecord(
+                        votesFor: result.votesFor.count,
+                        votesAgainst: result.votesAgainst.count,
+                        abstentions: result.abstentions.count,
+                        isUnanimous: result.votesAgainst.isEmpty && result.abstentions.isEmpty
+                    ),
+                    dissenterIds: result.votesAgainst.map { $0.characterId },
+                    narrativeSummary: result.passed ? "Motion carried." : "Motion defeated."
+                )
+            },
+            atmosphere: atmosphere
+        )
+
+        var minutes = committee.meetingMinutes
+        minutes.append(meeting)
+        committee.meetingMinutes = minutes
+
+        committee.lastMeetingTurn = game.turnNumber
+
+        // Clear pending agenda
+        committee.pendingAgenda = []
+
+        // Apply effects of passed items
+        for result in results where result.passed {
+            applyItemEffects(item: result.item, game: game)
+        }
+
+        // Update faction balance
+        StandingCommitteeService.shared.updateFactionBalance(committee: committee, game: game)
+
+        meetingLogger.info("SC meeting completed: \(results.count) items, \(results.filter { $0.passed }.count) passed")
+    }
+
+    // MARK: - Private Helpers
+
+    private func determineMemberVote(
+        member: GameCharacter,
+        item: CommitteeAgendaItem,
+        playerVote: PlayerVote,
+        committee: StandingCommittee,
+        game: Game
+    ) -> PlayerVote {
+        var voteScore = 50  // Neutral starting point
+
+        // Disposition toward player affects alignment with player's vote
+        let dispositionBonus = (member.disposition - 50) / 3
+        switch playerVote {
+        case .for:
+            voteScore += dispositionBonus
+        case .against:
+            voteScore -= dispositionBonus
+        case .abstain:
+            break
+        }
+
+        // Same faction as sponsor? Support it
+        if let sponsorId = item.sponsorId,
+           let sponsor = game.characters.first(where: { $0.templateId == sponsorId }),
+           sponsor.factionId == member.factionId {
+            voteScore += 20
+        }
+
+        // Category alignment with personality
+        switch item.category {
+        case .security:
+            voteScore += member.personalityRuthless / 5
+        case .personnel:
+            voteScore += member.personalityAmbitious / 5
+        case .economic:
+            voteScore += member.personalityCompetent / 5
+        case .ideological:
+            voteScore += member.personalityLoyal / 5
+        default:
+            break
+        }
+
+        // Loyal members tend to follow the chair
+        if member.templateId != committee.chairId {
+            let chairDisposition = member.personalityLoyal / 4
+            voteScore += chairDisposition
+        }
+
+        // Paranoid members hedge
+        if member.personalityParanoid > 60 {
+            voteScore = max(35, min(65, voteScore))  // Pull toward abstention
+        }
+
+        // Random variance
+        voteScore += Int.random(in: -12...12)
+
+        if voteScore > 58 {
+            return .for
+        } else if voteScore < 42 {
+            return .against
+        } else {
+            return .abstain
+        }
+    }
+
+    private func determineAtmosphere(results: [SCMeetingVoteResult], game: Game) -> CommitteeMeeting.MeetingAtmosphere {
+        let rejectedCount = results.filter { !$0.passed }.count
+        let totalDissent = results.reduce(0) { $0 + $1.votesAgainst.count }
+
+        if game.stability < 30 || rejectedCount > results.count / 2 {
+            return .confrontational
+        } else if totalDissent > results.count * 2 || game.stability < 50 {
+            return .tense
+        } else if rejectedCount == 0 && totalDissent == 0 {
+            return .harmonious
+        }
+        return .performative
+    }
+
+    private func priorityValue(_ priority: CommitteeAgendaItem.AgendaPriority) -> Int {
+        switch priority {
+        case .routine: return 1
+        case .important: return 2
+        case .urgent: return 3
+        case .critical: return 4
+        }
+    }
+
+    // MARK: - Sponsor Finders
+
+    private func findEconomicSponsor(game: Game) -> String? {
+        game.characters
+            .filter { $0.isAlive && ($0.factionId == "reformists" || $0.factionId == "youth_league") }
+            .max(by: { ($0.positionIndex ?? 0) < ($1.positionIndex ?? 0) })?
+            .templateId
+    }
+
+    private func findMilitarySponsor(game: Game) -> String? {
+        game.characters
+            .filter { $0.isAlive && ($0.positionIndex ?? 0) >= 5 }
+            .first(where: { $0.factionId == "old_guard" })?
+            .templateId
+    }
+
+    private func findSecuritySponsor(game: Game) -> String? {
+        game.characters
+            .filter { $0.isAlive && ($0.positionIndex ?? 0) >= 5 }
+            .first(where: { $0.personalityRuthless > 60 })?
+            .templateId
+    }
+
+    private func findDiplomaticSponsor(game: Game) -> String? {
+        game.characters
+            .filter { $0.isAlive && ($0.positionIndex ?? 0) >= 5 }
+            .first(where: { $0.factionId == "reformists" })?
+            .templateId
+    }
+
+    private func findChairSponsor(game: Game) -> String? {
+        game.standingCommittee?.chairId
+    }
+}
+
+// MARK: - Meeting Result Types
+
+enum PlayerVote: String {
+    case `for`
+    case against
+    case abstain
+}
+
+struct SCMemberVote: Identifiable {
+    let id = UUID()
+    let characterId: String
+    let characterName: String
+    let factionId: String?
+    let isChair: Bool
+}
+
+struct SCMeetingVoteResult: Identifiable {
+    let id = UUID()
+    let item: CommitteeAgendaItem
+    let passed: Bool
+    let votesFor: [SCMemberVote]
+    let votesAgainst: [SCMemberVote]
+    let abstentions: [SCMemberVote]
+    let playerInfluenceApplied: Bool
+}
+
+struct NoConfidenceCheck {
+    let isTriggered: Bool
+    let hostileMembers: [GameCharacter]
+    let hostileCount: Int
+    let threshold: Int
+}
+
+struct NoConfidenceResult {
+    let passed: Bool
+    let votesFor: Int
+    let votesAgainst: Int
+    let narrative: String
+}
