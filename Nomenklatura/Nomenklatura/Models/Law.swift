@@ -102,6 +102,12 @@ enum ConsequenceType: String, Codable {
     case politicalFavor         // Decision earns you allies
     case politicalEnmity        // Decision earns you enemies
 
+    // Diplomatic action consequences
+    case diplomaticRetaliation      // Country retaliates after hostile action
+    case allianceResponse           // Allied countries respond to action
+    case tradeAdjustmentFeedback    // Economic effects from diplomatic changes
+    case militaryBuildupResponse    // Military escalation from hostile actions
+
     var displayName: String {
         switch self {
         case .coalitionForms: return "Coalition Forms"
@@ -122,6 +128,10 @@ enum ConsequenceType: String, Codable {
         case .operationalFailure: return "Operational Failure"
         case .politicalFavor: return "Political Favor"
         case .politicalEnmity: return "Political Enmity"
+        case .diplomaticRetaliation: return "Diplomatic Retaliation"
+        case .allianceResponse: return "Alliance Response"
+        case .tradeAdjustmentFeedback: return "Trade Adjustment"
+        case .militaryBuildupResponse: return "Military Buildup"
         }
     }
 }

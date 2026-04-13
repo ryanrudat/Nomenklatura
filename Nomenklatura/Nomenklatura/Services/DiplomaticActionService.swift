@@ -287,6 +287,18 @@ class DiplomaticActionService {
 
         applyEffects(effects, targetCountry: targetCountry, game: game)
 
+        // Schedule delayed diplomatic consequences
+        if let country = targetCountry,
+           effects.relationshipChange != 0 || effects.tensionChange != 0 {
+            ConsequenceEngine.shared.generateDiplomaticConsequences(
+                wasHostile: effects.relationshipChange < 0,
+                targetCountryName: country.name,
+                relationshipChange: effects.relationshipChange,
+                tensionChange: effects.tensionChange,
+                game: game
+            )
+        }
+
         // Handle treaty creation
         if succeeded, let treatyType = effects.triggersTreaty, let country = targetCountry {
             createTreaty(type: treatyType, with: country, game: game)
