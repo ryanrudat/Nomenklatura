@@ -141,8 +141,33 @@ class EconomyService {
             game.applyStat("treasury", change: actualChange)
         }
 
+        // Apply budget priority bonuses
+        applyBudgetPriorityEffects(game: game)
+
         // Store the report for display
         game.lastEconomicReport = encodeReport(report)
+    }
+
+    /// Apply per-turn bonuses based on budget allocation priorities
+    private func applyBudgetPriorityEffects(game: Game) {
+        let priorities = game.budgetPriorities
+
+        // High military priority: +1 military loyalty
+        if (priorities["military"] ?? 30) > 30 {
+            game.applyStat("militaryLoyalty", change: 1)
+        }
+
+        // High social priority: +1 popular support
+        if (priorities["social"] ?? 25) > 30 {
+            game.applyStat("popularSupport", change: 1)
+        }
+
+        // High infrastructure priority: +1 to a random region's infrastructure
+        if (priorities["infrastructure"] ?? 20) > 25, !game.regions.isEmpty {
+            let randomIndex = Int.random(in: 0..<game.regions.count)
+            let region = game.regions[randomIndex]
+            region.infrastructureQuality = min(100, region.infrastructureQuality + 1)
+        }
     }
 
     /// Store a fresh report snapshot without mutating game stats.
@@ -263,7 +288,15 @@ class EconomyService {
             baseMilitary += 15
         }
 
-        return baseMilitary
+        // Budget priority modifier
+        let militaryPriority = game.budgetPriorities["military"] ?? 30
+        if militaryPriority > 30 {
+            baseMilitary += 2
+        } else if militaryPriority < 20 {
+            baseMilitary -= 2
+        }
+
+        return max(0, baseMilitary)
     }
 
     private func calculateSocialPrograms(game: Game) -> Int {

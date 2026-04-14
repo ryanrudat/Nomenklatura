@@ -146,6 +146,7 @@ final class Game {
 
     // Economy System
     var lastEconomicReport: Data?  // Encoded EconomicReport from EconomyService
+    var budgetPrioritiesData: Data?  // Encoded [String: Int] budget allocation percentages
 
     // Economic Macro Indicators (1940s-60s era)
     var gdpIndex: Int = 100                    // National Product index (base 100)
@@ -1047,6 +1048,27 @@ enum StatLevel {
         case .high: return "statHigh"
         case .medium: return "statMedium"
         case .low: return "statLow"
+        }
+    }
+}
+
+// MARK: - Budget Priorities
+
+extension Game {
+    static let defaultBudgetPriorities: [String: Int] = [
+        "military": 30, "social": 25, "infrastructure": 20, "reserve": 25
+    ]
+
+    var budgetPriorities: [String: Int] {
+        get {
+            guard let data = budgetPrioritiesData,
+                  let decoded = try? JSONDecoder().decode([String: Int].self, from: data) else {
+                return Self.defaultBudgetPriorities
+            }
+            return decoded
+        }
+        set {
+            budgetPrioritiesData = try? JSONEncoder().encode(newValue)
         }
     }
 }
