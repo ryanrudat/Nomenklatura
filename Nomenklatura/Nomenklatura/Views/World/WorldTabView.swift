@@ -2,7 +2,7 @@
 //  WorldTabView.swift
 //  Nomenklatura
 //
-//  Main hub for World tab with sub-navigation to Map, Embassy, and Economics
+//  Main hub for World tab with sub-navigation to Embassy, Situation, and Intl. Economy
 //
 
 import SwiftUI
@@ -11,13 +11,13 @@ import SwiftData
 enum WorldSubTab: String, CaseIterable {
     case embassy
     case situation
-    case economics
+    case trade
 
     var title: String {
         switch self {
         case .embassy: return "Embassy"
         case .situation: return "Situation"
-        case .economics: return "Economics"
+        case .trade: return "Intl. Economy"
         }
     }
 
@@ -25,7 +25,7 @@ enum WorldSubTab: String, CaseIterable {
         switch self {
         case .embassy: return "building.columns.fill"
         case .situation: return "map.fill"
-        case .economics: return "chart.bar.fill"
+        case .trade: return "arrow.left.arrow.right"
         }
     }
 
@@ -33,7 +33,7 @@ enum WorldSubTab: String, CaseIterable {
         switch self {
         case .embassy: return "Diplomatic intelligence center"
         case .situation: return "Strategic situation room"
-        case .economics: return "Economic command dashboard"
+        case .trade: return "International trade overview"
         }
     }
 }
@@ -68,8 +68,8 @@ struct WorldTabView: View {
                         EmbassyPortalView(game: game)
                     case .situation:
                         SituationMapView(game: game)
-                    case .economics:
-                        EconomicDashboardView(game: game)
+                    case .trade:
+                        InternationalEconomyView(game: game)
                     }
                 }
             }
@@ -542,6 +542,269 @@ extension AccessGatedView where LockedContent == EmptyView {
         self.accessLevel = accessLevel
         self.content = content
         self.lockedContent = nil
+    }
+}
+
+// MARK: - International Economy View
+
+/// Read-only international trade overview; full economic management lives in the Economy tab (Gosplan).
+struct InternationalEconomyView: View {
+    @Bindable var game: Game
+    @Environment(\.theme) var theme
+
+    private var sortedCountries: [ForeignCountry] {
+        game.foreignCountries.sorted { $0.name < $1.name }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                // Gosplan redirect banner
+                gosplanBanner
+
+                // Trade balance summary
+                tradeBalanceCard
+
+                // Foreign country economic profiles
+                foreignCountryList
+            }
+            .padding(15)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Gosplan Banner
+
+    private var gosplanBanner: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "building.2.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(FiftiesColors.brassGold)
+
+                Text("GOSPLAN COMMAND CENTER")
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .tracking(1.5)
+                    .foregroundColor(theme.inkBlack)
+
+                Spacer()
+            }
+
+            Text("Full economic management, five-year plans, and sector controls are available in the Economy tab below.")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(theme.inkGray)
+                .lineSpacing(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .background(FiftiesColors.cardstock)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(FiftiesColors.brassGold.opacity(0.6), lineWidth: 1)
+        )
+        .overlay(
+            Rectangle()
+                .fill(FiftiesColors.brassGold)
+                .frame(width: 4),
+            alignment: .leading
+        )
+    }
+
+    // MARK: - Trade Balance Card
+
+    private var tradeBalanceCard: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.accentGold)
+
+                Text("TRADE BALANCE")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(tradeBalanceFormatted)
+                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .foregroundColor(tradeBalanceColor)
+
+                Text(game.tradeBalance >= 0 ? "SURPLUS" : "DEFICIT")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(0.5)
+                    .foregroundColor(tradeBalanceColor.opacity(0.8))
+
+                Spacer()
+
+                Text("\(game.activeTradeAgreements.count) active agreements")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(theme.inkLight)
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark.opacity(0.4))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+    }
+
+    private var tradeBalanceFormatted: String {
+        let value = game.tradeBalance
+        return value >= 0 ? "+\(value)" : "\(value)"
+    }
+
+    private var tradeBalanceColor: Color {
+        if game.tradeBalance > 5 { return .statHigh }
+        if game.tradeBalance >= -5 { return theme.inkBlack }
+        return .statLow
+    }
+
+    // MARK: - Foreign Country List
+
+    private var foreignCountryList: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "globe.europe.africa.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.accentGold)
+
+                Text("FOREIGN ECONOMIC PROFILES")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+
+            if sortedCountries.isEmpty {
+                Text("No foreign intelligence available.")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.inkLight)
+                    .padding(12)
+            } else {
+                ForEach(sortedCountries, id: \.id) { country in
+                    ForeignEconomyRow(country: country)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Foreign Economy Row
+
+struct ForeignEconomyRow: View {
+    let country: ForeignCountry
+    @Environment(\.theme) var theme
+
+    private var healthColor: Color {
+        let score = country.economicHealthScore
+        if score >= 65 { return .statHigh }
+        if score >= 40 { return .statMedium }
+        return .statLow
+    }
+
+    private var gdpLabel: String {
+        let g = country.gdpGrowth
+        return g >= 0 ? "+\(g)%" : "\(g)%"
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Country header
+            HStack {
+                Text(country.name.uppercased())
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .tracking(0.5)
+                    .foregroundColor(theme.inkBlack)
+                    .lineLimit(1)
+
+                Spacer()
+
+                if country.hasEconomicCrisis {
+                    Text("CRISIS")
+                        .font(.system(size: 8, weight: .black))
+                        .tracking(0.5)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(FiftiesColors.stampRed)
+                        .cornerRadius(3)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
+
+            Divider()
+                .background(theme.borderTan)
+
+            // Economic stats row
+            HStack(spacing: 0) {
+                economicStat(
+                    label: "SYSTEM",
+                    value: country.currentEconomicSystem.displayName,
+                    icon: "gearshape.2"
+                )
+
+                Divider()
+                    .frame(height: 36)
+
+                economicStat(
+                    label: "GDP GROWTH",
+                    value: gdpLabel,
+                    icon: "chart.line.uptrend.xyaxis"
+                )
+
+                Divider()
+                    .frame(height: 36)
+
+                economicStat(
+                    label: "HEALTH",
+                    value: "\(country.economicHealthScore)",
+                    icon: "heart.fill"
+                )
+            }
+            .padding(.vertical, 8)
+        }
+        .background(theme.parchmentDark.opacity(0.25))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+        .overlay(
+            Rectangle()
+                .fill(healthColor)
+                .frame(width: 3),
+            alignment: .leading
+        )
+    }
+
+    private func economicStat(label: String, value: String, icon: String) -> some View {
+        VStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(theme.inkLight)
+
+            Text(value)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(theme.inkBlack)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Text(label)
+                .font(.system(size: 7, weight: .medium))
+                .tracking(0.3)
+                .foregroundColor(theme.inkGray)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
