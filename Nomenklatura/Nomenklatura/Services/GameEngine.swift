@@ -795,6 +795,13 @@ class GameEngine {
         // NPC Behavior System - process decay, detection, and updates
         processNPCBehaviorSystem(game: game)
 
+        // Macro economic processing - GDP, inflation, unemployment, trade balance
+        // (runs before political AI so NPCs react to current economic conditions)
+        processEconomicSystem(game: game)
+
+        // Economic conditions affect political stability
+        applyEconomicPoliticalFeedback(game: game)
+
         // Political AI - NPC policy proposals and voting
         processPoliticalAI(game: game)
 
@@ -810,9 +817,6 @@ class GameEngine {
 
         // Regional dynamics - stability, secession progress, territorial integrity
         processRegionalDynamics(game: game)
-
-        // Macro economic processing - GDP, inflation, unemployment, trade balance
-        processEconomicSystem(game: game)
 
         // Intelligence leaks - generate secret intel based on Network stat
         processIntelligenceLeaks(game: game)
@@ -924,6 +928,45 @@ class GameEngine {
         EconomyService.shared.snapshotEconomicReport(game: game)
 
         gameLogger.info("Economic indicators - GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
+    }
+
+    /// Apply political consequences of economic conditions
+    private func applyEconomicPoliticalFeedback(game: Game) {
+        // Treasury crisis erodes elite confidence
+        if game.treasury < 20 {
+            game.applyStat("eliteLoyalty", change: -2)
+        } else if game.treasury < 35 {
+            game.applyStat("eliteLoyalty", change: -1)
+        }
+
+        // Food shortages destroy popular support
+        if game.foodSupply < 25 {
+            game.applyStat("popularSupport", change: -3)
+        } else if game.foodSupply < 40 {
+            game.applyStat("popularSupport", change: -1)
+        }
+
+        // High unemployment breeds unrest
+        if game.unemploymentRate > 30 {
+            game.applyStat("stability", change: -2)
+            game.applyStat("popularSupport", change: -1)
+        } else if game.unemploymentRate > 20 {
+            game.applyStat("stability", change: -1)
+        }
+
+        // Hyperinflation destabilizes everything
+        if game.inflationRate > 40 {
+            game.applyStat("stability", change: -2)
+            game.applyStat("popularSupport", change: -2)
+        } else if game.inflationRate > 25 {
+            game.applyStat("stability", change: -1)
+        }
+
+        // Strong economy boosts support (positive feedback)
+        if game.gdpGrowthRate > 5 && game.treasury > 60 {
+            game.applyStat("popularSupport", change: 1)
+            game.applyStat("eliteLoyalty", change: 1)
+        }
     }
 
     /// Process international dynamics - foreign relations, treaties, espionage
