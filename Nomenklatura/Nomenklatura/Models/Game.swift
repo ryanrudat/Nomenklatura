@@ -396,6 +396,9 @@ final class Game {
 
         self.createdAt = Date()
         self.updatedAt = Date()
+
+        // Pre-populate economic data so the economy feels alive from Turn 1
+        seedEconomicData()
     }
 }
 
@@ -2158,6 +2161,52 @@ extension Game {
         var unemployment = unemploymentHistory
         unemployment.append(unemploymentRate)
         unemploymentHistory = unemployment
+    }
+
+    /// Pre-populate economic data so the economy feels alive from Turn 1.
+    private func seedEconomicData() {
+        // A. Varied sector performance (instead of uniform 50/50/50/50)
+        var sectors: [String: SectorPerformance] = [:]
+
+        let sectorValues: [(EconomicSector, Int, Int, Int, Int)] = [
+            (.heavyIndustry,  62, 55, 48, 58),
+            (.agriculture,    42, 38, 55, 45),
+            (.defense,        72, 60, 50, 65),
+            (.lightIndustry,  35, 42, 60, 38),
+            (.energy,         58, 50, 45, 55),
+            (.mining,         55, 48, 42, 50),
+            (.construction,   45, 50, 55, 48),
+            (.transport,      50, 45, 48, 52),
+        ]
+
+        for (sector, production, investment, morale, efficiency) in sectorValues {
+            var perf = SectorPerformance(sectorId: sector.rawValue)
+            perf.productionLevel = production
+            perf.investmentLevel = investment
+            perf.workerMorale = morale
+            perf.efficiency = efficiency
+            sectors[sector.rawValue] = perf
+        }
+        sectorPerformanceData = try? Game.sharedEncoder.encode(sectors)
+
+        // B. Seed 5 turns of economic history for sparklines
+        gdpHistory = [95, 97, 98, 100, 100]
+        inflationHistory = [12, 10, 9, 8, 8]
+        unemploymentHistory = [6, 5, 5, 4, 4]
+        treasuryHistory = [48, 50, 52, 54, 55]
+
+        // C. Five-Year Plan progress (year 3 of first plan, moderately behind)
+        planPerformanceScore = 45
+        var targets = FiveYearPlanTargets()
+        targets.gdpTarget = 125
+        targets.industrialTarget = 65
+        targets.agricultureTarget = 55
+        targets.treasuryTarget = 65
+        targets.startingGDP = 90
+        targets.startingIndustrial = 45
+        targets.startingAgriculture = 40
+        targets.startingTreasury = 45
+        planTargets = targets
     }
 
     // MARK: - Personal Stat History (for Sparklines)
