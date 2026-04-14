@@ -61,10 +61,13 @@ final class WorldSimulationService {
         // 4. Check for economic reforms in foreign countries
         events.append(contentsOf: checkForEconomicReforms(game: game))
 
-        // 5. Check for cascading consequences
+        // 5. Generate dynamic economic events (trade proposals, sanctions, reforms)
+        generateDynamicEconomicEvents(game: game)
+
+        // 6. Check for cascading consequences
         events.append(contentsOf: processCascadingConsequences(events: events, game: game))
 
-        // 6. Update game state based on events
+        // 7. Update game state based on events
         applyEventEffects(events: events, game: game)
 
         return events
@@ -890,6 +893,140 @@ final class WorldSimulationService {
     // MARK: - Economic Reform Events
 
     /// Check for economic reforms in foreign countries based on their economic conditions
+    // MARK: - Dynamic Economic Events
+
+    /// Generate dynamic economic events: trade proposals, sanctions, and foreign reform shifts.
+    /// These queue DynamicEvents for the player rather than returning WorldEvents.
+    private func generateDynamicEconomicEvents(game: Game) {
+        let playerSystem = game.currentEconomicSystem
+
+        for country in game.foreignCountries {
+            // --- Trade Proposal Events ---
+            // Country with good relationship, high compatibility, and no existing trade deal
+            let compatibility = country.economicCompatibility(with: playerSystem)
+            if country.relationshipScore > 30
+                && compatibility >= 2
+                && !country.hasTreaty(of: .tradeAgreement)
+                && Double.random(in: 0...1) < 0.05
+            {
+                let event = DynamicEvent(
+                    eventType: .worldNews,
+                    priority: .elevated,
+                    title: "\(country.name) Proposes Trade Agreement",
+                    briefText: """
+                        The \(country.name) government has signaled interest in formalizing \
+                        trade relations with the People's Socialist Republic. Their \
+                        \(country.currentEconomicSystem.displayName) system shows strong \
+                        compatibility with our own.
+                        """,
+                    detailedText: """
+                        \(country.leaderName) has dispatched a trade envoy proposing a \
+                        formal trade agreement between our nations. Given the alignment \
+                        of our economic systems, such an agreement could significantly \
+                        boost bilateral trade and strengthen diplomatic ties.
+                        """,
+                    turnGenerated: game.turnNumber,
+                    expiresOnTurn: game.turnNumber + 3,
+                    isUrgent: false,
+                    responseOptions: [
+                        EventResponse(
+                            id: "accept_trade_\(country.countryId)",
+                            text: "Accept the trade agreement and formalize economic cooperation.",
+                            shortText: "Accept",
+                            effects: ["internationalStanding": 3, "treasury": 2],
+                            riskLevel: .low,
+                            followUpHint: "Trade with \(country.name) will increase."
+                        ),
+                        EventResponse(
+                            id: "reject_trade_\(country.countryId)",
+                            text: "Decline the proposal, maintaining our current trade posture.",
+                            shortText: "Decline",
+                            effects: ["internationalStanding": -1],
+                            riskLevel: .low,
+                            followUpHint: "\(country.name) may be disappointed."
+                        )
+                    ],
+                    iconName: "cart.fill",
+                    accentColor: "green"
+                )
+                game.queueDynamicEvent(event)
+            }
+
+            // --- Sanctions Consequence Events ---
+            // Hostile powerful country may disrupt trade
+            if country.relationshipScore < -50
+                && country.economicPower > 60
+                && Double.random(in: 0...1) < 0.08
+            {
+                let impactEstimate = country.economicPower / 20  // 3-5 range
+                var event = DynamicEvent(
+                    eventType: .worldNews,
+                    priority: .normal,
+                    title: "\(country.name) Trade Disruption",
+                    briefText: """
+                        Deteriorating relations with \(country.name) have led to trade \
+                        disruptions. Their economic influence is causing ripple effects \
+                        across our foreign commerce.
+                        """,
+                    detailedText: """
+                        \(country.name), leveraging its considerable economic power, has \
+                        imposed informal trade barriers against the People's Socialist \
+                        Republic. Shipping delays, denied export licenses, and pressure \
+                        on third-party trading partners are reducing our trade volume. \
+                        The estimated impact on our treasury is significant.
+                        """,
+                    turnGenerated: game.turnNumber,
+                    isUrgent: false,
+                    responseOptions: nil,
+                    iconName: "exclamationmark.triangle.fill",
+                    accentColor: "red"
+                )
+                event.flavorText = "Treasury impact estimated at -\(impactEstimate) this quarter."
+                game.queueDynamicEvent(event)
+            }
+
+            // --- Foreign Economic Reform Events ---
+            // Country under sustained economic pressure may shift its system
+            if (country.consecutiveGDPDeclines >= 3 || country.hasEconomicCrisis)
+                && Double.random(in: 0...1) < 0.07
+            {
+                let currentSystem = country.currentEconomicSystem
+
+                let directionText: String
+                if currentSystem.isSocialist {
+                    directionText = "market-oriented reforms"
+                } else {
+                    directionText = "greater state intervention in the economy"
+                }
+
+                let event = DynamicEvent(
+                    eventType: .worldNews,
+                    priority: .background,
+                    title: "\(country.name) Economic Upheaval",
+                    briefText: """
+                        Facing prolonged economic difficulties, \(country.name) is \
+                        showing signs of pressure toward \(directionText). Internal \
+                        debates over economic policy are intensifying.
+                        """,
+                    detailedText: """
+                        Intelligence reports indicate that \(country.name)'s \
+                        \(currentSystem.displayName) system is under severe strain. \
+                        After \(country.consecutiveGDPDeclines) consecutive quarters of \
+                        GDP decline, political factions are pushing for \(directionText). \
+                        A shift in \(country.name)'s economic orientation could reshape \
+                        trade patterns across the region.
+                        """,
+                    turnGenerated: game.turnNumber,
+                    isUrgent: false,
+                    responseOptions: nil,  // Informational world news
+                    iconName: "chart.line.downtrend.xyaxis",
+                    accentColor: "orange"
+                )
+                game.queueDynamicEvent(event)
+            }
+        }
+    }
+
     func checkForEconomicReforms(game: Game) -> [WorldEvent] {
         var events: [WorldEvent] = []
 

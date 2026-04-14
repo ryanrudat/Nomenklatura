@@ -501,6 +501,21 @@ final class ForeignCountry {
         return Int(baseRate) + variation
     }
 
+    /// Calculate trade compatibility based on economic system alignment
+    func economicCompatibility(with playerSystem: EconomicSystemType) -> Int {
+        let mySystem = currentEconomicSystem
+
+        if mySystem == playerSystem { return 3 }
+
+        if mySystem.isSocialist && playerSystem.isSocialist { return 2 }
+        if mySystem.isMarket && playerSystem.isMarket { return 2 }
+
+        // Opposed systems: trade friction
+        if mySystem.isSocialist != playerSystem.isSocialist { return -2 }
+
+        return 0
+    }
+
     /// Process economic turn for this country
     func processEconomicTurn() {
         // Update GDP growth

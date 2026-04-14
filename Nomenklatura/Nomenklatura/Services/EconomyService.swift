@@ -777,25 +777,42 @@ class EconomyService {
     /// Calculate trade balance with foreign countries
     private func calculateTradeBalance(game: Game) -> Int {
         var balance = 0
+        let playerSystem = game.currentEconomicSystem
+        let playerOpenness = playerSystem.tradeOpenness
 
         for country in game.foreignCountries {
-            // Only count actual trading partners
-            guard country.relationshipScore > -30 else { continue }
+            var countryBalance = 0
 
-            // Trade agreements add to surplus
+            // Only count actual trading partners
+            guard country.relationshipScore > -30 else {
+                // Hostile countries still create deficit (lost markets)
+                if country.relationshipScore < -60 {
+                    balance -= country.economicPower / 30
+                }
+                continue
+            }
+
+            let compatibility = country.economicCompatibility(with: playerSystem)
+
             if country.hasTreaty(of: .tradeAgreement) {
-                balance += 3
+                countryBalance += max(1, 3 + compatibility)
             }
 
             // Friendly socialist countries favorable
             if country.politicalBloc == .socialist && country.relationshipScore > 30 {
-                balance += 2
+                countryBalance += 2
             }
 
-            // Hostile countries create deficit (lost markets)
-            if country.relationshipScore < -60 {
-                balance -= country.economicPower / 30
-            }
+            // Economic system alignment affects baseline trade
+            countryBalance += compatibility / 2  // -1 to +1 from system alignment alone
+
+            // Scale trade effects by average openness of both systems
+            let countryOpenness = country.currentEconomicSystem.tradeOpenness
+            let averageOpenness = (playerOpenness + countryOpenness) / 2
+            // Openness modifier: 0.5x at 0 openness, 1.0x at 50, 1.5x at 100
+            countryBalance = countryBalance * (50 + averageOpenness) / 100
+
+            balance += countryBalance
         }
 
         // Foreign trade policy affects balance
