@@ -376,12 +376,12 @@ class PolicyService {
     private func applyEconomicPolicyCascades(game: Game, optionId: String) {
         switch optionId {
         // Central planning affects multiple sectors
-        case "central_quotas":
+        case "enterprise_central_quotas":
             game.applySectorChange(.heavyIndustry, productionChange: 2, efficiencyChange: -2)
             game.applySectorChange(.lightIndustry, productionChange: -2, efficiencyChange: -3)
             game.applyInflationChange(-2)  // Price stability from controls
 
-        case "manager_autonomy":
+        case "enterprise_manager_autonomy":
             game.applySectorChange(.lightIndustry, efficiencyChange: 3)
             game.applySectorChange(.heavyIndustry, efficiencyChange: 1)
             game.applyStat("popularSupport", change: 2)  // Consumer goods improve
@@ -391,32 +391,32 @@ class PolicyService {
             game.applyStat("foodSupply", change: -5)
             game.applySectorChange(.agriculture, productionChange: -5, moraleChange: -5)
 
-        case "small_plots":
+        case "private_small_plots":
             game.applyStat("foodSupply", change: 5)
             game.applySectorChange(.agriculture, productionChange: 5, moraleChange: 5)
 
-        case "licensed_businesses":
+        case "private_licensed_businesses":
             game.applyStat("treasury", change: 3)  // Tax revenue from private sector
             game.applySectorChange(.lightIndustry, productionChange: 5)
             game.applyInflationChange(2)  // More market activity
 
         // Trade policy affects foreign relations and sectors
-        case "state_monopoly":
+        case "trade_state_monopoly":
             game.applyStat("internationalStanding", change: -3)
             game.applySectorChange(.transport, productionChange: -3)
 
-        case "joint_ventures":
+        case "trade_joint_ventures":
             game.applyStat("internationalStanding", change: 5)
             game.applySectorChange(.transport, productionChange: 3)
             game.applySectorChange(.heavyIndustry, efficiencyChange: 3)  // Tech transfer
 
         // Price controls cascade
-        case "full_control":
+        case "price_full_control":
             game.applyInflationChange(-5)
             game.applySectorChange(.lightIndustry, productionChange: -5)  // Shortages
             game.applyStat("popularSupport", change: -3)  // Queues and frustration
 
-        case "market_signals":
+        case "price_market_signals":
             game.applyInflationChange(5)
             game.applySectorChange(.lightIndustry, productionChange: 5)
             game.applyStat("eliteLoyalty", change: -5)  // Ideological concern
@@ -497,9 +497,9 @@ class PolicyService {
     /// Cross-system cascades where multiple policy areas interact
     private func applyCrossSystemCascades(game: Game, optionId: String) {
         // Check for policy synergies and conflicts
-        let hasMarketReforms = game.policySlot(withId: "private_enterprise")?.currentOptionId == "licensed_businesses"
-        let hasPriceControls = game.policySlot(withId: "price_controls")?.currentOptionId == "full_control"
-        let hasOpenTrade = game.policySlot(withId: "foreign_trade")?.currentOptionId == "joint_ventures"
+        let hasMarketReforms = game.policySlot(withId: "economy_private_enterprise")?.currentOptionId == "private_licensed_businesses"
+        let hasPriceControls = game.policySlot(withId: "economy_price_controls")?.currentOptionId == "price_full_control"
+        let hasOpenTrade = game.policySlot(withId: "economy_foreign_trade")?.currentOptionId == "trade_joint_ventures"
 
         // Policy conflict: Market reforms + Price controls = Chaos
         if hasMarketReforms && hasPriceControls {

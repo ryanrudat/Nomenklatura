@@ -307,7 +307,7 @@ class PoliticalAIService {
                 priority: 7
             )
             preferences["economy_private_enterprise"] = PolicyPreference(
-                desiredOptionId: "private_enterprise_prohibited",
+                desiredOptionId: "private_prohibited",
                 priority: 8
             )
             preferences["propaganda_press_control"] = PolicyPreference(
@@ -325,7 +325,7 @@ class PoliticalAIService {
                 priority: 7
             )
             preferences["economy_private_enterprise"] = PolicyPreference(
-                desiredOptionId: "private_enterprise_licensed",
+                desiredOptionId: "private_licensed_businesses",
                 priority: 8
             )
             preferences["economy_foreign_trade"] = PolicyPreference(

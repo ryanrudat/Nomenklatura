@@ -606,15 +606,18 @@ class EconomyService {
         let system = game.currentEconomicSystem
         var growth = Int(system.baseGrowthRate)
 
+        // Faction economic bonus (Reformist faction ability)
+        growth += FactionService.shared.getEconomicPolicyBonus(game: game)
+
         // Modify based on active policies
         // Enterprise management policy
-        if let slot = game.policySlot(withId: "enterprise_management") {
+        if let slot = game.policySlot(withId: "economy_enterprise_management") {
             switch slot.currentOptionId {
-            case "central_quotas":
+            case "enterprise_central_quotas":
                 growth -= 2  // Less flexible, less growth
-            case "regional_flexibility":
+            case "enterprise_regional_flexibility":
                 growth += 1  // Moderate flexibility
-            case "manager_autonomy":
+            case "enterprise_manager_autonomy":
                 growth += 3  // High growth but more inequality
             default:
                 break
@@ -622,13 +625,13 @@ class EconomyService {
         }
 
         // Private enterprise policy
-        if let slot = game.policySlot(withId: "private_enterprise") {
+        if let slot = game.policySlot(withId: "economy_private_enterprise") {
             switch slot.currentOptionId {
             case "private_prohibited":
                 growth -= 3  // Pure socialism, less growth
-            case "small_plots":
+            case "private_small_plots":
                 growth += 1  // Some private activity
-            case "licensed_businesses":
+            case "private_licensed_businesses":
                 growth += 4  // Significant private sector
             default:
                 break
@@ -636,13 +639,13 @@ class EconomyService {
         }
 
         // Foreign trade policy
-        if let slot = game.policySlot(withId: "foreign_trade") {
+        if let slot = game.policySlot(withId: "economy_foreign_trade") {
             switch slot.currentOptionId {
-            case "state_monopoly":
+            case "trade_state_monopoly":
                 growth -= 1  // Limited trade
-            case "licensed_companies":
+            case "trade_licensed_companies":
                 growth += 2  // Some openness
-            case "joint_ventures":
+            case "trade_joint_ventures":
                 growth += 3  // Foreign investment boost
             default:
                 break
@@ -650,17 +653,22 @@ class EconomyService {
         }
 
         // Price controls policy
-        if let slot = game.policySlot(withId: "price_controls") {
+        if let slot = game.policySlot(withId: "economy_price_controls") {
             switch slot.currentOptionId {
-            case "full_control":
+            case "price_full_control":
                 growth -= 2  // Shortages reduce efficiency
-            case "strategic_only":
+            case "price_strategic_only":
                 growth += 0  // Neutral
-            case "market_signals":
+            case "price_market_signals":
                 growth += 2  // More efficient but more inequality
             default:
                 break
             }
+        }
+
+        // GDP momentum - growing economies tend to keep growing
+        if game.gdpGrowthRate > 0 {
+            growth += 1
         }
 
         // Economic health affects growth
@@ -677,7 +685,7 @@ class EconomyService {
         } else if game.treasury >= 60 {
             growth += 1  // Healthy finances support growth
         } else if game.treasury <= 20 {
-            growth -= 3  // Empty treasury cripples state investment
+            growth -= 2  // Empty treasury cripples state investment
         } else if game.treasury <= 35 {
             growth -= 1  // Low resources limit growth
         }
@@ -698,6 +706,9 @@ class EconomyService {
         let phaseModifier = planPhase.growthModifier
         growth = Int(Double(growth) * phaseModifier)
 
+        // Growth floor - prevent catastrophic spirals
+        growth = max(growth, -3)
+
         // Cap growth at reasonable bounds
         return max(-10, min(10, growth))
     }
@@ -711,13 +722,13 @@ class EconomyService {
         var change = (targetInflation - game.inflationRate) / 20
 
         // Price controls reduce inflation
-        if let slot = game.policySlot(withId: "price_controls") {
+        if let slot = game.policySlot(withId: "economy_price_controls") {
             switch slot.currentOptionId {
-            case "full_control":
+            case "price_full_control":
                 change -= 3  // Strong anti-inflation
-            case "strategic_only":
+            case "price_strategic_only":
                 change -= 1  // Moderate control
-            case "market_signals":
+            case "price_market_signals":
                 change += 2  // Market-driven prices rise
             default:
                 break
@@ -752,11 +763,11 @@ class EconomyService {
         }
 
         // Private enterprise affects employment
-        if let slot = game.policySlot(withId: "private_enterprise") {
+        if let slot = game.policySlot(withId: "economy_private_enterprise") {
             switch slot.currentOptionId {
             case "private_prohibited":
                 change += 1  // State jobs only
-            case "licensed_businesses":
+            case "private_licensed_businesses":
                 change -= 2  // Private sector creates jobs
             default:
                 break
@@ -800,11 +811,11 @@ class EconomyService {
         }
 
         // Foreign trade policy affects balance
-        if let slot = game.policySlot(withId: "foreign_trade") {
+        if let slot = game.policySlot(withId: "economy_foreign_trade") {
             switch slot.currentOptionId {
-            case "state_monopoly":
+            case "trade_state_monopoly":
                 balance -= 3  // Less competitive
-            case "joint_ventures":
+            case "trade_joint_ventures":
                 balance += 5  // More exports
             default:
                 break
@@ -828,8 +839,8 @@ class EconomyService {
         }
 
         // Private enterprise grows services
-        if let slot = game.policySlot(withId: "private_enterprise") {
-            if slot.currentOptionId == "licensed_businesses" {
+        if let slot = game.policySlot(withId: "economy_private_enterprise") {
+            if slot.currentOptionId == "private_licensed_businesses" {
                 services += 2
                 industry -= 1
                 agriculture -= 1
@@ -918,10 +929,10 @@ class EconomyService {
         switch sector {
         case .agriculture:
             // Collectivization policy affects agriculture
-            if let slot = game.policySlot(withId: "private_enterprise") {
+            if let slot = game.policySlot(withId: "economy_private_enterprise") {
                 if slot.currentOptionId == "private_prohibited" {
                     efficiencyChange -= 2  // Collectivized agriculture less efficient
-                } else if slot.currentOptionId == "small_plots" {
+                } else if slot.currentOptionId == "private_small_plots" {
                     efficiencyChange += 2  // Private plots boost agriculture
                     productionChange += 1
                 }
@@ -935,11 +946,11 @@ class EconomyService {
 
         case .lightIndustry:
             // Market mechanisms help consumer goods
-            if let slot = game.policySlot(withId: "price_controls") {
-                if slot.currentOptionId == "market_signals" {
+            if let slot = game.policySlot(withId: "economy_price_controls") {
+                if slot.currentOptionId == "price_market_signals" {
                     efficiencyChange += 2
                     productionChange += 1
-                } else if slot.currentOptionId == "full_control" {
+                } else if slot.currentOptionId == "price_full_control" {
                     productionChange -= 2  // Shortages from price controls
                 }
             }
@@ -969,8 +980,8 @@ class EconomyService {
 
         case .transport:
             // Foreign trade policy affects transport
-            if let slot = game.policySlot(withId: "foreign_trade") {
-                if slot.currentOptionId == "joint_ventures" {
+            if let slot = game.policySlot(withId: "economy_foreign_trade") {
+                if slot.currentOptionId == "trade_joint_ventures" {
                     productionChange += 1  // More goods to move
                 }
             }
