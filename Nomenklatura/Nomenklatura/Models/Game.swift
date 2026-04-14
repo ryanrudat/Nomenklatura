@@ -2654,7 +2654,7 @@ extension Game {
     /// Whether black market has overtaken official economy
     var hasBlackMarketCrisis: Bool {
         // Black market dominates when price controls are strict + shortages exist + inflation is high
-        let hasStrictControls = policySlot(withId: "price_controls")?.currentOptionId == "full_control"
+        let hasStrictControls = policySlot(withId: "economy_price_controls")?.currentOptionId == "price_full_control"
         let hasModerateInflation = inflationRate >= 25
         let hasLowOutput = sectorPerformance["lightIndustry"]?.actualOutput ?? 50 <= 35
 

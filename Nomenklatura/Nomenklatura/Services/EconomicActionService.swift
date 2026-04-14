@@ -139,11 +139,16 @@ final class EconomicActionService {
         let standingBonus = min(7, game.standing / 15)
         chance += standingBonus
 
+        // Economic planning expertise bonus
+        if game.trackAffinityScores.economicPlanning >= 20 {
+            chance += 5
+        }
+
         // Stability bonus/penalty: Economic actions easier in stable times
         if game.stability > 60 {
             chance += 5
         } else if game.stability < 30 {
-            chance -= 10
+            chance -= 5
         }
 
         // Industrial output affects production actions
@@ -151,7 +156,7 @@ final class EconomicActionService {
             if game.industrialOutput > 60 {
                 chance += 5
             } else if game.industrialOutput < 40 {
-                chance -= 5
+                chance -= 3
             }
         }
 
@@ -172,10 +177,10 @@ final class EconomicActionService {
         switch sector {
         case .agriculture:
             // Agriculture is harder if food supply is low
-            return game.foodSupply < 40 ? -10 : 0
+            return game.foodSupply < 40 ? -5 : 0
         case .heavyIndustry, .defense:
             // Heavy industry/defense benefits from high industrial output
-            return game.industrialOutput > 60 ? 5 : -5
+            return game.industrialOutput > 60 ? 5 : -3
         case .energy, .mining:
             // Resource sectors are relatively stable
             return 0
