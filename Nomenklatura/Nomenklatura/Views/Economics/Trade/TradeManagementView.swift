@@ -10,8 +10,8 @@ import SwiftUI
 struct TradeManagementView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
-    @State private var showNegotiateAlert = false
     @State private var selectedCountry: ForeignCountry?
+    @State private var showProposalSheet = false
 
     private var totalTradeVolume: Int {
         game.foreignCountries.reduce(0) { $0 + $1.tradeVolume }
@@ -39,18 +39,174 @@ struct TradeManagementView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            tradePolicySection
             tradeBalanceSection
             activeAgreementsSection
             tradePartnersSection
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
-        .alert("Trade Proposal Dispatched", isPresented: $showNegotiateAlert) {
-            Button("Understood", role: .cancel) {}
-        } message: {
+        .sheet(isPresented: $showProposalSheet) {
             if let country = selectedCountry {
-                Text("Trade proposal sent to \(country.name). They will respond next turn.")
+                TradeProposalSheet(game: game, country: country)
             }
+        }
+    }
+
+    // MARK: - Trade Policy Controls
+
+    private var tradePolicySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("TRADE POLICY")
+
+            VStack(spacing: 14) {
+                // Tariff Level
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("TARIFF LEVEL")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(0.5)
+                        .foregroundColor(FiftiesColors.typewriterInk)
+
+                    HStack(spacing: 0) {
+                        ForEach(TariffLevel.allCases, id: \.rawValue) { level in
+                            Button {
+                                game.tariffLevel = level.rawValue
+                            } label: {
+                                Text(level.displayName.uppercased())
+                                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                                    .tracking(0.3)
+                                    .foregroundColor(game.currentTariffLevel == level ? .white : FiftiesColors.typewriterInk)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                                    .background(game.currentTariffLevel == level ? FiftiesColors.brassGold : FiftiesColors.cardstock)
+                                    .overlay(
+                                        Rectangle()
+                                            .stroke(theme.borderTan, lineWidth: 1)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    Text(game.currentTariffLevel.description)
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(FiftiesColors.carbonCopy)
+                }
+
+                Rectangle()
+                    .fill(FiftiesColors.brassGold.opacity(0.3))
+                    .frame(height: 1)
+
+                // Embargo Controls
+                embargoSection
+
+                Rectangle()
+                    .fill(FiftiesColors.brassGold.opacity(0.3))
+                    .frame(height: 1)
+
+                // Trade Openness
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("TRADE OPENNESS")
+                            .font(.system(size: 8, weight: .semibold))
+                            .tracking(0.5)
+                            .foregroundColor(FiftiesColors.carbonCopy)
+                        Spacer()
+                        Text("\(tradeOpenness)%")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(FiftiesColors.typewriterInk)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Rectangle()
+                                .fill(theme.borderTan)
+                                .frame(height: 6)
+                            Rectangle()
+                                .fill(FiftiesColors.brassGold)
+                                .frame(width: geo.size.width * CGFloat(tradeOpenness) / 100, height: 6)
+                        }
+                        .cornerRadius(3)
+                    }
+                    .frame(height: 6)
+
+                    Text(tradeOpennessDescription)
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(FiftiesColors.carbonCopy)
+                }
+            }
+            .padding(14)
+            .background(FiftiesColors.cardstock)
+            .overlay(
+                Rectangle()
+                    .stroke(theme.borderTan, lineWidth: 1)
+            )
+        }
+    }
+
+    private var embargoSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("EMBARGOES")
+                .font(.system(size: 9, weight: .semibold))
+                .tracking(0.5)
+                .foregroundColor(FiftiesColors.typewriterInk)
+
+            let embargoable = game.foreignCountries.filter { $0.relationshipScore < 0 }
+            if embargoable.isEmpty {
+                Text("No hostile nations available for embargo.")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundColor(FiftiesColors.carbonCopy)
+            } else {
+                ForEach(embargoable.sorted(by: { $0.relationshipScore < $1.relationshipScore }), id: \.id) { country in
+                    let isEmbargoed = game.isEmbargoed(country.countryId)
+                    HStack(spacing: 8) {
+                        Text(country.name.uppercased())
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .foregroundColor(isEmbargoed ? FiftiesColors.stampRed : FiftiesColors.typewriterInk)
+                            .lineLimit(1)
+
+                        Spacer()
+
+                        if isEmbargoed {
+                            Text("EMBARGOED")
+                                .font(.system(size: 7, weight: .bold))
+                                .tracking(0.3)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(FiftiesColors.stampRed)
+                                .cornerRadius(2)
+                        }
+
+                        Button {
+                            game.toggleEmbargo(countryId: country.countryId)
+                        } label: {
+                            Text(isEmbargoed ? "LIFT" : "IMPOSE")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .tracking(0.3)
+                                .foregroundColor(isEmbargoed ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(isEmbargoed ? FiftiesColors.approvedGreen : FiftiesColors.stampRed, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
+    private var tradeOpennessDescription: String {
+        let openness = tradeOpenness
+        if openness >= 70 {
+            return "Highly open economy. Foreign trade flows freely with minimal restrictions."
+        } else if openness >= 40 {
+            return "Moderate openness. State controls trade channels but permits substantial commerce."
+        } else {
+            return "Restricted trade. State monopoly limits foreign commerce to essential exchanges."
         }
     }
 
@@ -77,35 +233,23 @@ struct TradeManagementView: View {
                         value: "\(totalTradeVolume)",
                         color: FiftiesColors.typewriterInk
                     )
+                    balanceStat(
+                        label: "TARIFF",
+                        value: game.currentTariffLevel.displayName.uppercased(),
+                        color: FiftiesColors.brassGold
+                    )
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("TRADE OPENNESS")
-                            .font(.system(size: 8, weight: .semibold))
-                            .tracking(0.5)
-                            .foregroundColor(FiftiesColors.carbonCopy)
-                        Spacer()
-                        Text("\(tradeOpenness)%")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                let embargoCount = game.embargoedCountries.count
+                if embargoCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "xmark.shield.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(FiftiesColors.stampRed)
+                        Text("\(embargoCount) active embargo\(embargoCount == 1 ? "" : "es")")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(FiftiesColors.stampRed)
                     }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Rectangle()
-                                .fill(theme.borderTan)
-                                .frame(height: 6)
-                            Rectangle()
-                                .fill(FiftiesColors.brassGold)
-                                .frame(width: geo.size.width * CGFloat(tradeOpenness) / 100, height: 6)
-                        }
-                        .cornerRadius(3)
-                    }
-                    .frame(height: 6)
-
-                    Text("System: \(game.currentEconomicSystem.displayName)")
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
                 }
 
                 let netImpact = game.netTradeImpact
@@ -244,9 +388,10 @@ struct TradeManagementView: View {
                     TradePartnerCard(
                         country: country,
                         activeAgreementCount: game.agreements(with: country.countryId).filter(\.isActive).count,
+                        isEmbargoed: game.isEmbargoed(country.countryId),
                         onNegotiate: {
                             selectedCountry = country
-                            showNegotiateAlert = true
+                            showProposalSheet = true
                         }
                     )
                 }

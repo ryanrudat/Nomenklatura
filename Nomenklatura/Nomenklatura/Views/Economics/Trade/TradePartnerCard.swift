@@ -10,11 +10,12 @@ import SwiftUI
 struct TradePartnerCard: View {
     let country: ForeignCountry
     let activeAgreementCount: Int
+    var isEmbargoed: Bool = false
     let onNegotiate: () -> Void
     @Environment(\.theme) var theme
 
     private var canNegotiate: Bool {
-        country.relationshipScore > -30
+        country.relationshipScore > -30 && !isEmbargoed
     }
 
     private var blocColor: Color {
@@ -96,7 +97,18 @@ struct TradePartnerCard: View {
                 )
             }
 
-            if activeAgreementCount > 0 {
+            if isEmbargoed {
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark.shield.fill")
+                        .font(.system(size: 9))
+                        .foregroundColor(FiftiesColors.stampRed)
+                    Text("TRADE EMBARGO IN EFFECT")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .tracking(0.3)
+                        .foregroundColor(FiftiesColors.stampRed)
+                }
+                .padding(.top, 8)
+            } else if activeAgreementCount > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "doc.text.fill")
                         .font(.system(size: 9))
@@ -122,7 +134,7 @@ struct TradePartnerCard: View {
                 .buttonStyle(.plain)
                 .padding(.top, 10)
             } else {
-                Text("RELATIONS TOO HOSTILE FOR TRADE")
+                Text(isEmbargoed ? "EMBARGO BLOCKS NEGOTIATION" : "RELATIONS TOO HOSTILE FOR TRADE")
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
                     .tracking(0.5)
                     .foregroundColor(FiftiesColors.stampRed)

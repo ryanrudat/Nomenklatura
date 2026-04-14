@@ -161,6 +161,10 @@ final class Game {
     var giniCoefficient: Int = 28              // Inequality measure (0-100)
     var tradeBalance: Int = 0                  // Positive = surplus
 
+    // Trade Policy
+    var tariffLevel: String = "standard"       // none, low, standard, high, prohibitive
+    var embargoedCountriesData: Data?          // Encoded [String] of embargoed countryIds
+
     // Sector breakdown (percentage of National Product)
     var agricultureShare: Int = 20             // Collective farms, state farms
     var industryShare: Int = 50                // Heavy industry, manufacturing
@@ -2005,8 +2009,13 @@ extension Game {
 
     /// Process trade agreements for turn
     func processTradeAgreements() {
+        let currentEmbargoes = embargoedCountries
         for agreement in tradeAgreements {
             if agreement.isActive {
+                if currentEmbargoes.contains(agreement.partnerCountryId) {
+                    agreement.suspend()
+                    continue
+                }
                 agreement.processTurn()
                 agreement.checkExpiration(currentTurn: turnNumber)
 
@@ -2017,6 +2026,107 @@ extension Game {
             }
         }
         updatedAt = Date()
+    }
+
+    // MARK: - Trade Policy
+
+    /// Decoded list of embargoed country IDs
+    var embargoedCountries: [String] {
+        get {
+            guard let data = embargoedCountriesData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            embargoedCountriesData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Whether a specific country is embargoed
+    func isEmbargoed(_ countryId: String) -> Bool {
+        embargoedCountries.contains(countryId)
+    }
+
+    /// Toggle embargo on a country
+    func toggleEmbargo(countryId: String) {
+        var current = embargoedCountries
+        if let index = current.firstIndex(of: countryId) {
+            current.remove(at: index)
+        } else {
+            current.append(countryId)
+        }
+        embargoedCountries = current
+    }
+
+    /// Current tariff level as enum-like accessor
+    var currentTariffLevel: TariffLevel {
+        TariffLevel(rawValue: tariffLevel) ?? .standard
+    }
+}
+
+/// Tariff levels for trade policy
+enum TariffLevel: String, CaseIterable {
+    case none = "none"
+    case low = "low"
+    case standard = "standard"
+    case high = "high"
+    case prohibitive = "prohibitive"
+
+    var displayName: String {
+        switch self {
+        case .none: return "Free Trade"
+        case .low: return "Low Tariffs"
+        case .standard: return "Standard Tariffs"
+        case .high: return "High Tariffs"
+        case .prohibitive: return "Prohibitive Tariffs"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .none:
+            return "No barriers to foreign goods. Maximum trade volume but minimal state revenue from imports."
+        case .low:
+            return "Modest duties on foreign goods. Trade flows freely with moderate revenue collection."
+        case .standard:
+            return "Balanced tariff policy. Normal trade volumes with reasonable state revenue."
+        case .high:
+            return "Heavy duties on imports. Reduced trade volume but substantial revenue per unit. Strains foreign relations."
+        case .prohibitive:
+            return "Near-total barrier to imports. Trade almost ceases. Maximum revenue per unit but devastating to relations."
+        }
+    }
+
+    /// Multiplier on trade volume (1.0 = normal)
+    var volumeMultiplier: Double {
+        switch self {
+        case .none: return 1.3
+        case .low: return 1.1
+        case .standard: return 1.0
+        case .high: return 0.6
+        case .prohibitive: return 0.2
+        }
+    }
+
+    /// Treasury income multiplier per unit traded
+    var revenueMultiplier: Double {
+        switch self {
+        case .none: return 0.3
+        case .low: return 0.7
+        case .standard: return 1.0
+        case .high: return 1.8
+        case .prohibitive: return 2.5
+        }
+    }
+
+    /// Relationship penalty per turn applied to all trading partners
+    var relationshipPenalty: Int {
+        switch self {
+        case .none: return 0
+        case .low: return 0
+        case .standard: return 0
+        case .high: return -2
+        case .prohibitive: return -5
+        }
     }
 }
 
