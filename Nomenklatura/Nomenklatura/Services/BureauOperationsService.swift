@@ -569,11 +569,13 @@ final class BureauOperationsService {
         }
     }
 
-    /// Execute a bureau task by routing to the appropriate action service
+    /// Execute a bureau task by routing to the appropriate action service.
+    /// Pass `targetCharacter` for security tasks where the player chose the target.
     func executeTask(
         _ task: BureauTask,
         for game: Game,
-        modelContext: ModelContext
+        modelContext: ModelContext,
+        targetCharacter: GameCharacter? = nil
     ) -> TaskExecutionResult {
         // Verify task can be initiated
         guard task.canInitiate else {
@@ -592,7 +594,7 @@ final class BureauOperationsService {
         // Route to appropriate service based on action category
         switch task.actionCategory {
         case "security":
-            execution = executeSecurityTask(task, for: game, modelContext: modelContext)
+            execution = executeSecurityTask(task, for: game, modelContext: modelContext, targetCharacter: targetCharacter)
         case "economic":
             execution = executeEconomicTask(task, for: game, modelContext: modelContext)
         case "party":
@@ -609,11 +611,12 @@ final class BureauOperationsService {
         return execution.withNetworkCostApplied(0)
     }
 
-    /// Execute a security-related task
+    /// Execute a security-related task. Uses `targetCharacter` if provided, otherwise auto-picks.
     private func executeSecurityTask(
         _ task: BureauTask,
         for game: Game,
-        modelContext: ModelContext
+        modelContext: ModelContext,
+        targetCharacter providedTarget: GameCharacter? = nil
     ) -> TaskExecutionResult {
         // Find the security action by ID
         guard let action = SecurityAction.allActions.first(where: { $0.id == task.actionId }) else {
@@ -624,10 +627,14 @@ final class BureauOperationsService {
         let targetFaction: GameFaction?
         switch action.targetType {
         case .character:
-            guard let resolved = pickSecurityTarget(for: action, game: game) else {
-                return .failure("No eligible target available for \(action.name)")
+            if let provided = providedTarget {
+                targetCharacter = provided
+            } else {
+                guard let resolved = pickSecurityTarget(for: action, game: game) else {
+                    return .failure("No eligible target available for \(action.name)")
+                }
+                targetCharacter = resolved
             }
-            targetCharacter = resolved
             targetFaction = nil
         case .faction:
             guard let resolved = pickFactionTarget(game: game) else {
