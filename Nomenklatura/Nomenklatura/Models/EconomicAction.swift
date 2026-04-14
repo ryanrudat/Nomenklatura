@@ -68,7 +68,9 @@ enum EconomicTargetType: String, Codable {
 // MARK: - Economic Sector
 
 /// Economic sectors for targeting
-enum EconomicSector: String, Codable, CaseIterable {
+enum EconomicSector: String, Codable, CaseIterable, Identifiable {
+    var id: String { rawValue }
+
     case heavyIndustry      // Steel, machinery, military production
     case lightIndustry      // Consumer goods, textiles
     case agriculture        // Farming, collective farms

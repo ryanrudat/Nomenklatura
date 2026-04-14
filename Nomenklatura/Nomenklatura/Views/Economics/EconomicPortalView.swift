@@ -451,8 +451,9 @@ struct QuickStatBox: View {
 }
 
 struct SectorPerformanceCard: View {
-    let game: Game
+    @Bindable var game: Game
     @Environment(\.theme) var theme
+    @State private var selectedSector: EconomicSector?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -461,22 +462,22 @@ struct SectorPerformanceCard: View {
                 .tracking(1)
                 .foregroundColor(theme.inkGray)
 
-            ForEach(EconomicSector.allCases.prefix(4), id: \.self) { sector in
-                SectorRow(sector: sector, performance: sectorPerformance(sector))
+            ForEach(EconomicSector.allCases, id: \.self) { sector in
+                let perf = game.sectorPerformance(for: sector)
+                SectorRow(
+                    sector: sector,
+                    performance: perf.actualOutput,
+                    focusName: game.activeFocus(for: sector)?.name
+                )
+                .contentShape(Rectangle())
+                .onTapGesture { selectedSector = sector }
             }
         }
         .padding(12)
         .background(theme.parchmentDark)
         .cornerRadius(8)
-    }
-
-    private func sectorPerformance(_ sector: EconomicSector) -> Int {
-        switch sector {
-        case .heavyIndustry: return min(100, max(0, game.industrialOutput + 10))
-        case .agriculture: return game.foodSupply
-        case .energy: return min(100, max(0, game.industrialOutput - 5))
-        case .defense: return min(100, max(0, game.militaryLoyalty))
-        default: return min(100, max(0, (game.industrialOutput + game.stability) / 2))
+        .sheet(item: $selectedSector) { sector in
+            SectorDetailView(game: game, sector: sector)
         }
     }
 }
@@ -484,6 +485,7 @@ struct SectorPerformanceCard: View {
 struct SectorRow: View {
     let sector: EconomicSector
     let performance: Int
+    var focusName: String? = nil
     @Environment(\.theme) var theme
 
     var body: some View {
@@ -493,9 +495,16 @@ struct SectorRow: View {
                 .foregroundColor(theme.accentGold)
                 .frame(width: 20)
 
-            Text(sector.displayName)
-                .font(.system(size: 11))
-                .foregroundColor(theme.inkBlack)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(sector.displayName)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.inkBlack)
+                if let focusName {
+                    Text(focusName)
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(theme.inkGray)
+                }
+            }
 
             Spacer()
 
@@ -510,7 +519,7 @@ struct SectorRow: View {
                         .frame(width: geo.size.width * CGFloat(performance) / 100, height: 8)
                 }
             }
-            .frame(width: 80, height: 8)
+            .frame(width: 60, height: 8)
 
             Text("\(performance)%")
                 .font(.system(size: 10, weight: .bold))

@@ -174,6 +174,7 @@ final class Game {
     var inflationHistoryData: Data?            // Encoded [Int] - last 20 turns of inflation rate
     var unemploymentHistoryData: Data?         // Encoded [Int] - last 20 turns of unemployment rate
     var sectorPerformanceData: Data?           // Encoded [String: SectorPerformance]
+    var sectorFocusData: Data?                 // Encoded [String: String] - sector rawValue -> focusId
 
     // Personal stat history (for sparklines)
     var standingHistoryData: Data?             // Encoded [Int] - last 20 turns
@@ -2145,6 +2146,49 @@ extension Game {
         }
 
         return weakest
+    }
+
+    // MARK: - Sector Focus Tracking
+
+    /// All sector focus assignments (sector rawValue -> focusId)
+    var sectorFocuses: [String: String] {
+        get {
+            guard let data = sectorFocusData else { return initializeDefaultFocuses() }
+            return (try? JSONDecoder().decode([String: String].self, from: data)) ?? initializeDefaultFocuses()
+        }
+        set {
+            sectorFocusData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Get the active focus id for a sector
+    func sectorFocus(for sector: EconomicSector) -> String {
+        sectorFocuses[sector.rawValue] ?? SectorFocus.defaultFocusId(for: sector)
+    }
+
+    /// Get the active SectorFocus model for a sector
+    func activeFocus(for sector: EconomicSector) -> SectorFocus? {
+        let focusId = sectorFocus(for: sector)
+        return SectorFocus.focuses(for: sector).first { $0.focusId == focusId }
+    }
+
+    /// Set production focus for a sector, applying a one-turn transition penalty
+    func setSectorFocus(_ focusId: String, for sector: EconomicSector) {
+        var focuses = sectorFocuses
+        focuses[sector.rawValue] = focusId
+        sectorFocuses = focuses
+
+        // Transition penalty: retooling disrupts production for one turn
+        applySectorChange(sector, productionChange: -10)
+    }
+
+    /// Initialize all sectors with their default (first) focus
+    private func initializeDefaultFocuses() -> [String: String] {
+        var focuses: [String: String] = [:]
+        for sector in EconomicSector.allCases {
+            focuses[sector.rawValue] = SectorFocus.defaultFocusId(for: sector)
+        }
+        return focuses
     }
 
     /// Record all economic indicators to history (call once per turn)
