@@ -665,9 +665,15 @@ struct RegionalEconomicsView: View {
 struct BudgetView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
+    @State private var showLoanSheet = false
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
+    }
+
+    private var report: EconomyService.EconomicReport? {
+        guard let data = game.lastEconomicReport else { return nil }
+        return EconomyService.shared.decodeReport(data)
     }
 
     var body: some View {
@@ -676,24 +682,543 @@ struct BudgetView: View {
                 requirement: .budgetDetails,
                 accessLevel: accessLevel
             ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("BUDGET ALLOCATION")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1)
-                        .foregroundColor(theme.inkGray)
+                VStack(alignment: .leading, spacing: 20) {
+                    // Income Summary
+                    if let report = report {
+                        BudgetIncomeSection(report: report)
+                    }
 
-                    Text("State budget breakdown would appear here showing military vs civilian spending, ministry allocations, and emergency reserves.")
-                        .font(theme.bodyFont)
-                        .foregroundColor(theme.inkBlack)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(8)
+                    // Per-Sector Budget Allocation
+                    SectorBudgetSection(game: game)
+
+                    // Debt & Financing
+                    DebtFinancingSection(game: game, showLoanSheet: $showLoanSheet)
+
+                    // Expenses Summary
+                    if let report = report {
+                        BudgetExpenseSection(report: report)
+                    }
+
+                    // Net Balance
+                    if let report = report {
+                        BudgetNetBalanceSection(report: report, treasury: game.treasury)
+                    }
                 }
             }
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
+        .sheet(isPresented: $showLoanSheet) {
+            LoanProposalSheet(game: game, isPresented: $showLoanSheet)
+        }
+    }
+}
+
+// MARK: - Budget Income Section
+
+private struct BudgetIncomeSection: View {
+    let report: EconomyService.EconomicReport
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "arrow.down.circle.fill")
+                    .foregroundColor(FiftiesColors.approvedGreen)
+                    .font(.system(size: 12))
+                Text("INCOME")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                Text("+\(report.totalIncome)")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(FiftiesColors.approvedGreen)
+            }
+
+            VStack(spacing: 4) {
+                ForEach(report.breakdown.filter { $0.2 }, id: \.0) { label, value, _ in
+                    HStack {
+                        Text(label)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(theme.inkGray)
+                        Spacer()
+                        Text("+\(value)")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(FiftiesColors.approvedGreen)
+                    }
+                }
+            }
+            .padding(10)
+            .background(theme.parchmentDark)
+            .cornerRadius(6)
+        }
+    }
+}
+
+// MARK: - Sector Budget Section
+
+private struct SectorBudgetSection: View {
+    @Bindable var game: Game
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "chart.pie.fill")
+                    .foregroundColor(theme.accentGold)
+                    .font(.system(size: 12))
+                Text("SECTOR BUDGET ALLOCATION")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                Text("Total: \(totalAllocation)%")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(totalAllocation == 100 ? theme.accentGold : FiftiesColors.stampRed)
+            }
+
+            VStack(spacing: 2) {
+                ForEach(EconomicSector.allCases, id: \.rawValue) { sector in
+                    SectorBudgetRow(game: game, sector: sector, onAdjust: { delta in
+                        adjustBudget(sector: sector, delta: delta)
+                    })
+                }
+            }
+            .padding(8)
+            .background(theme.parchmentDark)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(theme.borderTan, lineWidth: 1)
+            )
+        }
+    }
+
+    private var totalAllocation: Int {
+        let budget = game.sectorBudget
+        return EconomicSector.allCases.reduce(0) { sum, sector in
+            sum + (budget[sector.rawValue] ?? Game.defaultAllocation(for: sector))
+        }
+    }
+
+    private func adjustBudget(sector: EconomicSector, delta: Int) {
+        var budget = game.sectorBudget
+        let current = budget[sector.rawValue] ?? Game.defaultAllocation(for: sector)
+        let newValue = max(0, min(50, current + delta))
+
+        // Check total won't exceed 100
+        let otherTotal = EconomicSector.allCases.reduce(0) { sum, s in
+            if s == sector { return sum }
+            return sum + (budget[s.rawValue] ?? Game.defaultAllocation(for: s))
+        }
+
+        guard otherTotal + newValue <= 100 else { return }
+
+        budget[sector.rawValue] = newValue
+        game.sectorBudget = budget
+    }
+}
+
+// MARK: - Sector Budget Row
+
+private struct SectorBudgetRow: View {
+    @Bindable var game: Game
+    let sector: EconomicSector
+    let onAdjust: (Int) -> Void
+    @Environment(\.theme) var theme
+
+    private var allocation: Int {
+        game.budgetAllocation(for: sector)
+    }
+
+    private var deviation: Int {
+        game.budgetDeviation(for: sector)
+    }
+
+    private var sectorOutput: Int {
+        game.sectorPerformance(for: sector).actualOutput
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // Sector icon and name
+            Image(systemName: sector.iconName)
+                .font(.system(size: 10))
+                .foregroundColor(theme.accentGold)
+                .frame(width: 16)
+
+            Text(sector.displayName)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(theme.inkBlack)
+                .frame(width: 90, alignment: .leading)
+                .lineLimit(1)
+
+            // Production indicator
+            Circle()
+                .fill(productionColor)
+                .frame(width: 6, height: 6)
+
+            Spacer()
+
+            // Projected effect
+            if deviation != 0 {
+                Text(projectedEffect)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundColor(deviation > 0 ? Color(hex: "2D5A27") : FiftiesColors.stampRed)
+                    .frame(width: 50, alignment: .trailing)
+            }
+
+            // Stepper controls
+            Button(action: { onAdjust(-2) }) {
+                Image(systemName: "minus")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(allocation <= 0 ? theme.inkLight : theme.inkBlack)
+                    .frame(width: 22, height: 22)
+                    .background(theme.parchment)
+                    .cornerRadius(4)
+            }
+            .disabled(allocation <= 0)
+
+            Text("\(allocation)%")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundColor(deviationColor)
+                .frame(width: 36, alignment: .center)
+
+            Button(action: { onAdjust(2) }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(allocation >= 50 ? theme.inkLight : theme.inkBlack)
+                    .frame(width: 22, height: 22)
+                    .background(theme.parchment)
+                    .cornerRadius(4)
+            }
+            .disabled(allocation >= 50)
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 4)
+    }
+
+    private var productionColor: Color {
+        switch sectorOutput {
+        case 70...: return Color(hex: "2D5A27")
+        case 40..<70: return theme.accentGold
+        default: return FiftiesColors.stampRed
+        }
+    }
+
+    private var deviationColor: Color {
+        if deviation > 0 { return Color(hex: "2D5A27") }
+        if deviation < 0 { return FiftiesColors.stampRed }
+        return theme.inkBlack
+    }
+
+    private var projectedEffect: String {
+        if deviation >= 10 { return "+inv +prod" }
+        if deviation > 0 { return "+inv" }
+        if deviation <= -10 { return "-inv -prod" }
+        if deviation < 0 { return "-inv" }
+        return ""
+    }
+}
+
+// MARK: - Debt & Financing Section
+
+private struct DebtFinancingSection: View {
+    @Bindable var game: Game
+    @Binding var showLoanSheet: Bool
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "banknote.fill")
+                    .foregroundColor(debtHeaderColor)
+                    .font(.system(size: 12))
+                Text("DEBT & FINANCING")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                if game.totalOutstandingDebt > 0 {
+                    Text("Debt/GDP: \(game.debtToGDPRatio)%")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(debtRatioColor)
+                }
+            }
+
+            VStack(spacing: 6) {
+                let activeLoans = game.foreignLoans.filter { !$0.isFullyPaid }
+
+                if activeLoans.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text("No outstanding foreign obligations")
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.inkLight)
+                            .italic()
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                } else {
+                    ForEach(activeLoans) { loan in
+                        ActiveLoanCard(loan: loan)
+                    }
+
+                    // Totals
+                    Divider()
+                        .background(theme.borderTan)
+
+                    HStack {
+                        Text("Total Debt Service")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.inkBlack)
+                        Spacer()
+                        Text("-\(game.totalDebtService)/turn")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(FiftiesColors.stampRed)
+                    }
+                    .padding(.horizontal, 4)
+                }
+
+                // Take New Loan button
+                if game.canTakeNewLoan {
+                    Button(action: { showLoanSheet = true }) {
+                        HStack {
+                            Image(systemName: "doc.text.fill")
+                                .font(.system(size: 11))
+                            Text("REQUEST FOREIGN FINANCING")
+                                .font(.system(size: 11, weight: .semibold))
+                                .tracking(0.5)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(FiftiesColors.leatherBrown)
+                        .cornerRadius(6)
+                    }
+                    .padding(.top, 4)
+                } else {
+                    Text("Maximum concurrent obligations reached (3/3)")
+                        .font(.system(size: 10))
+                        .foregroundColor(FiftiesColors.stampRed)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 4)
+                }
+            }
+            .padding(10)
+            .background(debtBackground)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(debtBorderColor, lineWidth: 1)
+            )
+        }
+    }
+
+    private var debtHeaderColor: Color {
+        game.totalOutstandingDebt > 0 ? FiftiesColors.stampRed : theme.accentGold
+    }
+
+    private var debtRatioColor: Color {
+        switch game.debtToGDPRatio {
+        case 50...: return FiftiesColors.stampRed
+        case 25..<50: return .orange
+        default: return Color(hex: "2D5A27")
+        }
+    }
+
+    private var debtBackground: Color {
+        if game.debtToGDPRatio >= 50 {
+            return FiftiesColors.stampRedDark.opacity(0.06)
+        } else if game.totalOutstandingDebt > 0 {
+            return FiftiesColors.leatherBrown.opacity(0.04)
+        }
+        return theme.parchmentDark
+    }
+
+    private var debtBorderColor: Color {
+        if game.debtToGDPRatio >= 50 {
+            return FiftiesColors.stampRed.opacity(0.3)
+        }
+        return theme.borderTan
+    }
+}
+
+// MARK: - Active Loan Card
+
+private struct ActiveLoanCard: View {
+    let loan: ForeignLoan
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(loan.lenderName.uppercased())
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(0.5)
+                    .foregroundColor(theme.inkBlack)
+                Spacer()
+                Text("\(loan.interestRate)% interest")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(FiftiesColors.stampRed)
+            }
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Remaining")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(theme.inkLight)
+                    Text("\(loan.remainingPrincipal)")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.inkBlack)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Per Turn")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(theme.inkLight)
+                    Text("-\(loan.paymentPerTurn)")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundColor(FiftiesColors.stampRed)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Turns Left")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(theme.inkLight)
+                    Text("\(loan.turnsRemaining)")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.accentGold)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Interest Paid")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(theme.inkLight)
+                    Text("\(loan.totalInterestPaid)")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(theme.inkGray)
+                }
+            }
+
+            // Repayment progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(theme.borderTan)
+                        .frame(height: 3)
+                    Rectangle()
+                        .fill(theme.accentGold)
+                        .frame(width: geo.size.width * repaymentProgress, height: 3)
+                }
+            }
+            .frame(height: 3)
+        }
+        .padding(8)
+        .background(FiftiesColors.cardstock.opacity(0.5))
+        .cornerRadius(4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(theme.borderTan, lineWidth: 0.5)
+        )
+    }
+
+    private var repaymentProgress: CGFloat {
+        guard loan.principalAmount > 0 else { return 0 }
+        return CGFloat(loan.principalAmount - loan.remainingPrincipal) / CGFloat(loan.principalAmount)
+    }
+}
+
+// MARK: - Budget Expense Section
+
+private struct BudgetExpenseSection: View {
+    let report: EconomyService.EconomicReport
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "arrow.up.circle.fill")
+                    .foregroundColor(FiftiesColors.stampRed)
+                    .font(.system(size: 12))
+                Text("EXPENSES")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                Text("-\(report.totalExpenses)")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(FiftiesColors.stampRed)
+            }
+
+            VStack(spacing: 4) {
+                ForEach(report.breakdown.filter { !$0.2 }, id: \.0) { label, value, _ in
+                    HStack {
+                        Text(label)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(theme.inkGray)
+                        Spacer()
+                        Text("\(value)")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(FiftiesColors.stampRed)
+                    }
+                }
+            }
+            .padding(10)
+            .background(theme.parchmentDark)
+            .cornerRadius(6)
+        }
+    }
+}
+
+// MARK: - Budget Net Balance Section
+
+private struct BudgetNetBalanceSection: View {
+    let report: EconomyService.EconomicReport
+    let treasury: Int
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+                .background(theme.accentGold)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("NET CHANGE PER TURN")
+                        .font(.system(size: 10, weight: .semibold))
+                        .tracking(0.5)
+                        .foregroundColor(theme.inkGray)
+                    Text(report.netChange >= 0 ? "+\(report.netChange)" : "\(report.netChange)")
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(report.netChange >= 0 ? Color(hex: "2D5A27") : FiftiesColors.stampRed)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("TREASURY")
+                        .font(.system(size: 10, weight: .semibold))
+                        .tracking(0.5)
+                        .foregroundColor(theme.inkGray)
+                    Text("\(treasury)")
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.accentGold)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(theme.parchmentDark)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(theme.accentGold.opacity(0.3), lineWidth: 1)
+            )
+        }
     }
 }
 
