@@ -403,6 +403,83 @@ extension TradeAgreement {
     }
 }
 
+// MARK: - Starter Agreements
+
+extension TradeAgreement {
+
+    /// Create the initial trade agreements that exist at game start (turn 0).
+    /// Returns agreements with Soviet Union, Czechoslovakia, and Poland.
+    static func createStarterAgreements(
+        countries: [ForeignCountry]
+    ) -> [TradeAgreement] {
+        var agreements: [TradeAgreement] = []
+
+        // 1. Basic Trade Agreement with the Soviet Union
+        if let soviet = countries.first(where: { $0.countryId == "soviet_union" }) {
+            let trade = TradeAgreement(
+                partnerId: soviet.countryId,
+                partnerName: soviet.name,
+                type: .basicTrade
+            )
+            trade.agreementName = "Soviet Trade Pact"
+            trade.agreementDescription = """
+                Foundational bilateral trade agreement with the Soviet Union, established \
+                at the birth of the People's Socialist Republic. Soviet machinery and raw \
+                materials flow in; agricultural goods and strategic minerals flow out.
+                """
+            trade.activate(on: 0)
+            trade.treasuryEffect = 2
+            trade.industrialEffect = 1
+            trade.relationshipEffect = 5
+            agreements.append(trade)
+        }
+
+        // 2. Technical Cooperation with Czechoslovakia
+        if let czech = countries.first(where: { $0.countryId == "czechoslovakia" }) {
+            let techCoop = TradeAgreement(
+                partnerId: czech.countryId,
+                partnerName: czech.name,
+                type: .technicalCooperation
+            )
+            techCoop.agreementName = "Czech Technical Exchange"
+            techCoop.agreementDescription = """
+                Technology transfer and industrial cooperation with Czechoslovakia. \
+                Czech engineers assist our factories while our specialists share \
+                advances in mining and metallurgy.
+                """
+            techCoop.durationTurns = 20
+            techCoop.activate(on: 0)
+            techCoop.industrialEffect = 1
+            techCoop.technologyEffect = 1
+            techCoop.relationshipEffect = 5
+            agreements.append(techCoop)
+        }
+
+        // 3. Oil Agreement with Poland (coal-for-oil barter)
+        if let poland = countries.first(where: { $0.countryId == "poland" }) {
+            let oil = TradeAgreement(
+                partnerId: poland.countryId,
+                partnerName: poland.name,
+                type: .oilDeal
+            )
+            oil.agreementName = "Polish Energy Accord"
+            oil.agreementDescription = """
+                Energy cooperation agreement with Poland. Polish coal supplements our \
+                domestic supply while we provide petroleum products at preferential \
+                rates, keeping both nations' factories running.
+                """
+            oil.durationTurns = 16
+            oil.activate(on: 0)
+            oil.treasuryEffect = 1
+            oil.industrialEffect = 1
+            oil.relationshipEffect = 5
+            agreements.append(oil)
+        }
+
+        return agreements
+    }
+}
+
 // MARK: - Sanctions
 
 enum SanctionType: String, Codable, CaseIterable {

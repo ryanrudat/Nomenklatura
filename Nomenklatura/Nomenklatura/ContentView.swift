@@ -341,6 +341,14 @@ struct ContentView: View {
             newGame.foreignCountries.append(country)
         }
 
+        // Seed starter trade agreements so the Trade view has data from turn 1
+        let starterAgreements = TradeAgreement.createStarterAgreements(countries: defaultCountries)
+        for agreement in starterAgreements {
+            modelContext.insert(agreement)
+            agreement.game = newGame
+            newGame.tradeAgreements.append(agreement)
+        }
+
         // Initialize policies for all bureaus/institutions
         PolicyService.shared.initializePolicies(for: newGame)
         for slot in newGame.policySlots {
