@@ -507,8 +507,8 @@ struct GameView: View {
                         }
                     case .codex:
                         CodexTerminalView(game: game)
-                    case .ladder:
-                        OrgChartView(game: game, ladder: campaignConfig.ladder, onWorldTap: { showingWorldSheet = true }, onCongressTap: { showingCongressSheet = true })
+                    case .economy:
+                        EconomicHubView(game: game)
                     }
                 }
 
@@ -541,7 +541,7 @@ struct GameView: View {
             SecurityPortalView(game: game)
         }
         .sheet(isPresented: $showingEconomicSheet) {
-            EconomicPortalView(game: game)
+            EconomicHubView(game: game)
         }
         .sheet(isPresented: $showingMilitarySheet) {
             MilitaryPortalView(game: game)
@@ -610,7 +610,7 @@ struct GameView: View {
                 onCongressTap: { showingCongressSheet = true },
                 onDossierTap: { selectedTab = .dossier },  // Navigate to Dossier from memo tray
                 onLedgerTap: { selectedTab = .ledger },    // Navigate to Ledger from stats
-                onLadderTap: { selectedTab = .ladder },    // Navigate to Ladder from standing
+                onLadderTap: { selectedTab = .economy },   // Navigate to Economy tab
                 onEndTurn: { transitionToStandingCommitteeOrDirective() }  // SC check → directives → personal action
             )
 

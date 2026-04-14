@@ -12,7 +12,7 @@ enum NavTab: String, CaseIterable {
     case ledger
     case dossier
     case codex
-    case ladder
+    case economy
 
     var title: String {
         switch self {
@@ -20,7 +20,7 @@ enum NavTab: String, CaseIterable {
         case .ledger: return "Ledger"
         case .dossier: return "Dossier"
         case .codex: return "Codex"
-        case .ladder: return "Ladder"
+        case .economy: return "Gosplan"
         }
     }
 
@@ -30,18 +30,18 @@ enum NavTab: String, CaseIterable {
         case .ledger: return "chart.bar.fill"
         case .dossier: return "person.fill"
         case .codex: return "text.bubble.fill"
-        case .ladder: return "ladder.fill"
+        case .economy: return "building.columns.fill"
         }
     }
 
-    // Fallback SF Symbol if ladder.fill isn't available
+    // Fallback SF Symbol
     var iconFallback: String {
         switch self {
         case .desk: return "doc.text.fill"
         case .ledger: return "chart.bar.fill"
         case .dossier: return "person.fill"
         case .codex: return "text.bubble.fill"
-        case .ladder: return "arrow.up.right.circle.fill"
+        case .economy: return "building.columns.fill"
         }
     }
 
@@ -52,7 +52,7 @@ enum NavTab: String, CaseIterable {
         case .ledger: return .ledger
         case .dossier: return .dossier
         case .codex: return .codex
-        case .ladder: return .ladder
+        case .economy: return .ladder
         }
     }
 }
