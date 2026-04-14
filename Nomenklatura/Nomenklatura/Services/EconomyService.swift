@@ -965,12 +965,24 @@ class EconomyService {
             // 4. Policy effects on specific sectors
             applySectorPolicyEffects(game: game, sector: sector, productionChange: &productionChange, efficiencyChange: &efficiencyChange)
 
-            // 5. Apply changes
+            // 5. Sector focus modifiers
+            let focus = game.activeFocus(for: sector)
+            if let focus {
+                productionChange += focus.sectorProductionModifier
+                moraleChange += focus.sectorMoraleModifier
+                efficiencyChange += focus.sectorEfficiencyModifier
+
+                if focus.treasuryCostPerTurn != 0 {
+                    game.applyStat("treasury", change: -focus.treasuryCostPerTurn)
+                }
+            }
+
+            // 6. Apply changes
             game.applySectorChange(sector, productionChange: productionChange, moraleChange: moraleChange, efficiencyChange: efficiencyChange)
 
-            // 6. Sector output affects national economy
+            // 7. Sector output affects national economy (shaped by active focus)
             let newPerf = game.sectorPerformance(for: sector)
-            applySectorToNationalEconomy(game: game, sector: sector, performance: newPerf)
+            applySectorToNationalEconomy(game: game, sector: sector, performance: newPerf, focus: focus)
         }
     }
 
@@ -1038,22 +1050,35 @@ class EconomyService {
         }
     }
 
-    /// Apply sector output to national economic indicators
-    private func applySectorToNationalEconomy(game: Game, sector: EconomicSector, performance: SectorPerformance) {
+    /// Apply sector output to national economic indicators, shaped by the active focus
+    private func applySectorToNationalEconomy(game: Game, sector: EconomicSector, performance: SectorPerformance, focus: SectorFocus? = nil) {
         let output = performance.actualOutput
 
-        // Strong sectors boost their primary stat
-        if output >= 70 {
-            game.applyStat(sector.primaryEffect, change: 1)
-        } else if output <= 30 {
-            game.applyStat(sector.primaryEffect, change: -1)
-        }
+        // Positive focus effects scale with output; negative effects always apply
+        if let focus {
+            for (stat, change) in focus.effects {
+                if change > 0 {
+                    if output >= 70 {
+                        game.applyStat(stat, change: change)
+                    } else if output >= 50 {
+                        game.applyStat(stat, change: max(1, change / 2))
+                    }
+                } else if change < 0 {
+                    game.applyStat(stat, change: change)
+                }
+            }
+        } else {
+            if output >= 70 {
+                game.applyStat(sector.primaryEffect, change: 1)
+            } else if output <= 30 {
+                game.applyStat(sector.primaryEffect, change: -1)
+            }
 
-        // Very strong/weak sectors affect secondary stat
-        if output >= 85 {
-            game.applyStat(sector.secondaryEffect, change: 1)
-        } else if output <= 20 {
-            game.applyStat(sector.secondaryEffect, change: -1)
+            if output >= 85 {
+                game.applyStat(sector.secondaryEffect, change: 1)
+            } else if output <= 20 {
+                game.applyStat(sector.secondaryEffect, change: -1)
+            }
         }
 
         // Sector collapse triggers crisis flag

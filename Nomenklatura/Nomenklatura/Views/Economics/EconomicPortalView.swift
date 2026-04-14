@@ -476,8 +476,9 @@ struct QuickStatBox: View {
 }
 
 struct SectorPerformanceCard: View {
-    let game: Game
+    @Bindable var game: Game
     @Environment(\.theme) var theme
+    @State private var selectedSector: EconomicSector?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -487,33 +488,29 @@ struct SectorPerformanceCard: View {
                 .foregroundColor(theme.inkGray)
 
             ForEach(EconomicSector.allCases, id: \.self) { sector in
-                SectorRow(sector: sector, performance: sectorPerformance(sector))
+                let perf = game.sectorPerformance(for: sector)
+                SectorRow(
+                    sector: sector,
+                    performance: perf.actualOutput,
+                    focusName: game.activeFocus(for: sector)?.name
+                )
+                .contentShape(Rectangle())
+                .onTapGesture { selectedSector = sector }
             }
         }
         .padding(12)
         .background(theme.parchmentDark)
         .cornerRadius(8)
-    }
-
-    private func sectorPerformance(_ sector: EconomicSector) -> Int {
-        let raw: Int
-        switch sector {
-        case .heavyIndustry: raw = game.industrialOutput
-        case .agriculture: raw = game.foodSupply
-        case .energy: raw = (game.industrialOutput + game.treasury) / 2
-        case .mining: raw = (game.industrialOutput * 2 + game.stability) / 3
-        case .construction: raw = (game.treasury + game.stability) / 2
-        case .transport: raw = (game.industrialOutput + game.foodSupply) / 2
-        case .defense: raw = game.militaryLoyalty
-        case .lightIndustry: raw = (game.industrialOutput + game.popularSupport) / 2
+        .sheet(item: $selectedSector) { sector in
+            SectorDetailView(game: game, sector: sector)
         }
-        return min(100, max(0, raw))
     }
 }
 
 struct SectorRow: View {
     let sector: EconomicSector
     let performance: Int
+    var focusName: String? = nil
     @Environment(\.theme) var theme
 
     var body: some View {
@@ -523,9 +520,16 @@ struct SectorRow: View {
                 .foregroundColor(theme.accentGold)
                 .frame(width: 20)
 
-            Text(sector.displayName)
-                .font(.system(size: 11))
-                .foregroundColor(theme.inkBlack)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(sector.displayName)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.inkBlack)
+                if let focusName {
+                    Text(focusName)
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(theme.inkGray)
+                }
+            }
 
             Spacer()
 
@@ -540,7 +544,7 @@ struct SectorRow: View {
                         .frame(width: geo.size.width * CGFloat(performance) / 100, height: 8)
                 }
             }
-            .frame(width: 80, height: 8)
+            .frame(width: 60, height: 8)
 
             Text("\(performance)%")
                 .font(.system(size: 10, weight: .bold))
