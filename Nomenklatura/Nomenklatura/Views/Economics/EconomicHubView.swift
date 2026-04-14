@@ -50,6 +50,7 @@ struct EconomicHubView: View {
 
     @State private var selectedSection: EconomicHubSection = .commandCenter
     @State private var showPropaganda: Bool = true
+    @State private var selectedSector: EconomicSector?
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
@@ -382,7 +383,12 @@ struct EconomicHubView: View {
             ForEach(EconomicSector.allCases, id: \.self) { sector in
                 SectorDetailCard(sector: sector, game: game)
                     .padding(.horizontal, 15)
+                    .contentShape(Rectangle())
+                    .onTapGesture { selectedSector = sector }
             }
+        }
+        .sheet(item: $selectedSector) { sector in
+            SectorDetailView(game: game, sector: sector)
         }
     }
 
@@ -439,7 +445,7 @@ struct EconomicHubView: View {
                     .padding(.vertical, 8)
             } else {
                 ForEach(activePartners.prefix(8), id: \.countryId) { country in
-                    TradePartnerRow(country: country)
+                    HubTradePartnerRow(country: country)
                 }
             }
         }
@@ -761,7 +767,7 @@ private struct SectorBar: View {
 
 // MARK: - Trade Partner Row
 
-private struct TradePartnerRow: View {
+private struct HubTradePartnerRow: View {
     let country: ForeignCountry
     @Environment(\.theme) var theme
 
