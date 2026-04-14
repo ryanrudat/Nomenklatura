@@ -597,29 +597,12 @@ struct TradeFlowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            AccessGatedView(
-                requirement: .economicDetails,
-                accessLevel: accessLevel
-            ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("TRADE FLOWS")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1)
-                        .foregroundColor(theme.inkGray)
-
-                    Text("Trade flow visualization would appear here showing imports, exports, and trade balance with each nation.")
-                        .font(theme.bodyFont)
-                        .foregroundColor(theme.inkBlack)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(8)
-                }
-            }
+        AccessGatedView(
+            requirement: .economicDetails,
+            accessLevel: accessLevel
+        ) {
+            TradeManagementView(game: game)
         }
-        .padding(.horizontal, 15)
-        .padding(.bottom, 120)
     }
 }
 
