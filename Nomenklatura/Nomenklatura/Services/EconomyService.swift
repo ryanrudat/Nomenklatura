@@ -824,9 +824,17 @@ class EconomyService {
         var balance = 0
         let playerSystem = game.currentEconomicSystem
         let playerOpenness = playerSystem.tradeOpenness
+        let tariff = game.currentTariffLevel
+        let embargoedIds = game.embargoedCountries
 
         for country in game.foreignCountries {
             var countryBalance = 0
+
+            // Embargoed countries: trade is cut, creates deficit from lost markets
+            if embargoedIds.contains(country.countryId) {
+                balance -= country.economicPower / 25
+                continue
+            }
 
             // Only count actual trading partners
             guard country.relationshipScore > -30 else {
@@ -856,6 +864,12 @@ class EconomyService {
             let averageOpenness = (playerOpenness + countryOpenness) / 2
             // Openness modifier: 0.5x at 0 openness, 1.0x at 50, 1.5x at 100
             countryBalance = countryBalance * (50 + averageOpenness) / 100
+
+            // Apply tariff effects: volume reduced but revenue per unit increases
+            // Net effect: tariffs shift balance based on volume vs revenue tradeoff
+            let volumeEffect = Int(Double(countryBalance) * tariff.volumeMultiplier)
+            let revenueBonus = max(0, Int(Double(max(0, countryBalance)) * (tariff.revenueMultiplier - 1.0)))
+            countryBalance = volumeEffect + revenueBonus
 
             balance += countryBalance
         }
