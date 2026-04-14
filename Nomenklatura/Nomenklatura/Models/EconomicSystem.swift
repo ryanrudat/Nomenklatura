@@ -132,6 +132,20 @@ enum EconomicSystemType: String, Codable, CaseIterable {
         }
     }
 
+    // MARK: - System Groups
+
+    /// Socialist-oriented economic systems (state-dominant)
+    static let socialistSystems: Set<EconomicSystemType> = [.commandEconomy, .marketSocialism]
+
+    /// Market-oriented economic systems
+    static let marketSystems: Set<EconomicSystemType> = [.mixedEconomy, .freeMarket, .cronyCapitalism]
+
+    /// Whether this system is socialist-oriented
+    var isSocialist: Bool { Self.socialistSystems.contains(self) }
+
+    /// Whether this system is market-oriented
+    var isMarket: Bool { Self.marketSystems.contains(self) }
+
     // MARK: - Era-Appropriate Institutions
 
     /// Key institutions for this economic type (1940s-60s appropriate)
