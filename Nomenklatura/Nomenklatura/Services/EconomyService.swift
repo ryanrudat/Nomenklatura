@@ -334,11 +334,17 @@ class EconomyService {
     }
 
     private func calculateDebtPayments(game: Game) -> Int {
-        // Check for debt flags
+        var debt = 0
+
+        // Legacy debt flags
         if game.flags.contains("soviet_debt") {
-            return max(3, game.treasury / 20)  // Scale with treasury
+            debt += 5  // Paying back USSR for revolution support
         }
-        return 0
+
+        // Foreign loan payments
+        debt += game.totalDebtService
+
+        return debt
     }
 
     private func calculateCrisisResponse(game: Game) -> Int {
@@ -553,6 +559,12 @@ class EconomyService {
 
         // 7. Apply sector production effects to national stats
         applySectorEffects(game: game)
+
+        // 7a. Apply per-sector budget allocation effects
+        applySectorBudgetEffects(game: game)
+
+        // 7b. Process foreign loan payments
+        processLoanPayments(game: game)
 
         // 8. Process regional economies (interoperability with national economy)
         processRegionalEconomies(game: game)
@@ -1597,6 +1609,142 @@ class EconomyService {
             }
         } else if game.flags.contains("global_boom") && averageGrowth < 2 {
             game.flags.removeAll { $0 == "global_boom" }
+        }
+    }
+
+    // MARK: - Per-Sector Budget Effects
+
+    /// Apply investment and production changes based on sector budget allocations
+    private func applySectorBudgetEffects(game: Game) {
+        let budget = game.sectorBudget
+
+        for sector in EconomicSector.allCases {
+            let allocation = budget[sector.rawValue] ?? Game.defaultAllocation(for: sector)
+            let defaultAlloc = Game.defaultAllocation(for: sector)
+            let deviation = allocation - defaultAlloc
+
+            var investmentChange = 0
+            var productionChange = 0
+
+            // Sectors above default get +2 investment per turn
+            if deviation > 0 {
+                investmentChange += 2
+            }
+            // Sectors below default get -2 investment per turn
+            if deviation < 0 {
+                investmentChange -= 2
+            }
+            // Large deviation (10%+) also affects production
+            if deviation >= 10 {
+                productionChange += 1
+            }
+            if deviation <= -10 {
+                productionChange -= 1
+            }
+
+            if investmentChange != 0 || productionChange != 0 {
+                game.applySectorChange(sector, productionChange: productionChange, investmentChange: investmentChange)
+            }
+        }
+    }
+
+    // MARK: - Foreign Loan Processing
+
+    /// Process loan payments, reducing principal and handling defaults
+    private func processLoanPayments(game: Game) {
+        var loans = game.foreignLoans
+        var defaulted = false
+
+        for i in loans.indices {
+            guard !loans[i].isFullyPaid else { continue }
+
+            let payment = loans[i].paymentPerTurn
+            let principalPortion = loans[i].principalPaymentPerTurn
+            let interestPortion = loans[i].interestPaymentPerTurn
+
+            if game.treasury >= payment / 5 {
+                // Can afford payment - deduct from treasury
+                game.applyStat("treasury", change: -payment)
+                loans[i].remainingPrincipal = max(0, loans[i].remainingPrincipal - principalPortion)
+                loans[i].totalInterestPaid += interestPortion
+            } else {
+                // Cannot afford - default on this loan
+                defaulted = true
+
+                #if DEBUG
+                print("[Economy] Defaulted on loan from \(loans[i].lenderName)")
+                #endif
+            }
+        }
+
+        // Remove fully paid loans
+        loans.removeAll { $0.isFullyPaid }
+        game.foreignLoans = loans
+
+        // Apply default penalties
+        if defaulted {
+            game.applyStat("stability", change: -3)
+
+            // Damage relationships with all lender countries (use local array, already saved above)
+            for loan in loans where !loan.isFullyPaid {
+                for country in game.foreignCountries where country.countryId == loan.lenderId {
+                    country.relationshipScore = max(-100, country.relationshipScore - 5)
+                }
+            }
+
+            if !game.flags.contains("debt_default") {
+                game.flags.append("debt_default")
+            }
+        } else {
+            // Clear default flag if no defaults this turn
+            game.flags.removeAll { $0 == "debt_default" }
+        }
+    }
+
+    /// Look up the effective relationship score for a loan source
+    private func lenderRelationship(game: Game, source: LoanSource) -> Int {
+        if let country = game.foreignCountries.first(where: { $0.countryId == source.lenderId }) {
+            return country.relationshipScore
+        }
+        // International institutions - use average western relationship
+        let western = game.foreignCountries.filter { $0.politicalBloc == .capitalist }
+        return western.isEmpty ? 0 : western.reduce(0) { $0 + $1.relationshipScore } / western.count
+    }
+
+    /// Take a new foreign loan, adding principal to treasury
+    func takeLoan(game: Game, source: LoanSource, amount: Int) {
+        let relationship = lenderRelationship(game: game, source: source)
+        let rate = source.interestRate(forRelationship: relationship)
+        let clampedAmount = max(5, min(amount, source.maxAmount))
+
+        let loan = ForeignLoan(
+            lenderId: source.lenderId,
+            lenderName: source.lenderName,
+            principalAmount: clampedAmount,
+            interestRate: rate,
+            turnTaken: game.turnNumber,
+            durationTurns: source.durationTurns
+        )
+
+        var loans = game.foreignLoans
+        loans.append(loan)
+        game.foreignLoans = loans
+
+        // Immediately add principal to treasury
+        game.applyStat("treasury", change: clampedAmount)
+
+        #if DEBUG
+        print("[Economy] Took loan of \(clampedAmount) from \(source.lenderName) at \(rate)% interest")
+        #endif
+    }
+
+    /// Get available loan sources for the player based on current relationships
+    func availableLoanSources(game: Game) -> [(source: LoanSource, relationship: Int, available: Bool)] {
+        let hasCapacity = game.canTakeNewLoan
+        return LoanSource.allSources.map { source in
+            let relationship = lenderRelationship(game: game, source: source)
+            let meetsRelationship = relationship >= source.requiredRelationship
+            return (source, relationship, meetsRelationship && hasCapacity)
         }
     }
 }

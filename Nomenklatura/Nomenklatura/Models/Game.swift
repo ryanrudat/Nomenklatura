@@ -154,6 +154,12 @@ final class Game {
     var lastEconomicReport: Data?  // Encoded EconomicReport from EconomyService
     var budgetPrioritiesData: Data?  // Encoded [String: Int] budget allocation percentages
 
+    // Per-Sector Budget Allocation (encoded [String: Int] mapping EconomicSector.rawValue -> %)
+    var sectorBudgetData: Data?
+
+    // Foreign Loans (encoded [ForeignLoan])
+    var foreignLoansData: Data?
+
     // Economic Macro Indicators (1940s-60s era)
     var gdpIndex: Int = 100                    // National Product index (base 100)
     var inflationRate: Int = 5                 // Annual percentage (0-100+)
@@ -2416,6 +2422,90 @@ extension Game {
             focuses[sector.rawValue] = SectorFocus.defaultFocusId(for: sector)
         }
         return focuses
+    }
+
+    // MARK: - Per-Sector Budget Allocation
+
+    /// Default budget allocations by sector (must sum to 100)
+    static let defaultSectorBudget: [String: Int] = [
+        EconomicSector.heavyIndustry.rawValue: 20,
+        EconomicSector.agriculture.rawValue: 15,
+        EconomicSector.lightIndustry.rawValue: 10,
+        EconomicSector.energy.rawValue: 12,
+        EconomicSector.mining.rawValue: 8,
+        EconomicSector.construction.rawValue: 10,
+        EconomicSector.transport.rawValue: 8,
+        EconomicSector.defense.rawValue: 17
+    ]
+
+    /// Current sector budget allocations (rawValue -> percentage)
+    var sectorBudget: [String: Int] {
+        get {
+            guard let data = sectorBudgetData else { return Self.defaultSectorBudget }
+            return (try? JSONDecoder().decode([String: Int].self, from: data)) ?? Self.defaultSectorBudget
+        }
+        set {
+            sectorBudgetData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Get budget allocation for a specific sector
+    func budgetAllocation(for sector: EconomicSector) -> Int {
+        sectorBudget[sector.rawValue] ?? Self.defaultSectorBudget[sector.rawValue] ?? 0
+    }
+
+    /// Default allocation for a specific sector
+    static func defaultAllocation(for sector: EconomicSector) -> Int {
+        defaultSectorBudget[sector.rawValue] ?? 0
+    }
+
+    /// Difference between current allocation and default for a sector
+    func budgetDeviation(for sector: EconomicSector) -> Int {
+        budgetAllocation(for: sector) - Self.defaultAllocation(for: sector)
+    }
+
+    // MARK: - Foreign Loans
+
+    /// Active foreign loans
+    var foreignLoans: [ForeignLoan] {
+        get {
+            guard let data = foreignLoansData else { return [] }
+            return (try? JSONDecoder().decode([ForeignLoan].self, from: data)) ?? []
+        }
+        set {
+            foreignLoansData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Active (not fully paid) loans -- single decode for all derived properties
+    var activeLoans: [ForeignLoan] {
+        foreignLoans.filter { !$0.isFullyPaid }
+    }
+
+    /// Total debt service per turn (sum of all loan payments)
+    var totalDebtService: Int {
+        activeLoans.reduce(0) { $0 + $1.paymentPerTurn }
+    }
+
+    /// Total outstanding debt (sum of remaining principals)
+    var totalOutstandingDebt: Int {
+        activeLoans.reduce(0) { $0 + $1.remainingPrincipal }
+    }
+
+    /// Number of active (not fully paid) loans
+    var activeLoanCount: Int {
+        activeLoans.count
+    }
+
+    /// Whether the player can take another loan (max 3 concurrent)
+    var canTakeNewLoan: Bool {
+        activeLoanCount < 3
+    }
+
+    /// Debt-to-GDP ratio (0-100+ scale)
+    var debtToGDPRatio: Int {
+        guard gdpIndex > 0 else { return 0 }
+        return totalOutstandingDebt * 100 / (gdpIndex * 10)
     }
 
     /// Record all economic indicators to history (call once per turn)

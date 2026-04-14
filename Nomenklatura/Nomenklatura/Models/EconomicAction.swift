@@ -1120,3 +1120,160 @@ extension EconomicAction {
         allActions.filter { $0.category == category }
     }
 }
+
+// MARK: - Foreign Loan
+
+/// A foreign loan taken from another country or international institution
+struct ForeignLoan: Codable, Identifiable {
+    let id: UUID
+    let lenderId: String        // Country ID or "imf"/"world_bank"
+    let lenderName: String
+    let principalAmount: Int    // Original loan amount (treasury boost)
+    let interestRate: Int       // % per turn (2-8%)
+    let turnTaken: Int
+    let durationTurns: Int      // Repayment period
+    var remainingPrincipal: Int // Decreases as you pay
+    var totalInterestPaid: Int  // Running total
+
+    var paymentPerTurn: Int {
+        let interest = remainingPrincipal * interestRate / 100
+        let principalPayment = principalAmount / durationTurns
+        return interest + principalPayment
+    }
+
+    var principalPaymentPerTurn: Int {
+        principalAmount / durationTurns
+    }
+
+    var interestPaymentPerTurn: Int {
+        remainingPrincipal * interestRate / 100
+    }
+
+    var isFullyPaid: Bool { remainingPrincipal <= 0 }
+
+    var turnsRemaining: Int {
+        guard principalPaymentPerTurn > 0 else { return 0 }
+        return max(0, (remainingPrincipal + principalPaymentPerTurn - 1) / principalPaymentPerTurn)
+    }
+
+    init(lenderId: String, lenderName: String, principalAmount: Int, interestRate: Int, turnTaken: Int, durationTurns: Int) {
+        self.id = UUID()
+        self.lenderId = lenderId
+        self.lenderName = lenderName
+        self.principalAmount = principalAmount
+        self.interestRate = interestRate
+        self.turnTaken = turnTaken
+        self.durationTurns = durationTurns
+        self.remainingPrincipal = principalAmount
+        self.totalInterestPaid = 0
+    }
+}
+
+// MARK: - Loan Source
+
+/// Available loan sources with their terms and conditions
+struct LoanSource: Identifiable {
+    let id: String
+    let lenderId: String
+    let lenderName: String
+    let category: LoanCategory
+    let minInterestRate: Int
+    let maxInterestRate: Int
+    let maxAmount: Int
+    let durationTurns: Int
+    let requiredRelationship: Int    // Minimum relationship score needed
+    let conditions: [String]         // Human-readable conditions
+
+    enum LoanCategory: String {
+        case socialist      // Low interest, few conditions
+        case western        // Medium interest, economic conditions
+        case institutional  // Higher interest, strict conditions
+    }
+
+    /// Calculate actual interest rate based on relationship
+    func interestRate(forRelationship relationship: Int) -> Int {
+        let range = maxInterestRate - minInterestRate
+        let relationshipFactor = max(0, min(100, relationship + 100)) // Normalize -100..100 to 0..200
+        let reduction = range * relationshipFactor / 200
+        return max(minInterestRate, maxInterestRate - reduction)
+    }
+
+    /// All available loan sources
+    static let allSources: [LoanSource] = [
+        // Socialist bloc
+        LoanSource(
+            id: "ussr_loan",
+            lenderId: "soviet_union",
+            lenderName: "Soviet Union",
+            category: .socialist,
+            minInterestRate: 2,
+            maxInterestRate: 3,
+            maxAmount: 30,
+            durationTurns: 20,
+            requiredRelationship: 20,
+            conditions: ["Maintain socialist economic system"]
+        ),
+        LoanSource(
+            id: "china_loan",
+            lenderId: "china",
+            lenderName: "People's Republic of China",
+            category: .socialist,
+            minInterestRate: 2,
+            maxInterestRate: 4,
+            maxAmount: 20,
+            durationTurns: 16,
+            requiredRelationship: 20,
+            conditions: ["Fraternal socialist solidarity"]
+        ),
+        // Western countries
+        LoanSource(
+            id: "usa_loan",
+            lenderId: "usa",
+            lenderName: "United States",
+            category: .western,
+            minInterestRate: 4,
+            maxInterestRate: 5,
+            maxAmount: 40,
+            durationTurns: 12,
+            requiredRelationship: 0,
+            conditions: ["Permit licensed businesses", "Open foreign trade"]
+        ),
+        LoanSource(
+            id: "uk_loan",
+            lenderId: "uk",
+            lenderName: "United Kingdom",
+            category: .western,
+            minInterestRate: 4,
+            maxInterestRate: 5,
+            maxAmount: 25,
+            durationTurns: 12,
+            requiredRelationship: 0,
+            conditions: ["Permit licensed businesses"]
+        ),
+        // International institutions
+        LoanSource(
+            id: "imf_loan",
+            lenderId: "imf",
+            lenderName: "International Monetary Fund",
+            category: .institutional,
+            minInterestRate: 5,
+            maxInterestRate: 8,
+            maxAmount: 50,
+            durationTurns: 16,
+            requiredRelationship: -50,
+            conditions: ["Market reforms required", "Austerity measures", "Quarterly reporting"]
+        ),
+        LoanSource(
+            id: "world_bank_loan",
+            lenderId: "world_bank",
+            lenderName: "World Bank",
+            category: .institutional,
+            minInterestRate: 5,
+            maxInterestRate: 7,
+            maxAmount: 35,
+            durationTurns: 20,
+            requiredRelationship: -30,
+            conditions: ["Infrastructure investment mandate", "Transparency requirements"]
+        )
+    ]
+}
