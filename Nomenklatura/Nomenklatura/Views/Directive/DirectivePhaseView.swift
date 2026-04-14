@@ -756,6 +756,16 @@ struct DirectivePhaseView: View {
         // Spend directive point if operation was initiated
         if result.operationInitiated {
             game.directivePoints -= 1
+
+            // Apply track affinity for bureau directive
+            if let directiveTrack = task.bureau {
+                game.addTrackAffinity(
+                    track: directiveTrack,
+                    amount: 3,
+                    source: .personalAction,
+                    description: "Issued directive: \(task.name)"
+                )
+            }
         }
 
         // Show result

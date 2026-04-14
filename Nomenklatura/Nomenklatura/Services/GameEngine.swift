@@ -105,6 +105,27 @@ class GameEngine {
             default:
                 break
             }
+
+            // Apply track affinity for personal action category
+            let actionTrack: ExpandedCareerTrack? = {
+                switch action.category {
+                case .purgeEnemies: return .securityServices
+                case .undermineRivals: return .securityServices
+                case .controlInformation: return .partyApparatus
+                case .securePosition: return .partyApparatus
+                case .cultivateSuccessor: return .partyApparatus
+                case .consolidatePower: return .stateMinistry
+                case .buildNetwork, .makeYourPlay: return nil
+                }
+            }()
+            if let actionTrack = actionTrack {
+                game.addTrackAffinity(
+                    track: actionTrack,
+                    amount: 2,
+                    source: .personalAction,
+                    description: "Personal action: \(action.title)"
+                )
+            }
         }
 
         // Log the event
