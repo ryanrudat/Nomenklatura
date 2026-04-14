@@ -362,6 +362,9 @@ struct ContentView: View {
         // Record initial stats for sparkline history (so graphs have a starting point)
         newGame.recordAllStatHistory()
 
+        // Generate Turn 0 economic report so the economy view has data from game start
+        EconomyService.shared.snapshotEconomicReport(game: newGame)
+
         // Generate initial Codex messages (welcome message from patron)
         Task {
             await CodexService.shared.generateMessagesForTurn(game: newGame, context: modelContext)
