@@ -12,6 +12,7 @@ struct ActionCardView: View {
     let isAvailable: Bool
     var lockReason: String? = nil
     var game: Game? = nil  // Optional game context for dynamic flavor text
+    var urgentCrisis: Crisis? = nil  // Active crisis this action addresses
     let onSelect: () -> Void
     @Environment(\.theme) var theme
 
@@ -55,6 +56,19 @@ struct ActionCardView: View {
                         .font(theme.bodyFontSmall)
                         .fontWeight(.medium)
                         .foregroundColor(showAsLocked ? Color(hex: "666666") : theme.schemeText)
+
+                    Spacer()
+
+                    if !showAsLocked, let crisis = urgentCrisis {
+                        Text(crisis.label)
+                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                            .tracking(0.5)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.statLow)
+                            .cornerRadius(2)
+                    }
                 }
 
                 // Flavor text - atmospheric description
@@ -113,7 +127,12 @@ struct ActionCardView: View {
             .background(theme.schemeCard)
             .overlay(
                 Rectangle()
-                    .stroke(showAsLocked ? theme.schemeBorder.opacity(0.5) : theme.schemeBorder, lineWidth: 1)
+                    .stroke(
+                        !showAsLocked && urgentCrisis != nil
+                            ? Color.statLow.opacity(0.6)
+                            : (showAsLocked ? theme.schemeBorder.opacity(0.5) : theme.schemeBorder),
+                        lineWidth: !showAsLocked && urgentCrisis != nil ? 1.5 : 1
+                    )
             )
             .opacity(showAsLocked ? 0.6 : 1.0)
         }

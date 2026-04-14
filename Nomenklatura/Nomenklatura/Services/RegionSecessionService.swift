@@ -327,12 +327,20 @@ class RegionSecessionService {
     // MARK: - Event Generation
 
     /// Generate regional events based on conditions
+    /// Rate-limited: max 1 regional crisis event per turn, with per-region cooldowns
     func generateRegionalEvents(for game: Game) -> [RegionalCrisisEvent] {
         var events: [RegionalCrisisEvent] = []
 
         for region in game.regions {
             // Skip stable regions usually
             if region.status == .stable && Int.random(in: 1...10) > 2 {
+                continue
+            }
+
+            // Per-region cooldown: skip if this region had an event within last 3 turns
+            let cooldownKey = "regional_event_cooldown_\(region.regionId)"
+            let lastEventTurn = game.intVariable(cooldownKey)
+            if lastEventTurn > 0 && (game.turnNumber - lastEventTurn) < 3 {
                 continue
             }
 
@@ -343,36 +351,53 @@ class RegionSecessionService {
             // Generate appropriate event type
             if let event = generateEvent(for: region, game: game) {
                 events.append(event)
+                game.setIntVariable(cooldownKey, game.turnNumber)
             }
+        }
+
+        // Cap at 1 regional event per turn to prevent overwhelming the player
+        if events.count > 1 {
+            // Keep the most severe event
+            events.sort { severity($0) > severity($1) }
+            return Array(events.prefix(1))
         }
 
         return events
     }
 
+    private func severity(_ event: RegionalCrisisEvent) -> Int {
+        switch event.eventType {
+        case .secessionMovement, .borderIncident, .militaryMutiny: return 5
+        case .ethnicTension, .sabotage: return 4
+        case .demonstration, .laborStrike: return 3
+        default: return 2
+        }
+    }
+
     private func calculateEventChance(region: Region, game: Game) -> Int {
-        var chance = 10 // Base chance
+        var chance = 5 // Reduced base chance (was 10)
 
-        // Status-based
+        // Status-based — reduced from original values
         switch region.status {
-        case .stable: chance += 5
-        case .unrest: chance += 20
-        case .crisis: chance += 35
-        case .rebellion: chance += 50
-        case .seceding: chance += 40
-        case .seceded: chance = 0 // No longer part of nation
-        case .martial: chance += 15
+        case .stable: chance += 2
+        case .unrest: chance += 10
+        case .crisis: chance += 20
+        case .rebellion: chance += 35
+        case .seceding: chance += 30
+        case .seceded: chance = 0
+        case .martial: chance += 8
         }
 
-        // Instability factors
-        chance += (100 - region.partyControl) / 5
-        chance += region.autonomyDesire / 5
+        // Instability factors — halved
+        chance += (100 - region.partyControl) / 10
+        chance += region.autonomyDesire / 10
 
-        // National crisis increases regional events
-        if game.stability < 40 {
-            chance += 15
+        // National crisis increases regional events — reduced
+        if game.stability < 30 {
+            chance += 10
         }
 
-        return min(80, chance)
+        return min(60, chance)
     }
 
     private func generateEvent(for region: Region, game: Game) -> RegionalCrisisEvent? {

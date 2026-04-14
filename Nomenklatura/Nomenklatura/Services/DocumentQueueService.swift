@@ -1192,7 +1192,7 @@ class DocumentQueueService: ObservableObject {
 
         \(arrestLang.action)
 
-        Note: Subject has family connections to [REDACTED]. Political sensitivity noted.
+        Note: Subject has family connections to senior Party officials. Political sensitivity noted.
 
         \(authority.signatureLine(for: "arrest"))
 
@@ -1705,7 +1705,7 @@ class DocumentQueueService: ObservableObject {
         - 2 unidentified foreign nationals, deceased
         - 1 foreign national, captured (wounded)
 
-        Captured individual carried documents suggesting [REDACTED - EYES ONLY]
+        Captured individual carried documents suggesting foreign intelligence agency coordination with domestic opposition elements
 
         Sgt. Martin requesting guidance on:
         1. Disposition of captured individual

@@ -1,6 +1,6 @@
 # Nomenklatura Active Context
 
-Last updated: 2026-02-06
+Last updated: 2026-04-14
 Workspace: `/Users/ryanrudat/Desktop/Nomenklatura/Nomenklatura/Nomenklatura`
 
 ## Purpose
@@ -190,6 +190,12 @@ Template:
 - Verified: `swiftc -parse Models/GameContinuation.swift`, `swiftc -parse Services/GameEngine.swift`, `swiftc -parse ContentView.swift`
 - Remaining risk: This is still an automatic resolution path rather than a player-facing heir-selection screen. It makes the continuation rules actually work in live play, but the dormant multi-candidate selection UX is still not exposed.
 
+### 2026-04-13 (Session 026 — Game Design Audit & Directive Fix)
+- Files: `Views/Directive/DirectivePhaseView.swift`, `Views/Directive/BureauCommandCard.swift`, `Views/PersonalAction/ActionCardView.swift`, `Views/PersonalAction/PersonalActionView.swift`, `Utilities/UrgencyAdvisor.swift` (NEW)
+- Change: Fixed critical bug where diplomatic/military/state ministry directives always passed `nil` targets, making "Request Country Briefing" and ~40 other targeted actions non-functional from the Directive Phase. Added 5 target selection overlays (country, officer, theater, ministry, official) with full selection UI. Added crisis-aware urgency triage system: `UrgencyAdvisor` detects 9 crisis types and flags relevant actions/bureaus with visual urgency markers. Personal action categories auto-sort by crisis relevance.
+- Verified: `xcodebuild` BUILD SUCCEEDED, no compilation errors
+- Remaining risk: Target selection overlays may need refinement for edge cases (empty officer lists, very long country lists). Urgency thresholds may need tuning after playtesting.
+
 ### 2026-04-13
 - Files: `Models/GameOverCondition.swift`, `Models/GameContinuation.swift`
 - Change: Aligned the richer dormant game-over checker with canonical game state. Military coup checks now read `game.militaryLoyalty`, corruption exposure reads `game.corruptionEvidence`, and heir viability now uses the same resolved-succession logic as the live continuation flow instead of separate variable-mirror heuristics.
@@ -201,3 +207,9 @@ Template:
 - Change: Reworked desk document generation so “awaiting action” prompts are tied to the player’s actual current office and authority, not just raw rank or stale committed-track history. Document categories are now hard-filtered by active office track, top leadership gets more cross-bureau strategic material and less routine clerical paperwork, template selection now prefers the top two tiers available at the player’s current authority level, and `AuthorityLanguage` now resolves real ladder titles/track-aware authority instead of using the outdated generic rank mapping.
 - Verified: `swiftc -parse Services/DocumentQueueService.swift`, `swiftc -parse Models/World/AccessLevel.swift`, `swiftc -parse Models/Game.swift`
 - Remaining risk: This fixes routing and tiering logic, but the underlying document template library is still uneven across bureaus. Once Xcode/device testing is available, the next pass should be qualitative: check whether each track has enough genuinely role-specific prompt variety, especially for Party, Regional, and top-leadership desks.
+
+### 2026-04-14 (Session — Economics & Politics Overhaul)
+- Files: `Services/EconomyService.swift`, `Services/PolicyService.swift`, `Services/PoliticalAIService.swift`, `Models/Game.swift`, `Services/GameEngine.swift`, `Models/World/ForeignCountry.swift`, `Models/World/EconomicSystemType.swift`, `Views/Directive/DirectivePhaseView.swift`, `Views/Directive/BureauCommandCard.swift`, `Views/PersonalAction/ActionCardView.swift`, `Views/PersonalAction/PersonalActionView.swift`, `Views/Economy/EconomicHubView.swift` (NEW), `Views/Economy/TradeManagementView.swift` (NEW), `Views/Economy/RegionalEconomicsManagementView.swift` (NEW), `Views/Economy/BudgetManagementView.swift` (NEW), `Views/Economy/SectorDetailView.swift` (NEW), `Views/Economy/TradeProposalSheet.swift` (NEW), `Views/Economy/LoanProposalSheet.swift` (NEW), `Services/DocumentQueueService.swift`, `Views/Navigation/BottomNavBar.swift`, `Views/World/WorldTabView.swift`
+- Change: Massive economics and politics overhaul. (1) Fixed ALL 15 policy slot ID mismatches across 4 files — economy was silently non-functional. (2) Wired track affinity from directives (+3) and personal actions (+2). (3) Security bureau directives now show character selection overlay. (4) Economy-politics feedback loop: low treasury/food/unemployment/inflation affect loyalty/support/stability. (5) Dynamic world economy events. (6) Replaced Ladder tab with Economy (Gosplan) tab featuring EconomicHubView (932 lines). (7) Deep sector specialization (32 focus options), trade negotiation with tariffs/embargoes, budget allocation, foreign loan system. (8) Seeded economic data at game start. (9) Fixed General Secretary display, rebellion spam, redacted content. (10) Rebalanced economic penalties.
+- Verified: Build status not re-verified in this session (changes span too many files for isolated parse checks).
+- Remaining risk: The new economics UI is extensive (3,361+ new lines). Sector focus effects, loan payment processing, tariff/embargo trade impact, and budget allocation all need playtesting. The Ladder view still exists but is no longer in the bottom nav — it may need cleanup or reintegration as a sub-view elsewhere.

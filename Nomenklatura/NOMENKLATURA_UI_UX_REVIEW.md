@@ -20,7 +20,7 @@
 7. [Tab 2: The Ledger](#7-tab-2-the-ledger)
 8. [Tab 3: The Dossier](#8-tab-3-the-dossier)
 9. [Tab 4: The Codex](#9-tab-4-the-codex)
-10. [Tab 5: The Ladder](#10-tab-5-the-ladder)
+10. [Tab 5: The Economy (Gosplan)](#10-tab-5-the-economy-gosplan)
 11. [Modal Portals](#11-modal-portals)
 12. [Game Phase Screens](#12-game-phase-screens)
 13. [Overlay & Toast System](#13-overlay--toast-system)
@@ -275,7 +275,7 @@ Stat Low:          #C62828 (Red - values below 40)
 | Ledger | chart.bar.fill | National statistics dashboard |
 | Dossier | person.fill | Character profiles & intelligence |
 | Codex | book.fill | Game lore encyclopedia |
-| Ladder | arrow.up.right.circle.fill | Career progression & org chart |
+| Economy | building.columns.fill | Gosplan economics hub (replaced Ladder tab 2026-04-14) |
 
 ---
 
@@ -375,7 +375,7 @@ The Desk is the primary gameplay interface where players make decisions that sha
 └──────────────┴──────────────┴──────────────┴──────────────┘
 ```
 - Each stat is tappable:
-  - Standing → Navigate to Ladder tab
+  - Standing → Navigate to Ladder view (no longer in bottom nav; accessible from Ledger)
   - Network → Navigate to Dossier tab
   - Patron Favor → Open Patron character sheet
   - Rival Threat → Open Rival character sheet
@@ -878,12 +878,16 @@ The Codex is an in-game encyclopedia containing lore, terminology, and backgroun
 
 ---
 
-## 10. TAB 5: THE LADDER
+## 10. TAB 5: THE ECONOMY (GOSPLAN)
+
+> **Note (2026-04-14):** The Ladder tab was replaced by the Economy (Gosplan) tab. The Ladder/OrgChart view still exists in code but is no longer in the bottom navigation. The Economy tab uses `EconomicHubView.swift` (932 lines) with 6 sections: Command Center, Sectors, Trade, Regions, Budget, Planning. Position-gated tabs with propaganda/reality data toggle.
+
+**Previous implementation (Ladder):**
 
 **File:** `OrgChartView.swift`
 
-### Overview
-The Ladder displays the organizational hierarchy of the Party, showing all positions from entry-level to General Secretary, with the player's current position and career path highlighted.
+### Overview (Ladder - archived)
+The Ladder displayed the organizational hierarchy of the Party, showing all positions from entry-level to General Secretary, with the player's current position and career path highlighted.
 
 ### Screen Layout
 
@@ -1122,10 +1126,33 @@ Displayed after a decision is made, showing consequences.
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 12.2 Personal Action View
+### 12.2 Bureau Directive Phase View
+**File:** `DirectivePhaseView.swift`
+
+Displayed before the Personal Action Phase. The General Secretary issues orders to 6 government bureaus.
+
+**Layout:**
+- Gold/parchment header: "BUREAU DIRECTIVES - ISSUE ORDERS TO YOUR GOVERNMENT APPARATUS"
+- Directive points bar (2 seal icons showing remaining orders)
+- 6 collapsible bureau cards (Security, Party, Economic, Military, Foreign Affairs, State Ministry)
+- Each card shows: bureau emblem, head name/loyalty, active ops count, available task count
+- Expanding a card reveals available directive tasks with risk badges
+
+**Target Selection System (added 2026-04-13):**
+When a directive requires a target (e.g., "Request Country Briefing" needs a country), a themed selection overlay appears:
+- Country selection: sorted list with bloc color dots, relationship status, success chance %
+- Officer selection: military-track characters with disposition scores
+- Theater selection: 5 PLA theater commands with strategic focus descriptions
+- Ministry selection: 15 government departments with icons and commission badges
+- Official selection: state ministry-track characters with disposition scores
+
+**Urgency System (added 2026-04-13):**
+Bureau cards show red crisis badges (e.g., "LOW STABILITY", "RIVAL THREAT") when that bureau is relevant to an active crisis detected by `UrgencyAdvisor`.
+
+### 12.3 Personal Action View
 **File:** `PersonalActionView.swift`
 
-Displayed after the outcome, allowing player to take personal actions.
+Displayed after the directive phase, allowing player to take personal actions.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -1134,7 +1161,12 @@ Displayed after the outcome, allowing player to take personal actions.
 │                  Personal Action Phase                           │
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │  ACTION POINTS: ●● (2 remaining)                         │   │
+│  │  ACTION POINTS: ●●● (3 remaining)                        │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  ⚠ ACTIVE CRISES            PRIORITIZE ACTIONS BELOW   │   │
+│  │  [LOW STABILITY] [RIVAL THREAT]                          │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────┐   │
@@ -1459,14 +1491,22 @@ Views/
 │   ├── CharacterCardView.swift
 │   ├── DossierView.swift
 │   └── FallenCharactersView.swift
-├── Economics/
+├── Economy/                                    # Gosplan tab (replaced Ladder in nav, 2026-04-14)
+│   ├── EconomicHubView.swift                   # Unified dashboard (932 lines)
+│   ├── SectorDetailView.swift                  # Sector focus specialization
+│   ├── TradeManagementView.swift               # Trade partners & agreements
+│   ├── TradeProposalSheet.swift                # Interactive deal builder
+│   ├── RegionalEconomicsManagementView.swift   # 7 regions
+│   ├── BudgetManagementView.swift              # Income/expense/allocation
+│   └── LoanProposalSheet.swift                 # Foreign loan applications
+├── Economics/                                  # (Legacy views, partially merged into Economy/)
 │   ├── EconomicDashboardView.swift
 │   └── EconomicPortalView.swift
 ├── Embassy/
 │   └── EmbassyPortalView.swift
 ├── GameOver/
 │   └── GameOverView.swift
-├── Ladder/
+├── Ladder/                                     # (No longer in bottom nav, still exists in code)
 │   ├── BureauCard.swift
 │   ├── BureauGridView.swift
 │   ├── CareerBranchView.swift

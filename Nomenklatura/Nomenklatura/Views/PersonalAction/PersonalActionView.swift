@@ -24,8 +24,15 @@ struct PersonalActionView: View {
         Dictionary(grouping: actions) { $0.category }
     }
 
+    private var activeCrises: [Crisis] {
+        UrgencyAdvisor.detectCrises(game: game)
+    }
+
     private var sortedCategories: [PersonalActionCategory] {
-        PersonalActionCategory.allCases.sorted { $0.order < $1.order }
+        let base = PersonalActionCategory.allCases.sorted { $0.order < $1.order }
+        let crises = activeCrises
+        if crises.isEmpty { return base }
+        return UrgencyAdvisor.sortedCategories(base, crises: crises)
     }
 
     /// Atmospheric text based on game state
@@ -56,6 +63,13 @@ struct PersonalActionView: View {
                 // Scrollable content
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Crisis alert banner if crises active
+                        if !activeCrises.isEmpty {
+                            CrisisAlertBanner(crises: activeCrises)
+                                .padding(.horizontal, 15)
+                                .padding(.top, 10)
+                        }
+
                         // Atmosphere card - sets the mood
                         AtmosphereCard(
                             atmosphere: atmosphereText,
@@ -94,7 +108,8 @@ struct PersonalActionView: View {
                                             action: action,
                                             isAvailable: availability.available && canAfford && !alreadyUsed,
                                             lockReason: alreadyUsed ? "Already performed this turn" : (!availability.available ? availability.reason : (!canAfford ? "Not enough AP" : nil)),
-                                            game: game
+                                            game: game,
+                                            urgentCrisis: UrgencyAdvisor.isUrgent(action: action, crises: activeCrises)
                                         ) {
                                             performAction(action)
                                         }
@@ -150,6 +165,53 @@ struct PersonalActionView: View {
                 showNextTurnButton = true
             }
         }
+    }
+}
+
+// MARK: - Crisis Alert Banner
+
+struct CrisisAlertBanner: View {
+    let crises: [Crisis]
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(.statLow)
+
+                Text("ACTIVE CRISES")
+                    .font(.system(size: 10, weight: .black, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(.statLow)
+
+                Spacer()
+
+                Text("PRIORITIZE ACTIONS BELOW")
+                    .font(.system(size: 7, weight: .medium, design: .monospaced))
+                    .foregroundColor(theme.schemeText.opacity(0.5))
+            }
+
+            HStack(spacing: 6) {
+                ForEach(crises) { crisis in
+                    Text(crisis.label)
+                        .font(.system(size: 7, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.statLow.opacity(0.8))
+                        .cornerRadius(2)
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.statLow.opacity(0.08))
+        .overlay(
+            Rectangle()
+                .stroke(Color.statLow.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 

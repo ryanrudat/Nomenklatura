@@ -23,6 +23,15 @@ struct DirectivePhaseView: View {
     @State private var showTaskConfirmation = false
     @State private var lastResult: BureauOperationsService.TaskExecutionResult?
     @State private var showResult = false
+
+    // Target selection state for directives that require targets
+    @State private var pendingDirectiveTask: BureauTask?
+    @State private var showCountrySelection = false
+    @State private var showOfficerSelection = false
+    @State private var showTheaterSelection = false
+    @State private var showMinistrySelection = false
+    @State private var showOfficialSelection = false
+    @State private var pendingTargetType: String = ""
     @State private var showCharacterSelection = false
     @State private var pendingSecurityTask: BureauTask?
 
@@ -65,10 +74,15 @@ struct DirectivePhaseView: View {
                         directivePointsBar
 
                         // Bureau cards grid
+                        let crises = UrgencyAdvisor.detectCrises(game: game)
+
                         ForEach(bureaus, id: \.rawValue) { bureau in
                             let headInfo = bureauHead(for: bureau)
                             let summary = BureauOperationsService.shared.getOperationsSummary(for: bureau, game: game)
                             let availableTasks = availableTasksForBureau(bureau)
+                            let bureauCrisis = UrgencyAdvisor.isUrgentDirective(
+                                bureauTrack: bureau.rawValue, crises: crises
+                            )
 
                             VStack(spacing: 0) {
                                 BureauCommandCard(
@@ -77,6 +91,7 @@ struct DirectivePhaseView: View {
                                     activeOpsCount: summary.activeOperations,
                                     availableTaskCount: availableTasks.count,
                                     isExpanded: expandedBureau == bureau,
+                                    urgentCrisis: bureauCrisis,
                                     onTap: {
                                         withAnimation(.easeInOut(duration: 0.2)) {
                                             expandedBureau = expandedBureau == bureau ? nil : bureau
@@ -110,6 +125,23 @@ struct DirectivePhaseView: View {
             // Result overlay
             if showResult, let result = lastResult {
                 resultOverlay(result: result)
+            }
+
+            // Target selection overlays
+            if showCountrySelection, let task = pendingDirectiveTask {
+                countrySelectionOverlay(task: task)
+            }
+            if showOfficerSelection, let task = pendingDirectiveTask {
+                officerSelectionOverlay(task: task)
+            }
+            if showTheaterSelection, let task = pendingDirectiveTask {
+                theaterSelectionOverlay(task: task)
+            }
+            if showMinistrySelection, let task = pendingDirectiveTask {
+                ministrySelectionOverlay(task: task)
+            }
+            if showOfficialSelection, let task = pendingDirectiveTask {
+                officialSelectionOverlay(task: task)
             }
 
             // Character selection overlay for security directives
@@ -731,45 +763,95 @@ struct DirectivePhaseView: View {
     private func executeDirective(_ task: BureauTask) {
         guard game.directivePoints > 0 else { return }
 
-        // Check if this security task needs a character target
-        if task.actionCategory == "security",
-           let action = SecurityAction.allActions.first(where: { $0.id == task.actionId }),
-           action.targetType == .character {
-            // Show character selection overlay instead of executing immediately
-            withAnimation(.easeOut(duration: 0.2)) {
-                showTaskConfirmation = false
-                pendingSecurityTask = task
-            }
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                showCharacterSelection = true
-            }
-            return
-        }
-
         // Close confirmation
         withAnimation(.easeOut(duration: 0.2)) {
             showTaskConfirmation = false
         }
 
-        // Route to the appropriate service
+        // Check if this directive needs a target selection first
+        if let targetNeeded = directiveNeedsTarget(task) {
+            pendingDirectiveTask = task
+            pendingTargetType = targetNeeded
+            withAnimation(.easeInOut(duration: 0.2)) {
+                switch targetNeeded {
+                case "country": showCountrySelection = true
+                case "officer": showOfficerSelection = true
+                case "theater": showTheaterSelection = true
+                case "ministry": showMinistrySelection = true
+                case "official": showOfficialSelection = true
+                case "character":
+                    pendingSecurityTask = task
+                    showCharacterSelection = true
+                default: break
+                }
+            }
+            return
+        }
+
+        // No target needed — execute immediately
+        finalizeDirective(task)
+    }
+
+    /// Check if a directive action requires the player to select a target
+    private func directiveNeedsTarget(_ task: BureauTask) -> String? {
+        switch task.actionCategory {
+        case "diplomatic":
+            if let action = DiplomaticAction.allActions.first(where: { $0.id == task.actionId }) {
+                if action.targetType == .country { return "country" }
+            }
+        case "military":
+            if let action = MilitaryAction.allActions.first(where: { $0.id == task.actionId }) {
+                switch action.targetType {
+                case .officer: return "officer"
+                case .theater: return "theater"
+                case .unit, .serviceArm, .none: return nil
+                }
+            }
+        case "stateMinistry":
+            if let action = StateMinistryAction.allActions.first(where: { $0.id == task.actionId }) {
+                switch action.targetType {
+                case .ministry: return "ministry"
+                case .official: return "official"
+                case .policy, .region, .sector, .none: return nil
+                }
+            }
+        case "security":
+            if let action = SecurityAction.allActions.first(where: { $0.id == task.actionId }) {
+                if action.targetType == .character { return "character" }
+            }
+        default:
+            return nil
+        }
+        return nil
+    }
+
+    /// Execute the directive after any required target has been selected
+    private func finalizeDirective(
+        _ task: BureauTask,
+        targetCountry: ForeignCountry? = nil,
+        targetOfficer: GameCharacter? = nil,
+        targetTheater: TheaterCommand? = nil,
+        targetMinistry: MinistryDepartment? = nil,
+        targetOfficial: GameCharacter? = nil,
+        targetCharacter: GameCharacter? = nil
+    ) {
         let result: BureauOperationsService.TaskExecutionResult
 
         switch task.actionCategory {
-        case "security", "economic", "party":
-            // Core bureaus - use BureauOperationsService
+        case "security":
+            result = BureauOperationsService.shared.executeTask(task, for: game, modelContext: modelContext, targetCharacter: targetCharacter)
+
+        case "economic", "party":
             result = BureauOperationsService.shared.executeTask(task, for: game, modelContext: modelContext)
 
         case "military":
-            // Execute via MilitaryActionService
-            result = executeMilitaryDirective(task)
+            result = executeMilitaryDirective(task, targetOfficer: targetOfficer, targetTheater: targetTheater)
 
         case "diplomatic":
-            // Execute via DiplomaticActionService
-            result = executeDiplomaticDirective(task)
+            result = executeDiplomaticDirective(task, targetCountry: targetCountry)
 
         case "stateMinistry":
-            // Execute via StateMinistryActionService
-            result = executeStateMinistryDirective(task)
+            result = executeStateMinistryDirective(task, targetMinistry: targetMinistry, targetOfficial: targetOfficial)
 
         default:
             result = .failure("Unknown bureau category")
@@ -795,19 +877,26 @@ struct DirectivePhaseView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             showResult = true
             selectedTask = nil
+            pendingDirectiveTask = nil
         }
     }
 
-    private func executeMilitaryDirective(_ task: BureauTask) -> BureauOperationsService.TaskExecutionResult {
+    // MARK: - Bureau Execution (with targets)
+
+    private func executeMilitaryDirective(
+        _ task: BureauTask,
+        targetOfficer: GameCharacter? = nil,
+        targetTheater: TheaterCommand? = nil
+    ) -> BureauOperationsService.TaskExecutionResult {
         guard let action = MilitaryAction.allActions.first(where: { $0.id == task.actionId }) else {
             return .failure("Military action not found: \(task.actionId)")
         }
 
         let result = MilitaryActionService.shared.executeAction(
             action,
-            targetOfficer: nil,
+            targetOfficer: targetOfficer,
             targetUnit: nil,
-            targetTheater: nil,
+            targetTheater: targetTheater,
             for: game,
             modelContext: modelContext
         )
@@ -823,14 +912,17 @@ struct DirectivePhaseView: View {
         )
     }
 
-    private func executeDiplomaticDirective(_ task: BureauTask) -> BureauOperationsService.TaskExecutionResult {
+    private func executeDiplomaticDirective(
+        _ task: BureauTask,
+        targetCountry: ForeignCountry? = nil
+    ) -> BureauOperationsService.TaskExecutionResult {
         guard let action = DiplomaticAction.allActions.first(where: { $0.id == task.actionId }) else {
             return .failure("Diplomatic action not found: \(task.actionId)")
         }
 
         let result = DiplomaticActionService.shared.executeAction(
             action,
-            targetCountry: nil,
+            targetCountry: targetCountry,
             for: game,
             modelContext: modelContext
         )
@@ -846,15 +938,19 @@ struct DirectivePhaseView: View {
         )
     }
 
-    private func executeStateMinistryDirective(_ task: BureauTask) -> BureauOperationsService.TaskExecutionResult {
+    private func executeStateMinistryDirective(
+        _ task: BureauTask,
+        targetMinistry: MinistryDepartment? = nil,
+        targetOfficial: GameCharacter? = nil
+    ) -> BureauOperationsService.TaskExecutionResult {
         guard let action = StateMinistryAction.allActions.first(where: { $0.id == task.actionId }) else {
             return .failure("State ministry action not found: \(task.actionId)")
         }
 
         let result = StateMinistryActionService.shared.executeAction(
             action,
-            targetMinistry: nil,
-            targetOfficial: nil,
+            targetMinistry: targetMinistry,
+            targetOfficial: targetOfficial,
             for: game,
             modelContext: modelContext
         )
@@ -870,7 +966,505 @@ struct DirectivePhaseView: View {
         )
     }
 
-    // MARK: - Character Selection Overlay
+    // MARK: - Target Selection Overlays
+
+    /// Country selection for diplomatic directives
+    private func countrySelectionOverlay(task: BureauTask) -> some View {
+        let action = DiplomaticAction.allActions.first(where: { $0.id == task.actionId })
+
+        return ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { dismissTargetSelection() }
+
+            VStack(spacing: 0) {
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+
+                VStack(spacing: 12) {
+                    // Header
+                    targetSelectionHeader(
+                        icon: "globe",
+                        title: "SELECT TARGET NATION",
+                        subtitle: task.name
+                    )
+
+                    Rectangle()
+                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 12)
+
+                    // Country list
+                    ScrollView {
+                        VStack(spacing: 2) {
+                            ForEach(game.foreignCountries.sorted(by: { $0.name < $1.name }), id: \.id) { country in
+                                Button {
+                                    dismissTargetSelection()
+                                    finalizeDirective(task, targetCountry: country)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Circle()
+                                            .fill(blocColor(for: country.politicalBloc))
+                                            .frame(width: 8, height: 8)
+
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(country.name.uppercased())
+                                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                                .tracking(0.5)
+                                                .foregroundColor(FiftiesColors.typewriterInk)
+
+                                            Text(country.relationshipCategory)
+                                                .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                                .foregroundColor(FiftiesColors.carbonCopy)
+                                        }
+
+                                        Spacer()
+
+                                        if let action = action {
+                                            let chance = DiplomaticActionService.shared.calculateSuccessChance(
+                                                action, targetCountry: country, game: game
+                                            )
+                                            Text("\(chance)%")
+                                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                                .foregroundColor(successChanceColor(chance))
+                                        }
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 9))
+                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .cornerRadius(4)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                    }
+                    .frame(maxHeight: 340)
+
+                    cancelTargetButton()
+                }
+                .padding(.vertical, 16)
+                .background(theme.parchment)
+
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+            }
+            .frame(maxWidth: 320)
+            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+        }
+    }
+
+    /// Officer selection for military directives
+    private func officerSelectionOverlay(task: BureauTask) -> some View {
+        let officers = game.characters.filter { char in
+            char.isAlive && char.status == "active" &&
+            char.positionTrack == ExpandedCareerTrack.militaryPolitical.rawValue
+        }.sorted { ($0.positionIndex ?? 0) > ($1.positionIndex ?? 0) }
+
+        return ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { dismissTargetSelection() }
+
+            VStack(spacing: 0) {
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+
+                VStack(spacing: 12) {
+                    targetSelectionHeader(
+                        icon: "person.military.fill",
+                        title: "SELECT TARGET OFFICER",
+                        subtitle: task.name
+                    )
+
+                    Rectangle()
+                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 12)
+
+                    ScrollView {
+                        VStack(spacing: 2) {
+                            if officers.isEmpty {
+                                Text("NO MILITARY OFFICERS AVAILABLE")
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundColor(FiftiesColors.carbonCopy)
+                                    .padding(.vertical, 20)
+                            }
+                            ForEach(officers, id: \.id) { officer in
+                                Button {
+                                    dismissTargetSelection()
+                                    finalizeDirective(task, targetOfficer: officer)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(dispositionColor(officer.disposition))
+                                            .frame(width: 20)
+
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(officer.name.uppercased())
+                                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                                .tracking(0.5)
+                                                .foregroundColor(FiftiesColors.typewriterInk)
+
+                                            Text(officer.title ?? "Military Officer")
+                                                .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                                .foregroundColor(FiftiesColors.carbonCopy)
+                                        }
+
+                                        Spacer()
+
+                                        Text("DISP: \(officer.disposition)")
+                                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                            .foregroundColor(dispositionColor(officer.disposition))
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 9))
+                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .cornerRadius(4)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                    }
+                    .frame(maxHeight: 340)
+
+                    cancelTargetButton()
+                }
+                .padding(.vertical, 16)
+                .background(theme.parchment)
+
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+            }
+            .frame(maxWidth: 320)
+            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+        }
+    }
+
+    /// Theater selection for military directives
+    private func theaterSelectionOverlay(task: BureauTask) -> some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { dismissTargetSelection() }
+
+            VStack(spacing: 0) {
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+
+                VStack(spacing: 12) {
+                    targetSelectionHeader(
+                        icon: "map.fill",
+                        title: "SELECT THEATER COMMAND",
+                        subtitle: task.name
+                    )
+
+                    Rectangle()
+                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 12)
+
+                    VStack(spacing: 2) {
+                        ForEach(TheaterCommand.allCases, id: \.rawValue) { theater in
+                            Button {
+                                dismissTargetSelection()
+                                finalizeDirective(task, targetTheater: theater)
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "shield.lefthalf.filled")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(theme.accentGold)
+                                        .frame(width: 20)
+
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(theater.displayName.uppercased())
+                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                            .tracking(0.5)
+                                            .foregroundColor(FiftiesColors.typewriterInk)
+
+                                        Text(theater.strategicFocus)
+                                            .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                            .foregroundColor(FiftiesColors.carbonCopy)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(FiftiesColors.cardstock.opacity(0.3))
+                                .cornerRadius(4)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+
+                    cancelTargetButton()
+                }
+                .padding(.vertical, 16)
+                .background(theme.parchment)
+
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+            }
+            .frame(maxWidth: 320)
+            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+        }
+    }
+
+    /// Ministry selection for state ministry directives
+    private func ministrySelectionOverlay(task: BureauTask) -> some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { dismissTargetSelection() }
+
+            VStack(spacing: 0) {
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+
+                VStack(spacing: 12) {
+                    targetSelectionHeader(
+                        icon: "building.columns.fill",
+                        title: "SELECT MINISTRY",
+                        subtitle: task.name
+                    )
+
+                    Rectangle()
+                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 12)
+
+                    ScrollView {
+                        VStack(spacing: 2) {
+                            ForEach(MinistryDepartment.allCases, id: \.rawValue) { ministry in
+                                Button {
+                                    dismissTargetSelection()
+                                    finalizeDirective(task, targetMinistry: ministry)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: ministry.iconName)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(theme.accentGold)
+                                            .frame(width: 20)
+
+                                        Text(ministry.displayName.uppercased())
+                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                            .tracking(0.5)
+                                            .foregroundColor(FiftiesColors.typewriterInk)
+
+                                        Spacer()
+
+                                        if ministry.isCommission {
+                                            Text("COMMISSION")
+                                                .font(.system(size: 7, weight: .bold, design: .monospaced))
+                                                .foregroundColor(theme.accentGold)
+                                                .padding(.horizontal, 4)
+                                                .padding(.vertical, 2)
+                                                .background(theme.accentGold.opacity(0.12))
+                                                .cornerRadius(2)
+                                        }
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 9))
+                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .cornerRadius(4)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                    }
+                    .frame(maxHeight: 340)
+
+                    cancelTargetButton()
+                }
+                .padding(.vertical, 16)
+                .background(theme.parchment)
+
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+            }
+            .frame(maxWidth: 320)
+            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+        }
+    }
+
+    /// Official selection for state ministry directives
+    private func officialSelectionOverlay(task: BureauTask) -> some View {
+        let officials = game.characters.filter { char in
+            char.isAlive && char.status == "active" &&
+            char.positionTrack == ExpandedCareerTrack.stateMinistry.rawValue
+        }.sorted { ($0.positionIndex ?? 0) > ($1.positionIndex ?? 0) }
+
+        return ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { dismissTargetSelection() }
+
+            VStack(spacing: 0) {
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+
+                VStack(spacing: 12) {
+                    targetSelectionHeader(
+                        icon: "person.text.rectangle.fill",
+                        title: "SELECT OFFICIAL",
+                        subtitle: task.name
+                    )
+
+                    Rectangle()
+                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 12)
+
+                    ScrollView {
+                        VStack(spacing: 2) {
+                            if officials.isEmpty {
+                                Text("NO MINISTRY OFFICIALS AVAILABLE")
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundColor(FiftiesColors.carbonCopy)
+                                    .padding(.vertical, 20)
+                            }
+                            ForEach(officials, id: \.id) { official in
+                                Button {
+                                    dismissTargetSelection()
+                                    finalizeDirective(task, targetOfficial: official)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(dispositionColor(official.disposition))
+                                            .frame(width: 20)
+
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(official.name.uppercased())
+                                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                                .tracking(0.5)
+                                                .foregroundColor(FiftiesColors.typewriterInk)
+
+                                            Text(official.title ?? "Ministry Official")
+                                                .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                                .foregroundColor(FiftiesColors.carbonCopy)
+                                        }
+
+                                        Spacer()
+
+                                        Text("DISP: \(official.disposition)")
+                                            .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                            .foregroundColor(dispositionColor(official.disposition))
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 9))
+                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .cornerRadius(4)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                    }
+                    .frame(maxHeight: 340)
+
+                    cancelTargetButton()
+                }
+                .padding(.vertical, 16)
+                .background(theme.parchment)
+
+                Rectangle().fill(theme.accentGold).frame(height: 3)
+            }
+            .frame(maxWidth: 320)
+            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+        }
+    }
+
+    // MARK: - Target Selection Helpers
+
+    private func targetSelectionHeader(icon: String, title: String, subtitle: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(theme.accentGold)
+
+            Text(title)
+                .font(.system(size: 12, weight: .black, design: .monospaced))
+                .tracking(2)
+                .foregroundColor(theme.accentGold)
+
+            Text(subtitle.uppercased())
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .tracking(0.5)
+                .foregroundColor(FiftiesColors.fadedInk)
+        }
+        .padding(.top, 4)
+    }
+
+    private func cancelTargetButton() -> some View {
+        Button {
+            dismissTargetSelection()
+        } label: {
+            Text("CANCEL")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(1)
+                .foregroundColor(FiftiesColors.carbonCopy)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(FiftiesColors.cardstock)
+                .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+    }
+
+    private func dismissTargetSelection() {
+        withAnimation(.easeOut(duration: 0.2)) {
+            showCountrySelection = false
+            showOfficerSelection = false
+            showTheaterSelection = false
+            showMinistrySelection = false
+            showOfficialSelection = false
+            showCharacterSelection = false
+            pendingDirectiveTask = nil
+            pendingSecurityTask = nil
+            pendingTargetType = ""
+        }
+    }
+
+    private func blocColor(for bloc: PoliticalBloc) -> Color {
+        switch bloc {
+        case .socialist: return .red
+        case .capitalist: return .blue
+        case .nonAligned: return .gray
+        case .rival: return .orange
+        }
+    }
+
+    private func successChanceColor(_ chance: Int) -> Color {
+        if chance >= 70 { return FiftiesColors.approvedGreen }
+        if chance >= 50 { return FiftiesColors.brassGold }
+        return FiftiesColors.stampRed
+    }
+
+    private func dispositionColor(_ disposition: Int) -> Color {
+        if disposition >= 60 { return FiftiesColors.approvedGreen }
+        if disposition >= 20 { return FiftiesColors.brassGold }
+        return FiftiesColors.stampRed
+    }
+
+    // MARK: - Character Selection Overlay (Security Directives)
 
     private func characterSelectionOverlay(task: BureauTask) -> some View {
         let action = SecurityAction.allActions.first(where: { $0.id == task.actionId })
@@ -897,7 +1491,6 @@ struct DirectivePhaseView: View {
                 }
 
             VStack(spacing: 0) {
-                // Gold header
                 Rectangle()
                     .fill(theme.accentGold)
                     .frame(height: 3)
@@ -926,13 +1519,11 @@ struct DirectivePhaseView: View {
                         }
                     }
 
-                    // Divider
                     Rectangle()
                         .fill(FiftiesColors.carbonCopy.opacity(0.2))
                         .frame(height: 1)
 
                     if eligibleCharacters.isEmpty {
-                        // No eligible targets
                         VStack(spacing: 8) {
                             Image(systemName: "person.slash")
                                 .font(.system(size: 24))
@@ -949,7 +1540,6 @@ struct DirectivePhaseView: View {
                         }
                         .padding(.vertical, 12)
                     } else {
-                        // Scrollable character list
                         ScrollView {
                             VStack(spacing: 4) {
                                 ForEach(eligibleCharacters, id: \.id) { character in
@@ -960,7 +1550,6 @@ struct DirectivePhaseView: View {
                         .frame(maxHeight: 300)
                     }
 
-                    // Cancel button
                     Button {
                         withAnimation(.easeOut(duration: 0.2)) {
                             showCharacterSelection = false
@@ -982,7 +1571,6 @@ struct DirectivePhaseView: View {
                 .padding(16)
                 .background(theme.parchment)
 
-                // Gold footer
                 Rectangle()
                     .fill(theme.accentGold)
                     .frame(height: 3)
@@ -994,14 +1582,12 @@ struct DirectivePhaseView: View {
 
     private func characterTargetRow(character: GameCharacter, task: BureauTask) -> some View {
         Button {
-            // Execute the security directive with the selected target
             withAnimation(.easeOut(duration: 0.2)) {
                 showCharacterSelection = false
             }
             finalizeSecurityDirective(task: task, target: character)
         } label: {
             HStack(spacing: 10) {
-                // Position indicator
                 VStack(spacing: 1) {
                     Text("\(character.positionIndex ?? 0)")
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
@@ -1012,7 +1598,6 @@ struct DirectivePhaseView: View {
                 }
                 .frame(width: 28)
 
-                // Character info
                 VStack(alignment: .leading, spacing: 2) {
                     Text(character.name.uppercased())
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -1028,8 +1613,7 @@ struct DirectivePhaseView: View {
 
                 Spacer()
 
-                // Status indicator
-                statusIndicator(for: character)
+                securityTargetStatusIndicator(for: character)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 8))
@@ -1043,7 +1627,7 @@ struct DirectivePhaseView: View {
         .buttonStyle(.plain)
     }
 
-    private func statusIndicator(for character: GameCharacter) -> some View {
+    private func securityTargetStatusIndicator(for character: GameCharacter) -> some View {
         let disposition = character.disposition
         let label: String
         let color: Color
@@ -1078,12 +1662,18 @@ struct DirectivePhaseView: View {
             targetCharacter: target
         )
 
-        // Spend directive point if operation was initiated
         if result.operationInitiated {
             game.directivePoints -= 1
+
+            // Apply track affinity for security directive
+            game.addTrackAffinity(
+                track: .securityServices,
+                amount: 3,
+                source: .personalAction,
+                description: "Issued directive: \(task.name)"
+            )
         }
 
-        // Show result
         pendingSecurityTask = nil
         lastResult = result
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {

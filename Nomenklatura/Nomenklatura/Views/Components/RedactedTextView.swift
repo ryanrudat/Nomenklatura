@@ -72,16 +72,24 @@ struct RedactedTextView: View {
 
     private var blackBarRedaction: some View {
         ZStack(alignment: .leading) {
-            // Hidden text for sizing
             Text(originalText)
                 .foregroundColor(.clear)
 
-            // Black bar overlay
             GeometryReader { geometry in
                 Rectangle()
                     .fill(Color.black)
                     .frame(width: geometry.size.width, height: geometry.size.height * 0.9)
                     .offset(y: geometry.size.height * 0.05)
+                    .overlay(
+                        Group {
+                            if revealable {
+                                Text("TAP TO DECLASSIFY")
+                                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                                    .foregroundColor(FiftiesColors.brassGold.opacity(0.6))
+                                    .tracking(1)
+                            }
+                        }
+                    )
             }
         }
         .onTapGesture(perform: handleTap)
@@ -96,11 +104,19 @@ struct RedactedTextView: View {
 
     private var classifiedReplacement: some View {
         HStack(spacing: 4) {
-            Text("[REDACTED")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.stampRed)
+            Image(systemName: revealable ? "lock.open.fill" : "lock.fill")
+                .font(.system(size: 9))
+                .foregroundColor(revealable ? FiftiesColors.brassGold : FiftiesColors.stampRed)
 
-            if requiredLevel > 0 {
+            Text("[CLASSIFIED")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(revealable ? FiftiesColors.brassGold : FiftiesColors.stampRed)
+
+            if revealable {
+                Text("- TAP TO DECLASSIFY")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(FiftiesColors.brassGold.opacity(0.8))
+            } else if requiredLevel > 0 {
                 Text("- LEVEL \(requiredLevel) CLEARANCE REQUIRED")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundColor(FiftiesColors.stampRed.opacity(0.8))
@@ -108,11 +124,12 @@ struct RedactedTextView: View {
 
             Text("]")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.stampRed)
+                .foregroundColor(revealable ? FiftiesColors.brassGold : FiftiesColors.stampRed)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
-        .background(Color.black.opacity(0.05))
+        .background(revealable ? FiftiesColors.brassGold.opacity(0.08) : Color.black.opacity(0.05))
+        .cornerRadius(3)
         .onTapGesture(perform: handleTap)
     }
 
@@ -161,10 +178,13 @@ struct RedactedTextView: View {
 
 /// A text view that can contain inline redacted sections
 /// Usage: InlineRedactedText("Agent [REDACTED] reported from [REDACTED] station")
+/// High-clearance players (level 7+) can tap redacted sections to reveal them
 struct InlineRedactedText: View {
     let text: String
     let accessLevel: Int
     var redactionThreshold: Int = 5
+
+    @State private var revealedIndices: Set<Int> = []
 
     var body: some View {
         parseAndRender()
@@ -177,12 +197,21 @@ struct InlineRedactedText: View {
         HStack(spacing: 0) {
             ForEach(components.indices, id: \.self) { index in
                 if components[index].isRedacted {
-                    if accessLevel >= redactionThreshold {
+                    if accessLevel >= redactionThreshold || revealedIndices.contains(index) {
                         Text(components[index].content)
                     } else {
-                        Text(String(repeating: "█", count: min(components[index].content.count, 12)))
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundColor(.black)
+                        let blockText = String(repeating: "█", count: min(components[index].content.count, 12))
+                        let canReveal = accessLevel >= 7
+                        Text(blockText)
+                            .font(Font.system(size: 14).monospaced())
+                            .foregroundColor(canReveal ? FiftiesColors.brassGold.opacity(0.8) : .black)
+                            .onTapGesture {
+                                if canReveal {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        revealedIndices.insert(index)
+                                    }
+                                }
+                            }
                     }
                 } else {
                     Text(components[index].content)
@@ -289,11 +318,15 @@ struct RedactionManager {
     }
 
     /// Create redaction view for a piece of text
+    /// At high clearance, redacted content becomes tappable to declassify
     func createRedactedView(for text: String, requiredLevel: Int, style: RedactedTextView.RedactionStyle = .blackBar) -> RedactedTextView {
+        let isRedacted = shouldRedact(requiredLevel: requiredLevel)
+        // General Secretary (level 8) can always tap to reveal classified content
+        let canReveal = isRedacted && accessLevel >= 7
         return RedactedTextView(
             originalText: text,
-            isRedacted: shouldRedact(requiredLevel: requiredLevel),
-            revealable: false,
+            isRedacted: isRedacted,
+            revealable: canReveal,
             requiredLevel: requiredLevel,
             style: style
         )

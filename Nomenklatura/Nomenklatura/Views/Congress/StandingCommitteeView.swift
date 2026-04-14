@@ -150,8 +150,15 @@ struct CommitteeMembersSection: View {
         }.sorted { ($0.positionIndex ?? 0) > ($1.positionIndex ?? 0) }
     }
 
+    /// The player is General Secretary (chairman) — they take precedence over any NPC chairId
+    private var isPlayerChair: Bool {
+        game.standingCommittee?.playerIsChair == true
+    }
+
     private var chairId: String? {
-        game.standingCommittee?.chairId
+        // If the player is chairman, no NPC should be shown as chair
+        if isPlayerChair { return nil }
+        return game.standingCommittee?.chairId
     }
 
     var body: some View {
@@ -183,10 +190,43 @@ struct CommitteeMembersSection: View {
                 .background(theme.parchmentDark)
             } else {
                 LazyVStack(spacing: 8) {
+                    // Show the player as General Secretary at the top
+                    if isPlayerChair {
+                        HStack(spacing: 10) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(theme.accentGold)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(game.currentPositionName.uppercased())
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(theme.inkBlack)
+                                Text("GENERAL SECRETARY (YOU)")
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundColor(theme.accentGold)
+                            }
+                            Spacer()
+                            Text("CHAIRMAN")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .tracking(1)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(theme.accentGold)
+                                .cornerRadius(3)
+                        }
+                        .padding(10)
+                        .background(theme.accentGold.opacity(0.08))
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(theme.accentGold.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+
                     ForEach(members, id: \.id) { member in
                         CommitteeMemberRow(
                             member: member,
-                            isChair: member.templateId == chairId,
+                            isChair: !isPlayerChair && member.templateId == chairId,
                             game: game
                         )
                     }

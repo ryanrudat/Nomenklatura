@@ -615,7 +615,7 @@ class NPCWorldActionService {
             case .intel:
                 return "Your sources report: "
             case .secret:
-                return "[CLASSIFIED] "
+                return game.currentPositionIndex >= 7 ? "Eyes Only: " : "[CLASSIFIED] "
             }
         }()
 

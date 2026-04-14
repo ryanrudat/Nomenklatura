@@ -17,6 +17,7 @@ struct BureauCommandCard: View {
     let activeOpsCount: Int
     let availableTaskCount: Int
     let isExpanded: Bool
+    var urgentCrisis: Crisis? = nil
     let onTap: () -> Void
 
     @Environment(\.theme) var theme
@@ -56,10 +57,23 @@ struct BureauCommandCard: View {
                 BureauEmblem(bureau: bureau, size: .small)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(bureau.shortName)
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .tracking(1.5)
-                        .foregroundColor(bureauColor)
+                    HStack(spacing: 6) {
+                        Text(bureau.shortName)
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundColor(bureauColor)
+
+                        if let crisis = urgentCrisis {
+                            Text(crisis.label)
+                                .font(.system(size: 6, weight: .black, design: .monospaced))
+                                .tracking(0.3)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(FiftiesColors.stampRed)
+                                .cornerRadius(2)
+                        }
+                    }
 
                     Text(bureau.displayName.uppercased())
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
