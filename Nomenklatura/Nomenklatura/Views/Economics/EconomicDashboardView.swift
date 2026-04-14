@@ -622,24 +622,9 @@ struct RegionalEconomicsView: View {
                 requirement: .regionalEconomics,
                 accessLevel: accessLevel
             ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("REGIONAL ECONOMICS")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1)
-                        .foregroundColor(theme.inkGray)
-
-                    Text("Regional economic heat map would appear here showing production, resources, and labor allocation across the PSR's 7 domestic zones.")
-                        .font(theme.bodyFont)
-                        .foregroundColor(theme.inkBlack)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(8)
-                }
+                RegionalEconomicsManagementView(game: game)
             }
         }
-        .padding(.horizontal, 15)
-        .padding(.bottom, 120)
     }
 }
 
@@ -659,24 +644,9 @@ struct BudgetView: View {
                 requirement: .budgetDetails,
                 accessLevel: accessLevel
             ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("BUDGET ALLOCATION")
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(1)
-                        .foregroundColor(theme.inkGray)
-
-                    Text("State budget breakdown would appear here showing military vs civilian spending, ministry allocations, and emergency reserves.")
-                        .font(theme.bodyFont)
-                        .foregroundColor(theme.inkBlack)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(theme.parchmentDark)
-                        .cornerRadius(8)
-                }
+                BudgetManagementView(game: game)
             }
         }
-        .padding(.horizontal, 15)
-        .padding(.bottom, 120)
     }
 }
 
