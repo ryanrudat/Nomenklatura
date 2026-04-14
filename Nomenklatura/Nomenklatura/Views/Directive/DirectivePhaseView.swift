@@ -23,6 +23,8 @@ struct DirectivePhaseView: View {
     @State private var showTaskConfirmation = false
     @State private var lastResult: BureauOperationsService.TaskExecutionResult?
     @State private var showResult = false
+    @State private var showCharacterSelection = false
+    @State private var pendingSecurityTask: BureauTask?
 
     // The 6 bureaus available for directives
     private let bureaus: [ExpandedCareerTrack] = [
@@ -108,6 +110,11 @@ struct DirectivePhaseView: View {
             // Result overlay
             if showResult, let result = lastResult {
                 resultOverlay(result: result)
+            }
+
+            // Character selection overlay for security directives
+            if showCharacterSelection, let task = pendingSecurityTask {
+                characterSelectionOverlay(task: task)
             }
         }
     }
@@ -724,6 +731,21 @@ struct DirectivePhaseView: View {
     private func executeDirective(_ task: BureauTask) {
         guard game.directivePoints > 0 else { return }
 
+        // Check if this security task needs a character target
+        if task.actionCategory == "security",
+           let action = SecurityAction.allActions.first(where: { $0.id == task.actionId }),
+           action.targetType == .character {
+            // Show character selection overlay instead of executing immediately
+            withAnimation(.easeOut(duration: 0.2)) {
+                showTaskConfirmation = false
+                pendingSecurityTask = task
+            }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                showCharacterSelection = true
+            }
+            return
+        }
+
         // Close confirmation
         withAnimation(.easeOut(duration: 0.2)) {
             showTaskConfirmation = false
@@ -846,5 +868,227 @@ struct DirectivePhaseView: View {
             operationInitiated: result.succeeded || result.roll > 0,
             errorMessage: result.succeeded ? nil : result.description
         )
+    }
+
+    // MARK: - Character Selection Overlay
+
+    private func characterSelectionOverlay(task: BureauTask) -> some View {
+        let action = SecurityAction.allActions.first(where: { $0.id == task.actionId })
+        let maxPosition = action?.maxTargetPosition ?? Int.max
+        let eligibleCharacters = game.characters.filter { character in
+            guard character.isAlive && character.isActive else { return false }
+            let position = character.positionIndex ?? 0
+            if position > maxPosition { return false }
+            if character.currentStatus == .detained || character.currentStatus == .underInvestigation {
+                return false
+            }
+            return true
+        }.sorted { ($0.positionIndex ?? 0) > ($1.positionIndex ?? 0) }
+
+        return ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showCharacterSelection = false
+                        pendingSecurityTask = nil
+                        selectedTask = nil
+                    }
+                }
+
+            VStack(spacing: 0) {
+                // Gold header
+                Rectangle()
+                    .fill(theme.accentGold)
+                    .frame(height: 3)
+
+                VStack(spacing: 12) {
+                    // Title
+                    VStack(spacing: 6) {
+                        Image(systemName: task.iconName)
+                            .font(.system(size: 24))
+                            .foregroundColor(theme.accentGold)
+
+                        Text("SELECT TARGET")
+                            .font(.system(size: 14, weight: .black, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(theme.accentGold)
+
+                        Text(task.name.uppercased())
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1)
+                            .foregroundColor(FiftiesColors.typewriterInk)
+
+                        if let maxPos = action?.maxTargetPosition {
+                            Text("TARGETS POSITION \(maxPos) AND BELOW")
+                                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                                .foregroundColor(FiftiesColors.carbonCopy)
+                        }
+                    }
+
+                    // Divider
+                    Rectangle()
+                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .frame(height: 1)
+
+                    if eligibleCharacters.isEmpty {
+                        // No eligible targets
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.slash")
+                                .font(.system(size: 24))
+                                .foregroundColor(FiftiesColors.carbonCopy)
+
+                            Text("NO ELIGIBLE TARGETS")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(FiftiesColors.stampRed)
+
+                            Text("No characters meet the requirements for this action.")
+                                .font(.system(size: 8, weight: .regular, design: .monospaced))
+                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.vertical, 12)
+                    } else {
+                        // Scrollable character list
+                        ScrollView {
+                            VStack(spacing: 4) {
+                                ForEach(eligibleCharacters, id: \.id) { character in
+                                    characterTargetRow(character: character, task: task)
+                                }
+                            }
+                        }
+                        .frame(maxHeight: 300)
+                    }
+
+                    // Cancel button
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showCharacterSelection = false
+                            pendingSecurityTask = nil
+                            selectedTask = nil
+                        }
+                    } label: {
+                        Text("CANCEL")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1)
+                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(FiftiesColors.cardstock)
+                            .cornerRadius(4)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(16)
+                .background(theme.parchment)
+
+                // Gold footer
+                Rectangle()
+                    .fill(theme.accentGold)
+                    .frame(height: 3)
+            }
+            .frame(maxWidth: 320)
+            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+        }
+    }
+
+    private func characterTargetRow(character: GameCharacter, task: BureauTask) -> some View {
+        Button {
+            // Execute the security directive with the selected target
+            withAnimation(.easeOut(duration: 0.2)) {
+                showCharacterSelection = false
+            }
+            finalizeSecurityDirective(task: task, target: character)
+        } label: {
+            HStack(spacing: 10) {
+                // Position indicator
+                VStack(spacing: 1) {
+                    Text("\(character.positionIndex ?? 0)")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.accentGold)
+                    Text("POS")
+                        .font(.system(size: 6, weight: .medium, design: .monospaced))
+                        .foregroundColor(FiftiesColors.carbonCopy)
+                }
+                .frame(width: 28)
+
+                // Character info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(character.name.uppercased())
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .lineLimit(1)
+
+                    Text(character.title ?? "Unknown Position")
+                        .font(.system(size: 8, weight: .regular, design: .monospaced))
+                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Status indicator
+                statusIndicator(for: character)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8))
+                    .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .background(FiftiesColors.cardstock)
+            .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func statusIndicator(for character: GameCharacter) -> some View {
+        let disposition = character.disposition
+        let label: String
+        let color: Color
+
+        if disposition >= 70 {
+            label = "LOYAL"
+            color = FiftiesColors.approvedGreen
+        } else if disposition >= 40 {
+            label = "NEUTRAL"
+            color = FiftiesColors.brassGold
+        } else {
+            label = "HOSTILE"
+            color = FiftiesColors.stampRed
+        }
+
+        return Text(label)
+            .font(.system(size: 7, weight: .bold, design: .monospaced))
+            .foregroundColor(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12))
+            .cornerRadius(2)
+    }
+
+    private func finalizeSecurityDirective(task: BureauTask, target: GameCharacter) {
+        guard game.directivePoints > 0 else { return }
+
+        let result = BureauOperationsService.shared.executeTask(
+            task,
+            for: game,
+            modelContext: modelContext,
+            targetCharacter: target
+        )
+
+        // Spend directive point if operation was initiated
+        if result.operationInitiated {
+            game.directivePoints -= 1
+        }
+
+        // Show result
+        pendingSecurityTask = nil
+        lastResult = result
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            showResult = true
+            selectedTask = nil
+        }
     }
 }
