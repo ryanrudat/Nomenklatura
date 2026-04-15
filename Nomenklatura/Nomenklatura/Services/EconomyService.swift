@@ -566,6 +566,9 @@ class EconomyService {
         // 7b. Process foreign loan payments
         processLoanPayments(game: game)
 
+        // 7c. Process State Bank loan repayments (Gosbank, socialist bloc, western/IMF)
+        processStateBankLoans(game: game)
+
         // 8. Process regional economies (interoperability with national economy)
         processRegionalEconomies(game: game)
 
@@ -1746,5 +1749,187 @@ class EconomyService {
             let meetsRelationship = relationship >= source.requiredRelationship
             return (source, relationship, meetsRelationship && hasCapacity)
         }
+    }
+
+    // MARK: - State Bank Loans
+
+    /// Reason a loan offer is unavailable (nil = accepted).
+    enum StateBankEligibility {
+        case ok
+        case atCapacity
+        case requirementNotMet(String)
+
+        var isOk: Bool { if case .ok = self { return true } else { return false } }
+        var reason: String? {
+            switch self {
+            case .ok: return nil
+            case .atCapacity: return "Maximum 3 concurrent loans."
+            case .requirementNotMet(let r): return r
+            }
+        }
+    }
+
+    /// Check whether the player is eligible to take a specific State Bank loan offer.
+    func eligibility(for terms: StateBankLoanTerms, game: Game) -> StateBankEligibility {
+        guard game.canTakeNewLoan else { return .atCapacity }
+
+        switch terms.source {
+        case .gosbank:
+            // Requires Standing Committee approval — modeled as a minimum elite loyalty check
+            if game.eliteLoyalty < 35 {
+                return .requirementNotMet("Standing Committee will not authorize emission (Elite Loyalty < 35).")
+            }
+            return .ok
+        case .socialistBloc:
+            guard let id = terms.lenderCountryID,
+                  let country = game.foreignCountries.first(where: { $0.countryId == id }) else {
+                return .requirementNotMet("Lender not present in world.")
+            }
+            if country.relationshipScore <= 40 {
+                return .requirementNotMet("Relationship with \(country.name) must exceed 40 (currently \(country.relationshipScore)).")
+            }
+            return .ok
+        case .western:
+            if game.internationalStanding <= 50 {
+                return .requirementNotMet("International Standing must exceed 50 (currently \(game.internationalStanding)).")
+            }
+            return .ok
+        }
+    }
+
+    /// Accept a new State Bank loan. Principal is credited to treasury immediately.
+    /// Side effects (inflation / flags / elite loyalty) are applied per source.
+    @discardableResult
+    func takeStateBankLoan(
+        game: Game,
+        terms: StateBankLoanTerms,
+        principal: Int? = nil
+    ) -> StateBankLoan? {
+        guard eligibility(for: terms, game: game).isOk else { return nil }
+
+        let amount = max(
+            terms.minPrincipal,
+            min(terms.maxPrincipal, principal ?? terms.defaultPrincipal)
+        )
+
+        let loan = StateBankLoan(
+            source: terms.source,
+            lenderCountryID: terms.lenderCountryID,
+            principal: amount,
+            interestRate: terms.interestRate,
+            totalTurns: terms.durationTurns,
+            turnTaken: game.turnNumber
+        )
+        game.activeLoans.append(loan)
+
+        // Principal to treasury
+        game.applyStat("treasury", change: amount)
+
+        // Source-specific side effects
+        switch terms.source {
+        case .gosbank:
+            // Money printing is inflationary: +2-5%
+            let inflationBump = Int.random(in: 2...5)
+            game.applyInflationChange(inflationBump)
+            addFlagIfAbsent(game: game, flag: "gosbank_loan_active")
+        case .socialistBloc:
+            addFlagIfAbsent(game: game, flag: "socialist_loan_obligation")
+        case .western:
+            addFlagIfAbsent(game: game, flag: "western_loan_obligation")
+            game.applyStat("eliteLoyalty", change: -3)
+        }
+
+        #if DEBUG
+        print("[StateBank] Took \(terms.source.rawValue) loan: principal \(amount) @ \(loan.percentRateDisplay) for \(terms.durationTurns) turns. Payment/turn: \(loan.perTurnPayment).")
+        #endif
+
+        return loan
+    }
+
+    /// Early repayment: pay 90% of remaining owed, then close the loan.
+    @discardableResult
+    func earlyRepay(loan: StateBankLoan, game: Game) -> Bool {
+        let cost = loan.earlyRepaymentCost
+        guard game.treasury >= cost else { return false }
+
+        game.applyStat("treasury", change: -cost)
+        loan.totalPaid += cost
+        loan.turnsRemaining = 0
+        loan.isInDefault = false
+
+        // Drop the flag if no loans of this kind remain
+        cleanupLoanFlags(game: game)
+
+        // Remove fully-paid loans from the relationship
+        game.activeLoans.removeAll { $0.isFullyPaid }
+
+        #if DEBUG
+        print("[StateBank] Early repaid loan \(loan.id) for \(cost)")
+        #endif
+        return true
+    }
+
+    /// Process State Bank loan payments each turn. Handles defaults and cleanup.
+    private func processStateBankLoans(game: Game) {
+        var defaulted: [StateBankLoan] = []
+
+        for loan in game.activeLoans where !loan.isFullyPaid {
+            let payment = loan.perTurnPayment
+
+            if game.treasury >= payment {
+                game.applyStat("treasury", change: -payment)
+                loan.totalPaid += payment
+                loan.turnsRemaining = max(0, loan.turnsRemaining - 1)
+                loan.isInDefault = false
+            } else {
+                // Default: do not advance the loan; apply consequences.
+                loan.isInDefault = true
+                defaulted.append(loan)
+            }
+        }
+
+        // Apply default consequences
+        for loan in defaulted {
+            game.applyStat("internationalStanding", change: -10)
+            if let id = loan.lenderCountryID,
+               let country = game.foreignCountries.first(where: { $0.countryId == id }) {
+                country.relationshipScore = max(-100, country.relationshipScore - 5)
+
+                // Hostile creditors can impose embargo
+                if country.relationshipScore < -40 {
+                    addFlagIfAbsent(game: game, flag: "state_bank_default_embargo")
+                }
+            }
+            addFlagIfAbsent(game: game, flag: "state_bank_default")
+
+            #if DEBUG
+            print("[StateBank] Defaulted on loan \(loan.id) (\(loan.source.rawValue))")
+            #endif
+        }
+
+        if defaulted.isEmpty {
+            // Clear the single-turn default flag if nothing defaulted this turn
+            game.flags.removeAll { $0 == "state_bank_default" }
+        }
+
+        // Remove fully paid loans
+        game.activeLoans.removeAll { $0.isFullyPaid }
+
+        cleanupLoanFlags(game: game)
+    }
+
+    /// Remove obligation flags when no loans of that type remain active.
+    private func cleanupLoanFlags(game: Game) {
+        let hasGosbank = game.activeStateBankLoans.contains { $0.source == .gosbank }
+        let hasBloc = game.activeStateBankLoans.contains { $0.source == .socialistBloc }
+        let hasWestern = game.activeStateBankLoans.contains { $0.source == .western }
+
+        if !hasGosbank { game.flags.removeAll { $0 == "gosbank_loan_active" } }
+        if !hasBloc    { game.flags.removeAll { $0 == "socialist_loan_obligation" } }
+        if !hasWestern { game.flags.removeAll { $0 == "western_loan_obligation" } }
+    }
+
+    private func addFlagIfAbsent(game: Game, flag: String) {
+        if !game.flags.contains(flag) { game.flags.append(flag) }
     }
 }

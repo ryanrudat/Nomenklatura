@@ -257,6 +257,9 @@ final class Game {
     // Codex Communication System (NPC-to-Player messaging)
     @Relationship(deleteRule: .cascade) var codexMessages: [CodexMessage]
 
+    // State Bank loans (domestic Gosbank + socialist bloc + western/IMF)
+    @Relationship(deleteRule: .cascade) var activeLoans: [StateBankLoan] = []
+
     var createdAt: Date
     var updatedAt: Date
 
@@ -2477,27 +2480,36 @@ extension Game {
         }
     }
 
-    /// Active (not fully paid) loans -- single decode for all derived properties
-    var activeLoans: [ForeignLoan] {
+    /// Active (not fully paid) foreign loans -- single decode for all derived properties
+    var activeForeignLoans: [ForeignLoan] {
         foreignLoans.filter { !$0.isFullyPaid }
     }
 
-    /// Total debt service per turn (sum of all loan payments)
+    /// Total debt service per turn (sum of all loan payments — foreign + State Bank)
     var totalDebtService: Int {
-        activeLoans.reduce(0) { $0 + $1.paymentPerTurn }
+        let foreign = activeForeignLoans.reduce(0) { $0 + $1.paymentPerTurn }
+        let stateBank = activeStateBankLoans.reduce(0) { $0 + $1.perTurnPayment }
+        return foreign + stateBank
     }
 
-    /// Total outstanding debt (sum of remaining principals)
+    /// Total outstanding debt (sum of remaining principals — foreign + State Bank)
     var totalOutstandingDebt: Int {
-        activeLoans.reduce(0) { $0 + $1.remainingPrincipal }
+        let foreign = activeForeignLoans.reduce(0) { $0 + $1.remainingPrincipal }
+        let stateBank = activeStateBankLoans.reduce(0) { $0 + $1.remainingOwed }
+        return foreign + stateBank
     }
 
-    /// Number of active (not fully paid) loans
+    /// Number of active (not fully paid) loans — combined for the 3-loan cap
     var activeLoanCount: Int {
-        activeLoans.count
+        activeForeignLoans.count + activeStateBankLoans.count
     }
 
-    /// Whether the player can take another loan (max 3 concurrent)
+    /// Active (not fully paid) State Bank loans
+    var activeStateBankLoans: [StateBankLoan] {
+        activeLoans.filter { !$0.isFullyPaid }
+    }
+
+    /// Whether the player can take another loan (max 3 concurrent across all sources)
     var canTakeNewLoan: Bool {
         activeLoanCount < 3
     }

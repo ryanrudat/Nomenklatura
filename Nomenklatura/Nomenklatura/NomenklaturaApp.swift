@@ -46,7 +46,9 @@ struct NomenklaturaApp: App {
             CongressSession.self,
             WorldEventRecord.self,
             // Historical records
-            HistoricalSession.self
+            HistoricalSession.self,
+            // State Bank loan system
+            StateBankLoan.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

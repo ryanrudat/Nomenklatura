@@ -17,6 +17,7 @@ enum EconomicHubSection: String, CaseIterable {
     case trade = "TRADE"
     case regions = "REGIONS"
     case budget = "BUDGET"
+    case stateBank = "BANK"
     case planning = "PLANNING"
 
     var icon: String {
@@ -26,6 +27,7 @@ enum EconomicHubSection: String, CaseIterable {
         case .trade: return "arrow.left.arrow.right"
         case .regions: return "map.fill"
         case .budget: return "banknote.fill"
+        case .stateBank: return "building.columns.fill"
         case .planning: return "hammer.fill"
         }
     }
@@ -37,6 +39,7 @@ enum EconomicHubSection: String, CaseIterable {
         case .trade: return 4
         case .regions: return 6
         case .budget: return 6
+        case .stateBank: return 0
         case .planning: return 1
         }
     }
@@ -51,6 +54,7 @@ struct EconomicHubView: View {
     @State private var selectedSection: EconomicHubSection = .commandCenter
     @State private var showPropaganda: Bool = true
     @State private var selectedSector: EconomicSector?
+    @State private var showStateBankSheet: Bool = false
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
@@ -225,8 +229,122 @@ struct EconomicHubView: View {
             regionsSectionContent
         case .budget:
             budgetSectionContent
+        case .stateBank:
+            stateBankSectionContent
         case .planning:
             planningSectionContent
+        }
+    }
+
+    // MARK: - State Bank
+
+    private var stateBankSectionContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            stateBankSummaryCard
+            stateBankOpenButton
+            if !game.activeStateBankLoans.isEmpty {
+                activeLoansPreview
+            }
+        }
+        .padding(.horizontal, 15)
+        .sheet(isPresented: $showStateBankSheet) {
+            StateBankView(game: game)
+        }
+    }
+
+    private var stateBankSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "building.columns.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(theme.accentGold)
+                Text("STATE BANK")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                Text("\(game.activeLoanCount) / 3")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(game.canTakeNewLoan ? theme.inkBlack : .red)
+            }
+
+            Text("Gosbank · Socialist Credit · Foreign Financing")
+                .font(.system(size: 10))
+                .foregroundColor(theme.inkLight)
+
+            HStack(spacing: 16) {
+                HubStatBox(label: "Outstanding", value: "\(game.totalOutstandingDebt)", color: theme.accentGold)
+                HubStatBox(label: "Debt / Turn", value: "\(game.totalDebtService)", color: .red)
+                HubStatBox(label: "Treasury", value: "\(game.treasury)", color: game.treasury > game.totalDebtService ? .green : .orange)
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+    }
+
+    private var stateBankOpenButton: some View {
+        Button {
+            showStateBankSheet = true
+        } label: {
+            HStack {
+                Image(systemName: "banknote.fill")
+                    .font(.system(size: 12))
+                Text("OPEN STATE BANK")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(theme.sovietRed)
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var activeLoansPreview: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("ACTIVE LOANS")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(1)
+                .foregroundColor(theme.inkGray)
+
+            ForEach(game.activeStateBankLoans) { loan in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(loan.source.displayName)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(theme.inkBlack)
+                        Text("\(loan.percentRateDisplay) · \(loan.turnsRemaining)t left")
+                            .font(.system(size: 9))
+                            .foregroundColor(theme.inkGray)
+                    }
+                    Spacer()
+                    Text("-\(loan.perTurnPayment)/t")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(.red)
+                    if loan.isInDefault {
+                        Text("DEFAULT")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.red)
+                            .cornerRadius(3)
+                    }
+                }
+                .padding(10)
+                .background(theme.parchment)
+                .cornerRadius(6)
+            }
         }
     }
 
