@@ -438,21 +438,6 @@ struct GameView: View {
     // Congress sheet state
     @State private var showingCongressSheet = false
 
-    // Security sheet state
-    @State private var showingSecuritySheet = false
-
-    // Economic sheet state
-    @State private var showingEconomicSheet = false
-
-    // Military sheet state
-    @State private var showingMilitarySheet = false
-
-    // Party sheet state
-    @State private var showingPartySheet = false
-
-    // Ministry sheet state
-    @State private var showingMinistrySheet = false
-
     // Promotion notification state
     @State private var showPromotionNotification = false
     @State private var promotionPosition: LadderPosition?
@@ -491,11 +476,7 @@ struct GameView: View {
                             game: game,
                             onWorldTap: { showingWorldSheet = true },
                             onCongressTap: { showingCongressSheet = true },
-                            onSecurityTap: { showingSecuritySheet = true },
-                            onEconomicTap: { showingEconomicSheet = true },
-                            onMilitaryTap: { showingMilitarySheet = true },
-                            onPartyTap: { showingPartySheet = true },
-                            onMinistryTap: { showingMinistrySheet = true }
+                            onTabSwitch: { tab in selectedTab = tab }
                         )
                     case .dossier:
                         DossierView(
@@ -544,21 +525,6 @@ struct GameView: View {
         }
         .sheet(isPresented: $showingCongressSheet) {
             CongressTabView(game: game)
-        }
-        .sheet(isPresented: $showingSecuritySheet) {
-            SecurityPortalView(game: game)
-        }
-        .sheet(isPresented: $showingEconomicSheet) {
-            EconomicHubView(game: game)
-        }
-        .sheet(isPresented: $showingMilitarySheet) {
-            MilitaryPortalView(game: game)
-        }
-        .sheet(isPresented: $showingPartySheet) {
-            PartyPortalView(game: game)
-        }
-        .sheet(isPresented: $showingMinistrySheet) {
-            StateMinistryPortalView(game: game)
         }
         .overlay {
             // Promotion notification overlay
