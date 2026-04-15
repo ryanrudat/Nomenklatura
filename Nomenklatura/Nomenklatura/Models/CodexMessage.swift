@@ -138,6 +138,14 @@ final class CodexMessage {
     var hasUnreadResponse: Bool {
         !isRead && parentMessageId != nil
     }
+
+    /// Short human-readable label describing why this message was sent.
+    /// Returns nil for player-sent messages or when no trigger info exists.
+    var triggerBadgeText: String? {
+        guard senderId != "player" else { return nil }
+        if let ctx = triggerContext, !ctx.isEmpty { return ctx }
+        return codexTriggerType?.displayName
+    }
 }
 
 // MARK: - Message Types

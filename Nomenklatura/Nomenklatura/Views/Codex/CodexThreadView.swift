@@ -253,6 +253,28 @@ struct CodexThreadView: View {
                         }
                     }
 
+                    // Trigger badge (why this message was sent)
+                    if !isPlayerMessage, let trigger = message.triggerBadgeText {
+                        HStack(spacing: 4) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 9))
+                            Text(trigger.uppercased())
+                                .font(.system(size: 9, weight: .semibold))
+                                .tracking(0.3)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .foregroundColor(theme.inkGray)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(theme.parchment)
+                        .cornerRadius(3)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3)
+                                .stroke(theme.borderTan, lineWidth: 0.5)
+                        )
+                    }
+
                     // Sender
                     HStack(spacing: 4) {
                         Text(isPlayerMessage ? "You" : message.senderName)
@@ -325,7 +347,7 @@ struct CodexThreadView: View {
                 // Response options
                 VStack(spacing: 10) {
                     ForEach(message.responseOptions) { option in
-                        responseOptionButton(option)
+                        responseOptionButton(option, for: message)
                     }
                 }
 
@@ -367,7 +389,7 @@ struct CodexThreadView: View {
         .padding(.top, 8)
     }
 
-    private func responseOptionButton(_ option: CodexResponseOption) -> some View {
+    private func responseOptionButton(_ option: CodexResponseOption, for message: CodexMessage) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 selectedOptionId = option.id
@@ -388,7 +410,7 @@ struct CodexThreadView: View {
                 }
                 .padding(.top, 2)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(option.text)
                         .font(theme.bodyFontSmall)
                         .foregroundColor(theme.inkBlack)
@@ -411,6 +433,9 @@ struct CodexThreadView: View {
                                 .italic()
                         }
                     }
+
+                    // Numeric effect chips
+                    effectChips(for: option, message: message)
                 }
 
                 Spacer()
@@ -424,6 +449,62 @@ struct CodexThreadView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Effect Chips
+
+    /// Renders numeric effect badges for a response option, based on archetype and sender.
+    @ViewBuilder
+    private func effectChips(for option: CodexResponseOption, message: CodexMessage) -> some View {
+        let sender = game.characters.first(where: { $0.templateId == message.senderId })
+        let senderIsPatron = sender?.isPatron ?? false
+        let senderIsRival = sender?.isRival ?? false
+
+        if let archetype = CodexResponseArchetype(rawValue: option.archetype) {
+            let effects = CodexResponseEffects.calculate(
+                archetype: archetype,
+                senderIsPatron: senderIsPatron,
+                senderIsRival: senderIsRival
+            )
+
+            let chips = effectChipItems(from: effects)
+            if !chips.isEmpty {
+                FlowLayout(spacing: 4) {
+                    ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
+                        SimpleEffectTag(text: chip.text, type: chip.type)
+                    }
+                }
+            }
+        }
+    }
+
+    private struct EffectChipItem {
+        let text: String
+        let type: EffectType
+    }
+
+    private static func chip(_ label: String, _ value: Int, goodWhenPositive: Bool) -> EffectChipItem {
+        let sign = value > 0 ? "+" : ""
+        let type: EffectType = (value > 0) == goodWhenPositive ? .positive : .negative
+        return EffectChipItem(text: "\(label) \(sign)\(value)", type: type)
+    }
+
+    private func effectChipItems(from effects: CodexResponseEffects) -> [EffectChipItem] {
+        var items: [EffectChipItem] = []
+        if effects.dispositionChange != 0 {
+            items.append(Self.chip("Disposition", effects.dispositionChange, goodWhenPositive: true))
+        }
+        if effects.patronFavorChange != 0 {
+            items.append(Self.chip("Patron Favor", effects.patronFavorChange, goodWhenPositive: true))
+        }
+        if effects.rivalThreatChange != 0 {
+            // Lower rival threat is good for the player
+            items.append(Self.chip("Rival Threat", effects.rivalThreatChange, goodWhenPositive: false))
+        }
+        if effects.schedulesFollowUp {
+            items.append(EffectChipItem(text: "Follow-up in \(effects.followUpDelay)t", type: .personal))
+        }
+        return items
     }
 
     private var customTextInput: some View {

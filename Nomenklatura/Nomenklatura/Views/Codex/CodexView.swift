@@ -7,7 +7,97 @@
 
 import SwiftUI
 
+/// Top-level Codex tab that switches between the live Terminal (messages) and the static Encyclopedia.
 struct CodexView: View {
+    var game: Game?
+    var onWorldTap: (() -> Void)? = nil
+    var onCongressTap: (() -> Void)? = nil
+    @Environment(\.theme) var theme
+    @State private var mode: CodexMode = .terminal
+
+    enum CodexMode: String, CaseIterable, Identifiable {
+        case terminal = "Terminal"
+        case encyclopedia = "Encyclopedia"
+
+        var id: String { rawValue }
+        var iconName: String {
+            switch self {
+            case .terminal: return "terminal.fill"
+            case .encyclopedia: return "books.vertical.fill"
+            }
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            theme.parchment.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Mode switcher (only when a game is available — standalone encyclopedia shows single mode)
+                if game != nil {
+                    modeSwitcher
+                        .padding(.horizontal, 15)
+                        .padding(.top, 10)
+                        .padding(.bottom, 8)
+                        .background(theme.parchmentDark)
+                }
+
+                switch mode {
+                case .terminal:
+                    if let game = game {
+                        CodexTerminalView(game: game)
+                    } else {
+                        CodexEncyclopediaView(
+                            onWorldTap: onWorldTap,
+                            onCongressTap: onCongressTap
+                        )
+                    }
+                case .encyclopedia:
+                    CodexEncyclopediaView(
+                        onWorldTap: onWorldTap,
+                        onCongressTap: onCongressTap
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - Mode Switcher
+
+    private var modeSwitcher: some View {
+        HStack(spacing: 8) {
+            ForEach(CodexMode.allCases) { option in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        mode = option
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: option.iconName)
+                            .font(.system(size: 12))
+                        Text(option.rawValue.uppercased())
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.8)
+                    }
+                    .foregroundColor(mode == option ? .white : theme.inkGray)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(mode == option ? theme.sovietRed : theme.parchment)
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(mode == option ? theme.sovietRed : theme.borderTan, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+/// Static encyclopedia of PSR lore (previously CodexView's body).
+struct CodexEncyclopediaView: View {
     var onWorldTap: (() -> Void)? = nil
     var onCongressTap: (() -> Void)? = nil
     @Environment(\.theme) var theme
@@ -305,6 +395,6 @@ struct RelatedEntryTag: View {
 // MARK: - Preview
 
 #Preview {
-    CodexView()
+    CodexEncyclopediaView()
         .environment(\.theme, ColdWarTheme())
 }

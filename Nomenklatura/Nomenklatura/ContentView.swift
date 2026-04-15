@@ -514,7 +514,7 @@ struct GameView: View {
                             }
                         }
                     case .codex:
-                        CodexTerminalView(game: game)
+                        CodexView(game: game)
                     case .economy:
                         EconomicHubView(game: game)
                     }

@@ -24,11 +24,22 @@ final class CodexService: ObservableObject {
     // MARK: - Pacing Rules
 
     private struct PacingRules {
-        static let minimumTurnsBetweenPatronMessages = 2
-        static let minimumTurnsBetweenRivalMessages = 3
-        static let maximumMessagesPerTurn = 2
+        static let minimumTurnsBetweenPatronMessages = 3
+        static let minimumTurnsBetweenRivalMessages = 5
+        /// Normal play cap. Crisis allows more via `maximumMessagesPerTurn(for:)`.
+        static let maximumMessagesPerTurn = 1
+        /// Crisis cap - used only when stability is critically low.
+        static let crisisMessagesPerTurn = 2
+        static let crisisStabilityThreshold = 30
         static let decisionReactionDelay = 1
-        static let periodicCheckInThreshold = 5  // Turns without contact
+        static let periodicCheckInThreshold = 7  // Turns without contact
+    }
+
+    /// Returns the maximum messages allowed this turn based on game state.
+    private func maximumMessagesPerTurn(for game: Game) -> Int {
+        game.stability < PacingRules.crisisStabilityThreshold
+            ? PacingRules.crisisMessagesPerTurn
+            : PacingRules.maximumMessagesPerTurn
     }
 
     private init() {}
@@ -41,12 +52,13 @@ final class CodexService: ObservableObject {
         defer { isGenerating = false }
 
         var messagesGenerated = 0
+        let cap = maximumMessagesPerTurn(for: game)
 
         // 1. Deliver any scheduled messages that are now due
         deliverScheduledMessages(game: game)
 
         // 2. Process relationship triggers (patron favor, rival threat thresholds)
-        if messagesGenerated < PacingRules.maximumMessagesPerTurn {
+        if messagesGenerated < cap {
             if let message = await processRelationshipTriggers(game: game, context: context) {
                 messagesGenerated += 1
                 deliverMessage(message, game: game, context: context)
@@ -54,7 +66,7 @@ final class CodexService: ObservableObject {
         }
 
         // 3. Process state threshold triggers (stability, network, etc.)
-        if messagesGenerated < PacingRules.maximumMessagesPerTurn {
+        if messagesGenerated < cap {
             if let message = await processStateThresholds(game: game, context: context) {
                 messagesGenerated += 1
                 deliverMessage(message, game: game, context: context)
@@ -62,7 +74,7 @@ final class CodexService: ObservableObject {
         }
 
         // 4. Process periodic check-ins (if no contact from patron in X turns)
-        if messagesGenerated < PacingRules.maximumMessagesPerTurn {
+        if messagesGenerated < cap {
             if let message = await processPeriodicCheckIns(game: game, context: context) {
                 messagesGenerated += 1
                 deliverMessage(message, game: game, context: context)
@@ -105,7 +117,7 @@ final class CodexService: ObservableObject {
             responseOptions: getDecisionReactionOptions(isPositive: isPositive, character: character),
             triggerType: .decisionReaction,
             triggerSourceId: decision.id.uuidString,
-            triggerContext: "Reaction to: \(option.text)",
+            triggerContext: "Reaction to decision: \(decision.title)",
             scheduledDeliveryTurn: deliveryTurn
         )
 
