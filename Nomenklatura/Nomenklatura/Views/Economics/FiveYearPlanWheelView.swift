@@ -2,8 +2,11 @@
 //  FiveYearPlanWheelView.swift
 //  Nomenklatura
 //
-//  Radial chart showing Five-Year Plan progress across sectors
-//  Central visualization for the Economic Command Center
+//  Radial chart showing Five-Year Plan progress across sectors.
+//  Central visualization for the Economic Command Center.
+//
+//  Post-redesign (Unit 5): the wheel visualizes **real progress toward
+//  player-set sector targets**, not a cosmetic mapping of current stats.
 //
 
 import SwiftUI
@@ -20,30 +23,31 @@ struct FiveYearPlanWheelView: View {
         generateSectorData()
     }
 
+    private var targets: FiveYearPlanTargets { game.planTargets }
+
     var body: some View {
         VStack(spacing: 16) {
-            // Header
             headerSection
 
-            // Wheel chart
-            ZStack {
-                // Background ring
-                Circle()
-                    .stroke(theme.parchmentDark, lineWidth: 30)
+            if !targets.isConfigured {
+                unconfiguredPlaceholder
+            } else {
+                // Wheel chart
+                ZStack {
+                    Circle()
+                        .stroke(theme.parchmentDark, lineWidth: 30)
 
-                // Sector arcs
-                ForEach(sectors.indices, id: \.self) { index in
-                    sectorArc(for: sectors[index], at: index, total: sectors.count)
+                    ForEach(sectors.indices, id: \.self) { index in
+                        sectorArc(for: sectors[index], at: index, total: sectors.count)
+                    }
+
+                    centerContent
                 }
+                .frame(width: 220, height: 220)
+                .padding(.vertical, 10)
 
-                // Center content
-                centerContent
+                legendSection
             }
-            .frame(width: 220, height: 220)
-            .padding(.vertical, 10)
-
-            // Legend
-            legendSection
         }
         .padding()
         .background(theme.parchment)
@@ -58,15 +62,42 @@ struct FiveYearPlanWheelView: View {
 
     private var headerSection: some View {
         VStack(spacing: 4) {
-            Text("FIVE-YEAR PLAN \(game.currentFiveYearPlan)")
+            Text("FIVE-YEAR PLAN \(targets.cycleNumber)")
                 .font(.system(size: 12, weight: .bold))
                 .tracking(1.5)
                 .foregroundColor(theme.sovietRed)
 
-            Text("Year \(game.fiveYearPlanYear) of 5")
+            if targets.isConfigured {
+                Text("Turn \(game.turnNumber) of \(targets.endTurn) — Cycle \(targets.cycleNumber)")
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.inkGray)
+            } else {
+                Text("Targets not yet set — Gosplan awaiting instructions")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(theme.sovietRed)
+            }
+        }
+    }
+
+    // MARK: - Unconfigured Placeholder
+
+    private var unconfiguredPlaceholder: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 48))
+                .foregroundColor(theme.inkLight)
+
+            Text("Set Plan Targets to Begin")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(theme.inkBlack)
+
+            Text("Pick production goals for Heavy Industry, Agriculture, Defense, Welfare, Infrastructure and Energy. Your economic actions will build progress toward those targets over the next \(FiveYearPlanTargets.cycleLength) turns.")
                 .font(.system(size: 11))
                 .foregroundColor(theme.inkGray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
         }
+        .padding(.vertical, 24)
     }
 
     // MARK: - Sector Arc
@@ -83,11 +114,12 @@ struct FiveYearPlanWheelView: View {
                 .stroke(theme.parchmentDark, lineWidth: 28)
                 .rotationEffect(.degrees(-90))
 
-            // Progress arc
+            // Progress arc (cap at 100% for the visible arc length)
+            let cappedProgress = min(100, progress)
             Circle()
                 .trim(
                     from: CGFloat(index) / CGFloat(total),
-                    to: CGFloat(index) / CGFloat(total) + (CGFloat(index + 1) / CGFloat(total) - CGFloat(index) / CGFloat(total) - 0.01) * (CGFloat(progress) / 100)
+                    to: CGFloat(index) / CGFloat(total) + (CGFloat(index + 1) / CGFloat(total) - CGFloat(index) / CGFloat(total) - 0.01) * (CGFloat(cappedProgress) / 100)
                 )
                 .stroke(
                     progressColor(for: progress),
@@ -95,14 +127,13 @@ struct FiveYearPlanWheelView: View {
                 )
                 .rotationEffect(.degrees(-90))
 
-            // Sector icon
             sectorIcon(for: sector, startAngle: startAngle, endAngle: endAngle)
         }
     }
 
     private func sectorIcon(for sector: PlanSectorData, startAngle: Angle, endAngle: Angle) -> some View {
         let midAngle = Angle(degrees: (startAngle.degrees + endAngle.degrees) / 2)
-        let radius: CGFloat = 140  // Distance from center for icons
+        let radius: CGFloat = 140
 
         return Image(systemName: sector.icon)
             .font(.system(size: 14))
@@ -127,6 +158,10 @@ struct FiveYearPlanWheelView: View {
                 .foregroundColor(theme.inkGray)
                 .multilineTextAlignment(.center)
 
+            Text("\(targets.sectorsMetCount)/\(max(1, targets.sectorsWithTargets)) met")
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundColor(theme.inkLight)
+
             if !showPropaganda && hasDivergence {
                 HStack(spacing: 2) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -141,14 +176,14 @@ struct FiveYearPlanWheelView: View {
     }
 
     private var overallProgress: Int {
-        let source = showPropaganda ? sectors.map(\.propagandaProgress) : sectors.map(\.realProgress)
-        guard !source.isEmpty else { return 0 }
-        return source.reduce(0, +) / source.count
+        guard targets.isConfigured else { return 0 }
+        return targets.averageProgressPercent
     }
 
     private var statusLabel: String {
+        guard targets.isConfigured else { return "UNSET" }
         let progress = overallProgress
-        let expected = game.fiveYearPlanYear * 20  // 20% per year
+        let expected = targets.expectedProgressPercent(currentTurn: game.turnNumber)
 
         if progress >= expected + 10 {
             return "AHEAD OF\nSCHEDULE"
@@ -183,10 +218,18 @@ struct FiveYearPlanWheelView: View {
                 .fill(progressColor(for: progress))
                 .frame(width: 8, height: 8)
 
-            Text(sector.name)
-                .font(.system(size: 9))
-                .foregroundColor(theme.inkBlack)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(sector.name)
+                    .font(.system(size: 9))
+                    .foregroundColor(theme.inkBlack)
+                    .lineLimit(1)
+
+                if sector.target > 0 {
+                    Text("\(sector.current)/\(sector.target)")
+                        .font(.system(size: 8, design: .monospaced))
+                        .foregroundColor(theme.inkLight)
+                }
+            }
 
             Spacer()
 
@@ -202,62 +245,43 @@ struct FiveYearPlanWheelView: View {
 
     // MARK: - Helpers
 
+    /// Color coding: green (on track/ahead), yellow (slightly behind), orange
+    /// (falling behind), red (failing).
     private func progressColor(for progress: Int) -> Color {
-        switch progress {
-        case 80...: return .green
-        case 60..<80: return theme.accentGold
-        case 40..<60: return .orange
-        default: return .red
+        let expected = targets.isConfigured
+            ? targets.expectedProgressPercent(currentTurn: game.turnNumber)
+            : 0
+        if progress >= expected + 5 {
+            return .green
+        } else if progress >= expected - 10 {
+            return theme.accentGold
+        } else if progress >= expected - 25 {
+            return .orange
+        } else {
+            return .red
         }
     }
 
+    /// Build the six plan-sector display rows from the live target blob.
     private func generateSectorData() -> [PlanSectorData] {
-        let propaganda = EconomicPropagandaService.shared.generatePropagandaReport(for: game)
+        PlanSector.allCases.map { sector in
+            let tgt = targets.target(for: sector)
+            let cur = targets.progress(for: sector)
+            let realProgress = targets.progressPercent(for: sector)
 
-        return [
-            PlanSectorData(
-                id: "industry",
-                name: "Heavy Industry",
-                icon: "gearshape.fill",
-                realProgress: min(100, game.industrialOutput),
-                propagandaProgress: min(100, propaganda.industrialOutput)
-            ),
-            PlanSectorData(
-                id: "agriculture",
-                name: "Agriculture",
-                icon: "leaf.fill",
-                realProgress: min(100, game.foodSupply),
-                propagandaProgress: min(100, propaganda.foodSupply)
-            ),
-            PlanSectorData(
-                id: "energy",
-                name: "Energy",
-                icon: "bolt.fill",
-                realProgress: min(100, (game.industrialOutput + game.treasury) / 2),
-                propagandaProgress: min(100, (propaganda.industrialOutput + 60) / 2)
-            ),
-            PlanSectorData(
-                id: "infrastructure",
-                name: "Infrastructure",
-                icon: "road.lanes",
-                realProgress: min(100, game.stability),
-                propagandaProgress: min(100, max(60, game.stability + 15))
-            ),
-            PlanSectorData(
-                id: "defense",
-                name: "Defense",
-                icon: "shield.fill",
-                realProgress: min(100, game.militaryLoyalty),
-                propagandaProgress: min(100, max(70, game.militaryLoyalty + 10))
-            ),
-            PlanSectorData(
-                id: "welfare",
-                name: "People's Welfare",
-                icon: "person.3.fill",
-                realProgress: min(100, game.popularSupport),
-                propagandaProgress: min(100, max(65, game.popularSupport + 20))
+            // Propaganda variant: puffs up real progress by ~15 points.
+            let propagandaProgress = min(100, realProgress + 15)
+
+            return PlanSectorData(
+                id: sector.rawValue,
+                name: sector.displayName,
+                icon: sector.iconName,
+                target: tgt,
+                current: cur,
+                realProgress: realProgress,
+                propagandaProgress: propagandaProgress
             )
-        ]
+        }
     }
 }
 
@@ -267,13 +291,15 @@ struct PlanSectorData: Identifiable {
     let id: String
     let name: String
     let icon: String
-    let realProgress: Int
+    let target: Int           // Target delta (e.g. +15)
+    let current: Int          // Accumulated progress
+    let realProgress: Int     // 0-100+ percent
     let propagandaProgress: Int
 }
 
 // MARK: - Compact Plan Summary
 
-/// Smaller version for overview tabs
+/// Smaller version for overview tabs.
 struct CompactPlanSummary: View {
     @Bindable var game: Game
     let showPropaganda: Bool
@@ -288,7 +314,7 @@ struct CompactPlanSummary: View {
                     .frame(width: 60, height: 60)
 
                 Circle()
-                    .trim(from: 0, to: CGFloat(progress) / 100)
+                    .trim(from: 0, to: CGFloat(min(100, progress)) / 100)
                     .stroke(progressColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .frame(width: 60, height: 60)
                     .rotationEffect(.degrees(-90))
@@ -299,14 +325,20 @@ struct CompactPlanSummary: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("FIVE-YEAR PLAN \(game.currentFiveYearPlan)")
+                Text("FIVE-YEAR PLAN \(game.planTargets.cycleNumber)")
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
                     .foregroundColor(theme.sovietRed)
 
-                Text("Year \(game.fiveYearPlanYear) of 5")
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.inkGray)
+                if game.planTargets.isConfigured {
+                    Text("Turn \(game.turnNumber) of \(game.planTargets.endTurn)")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.inkGray)
+                } else {
+                    Text("Targets unset")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(theme.sovietRed)
+                }
 
                 Text(statusText)
                     .font(.system(size: 10, weight: .medium))
@@ -321,15 +353,17 @@ struct CompactPlanSummary: View {
     }
 
     private var progress: Int {
+        guard game.planTargets.isConfigured else { return 0 }
         if showPropaganda {
-            return EconomicPropagandaService.shared.generatePropagandaReport(for: game).fiveYearPlanProgress
+            return min(100, game.planTargets.averageProgressPercent + 15)
         }
-        return game.planPerformanceScore
+        return game.planTargets.averageProgressPercent
     }
 
     private var statusText: String {
-        let expected = game.fiveYearPlanYear * 20
-        if progress >= expected + 10 {
+        guard game.planTargets.isConfigured else { return "Awaiting targets" }
+        let expected = game.planTargets.expectedProgressPercent(currentTurn: game.turnNumber)
+        if progress >= expected + 5 {
             return "Ahead of Schedule"
         } else if progress >= expected - 10 {
             return "On Track"
@@ -339,12 +373,13 @@ struct CompactPlanSummary: View {
     }
 
     private var progressColor: Color {
-        switch progress {
-        case 80...: return .green
-        case 60..<80: return theme.accentGold
-        case 40..<60: return .orange
-        default: return .red
-        }
+        let expected = game.planTargets.isConfigured
+            ? game.planTargets.expectedProgressPercent(currentTurn: game.turnNumber)
+            : 0
+        if progress >= expected + 5 { return .green }
+        if progress >= expected - 10 { return theme.accentGold }
+        if progress >= expected - 25 { return .orange }
+        return .red
     }
 }
 

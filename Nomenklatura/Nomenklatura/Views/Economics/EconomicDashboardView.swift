@@ -527,17 +527,17 @@ struct FiveYearPlanView: View {
         (game.industrialOutput + game.foodSupply + game.treasury) / 3
     }
 
-    private var sectors: [PlanSector] {
+    private var sectors: [LegacyDashboardSector] {
         [
-            PlanSector(name: "Heavy Industry", target: 100, current: game.industrialOutput, icon: "gearshape.fill"),
-            PlanSector(name: "Agriculture", target: 100, current: game.foodSupply, icon: "leaf.fill"),
-            PlanSector(name: "Energy", target: 100, current: (game.industrialOutput + game.treasury) / 2, icon: "bolt.fill"),
-            PlanSector(name: "Infrastructure", target: 100, current: game.stability, icon: "road.lanes")
+            LegacyDashboardSector(name: "Heavy Industry", target: 100, current: game.industrialOutput, icon: "gearshape.fill"),
+            LegacyDashboardSector(name: "Agriculture", target: 100, current: game.foodSupply, icon: "leaf.fill"),
+            LegacyDashboardSector(name: "Energy", target: 100, current: (game.industrialOutput + game.treasury) / 2, icon: "bolt.fill"),
+            LegacyDashboardSector(name: "Infrastructure", target: 100, current: game.stability, icon: "road.lanes")
         ]
     }
 }
 
-struct PlanSector {
+struct LegacyDashboardSector {
     let name: String
     let target: Int
     let current: Int
@@ -545,7 +545,7 @@ struct PlanSector {
 }
 
 struct SectorProgressRow: View {
-    let sector: PlanSector
+    let sector: LegacyDashboardSector
     @Environment(\.theme) var theme
 
     var body: some View {

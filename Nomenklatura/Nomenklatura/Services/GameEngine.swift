@@ -948,6 +948,11 @@ class GameEngine {
         // Keep desk/report UI in sync without applying a second treasury model.
         EconomyService.shared.snapshotEconomicReport(game: game)
 
+        // Five-Year Plan cycle end check — idempotent, only fires once per cycle.
+        if let result = FiveYearPlanService.shared.resolveElapsedCycle(for: game) {
+            gameLogger.info("Five-Year Plan cycle resolved: \(result.headline) (\(result.sectorsMet)/\(result.sectorsTotal) sectors met)")
+        }
+
         gameLogger.info("Economic indicators - GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
     }
 

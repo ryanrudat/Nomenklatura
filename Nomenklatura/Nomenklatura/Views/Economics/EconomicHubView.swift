@@ -51,6 +51,7 @@ struct EconomicHubView: View {
     @State private var selectedSection: EconomicHubSection = .commandCenter
     @State private var showPropaganda: Bool = true
     @State private var selectedSector: EconomicSector?
+    @State private var isShowingPlanSetup: Bool = false
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
@@ -79,6 +80,20 @@ struct EconomicHubView: View {
             ScrollView {
                 sectionContent
                     .padding(.bottom, 120)
+            }
+        }
+        .sheet(isPresented: $isShowingPlanSetup) {
+            PlanTargetSetupView(game: game)
+        }
+        .onAppear {
+            if game.needsPlanTargetSetup {
+                isShowingPlanSetup = true
+            }
+        }
+        .onChange(of: game.planTargets.isConfigured) { _, configured in
+            // Re-prompt whenever a new cycle rolls over and awaits targets.
+            if !configured {
+                isShowingPlanSetup = true
             }
         }
     }
@@ -234,6 +249,10 @@ struct EconomicHubView: View {
 
     private var commandCenterSection: some View {
         VStack(alignment: .leading, spacing: 20) {
+            CycleResultBanner(game: game)
+            if game.needsPlanTargetSetup {
+                setPlanTargetsCallout
+            }
             EconomicSituationCard(game: game)
             keyMetricsGrid
             sparklineSection
@@ -241,6 +260,40 @@ struct EconomicHubView: View {
             activeProjectsSummary
         }
         .padding(.horizontal, 15)
+    }
+
+    /// Call-to-action shown when the current plan cycle has not yet had
+    /// targets set by the player.
+    private var setPlanTargetsCallout: some View {
+        Button {
+            isShowingPlanSetup = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 22))
+                    .foregroundColor(theme.sovietRed)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("SET FIVE-YEAR PLAN TARGETS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(1)
+                        .foregroundColor(theme.sovietRed)
+                    Text("Gosplan awaits your targets for cycle \(game.planTargets.cycleNumber).")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.inkBlack)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundColor(theme.inkGray)
+            }
+            .padding(12)
+            .background(theme.parchmentDark)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(theme.sovietRed, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var keyMetricsGrid: some View {
@@ -548,6 +601,12 @@ struct EconomicHubView: View {
 
     private var planningSectionContent: some View {
         VStack(alignment: .leading, spacing: 20) {
+            if game.needsPlanTargetSetup {
+                setPlanTargetsCallout
+                    .padding(.horizontal, 15)
+            }
+            FiveYearPlanTargetsCard(game: game)
+                .padding(.horizontal, 15)
             EconomicProjectsSection(game: game)
             EconomicActionsSection(game: game)
         }

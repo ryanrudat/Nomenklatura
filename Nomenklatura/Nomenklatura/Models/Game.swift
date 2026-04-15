@@ -2553,9 +2553,16 @@ extension Game {
         unemploymentHistory = [6, 5, 5, 4, 4]
         treasuryHistory = [48, 50, 52, 54, 55]
 
-        // C. Five-Year Plan progress (year 3 of first plan, moderately behind)
+        // C. Five-Year Plan progress — leave targets unconfigured so the player
+        // is prompted at the start of the game to set real cycle goals. Legacy
+        // defaults are retained for any code path that still reads the old
+        // gdp/industrial/agriculture target fields.
         planPerformanceScore = 45
         var targets = FiveYearPlanTargets()
+        targets.cycleNumber = 1
+        targets.startTurn = turnNumber
+        targets.endTurn = turnNumber + FiveYearPlanTargets.cycleLength
+        targets.isConfigured = false
         targets.gdpTarget = 125
         targets.industrialTarget = 65
         targets.agricultureTarget = 55
@@ -2853,24 +2860,33 @@ extension Game {
         }
     }
 
-    /// Advance Five-Year Plan year (call every 4 turns = 1 year)
+    /// Advance Five-Year Plan year (call every 4 turns = 1 year).
+    ///
+    /// Year-by-year accounting stays here for legacy UI (performance score,
+    /// year number). End-of-cycle **consequences** are now owned by
+    /// `FiveYearPlanService.resolveElapsedCycle` so they are only applied
+    /// once per cycle even when this method also fires.
     func advanceFiveYearPlanYear() {
         // Evaluate targets for the ending year before advancing
         evaluateYearlyTargets()
 
         fiveYearPlanYear += 1
         if fiveYearPlanYear > 5 {
-            // Plan completion - apply consequences
-            completeFiveYearPlan()
-
-            // New plan begins
-            currentFiveYearPlan += 1
-            fiveYearPlanYear = 1
-            planTargetsMet = 0
-            planPerformanceScore = 50
-
-            // Initialize new targets
-            initializePlanTargets()
+            // When targets are configured, FiveYearPlanService owns the
+            // consequence path — skip the legacy completion logic entirely
+            // so flags and stat changes are not double-applied.
+            if !planTargets.isConfigured {
+                completeFiveYearPlan()
+                currentFiveYearPlan += 1
+                fiveYearPlanYear = 1
+                planTargetsMet = 0
+                planPerformanceScore = 50
+                initializePlanTargets()
+            } else {
+                // Clamp year so it does not keep climbing while the cycle
+                // awaits end-of-turn resolution by FiveYearPlanService.
+                fiveYearPlanYear = 5
+            }
         }
         updatedAt = Date()
     }
@@ -2886,52 +2902,89 @@ extension Game {
         }
     }
 
-    /// Initialize targets for a new Five-Year Plan
+    /// Initialize a fresh target blob for the next Five-Year Plan cycle.
+    /// Leaves `isConfigured = false` so the UI prompts the player to set goals.
     func initializePlanTargets() {
         var targets = FiveYearPlanTargets()
+        targets.cycleNumber = currentFiveYearPlan
+        targets.startTurn = turnNumber
+        targets.endTurn = turnNumber + FiveYearPlanTargets.cycleLength
+        targets.isConfigured = false
+        targets.isComplete = false
+        targets.targets = [:]
+        targets.progress = [:]
 
-        // Set targets based on current state + ambitious growth
-        targets.gdpTarget = gdpIndex + 25  // Aim for 25% growth over 5 years
-        targets.industrialTarget = industrialOutput + 15
-        targets.agricultureTarget = foodSupply + 10
-        targets.treasuryTarget = max(60, treasury + 10)
-
-        // Track starting values
+        // Keep legacy fields synced to current state for back-compat readers.
         targets.startingGDP = gdpIndex
         targets.startingIndustrial = industrialOutput
         targets.startingAgriculture = foodSupply
         targets.startingTreasury = treasury
+        targets.gdpTarget = gdpIndex + 25
+        targets.industrialTarget = industrialOutput + 15
+        targets.agricultureTarget = foodSupply + 10
+        targets.treasuryTarget = max(60, treasury + 10)
 
         planTargets = targets
     }
 
-    /// Evaluate progress against yearly sub-targets
+    /// Whether the current cycle's targets still need to be set by the player.
+    var needsPlanTargetSetup: Bool {
+        !planTargets.isConfigured
+    }
+
+    /// Apply a difficulty preset to the current cycle's targets.
+    func configurePlanTargets(preset: PlanTargetPreset) {
+        var t = planTargets
+        t.apply(preset: preset)
+        t.startTurn = turnNumber
+        t.endTurn = turnNumber + FiveYearPlanTargets.cycleLength
+        t.isComplete = false
+        t.progress = [:]
+        planTargets = t
+    }
+
+    /// Apply explicit custom targets to the current cycle.
+    func configurePlanTargets(custom deltas: [PlanSector: Int]) {
+        var t = planTargets
+        t.applyCustom(targets: deltas)
+        t.startTurn = turnNumber
+        t.endTurn = turnNumber + FiveYearPlanTargets.cycleLength
+        t.isComplete = false
+        t.progress = [:]
+        planTargets = t
+    }
+
+    /// Add progress toward a plan sector target (called when actions resolve).
+    func addPlanProgress(_ amount: Int, to sector: PlanSector) {
+        var t = planTargets
+        t.addProgress(amount, to: sector)
+        planTargets = t
+    }
+
+    /// Evaluate progress against yearly sub-targets.
+    /// Updates `planPerformanceScore` from real sector progress so the plan
+    /// performance readouts reflect the new target system.
     private func evaluateYearlyTargets() {
         let targets = planTargets
 
-        // Calculate progress toward each target
+        // Prefer the new sector-progress model when targets are configured.
+        if targets.isConfigured && targets.sectorsWithTargets > 0 {
+            let avg = targets.averageProgressPercent
+            planPerformanceScore = max(0, min(100, avg))
+            return
+        }
+
+        // Legacy path: fall back to macro stats if the cycle is unconfigured.
         let gdpProgress = calculateProgress(current: gdpIndex, start: targets.startingGDP, target: targets.gdpTarget)
         let industrialProgress = calculateProgress(current: industrialOutput, start: targets.startingIndustrial, target: targets.industrialTarget)
         let agricultureProgress = calculateProgress(current: foodSupply, start: targets.startingAgriculture, target: targets.agricultureTarget)
 
-        // Expected progress = fiveYearPlanYear / 5 (e.g., year 3 = 60% progress expected)
         let expectedProgress = Double(fiveYearPlanYear) / 5.0
+        guard expectedProgress > 0 else { return }
 
-        // Award targets met for exceeding expected progress
-        var yearlyTargetsMet = 0
-        if gdpProgress >= expectedProgress { yearlyTargetsMet += 1 }
-        if industrialProgress >= expectedProgress { yearlyTargetsMet += 1 }
-        if agricultureProgress >= expectedProgress { yearlyTargetsMet += 1 }
-        if treasury >= targets.treasuryTarget { yearlyTargetsMet += 1 }
-
-        planTargetsMet += yearlyTargetsMet
-
-        // Update performance score
         let overallProgress = (gdpProgress + industrialProgress + agricultureProgress) / 3.0
-        planPerformanceScore = Int((overallProgress / expectedProgress) * 50.0) + 25  // 25-75 range, biased toward 50
+        planPerformanceScore = Int((overallProgress / expectedProgress) * 50.0) + 25
         planPerformanceScore = max(0, min(100, planPerformanceScore))
-
-        planTargets = targets
     }
 
     /// Calculate progress as fraction (0.0 to 1.0+)
@@ -2942,53 +2995,33 @@ extension Game {
         return max(0.0, Double(achieved) / Double(needed))
     }
 
-    /// Complete a Five-Year Plan and apply consequences
+    /// Legacy plan-completion path, used only when the player has not yet
+    /// configured targets for the current cycle (the new system's
+    /// `FiveYearPlanService` owns the configured path).
     private func completeFiveYearPlan() {
         let performance = planPerformanceScore
         let targets = planTargets
 
-        // Calculate overall success
         let gdpMet = gdpIndex >= targets.gdpTarget
         let industrialMet = industrialOutput >= targets.industrialTarget
         let agricultureMet = foodSupply >= targets.agricultureTarget
         let treasuryMet = treasury >= targets.treasuryTarget
-
         let targetCount = [gdpMet, industrialMet, agricultureMet, treasuryMet].filter { $0 }.count
 
-        // Apply consequences based on performance
         if targetCount >= 4 {
-            // Exceeded all targets - major bonus
-            applyStat("standing", change: 15)
-            applyStat("popularSupport", change: 10)
-            applyStat("eliteLoyalty", change: 10)
-            applyStat("reputationCompetent", change: 15)
-            flags.append("plan_\(currentFiveYearPlan)_exceeded")
-        } else if targetCount >= 3 {
-            // Met most targets - good
             applyStat("standing", change: 8)
+            applyStat("eliteLoyalty", change: 3)
             applyStat("reputationCompetent", change: 10)
             flags.append("plan_\(currentFiveYearPlan)_success")
         } else if targetCount >= 2 {
-            // Partial success - mixed results
-            applyStat("standing", change: -5)
+            applyStat("standing", change: -3)
             flags.append("plan_\(currentFiveYearPlan)_partial")
-        } else if targetCount == 1 {
-            // Mostly failed - consequences
-            applyStat("standing", change: -15)
-            applyStat("patronFavor", change: -10)
-            applyStat("reputationCompetent", change: -15)
-            flags.append("plan_\(currentFiveYearPlan)_underperformed")
         } else {
-            // Complete failure - severe consequences
-            applyStat("standing", change: -25)
-            applyStat("patronFavor", change: -20)
-            applyStat("eliteLoyalty", change: -10)
-            applyStat("popularSupport", change: -15)
-            applyStat("reputationCompetent", change: -25)
-            flags.append("plan_\(currentFiveYearPlan)_failure")
+            applyStat("standing", change: -10)
+            applyStat("eliteLoyalty", change: -5)
+            flags.append("plan_\(currentFiveYearPlan)_underperformed")
         }
 
-        // Performance modifies treasury (plan bonuses/penalties from central authority)
         if performance >= 80 {
             applyStat("treasury", change: 10)
         } else if performance >= 60 {

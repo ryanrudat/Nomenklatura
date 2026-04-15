@@ -302,36 +302,106 @@ struct EconomicAction: Identifiable, Codable {
         }
         return true
     }
+
+    /// Plan sectors this action contributes progress toward when executed
+    /// successfully. Each entry carries the contribution amount. Used by
+    /// `EconomicActionService` to update `Game.planTargets`.
+    ///
+    /// The mapping is intentionally generous: players should see visible
+    /// progress on the wheel after executing 2-3 actions in a cycle.
+    func planSectorContributions(targetSector: EconomicSector?) -> [(sector: PlanSector, amount: Int)] {
+        var contributions: [(PlanSector, Int)] = []
+        switch id {
+        case "meet_quota":
+            contributions.append((.heavyIndustry, 2))
+        case "exceed_quota":
+            contributions.append((.heavyIndustry, 5))
+            contributions.append((.welfare, 1))
+        case "set_regional_quota":
+            contributions.append((.heavyIndustry, 2))
+            contributions.append((.agriculture, 1))
+        case "allocate_labor":
+            contributions.append((.heavyIndustry, 3))
+            contributions.append((.infrastructure, 2))
+        case "prioritize_sector":
+            if let ts = targetSector {
+                contributions.append((planSector(for: ts), 5))
+            } else {
+                contributions.append((.heavyIndustry, 4))
+            }
+        case "emergency_requisition":
+            if let ts = targetSector {
+                contributions.append((planSector(for: ts), 6))
+            } else {
+                contributions.append((.heavyIndustry, 5))
+            }
+        case "propose_modernization":
+            contributions.append((.heavyIndustry, 6))
+            contributions.append((.energy, 3))
+        case "agricultural_reform":
+            contributions.append((.agriculture, 8))
+            contributions.append((.welfare, 2))
+        case "trade_agreement":
+            contributions.append((.infrastructure, 3))
+            contributions.append((.welfare, 3))
+        case "crisis_mobilization":
+            contributions.append((.heavyIndustry, 6))
+            contributions.append((.defense, 4))
+        case "economic_decree":
+            contributions.append((.heavyIndustry, 4))
+            contributions.append((.infrastructure, 3))
+        case "nationalize_sector":
+            if let ts = targetSector {
+                contributions.append((planSector(for: ts), 5))
+            } else {
+                contributions.append((.heavyIndustry, 3))
+            }
+        case "request_resources":
+            contributions.append((.heavyIndustry, 2))
+        case "reallocate_budget":
+            contributions.append((.heavyIndustry, 2))
+            contributions.append((.welfare, 1))
+        default:
+            switch category {
+            case .production: contributions.append((.heavyIndustry, 2))
+            case .planning: contributions.append((.heavyIndustry, 1))
+            case .allocation: contributions.append((.welfare, 1))
+            case .reform: contributions.append((.heavyIndustry, 2))
+            case .strategic: contributions.append((.infrastructure, 2))
+            case .supreme: contributions.append((.defense, 2))
+            }
+        }
+        return contributions
+    }
+
+    /// Map an `EconomicSector` (raw economic engine sector) to the six-sector
+    /// plan view used by Five-Year Plan targets.
+    private func planSector(for sector: EconomicSector) -> PlanSector {
+        switch sector {
+        case .heavyIndustry: return .heavyIndustry
+        case .lightIndustry: return .welfare
+        case .agriculture: return .agriculture
+        case .energy: return .energy
+        case .mining: return .heavyIndustry
+        case .construction: return .infrastructure
+        case .transport: return .infrastructure
+        case .defense: return .defense
+        }
+    }
 }
 
 // MARK: - Economic Action Definitions
 
 extension EconomicAction {
 
-    /// All defined economic actions (25+ actions across 6 tiers)
+    /// Slim, focused economic-action lineup.
+    ///
+    /// Reduced from 25 to 12 core actions (plus 2 compatibility actions used
+    /// by bureau directives). Each action contributes progress toward the
+    /// player's Five-Year Plan sector targets via
+    /// `planSectorContributions(targetSector:)`.
     static let allActions: [EconomicAction] = [
-        // TIER 1-2: Production Actions (Factory Manager Level)
-        EconomicAction(
-            id: "report_production",
-            name: "Report Production Status",
-            description: "File accurate production reports",
-            detailedDescription: "Submit truthful reports on factory output, resource usage, and worker productivity. Honest reporting is valued but can expose shortfalls.",
-            iconName: "doc.text.fill",
-            actionVerb: "Report",
-            category: .production,
-            minimumPositionIndex: 1,
-            targetType: .enterprise,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 0,
-            executionTurns: 1,
-            baseSuccessChance: 100,
-            riskLevel: .routine,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: EconomicEffects(standingChange: 2),
-            failureEffects: EconomicEffects()
-        ),
+        // MARK: Production
 
         EconomicAction(
             id: "meet_quota",
@@ -377,29 +447,8 @@ extension EconomicAction {
             failureEffects: EconomicEffects(industrialOutputChange: -3, popularSupportChange: -3, standingChange: -8)
         ),
 
-        EconomicAction(
-            id: "falsify_reports",
-            name: "Falsify Production Reports",
-            description: "Inflate numbers to meet targets",
-            detailedDescription: "Submit fraudulent reports showing quotas met. Common practice but risky if audited.",
-            iconName: "doc.badge.ellipsis",
-            actionVerb: "Falsify",
-            category: .production,
-            minimumPositionIndex: 1,
-            targetType: .enterprise,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 2,
-            executionTurns: 1,
-            baseSuccessChance: 75,
-            riskLevel: .significant,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: EconomicEffects(standingChange: 5, createsFlag: "falsified_reports"),
-            failureEffects: EconomicEffects(stabilityChange: -2, standingChange: -15)
-        ),
+        // MARK: Planning
 
-        // TIER 2-3: Planning Actions (Regional Planner Level)
         EconomicAction(
             id: "set_regional_quota",
             name: "Set Regional Quota",
@@ -411,7 +460,7 @@ extension EconomicAction {
             minimumPositionIndex: 2,
             targetType: .region,
             targetSector: nil,
-            requiredTrack: "economicPlanning",
+            requiredTrack: nil,
             cooldownTurns: 2,
             executionTurns: 1,
             baseSuccessChance: 80,
@@ -444,51 +493,8 @@ extension EconomicAction {
             failureEffects: EconomicEffects(stabilityChange: -2, popularSupportChange: -5)
         ),
 
-        EconomicAction(
-            id: "request_resources",
-            name: "Request Additional Resources",
-            description: "Petition for more raw materials",
-            detailedDescription: "Submit formal request for additional resource allocation from central planners. Success depends on relationships and priorities.",
-            iconName: "shippingbox.fill",
-            actionVerb: "Request",
-            category: .planning,
-            minimumPositionIndex: 2,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 3,
-            executionTurns: 1,
-            baseSuccessChance: 50,
-            riskLevel: .routine,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: EconomicEffects(industrialOutputChange: 4, networkChange: 2),
-            failureEffects: EconomicEffects(standingChange: -2)
-        ),
+        // MARK: Allocation
 
-        EconomicAction(
-            id: "propose_efficiency",
-            name: "Propose Efficiency Measures",
-            description: "Suggest productivity improvements",
-            detailedDescription: "Submit proposals for improving production efficiency. May be seen as criticizing current methods.",
-            iconName: "gearshape.arrow.triangle.2.circlepath",
-            actionVerb: "Propose",
-            category: .planning,
-            minimumPositionIndex: 3,
-            targetType: .sector,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 2,
-            executionTurns: 1,
-            baseSuccessChance: 60,
-            riskLevel: .moderate,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: EconomicEffects(industrialOutputChange: 3, standingChange: 5),
-            failureEffects: EconomicEffects(standingChange: -5)
-        ),
-
-        // TIER 3-4: Allocation Actions (Sector Coordinator Level)
         EconomicAction(
             id: "prioritize_sector",
             name: "Prioritize Sector",
@@ -500,7 +506,7 @@ extension EconomicAction {
             minimumPositionIndex: 3,
             targetType: .sector,
             targetSector: nil,
-            requiredTrack: "economicPlanning",
+            requiredTrack: nil,
             cooldownTurns: 3,
             executionTurns: 1,
             baseSuccessChance: 70,
@@ -509,50 +515,6 @@ extension EconomicAction {
             canBeDecree: false,
             successEffects: EconomicEffects(industrialOutputChange: 5, standingChange: 5),
             failureEffects: EconomicEffects(stabilityChange: -2, standingChange: -5)
-        ),
-
-        EconomicAction(
-            id: "authorize_imports",
-            name: "Authorize Foreign Imports",
-            description: "Approve import of foreign goods/technology",
-            detailedDescription: "Grant permission to import foreign machinery or technology. May be seen as admitting domestic shortcomings.",
-            iconName: "arrow.down.to.line.circle.fill",
-            actionVerb: "Authorize",
-            category: .allocation,
-            minimumPositionIndex: 4,
-            targetType: .tradePartner,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 3,
-            executionTurns: 1,
-            baseSuccessChance: 65,
-            riskLevel: .moderate,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: EconomicEffects(treasuryChange: -3, industrialOutputChange: 4, internationalStandingChange: 2),
-            failureEffects: EconomicEffects(standingChange: -3)
-        ),
-
-        EconomicAction(
-            id: "reallocate_budget",
-            name: "Reallocate Ministry Budget",
-            description: "Shift funds between ministries",
-            detailedDescription: "Transfer budget allocations between ministries. Creates winners and losers in the bureaucracy.",
-            iconName: "arrow.left.arrow.right.circle.fill",
-            actionVerb: "Reallocate",
-            category: .allocation,
-            minimumPositionIndex: 4,
-            targetType: .budget,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 4,
-            executionTurns: 1,
-            baseSuccessChance: 60,
-            riskLevel: .significant,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: EconomicEffects(treasuryChange: 3, eliteLoyaltyChange: -2, standingChange: 3),
-            failureEffects: EconomicEffects(eliteLoyaltyChange: -3, standingChange: -5)
         ),
 
         EconomicAction(
@@ -577,7 +539,8 @@ extension EconomicAction {
             failureEffects: EconomicEffects(stabilityChange: -5, standingChange: -10)
         ),
 
-        // TIER 4-5: Reform Actions (Deputy Minister Level)
+        // MARK: Reform
+
         EconomicAction(
             id: "propose_modernization",
             name: "Propose Modernization Program",
@@ -589,7 +552,7 @@ extension EconomicAction {
             minimumPositionIndex: 4,
             targetType: .sector,
             targetSector: nil,
-            requiredTrack: "economicPlanning",
+            requiredTrack: nil,
             cooldownTurns: 5,
             executionTurns: 3,
             baseSuccessChance: 55,
@@ -622,72 +585,7 @@ extension EconomicAction {
             failureEffects: EconomicEffects(stabilityChange: -3, standingChange: -10)
         ),
 
-        EconomicAction(
-            id: "price_adjustment",
-            name: "Adjust State Prices",
-            description: "Modify controlled prices",
-            detailedDescription: "Propose adjustments to state-controlled prices. Can reduce shortages but may cause inflation fears.",
-            iconName: "rublesign.circle.fill",
-            actionVerb: "Adjust",
-            category: .reform,
-            minimumPositionIndex: 5,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 4,
-            executionTurns: 1,
-            baseSuccessChance: 60,
-            riskLevel: .significant,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(treasuryChange: 5, popularSupportChange: -3, standingChange: 5),
-            failureEffects: EconomicEffects(stabilityChange: -3, popularSupportChange: -8)
-        ),
-
-        EconomicAction(
-            id: "create_enterprise",
-            name: "Create New State Enterprise",
-            description: "Establish new production facility",
-            detailedDescription: "Propose creation of new state enterprise. Requires substantial investment and labor allocation.",
-            iconName: "building.fill",
-            actionVerb: "Create",
-            category: .reform,
-            minimumPositionIndex: 5,
-            targetType: .region,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 8,
-            executionTurns: 5,
-            baseSuccessChance: 60,
-            riskLevel: .major,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(treasuryChange: -10, industrialOutputChange: 10, standingChange: 10, startsProject: true),
-            failureEffects: EconomicEffects(treasuryChange: -5, standingChange: -10)
-        ),
-
-        // TIER 5-6: Strategic Actions (Gosplan Deputy Chairman Level)
-        EconomicAction(
-            id: "five_year_plan",
-            name: "Draft Five-Year Plan",
-            description: "Create comprehensive economic plan",
-            detailedDescription: "Lead the development of the next Five-Year Plan. The defining act of economic leadership in a socialist state.",
-            iconName: "calendar.badge.clock",
-            actionVerb: "Draft",
-            category: .strategic,
-            minimumPositionIndex: 5,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: "economicPlanning",
-            cooldownTurns: 26,  // Once per "year"
-            executionTurns: 3,
-            baseSuccessChance: 65,
-            riskLevel: .systemic,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(industrialOutputChange: 5, foodSupplyChange: 3, stabilityChange: 5, standingChange: 15),
-            failureEffects: EconomicEffects(stabilityChange: -5, standingChange: -15)
-        ),
+        // MARK: Strategic
 
         EconomicAction(
             id: "trade_agreement",
@@ -733,29 +631,8 @@ extension EconomicAction {
             failureEffects: EconomicEffects(stabilityChange: -10, standingChange: -15)
         ),
 
-        EconomicAction(
-            id: "purge_ministry",
-            name: "Purge Ministry for Sabotage",
-            description: "Remove officials for economic crimes",
-            detailedDescription: "Blame economic failures on 'wreckers' and 'saboteurs' in a ministry. Deflects blame and creates fear.",
-            iconName: "person.fill.xmark",
-            actionVerb: "Purge",
-            category: .strategic,
-            minimumPositionIndex: 6,
-            targetType: .sector,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 8,
-            executionTurns: 1,
-            baseSuccessChance: 85,
-            riskLevel: .major,
-            requiresCommitteeApproval: false,
-            canBeDecree: true,
-            successEffects: EconomicEffects(stabilityChange: 3, eliteLoyaltyChange: -5, standingChange: 5),
-            failureEffects: EconomicEffects(eliteLoyaltyChange: -10, standingChange: -10)
-        ),
+        // MARK: Supreme
 
-        // TIER 7+: Supreme Economic Authority (Gosplan Chairman Level)
         EconomicAction(
             id: "economic_decree",
             name: "Issue Economic Decree",
@@ -800,313 +677,53 @@ extension EconomicAction {
             failureEffects: EconomicEffects(stabilityChange: -10, popularSupportChange: -15, standingChange: -15)
         ),
 
+        // MARK: Bureau-directive compatibility
+        // These actions are still referenced by bureau directives
+        // (BureauTask.swift). They remain available as economic actions but
+        // are kept terse — the bureau directive UI is the primary surface.
+
         EconomicAction(
-            id: "abandon_sector",
-            name: "Abandon Sector Investments",
-            description: "Cut losses on failing sector",
-            detailedDescription: "Officially recognize that a sector has failed and redirect resources. Admission of planning failure.",
-            iconName: "xmark.circle.fill",
-            actionVerb: "Abandon",
-            category: .supreme,
-            minimumPositionIndex: 7,
-            targetType: .sector,
+            id: "request_resources",
+            name: "Request Additional Resources",
+            description: "Petition for more raw materials",
+            detailedDescription: "Submit formal request for additional resource allocation from central planners. Success depends on relationships and priorities.",
+            iconName: "shippingbox.fill",
+            actionVerb: "Request",
+            category: .planning,
+            minimumPositionIndex: 2,
+            targetType: .none,
             targetSector: nil,
             requiredTrack: nil,
-            cooldownTurns: 10,
+            cooldownTurns: 3,
             executionTurns: 1,
-            baseSuccessChance: 100,
-            riskLevel: .major,
-            requiresCommitteeApproval: true,
-            canBeDecree: true,
-            successEffects: EconomicEffects(treasuryChange: 8, standingChange: -10),
-            failureEffects: EconomicEffects()
-        ),
-
-        EconomicAction(
-            id: "command_economy_reform",
-            name: "Reform Command Economy",
-            description: "Fundamental economic restructuring",
-            detailedDescription: "Propose systemic changes to the command economy model. The most politically dangerous economic action.",
-            iconName: "arrow.3.trianglepath",
-            actionVerb: "Reform",
-            category: .supreme,
-            minimumPositionIndex: 7,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 26,
-            executionTurns: 5,
-            baseSuccessChance: 40,
-            riskLevel: .systemic,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(treasuryChange: 10, industrialOutputChange: 10, foodSupplyChange: 10, stabilityChange: -10, standingChange: 20),
-            failureEffects: EconomicEffects(stabilityChange: -15, eliteLoyaltyChange: -10, standingChange: -25)
-        ),
-
-        // TIER 6+: Economic System Reform Actions (Era-Appropriate 1940s-60s)
-        EconomicAction(
-            id: "propose_economic_relaxation",
-            name: "Propose Economic Relaxation",
-            description: "Expand licensed private enterprise",
-            detailedDescription: """
-                Propose expanding licenses for small private businesses and cooperatives. \
-                Following the model of 'socialism with American characteristics,' allow \
-                greater economic flexibility while maintaining state control of commanding \
-                heights. May boost productivity but risks ideological criticism.
-                """,
-            iconName: "arrow.up.right.circle.fill",
-            actionVerb: "Propose",
-            category: .strategic,
-            minimumPositionIndex: 6,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 8,
-            executionTurns: 2,
-            baseSuccessChance: 55,
-            riskLevel: .major,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(
-                treasuryChange: 5,
-                industrialOutputChange: 6,
-                stabilityChange: -3,
-                popularSupportChange: 5,
-                standingChange: 8,
-                createsFlag: "economic_relaxation_policy"
-            ),
-            failureEffects: EconomicEffects(
-                stabilityChange: -5,
-                eliteLoyaltyChange: -8,
-                standingChange: -12
-            )
-        ),
-
-        EconomicAction(
-            id: "strengthen_central_planning",
-            name: "Strengthen Central Planning",
-            description: "Tighten state control over production",
-            detailedDescription: """
-                Reassert central planning authority over production decisions. Reduce \
-                regional autonomy and enterprise discretion in favor of strict quota \
-                compliance. Appeals to ideological purists but may reduce economic \
-                efficiency and worker initiative.
-                """,
-            iconName: "building.columns.fill",
-            actionVerb: "Strengthen",
-            category: .strategic,
-            minimumPositionIndex: 6,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 8,
-            executionTurns: 2,
-            baseSuccessChance: 70,
-            riskLevel: .significant,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(
-                industrialOutputChange: -2,
-                stabilityChange: 5,
-                eliteLoyaltyChange: 5,
-                standingChange: 5,
-                createsFlag: "strengthened_planning"
-            ),
-            failureEffects: EconomicEffects(
-                industrialOutputChange: -5,
-                popularSupportChange: -5,
-                standingChange: -8
-            )
-        ),
-
-        EconomicAction(
-            id: "establish_industrial_zone",
-            name: "Establish Industrial Development Zone",
-            description: "Create zone for foreign trade and investment",
-            detailedDescription: """
-                Designate a coastal or border region as an Industrial Development Zone \
-                with special provisions for foreign trade and joint ventures. Attracts \
-                foreign capital and technology while containing capitalist influences \
-                to a defined area. A pragmatic approach that may draw ideological fire.
-                """,
-            iconName: "building.2.fill",
-            actionVerb: "Establish",
-            category: .strategic,
-            minimumPositionIndex: 6,
-            targetType: .region,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 12,
-            executionTurns: 4,
             baseSuccessChance: 50,
-            riskLevel: .major,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(
-                treasuryChange: 10,
-                industrialOutputChange: 8,
-                stabilityChange: -2,
-                standingChange: 10,
-                internationalStandingChange: 5,
-                createsFlag: "industrial_development_zone",
-                startsProject: true
-            ),
-            failureEffects: EconomicEffects(
-                treasuryChange: -5,
-                stabilityChange: -5,
-                standingChange: -10
-            )
-        ),
-
-        EconomicAction(
-            id: "expand_fyp_targets",
-            name: "Expand Five-Year Plan Targets",
-            description: "Increase production quotas across sectors",
-            detailedDescription: """
-                Announce ambitious new targets for the current Five-Year Plan, calling \
-                on workers and managers to exceed original goals. Stakhanovite heroism \
-                expected. May boost short-term output but risks exhausting workers and \
-                resources. Success brings glory; failure invites blame.
-                """,
-            iconName: "chart.line.uptrend.xyaxis",
-            actionVerb: "Expand",
-            category: .strategic,
-            minimumPositionIndex: 6,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 10,
-            executionTurns: 1,
-            baseSuccessChance: 45,
-            riskLevel: .major,
-            requiresCommitteeApproval: true,
-            canBeDecree: true,
-            successEffects: EconomicEffects(
-                industrialOutputChange: 10,
-                foodSupplyChange: 5,
-                popularSupportChange: -3,
-                standingChange: 12
-            ),
-            failureEffects: EconomicEffects(
-                industrialOutputChange: -5,
-                stabilityChange: -5,
-                popularSupportChange: -8,
-                standingChange: -15
-            )
-        ),
-
-        EconomicAction(
-            id: "reform_agricultural_procurement",
-            name: "Reform Agricultural Procurement",
-            description: "Adjust collective farm quotas and incentives",
-            detailedDescription: """
-                Modify the procurement system for collective farms—adjusting quotas, \
-                allowing farmers to sell surplus production, or changing payment \
-                structures. Proper incentives can boost food supply; poor implementation \
-                can cause chaos in the countryside.
-                """,
-            iconName: "leaf.circle.fill",
-            actionVerb: "Reform",
-            category: .strategic,
-            minimumPositionIndex: 6,
-            targetType: .sector,
-            targetSector: .agriculture,
-            requiredTrack: nil,
-            cooldownTurns: 8,
-            executionTurns: 2,
-            baseSuccessChance: 55,
-            riskLevel: .significant,
-            requiresCommitteeApproval: true,
-            canBeDecree: false,
-            successEffects: EconomicEffects(
-                foodSupplyChange: 8,
-                popularSupportChange: 5,
-                standingChange: 8,
-                regionalAgricultureChange: 10
-            ),
-            failureEffects: EconomicEffects(
-                foodSupplyChange: -5,
-                stabilityChange: -5,
-                popularSupportChange: -5,
-                standingChange: -10
-            )
-        ),
-
-        EconomicAction(
-            id: "launch_electrification_campaign",
-            name: "Launch Electrification Campaign",
-            description: "Major infrastructure program for rural power",
-            detailedDescription: """
-                Initiate a nationwide campaign to bring electrical power to rural \
-                areas and expand industrial capacity. 'Communism is Soviet power plus \
-                electrification of the whole country.' A massive undertaking requiring \
-                sustained investment and organization.
-                """,
-            iconName: "bolt.circle.fill",
-            actionVerb: "Launch",
-            category: .supreme,
-            minimumPositionIndex: 7,
-            targetType: .none,
-            targetSector: .energy,
-            requiredTrack: nil,
-            cooldownTurns: 20,
-            executionTurns: 6,
-            baseSuccessChance: 55,
-            riskLevel: .systemic,
-            requiresCommitteeApproval: true,
-            canBeDecree: true,
-            successEffects: EconomicEffects(
-                treasuryChange: -15,
-                industrialOutputChange: 15,
-                foodSupplyChange: 5,
-                popularSupportChange: 10,
-                standingChange: 15,
-                createsFlag: "electrification_campaign",
-                startsProject: true
-            ),
-            failureEffects: EconomicEffects(
-                treasuryChange: -10,
-                stabilityChange: -8,
-                standingChange: -15
-            )
-        ),
-
-        EconomicAction(
-            id: "declare_economic_emergency",
-            name: "Declare Economic Emergency",
-            description: "Invoke emergency powers for economic crisis",
-            detailedDescription: """
-                Formally declare a state of economic emergency, granting extraordinary \
-                powers to redirect resources, requisition supplies, and override normal \
-                planning procedures. A drastic measure that signals crisis but enables \
-                rapid response. Use sparingly.
-                """,
-            iconName: "exclamationmark.octagon.fill",
-            actionVerb: "Declare",
-            category: .supreme,
-            minimumPositionIndex: 7,
-            targetType: .none,
-            targetSector: nil,
-            requiredTrack: nil,
-            cooldownTurns: 15,
-            executionTurns: 1,
-            baseSuccessChance: 90,
-            riskLevel: .systemic,
+            riskLevel: .routine,
             requiresCommitteeApproval: false,
-            canBeDecree: true,
-            successEffects: EconomicEffects(
-                treasuryChange: 8,
-                industrialOutputChange: 8,
-                stabilityChange: -8,
-                popularSupportChange: -10,
-                standingChange: 5,
-                createsFlag: "economic_emergency"
-            ),
-            failureEffects: EconomicEffects(
-                stabilityChange: -15,
-                standingChange: -20
-            )
+            canBeDecree: false,
+            successEffects: EconomicEffects(industrialOutputChange: 4, networkChange: 2),
+            failureEffects: EconomicEffects(standingChange: -2)
+        ),
+
+        EconomicAction(
+            id: "reallocate_budget",
+            name: "Reallocate Ministry Budget",
+            description: "Shift funds between ministries",
+            detailedDescription: "Transfer budget allocations between ministries. Creates winners and losers in the bureaucracy.",
+            iconName: "arrow.left.arrow.right.circle.fill",
+            actionVerb: "Reallocate",
+            category: .allocation,
+            minimumPositionIndex: 4,
+            targetType: .budget,
+            targetSector: nil,
+            requiredTrack: nil,
+            cooldownTurns: 4,
+            executionTurns: 1,
+            baseSuccessChance: 60,
+            riskLevel: .significant,
+            requiresCommitteeApproval: false,
+            canBeDecree: false,
+            successEffects: EconomicEffects(treasuryChange: 3, eliteLoyaltyChange: -2, standingChange: 3),
+            failureEffects: EconomicEffects(eliteLoyaltyChange: -3, standingChange: -5)
         )
     ]
 

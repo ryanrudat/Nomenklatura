@@ -276,6 +276,12 @@ final class EconomicActionService {
         // Apply effects
         applyEffects(effects, targetSector: targetSector, for: game, modelContext: modelContext)
 
+        // Contribute progress toward Five-Year Plan sector targets (only on
+        // success — failures don't advance the plan).
+        if succeeded {
+            applyPlanContributions(for: action, targetSector: targetSector, game: game)
+        }
+
         // Set cooldown
         var cooldowns = getEconomicCooldowns(for: game)
         cooldowns.setCooldown(actionId: action.id, availableTurn: game.turnNumber + action.cooldownTurns)
@@ -361,6 +367,22 @@ final class EconomicActionService {
         }
     }
 
+    /// Apply the action's plan-sector contributions to the current cycle's
+    /// targets. Only called on successful resolution — the player sees
+    /// immediate progress-bar movement on the Five-Year Plan wheel.
+    private func applyPlanContributions(
+        for action: EconomicAction,
+        targetSector: EconomicSector?,
+        game: Game
+    ) {
+        // Only advance progress once the player has configured the cycle.
+        guard game.planTargets.isConfigured else { return }
+        let contributions = action.planSectorContributions(targetSector: targetSector)
+        for entry in contributions {
+            game.addPlanProgress(entry.amount, to: entry.sector)
+        }
+    }
+
     /// Create a shortage in a sector
     private func createShortage(in sector: EconomicSector, for game: Game) {
         let shortageFlag = "shortage_\(sector.rawValue)"
@@ -435,6 +457,11 @@ final class EconomicActionService {
         var adjustedEffects = effects
         adjustedEffects.treasuryChange = 0 // Already paid
         applyEffects(adjustedEffects, targetSector: project.targetSector, for: game, modelContext: modelContext)
+
+        // Projects that complete successfully also contribute plan progress.
+        if succeeded {
+            applyPlanContributions(for: action, targetSector: project.targetSector, game: game)
+        }
 
         project.phase = succeeded ? .completed : .failed
 
@@ -613,20 +640,12 @@ final class EconomicActionService {
 
         if succeeded {
             switch action.id {
-            case "report_production":
-                return "Production report filed. Your accurate reporting is noted."
             case "meet_quota":
                 return "Quota fulfilled! Production targets for this period have been met."
             case "exceed_quota":
                 return "Stakhanovite achievement! You have exceeded the quota by a significant margin."
-            case "falsify_reports":
-                return "Reports submitted showing quota fulfillment. Let us hope no audit comes."
-            case "five_year_plan":
-                return "The Five-Year Plan has been adopted. The nation looks to your vision."
             case "economic_decree":
                 return "Your economic decree has been issued and takes immediate effect."
-            case "command_economy_reform":
-                return "Historic reform! The command economy enters a new phase."
             default:
                 return "\(action.name) completed successfully."
             }
@@ -636,8 +655,6 @@ final class EconomicActionService {
                 return "Quota not met. Shortfalls must be explained to superiors."
             case "exceed_quota":
                 return "Stakhanovite targets not achieved. Production fell short of heroic goals."
-            case "falsify_reports":
-                return "Audit detected discrepancies. You face serious consequences."
             default:
                 return "\(action.name) failed. The \(sectorName) suffers the consequences."
             }
