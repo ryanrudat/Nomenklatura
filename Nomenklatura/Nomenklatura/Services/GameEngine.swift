@@ -939,16 +939,15 @@ class GameEngine {
     private func processEconomicSystem(game: Game) {
         gameLogger.info("Processing macro economy for turn \(game.turnNumber)")
 
-        // Process PSR's macro economy (GDP, inflation, unemployment)
+        // Process PSR's macro economy (GDP, inflation, unemployment, treasury breakdown).
+        // processEconomy applies the detailed EconomicReport to treasury and persists it
+        // to game.lastEconomicReport for UI display.
         EconomyService.shared.processEconomy(game: game)
 
         // Process foreign country economies
         EconomyService.shared.processForeignEconomies(game: game)
 
-        // Keep desk/report UI in sync without applying a second treasury model.
-        EconomyService.shared.snapshotEconomicReport(game: game)
-
-        gameLogger.info("Economic indicators - GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%")
+        gameLogger.info("Economic indicators - GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%, Treasury: \(game.treasury)")
     }
 
     /// Apply political consequences of economic conditions

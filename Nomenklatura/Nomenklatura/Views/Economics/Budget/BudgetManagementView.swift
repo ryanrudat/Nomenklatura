@@ -19,16 +19,67 @@ struct BudgetManagementView: View {
         return EconomyService.shared.calculateTurnEconomy(game: game)
     }
 
+    private var hasAppliedReport: Bool {
+        game.lastEconomicReport != nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             budgetHeader
             netBalanceSummary
+            nextTurnProjectionCard
             incomeSection
             expenseSection
             allocationControls
         }
         .padding(.horizontal, 15)
         .padding(.bottom, 120)
+    }
+
+    // MARK: - Next Turn Projection
+
+    private var nextTurnProjectionCard: some View {
+        let projection = EconomyService.shared.calculateTurnEconomy(game: game)
+        let projectedTreasury = max(-100, min(100, game.treasury + projection.netChange))
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.accentGold)
+                Text("NEXT TURN PROJECTION")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+            }
+
+            HStack(spacing: 0) {
+                summaryCell(
+                    value: "\(projection.netChange >= 0 ? "+" : "")\(projection.netChange)",
+                    label: "PROJECTED DELTA",
+                    color: projection.netChange >= 0 ? FiftiesColors.approvedGreen : FiftiesColors.stampRed
+                )
+                summaryDivider
+                summaryCell(
+                    value: "\(projectedTreasury)",
+                    label: "NEXT TREASURY",
+                    color: theme.accentGold
+                )
+            }
+
+            Text(hasAppliedReport
+                ? "Based on current regions, trade, and policies. Actual result may vary with events."
+                : "Advance 1 turn to see the applied breakdown above; these figures preview what will happen.")
+                .font(.system(size: 9))
+                .foregroundColor(theme.inkGray)
+        }
+        .padding(12)
+        .background(FiftiesColors.cardstock)
+        .cornerRadius(6)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(theme.accentGold.opacity(0.5), lineWidth: 1)
+        )
     }
 
     // MARK: - Header
@@ -55,7 +106,7 @@ struct BudgetManagementView: View {
     private var netBalanceSummary: some View {
         VStack(spacing: 8) {
             HStack {
-                Text("NET BALANCE PER TURN")
+                Text(hasAppliedReport ? "LAST TURN APPLIED" : "ESTIMATED BALANCE")
                     .font(.system(size: 9, weight: .semibold))
                     .tracking(1)
                     .foregroundColor(theme.inkGray)
@@ -102,6 +153,9 @@ struct BudgetManagementView: View {
                 if report.tradeAgreementBonus > 0 {
                     budgetRow(label: "Trade Agreements", value: report.tradeAgreementBonus, isIncome: true)
                 }
+                if report.gdpAdjustment > 0 {
+                    budgetRow(label: "GDP Growth Bonus", value: report.gdpAdjustment, isIncome: true)
+                }
 
                 Divider().background(theme.borderTan)
 
@@ -147,6 +201,9 @@ struct BudgetManagementView: View {
                 }
                 if report.warCosts > 0 {
                     budgetRow(label: "War Costs", value: report.warCosts, isIncome: false)
+                }
+                if report.gdpAdjustment < 0 {
+                    budgetRow(label: "GDP Drag", value: -report.gdpAdjustment, isIncome: false)
                 }
 
                 Divider().background(theme.borderTan)

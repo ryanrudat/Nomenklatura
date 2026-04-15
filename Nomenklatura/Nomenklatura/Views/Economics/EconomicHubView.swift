@@ -508,6 +508,18 @@ struct EconomicHubView: View {
                 HubStatBox(label: "Food Supply", value: "\(game.foodSupply)", color: game.foodSupply >= 50 ? .green : .orange)
             }
 
+            // Next-turn projection (always computed from current state)
+            let projection = EconomyService.shared.calculateTurnEconomy(game: game)
+            HStack(spacing: 6) {
+                Image(systemName: projection.netChange >= 0 ? "arrow.up.right" : "arrow.down.right")
+                    .font(.system(size: 10))
+                    .foregroundColor(projection.netChange >= 0 ? .green : .red)
+                Text("Projected next turn: \(projection.netChange >= 0 ? "+" : "")\(projection.netChange)")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundColor(theme.inkGray)
+            }
+            .padding(.top, 4)
+
             if game.lastEconomicReport == nil {
                 Text("Full economic report will be available after Turn 1 processing.")
                     .font(.system(size: 11))

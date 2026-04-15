@@ -37,13 +37,18 @@ class EconomyService {
         var tradeAgreementBonus: Int = 0
         var warCosts: Int = 0
 
+        // GDP/macro adjustment (secondary effect; can be positive or negative)
+        var gdpAdjustment: Int = 0
+
         var totalIncome: Int {
             domesticProduction + foreignTrade + foreignAid + resourceExtraction + tradeAgreementBonus
+                + max(0, gdpAdjustment)
         }
 
         var totalExpenses: Int {
             militarySpending + socialPrograms + infrastructureCosts +
             debtPayments + crisisResponse + corruption + abs(embargoEffects) + warCosts
+                + max(0, -gdpAdjustment)
         }
 
         var netChange: Int {
@@ -70,6 +75,13 @@ class EconomyService {
             if corruption > 0 { items.append(("Inefficiency", -corruption, false)) }
             if embargoEffects > 0 { items.append(("Trade Embargoes", -embargoEffects, false)) }
             if warCosts > 0 { items.append(("War Costs", -warCosts, false)) }
+
+            // GDP adjustment can be positive or negative
+            if gdpAdjustment > 0 {
+                items.append(("GDP Growth Bonus", gdpAdjustment, true))
+            } else if gdpAdjustment < 0 {
+                items.append(("GDP Drag", gdpAdjustment, false))
+            }
 
             return items
         }
@@ -126,7 +138,46 @@ class EconomyService {
         // 13. War Costs (if in conflict)
         report.warCosts = calculateWarCosts(game: game)
 
+        // 14. GDP/macro adjustment (secondary effect, halved to avoid double-counting)
+        report.gdpAdjustment = calculateGDPTreasuryAdjustment(game: game)
+
         return report
+    }
+
+    /// GDP/inflation-driven treasury adjustment (secondary effect).
+    /// Halved from the legacy formula so the detailed breakdown remains the primary driver.
+    private func calculateGDPTreasuryAdjustment(game: Game) -> Int {
+        let growthRate = game.gdpGrowthRate
+        var rawChange = 0
+
+        if growthRate > 5.0 {
+            rawChange = 3
+        } else if growthRate > 2.0 {
+            rawChange = 1
+        } else if growthRate < -3.0 {
+            rawChange = -3
+        } else if growthRate < 0.0 {
+            rawChange = -1
+        }
+
+        if game.gdpIndex >= 120 {
+            rawChange += 2
+        } else if game.gdpIndex >= 110 {
+            rawChange += 1
+        } else if game.gdpIndex <= 80 {
+            rawChange -= 2
+        } else if game.gdpIndex <= 90 {
+            rawChange -= 1
+        }
+
+        if game.inflationRate >= 30 {
+            rawChange -= 3
+        } else if game.inflationRate >= 20 {
+            rawChange -= 1
+        }
+
+        // Halve the effect (integer division toward zero collapses |1| to 0)
+        return rawChange / 2
     }
 
     /// Apply the economic report to the game
@@ -445,7 +496,8 @@ class EconomyService {
             "corruption": report.corruption,
             "embargoEffects": report.embargoEffects,
             "tradeAgreementBonus": report.tradeAgreementBonus,
-            "warCosts": report.warCosts
+            "warCosts": report.warCosts,
+            "gdpAdjustment": report.gdpAdjustment
         ]
         return try? JSONEncoder().encode(dict)
     }
@@ -469,6 +521,7 @@ class EconomyService {
         report.embargoEffects = dict["embargoEffects"] ?? 0
         report.tradeAgreementBonus = dict["tradeAgreementBonus"] ?? 0
         report.warCosts = dict["warCosts"] ?? 0
+        report.gdpAdjustment = dict["gdpAdjustment"] ?? 0
         return report
     }
 
@@ -539,9 +592,13 @@ class EconomyService {
         let gdpChange = calculateGDPGrowth(game: game)
         game.applyGDPChange(gdpChange)
 
-        // 2. GDP affects Treasury - higher GDP = more tax revenue
-        applyGDPToTreasury(game: game)
-
+        // 2. Apply the detailed economic breakdown (income/expense line items)
+        //    This is the PRIMARY driver of treasury change each turn.
+        //    The GDP-to-treasury adjustment is now folded into the report as
+        //    `gdpAdjustment`, so the sum of line items equals the treasury delta.
+        //    Also persists the report to game.lastEconomicReport for UI display.
+        let report = calculateTurnEconomy(game: game)
+        applyEconomicReport(report, to: game)
 
         // 3. Calculate inflation based on policies and economic conditions
         let inflationChange = calculateInflationChange(game: game)
@@ -580,49 +637,6 @@ class EconomyService {
         #if DEBUG
         print("[Economy] GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%, Treasury: \(game.treasury)")
         #endif
-    }
-
-    /// Apply GDP effects to Treasury (the interoperability between GDP and Treasury)
-    private func applyGDPToTreasury(game: Game) {
-        // GDP growth affects tax revenue
-        let growthRate = game.gdpGrowthRate
-
-        // Calculate treasury change based on GDP performance
-        var treasuryChange = 0
-
-        // Strong GDP growth generates revenue surplus
-        if growthRate > 5.0 {
-            treasuryChange = 3
-        } else if growthRate > 2.0 {
-            treasuryChange = 1
-        } else if growthRate < -3.0 {
-            treasuryChange = -3  // Recession costs money
-        } else if growthRate < 0.0 {
-            treasuryChange = -1  // Stagnation drains reserves
-        }
-
-        // High GDP base provides more revenue even with slow growth
-        if game.gdpIndex >= 120 {
-            treasuryChange += 2
-        } else if game.gdpIndex >= 110 {
-            treasuryChange += 1
-        } else if game.gdpIndex <= 80 {
-            treasuryChange -= 2  // Collapsed economy drains treasury
-        } else if game.gdpIndex <= 90 {
-            treasuryChange -= 1
-        }
-
-        // Inflation erodes treasury value
-        if game.inflationRate >= 30 {
-            treasuryChange -= 3
-        } else if game.inflationRate >= 20 {
-            treasuryChange -= 1
-        }
-
-        // Apply the change
-        if treasuryChange != 0 {
-            game.applyStat("treasury", change: treasuryChange)
-        }
     }
 
     /// Apply sector production effects to national stats
