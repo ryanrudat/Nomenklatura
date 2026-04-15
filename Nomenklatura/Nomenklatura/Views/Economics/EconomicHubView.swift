@@ -237,10 +237,96 @@ struct EconomicHubView: View {
             EconomicSituationCard(game: game)
             keyMetricsGrid
             sparklineSection
+            regionalContributionsCard
             FiveYearPlanWheelView(game: game, showPropaganda: effectiveShowPropaganda)
             activeProjectsSummary
         }
         .padding(.horizontal, 15)
+    }
+
+    // MARK: - Regional Contributions Overview
+
+    private var regionalContributionsCard: some View {
+        let regions = game.regions
+        let totalContribution = regions.reduce(0) { $0 + $1.treasuryContribution }
+        let topRegions = regions
+            .sorted { $0.treasuryContribution > $1.treasuryContribution }
+            .prefix(3)
+        let crisisRegions = regions.filter { $0.isDangerous }
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "map.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.accentGold)
+                Text("REGIONAL CONTRIBUTIONS")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+
+                Text("+\(totalContribution)/turn")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(FiftiesColors.approvedGreen)
+            }
+
+            if regions.isEmpty {
+                Text("Regional data not yet available.")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.inkLight)
+            } else {
+                VStack(spacing: 4) {
+                    ForEach(Array(topRegions), id: \.regionId) { region in
+                        HStack(spacing: 6) {
+                            Image(systemName: region.type.iconName)
+                                .font(.system(size: 9))
+                                .foregroundColor(theme.inkGray)
+                                .frame(width: 12)
+
+                            Text(region.name)
+                                .font(.system(size: 10))
+                                .foregroundColor(theme.inkBlack)
+                                .lineLimit(1)
+
+                            Spacer()
+
+                            Text("+\(region.treasuryContribution)")
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundColor(FiftiesColors.approvedGreen)
+                        }
+                    }
+                }
+
+                if !crisisRegions.isEmpty {
+                    Divider().background(theme.borderTan)
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(FiftiesColors.stampRed)
+
+                        Text("\(crisisRegions.count) REGION\(crisisRegions.count == 1 ? "" : "S") IN CRISIS")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundColor(FiftiesColors.stampRed)
+
+                        Spacer()
+
+                        Text(crisisRegions.prefix(2).map { $0.name }.joined(separator: ", "))
+                            .font(.system(size: 9))
+                            .foregroundColor(theme.inkGray)
+                            .lineLimit(1)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
     }
 
     private var keyMetricsGrid: some View {
@@ -851,6 +937,24 @@ private struct RegionEconomicCard: View {
                 RegionStatMini(label: "Resources", value: region.naturalResources)
                 RegionStatMini(label: "GDP %", value: region.economicContribution)
             }
+
+            HStack(spacing: 6) {
+                Image(systemName: "banknote.fill")
+                    .font(.system(size: 9))
+                    .foregroundColor(FiftiesColors.approvedGreen)
+                Text("TREASURY / TURN")
+                    .font(.system(size: 8, weight: .semibold))
+                    .tracking(0.3)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                Text("+\(region.treasuryContribution)")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(FiftiesColors.approvedGreen)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(FiftiesColors.approvedGreen.opacity(0.08))
+            .cornerRadius(4)
         }
         .padding(12)
         .background(theme.parchment)

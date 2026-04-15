@@ -168,6 +168,11 @@ final class Region {
     // Governor (encoded)
     var governorData: Data?
 
+    // JSON-encoded because SwiftData does not store [String: Int] directly
+    var actionCooldownsData: Data?
+
+    var hasEstablishedSEZ: Bool = false
+
     var game: Game?
 
     init(regionId: String, name: String, description: String, type: RegionType) {
@@ -247,6 +252,55 @@ final class Region {
     /// Whether region can potentially secede
     var canSecede: Bool {
         type != .capital && autonomyDesire > 50 && hasDistinctCulture
+    }
+
+    /// Estimated treasury contribution per turn from this region.
+    /// Mirrors the domestic production formula in EconomyService plus a resource bonus by region type.
+    var treasuryContribution: Int {
+        let baseOutput = (industrialCapacity / 4) + (agriculturalOutput / 8)
+        let loyaltyModifier = 0.6 + (Double(popularLoyalty) / 100.0) * 0.4
+        let resourceBonus: Int = {
+            switch type {
+            case .extractive: return 15
+            case .industrial: return 5
+            case .border: return 3
+            case .coastal: return 4
+            default: return 0
+            }
+        }()
+        return Int(Double(baseOutput) * loyaltyModifier) + resourceBonus
+    }
+
+    // MARK: - Action Cooldowns
+
+    /// Decoded cooldown map: actionId -> turn available
+    var actionCooldowns: [String: Int] {
+        get {
+            guard let data = actionCooldownsData else { return [:] }
+            return (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
+        }
+        set {
+            actionCooldownsData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// Check whether a region-scoped action is currently on cooldown.
+    func isActionOnCooldown(_ actionId: String, currentTurn: Int) -> Bool {
+        guard let availableTurn = actionCooldowns[actionId] else { return false }
+        return currentTurn < availableTurn
+    }
+
+    /// Remaining cooldown turns for a region-scoped action.
+    func cooldownRemaining(_ actionId: String, currentTurn: Int) -> Int {
+        guard let availableTurn = actionCooldowns[actionId] else { return 0 }
+        return max(0, availableTurn - currentTurn)
+    }
+
+    /// Record a cooldown of `turns` on an action starting from `currentTurn`.
+    func setActionCooldown(_ actionId: String, turns: Int, currentTurn: Int) {
+        var map = actionCooldowns
+        map[actionId] = currentTurn + turns
+        actionCooldowns = map
     }
 
     // MARK: - Methods
