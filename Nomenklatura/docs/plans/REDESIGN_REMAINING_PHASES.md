@@ -110,6 +110,8 @@ Add tap-to-explain tooltips for non-obvious mechanics: budget priority effects, 
 ### Phase 5.3 — Final Visual Cohesion Pass
 Walk every screen, confirm phase badge present (where applicable), confirm theme tokens used everywhere, confirm copy voice (no "advancement" / "climbing"). Catch anything that slipped past Phase 1's sweep.
 
+**Chairman bypass audit** (locked-in pattern from late session 029): walk every clearance / access / lock check in views and services. Whenever the failure case is "player lacks permission to see X" or "player can't access Y," confirm there's a `position >= 8` short-circuit so the Chairman never trips the gate. Two were caught in session 029 (HistoricalSession redaction + AffinityGainCard bureau access); future feature work in Phase 4 will likely add more.
+
 ### Phase 5.4 — Performance Pass
 Profile turn processing. Check for new O(n²) introductions from Phase 3-4. Verify LazyVStack still applied to long lists. Check Five-Year Plan completion logic for hot loops.
 
