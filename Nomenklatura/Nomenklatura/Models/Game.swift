@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import os.log
 
 @Model
 final class Game {
@@ -186,6 +187,12 @@ final class Game {
     var planTargetsMet: Int = 0                // Cumulative targets met this plan (out of 20 possible)
     var planTargetsData: Data?                 // Encoded FiveYearPlanTargets
     var planPerformanceScore: Int = 50         // 0-100, overall plan performance
+    var completedPlanCount: Int = 0            // Plans fully completed (regardless of rating)
+    var stakhanovitePlanCount: Int = 0         // Plans completed at 6/6 Stakhanovite rating
+
+    // Strategic resources (Phase 3.1)
+    var currentTechEraRaw: Int = 0             // TechEra.rawValue — advances when plans complete
+    var strategicReservesData: Data?           // Encoded [StrategicResource.rawValue: Int]
 
     // Economic history (for trends)
     var gdpHistoryData: Data?                  // Encoded [Int] - last 20 turns of GDP
@@ -425,6 +432,38 @@ final class Game {
     }
 }
 
+// MARK: - Strategic Reserves Codec (Phase 3.1)
+
+private let strategicReserveLogger = Logger(subsystem: "com.ryanrudat.Nomenklatura", category: "StrategicReserves")
+
+private func decodeStrategicReserves(from data: Data?) -> [StrategicResource: Int] {
+    guard let data = data else { return [:] }
+    do {
+        let raw = try JSONDecoder().decode([String: Int].self, from: data)
+        var result: [StrategicResource: Int] = [:]
+        for (key, value) in raw {
+            if let resource = StrategicResource(rawValue: key) {
+                result[resource] = value
+            }
+        }
+        return result
+    } catch {
+        strategicReserveLogger.error("Failed to decode strategic reserves: \(error.localizedDescription)")
+        return [:]
+    }
+}
+
+private func encodeStrategicReserves(_ reserves: [StrategicResource: Int]) -> Data? {
+    guard !reserves.isEmpty else { return nil }
+    let raw = Dictionary(uniqueKeysWithValues: reserves.map { ($0.key.rawValue, $0.value) })
+    do {
+        return try JSONEncoder().encode(raw)
+    } catch {
+        strategicReserveLogger.error("Failed to encode strategic reserves: \(error.localizedDescription)")
+        return nil
+    }
+}
+
 // MARK: - Game Phase
 
 enum GamePhase: String, Codable, CaseIterable {
@@ -503,6 +542,31 @@ enum CareerTrack: String, Codable, CaseIterable, Sendable {
 // MARK: - Computed Properties
 
 extension Game {
+    /// Phase 3.1: Strategic resource stockpiles held by the state.
+    /// Per-resource integer counts (units; abstract scale chosen so
+    /// daily-life sectors and military draw from the same pool).
+    var strategicReserves: [StrategicResource: Int] {
+        get { decodeStrategicReserves(from: strategicReservesData) }
+        set { strategicReservesData = encodeStrategicReserves(newValue) }
+    }
+
+    /// Convenience: current stockpile of a single resource.
+    func reserve(of resource: StrategicResource) -> Int {
+        strategicReserves[resource] ?? 0
+    }
+
+    /// Phase 3.1: Current technology era. Advances when Five-Year Plans
+    /// complete with sufficient ratings (logic in FiveYearPlanService).
+    /// At game start: Industrial era. Caps at .modern.
+    var currentTechEra: TechEra {
+        TechEra(rawValue: currentTechEraRaw) ?? .industrial
+    }
+
+    /// Whether a strategic resource is unlocked for the player's current era.
+    func canUse(_ resource: StrategicResource) -> Bool {
+        currentTechEra >= resource.minimumTechEra
+    }
+
     var currentPhase: GamePhase {
         GamePhase(rawValue: phase) ?? .briefing
     }

@@ -141,6 +141,34 @@ private func encodeRegionGovernor(_ governor: RegionGovernor?) -> Data? {
     }
 }
 
+private func decodeEndowments(from data: Data?) -> [StrategicResource: Int] {
+    guard let data = data else { return [:] }
+    do {
+        let raw = try JSONDecoder().decode([String: Int].self, from: data)
+        var result: [StrategicResource: Int] = [:]
+        for (key, value) in raw {
+            if let resource = StrategicResource(rawValue: key) {
+                result[resource] = value
+            }
+        }
+        return result
+    } catch {
+        regionLogger.error("Failed to decode endowments: \(error.localizedDescription)")
+        return [:]
+    }
+}
+
+private func encodeEndowments(_ endowments: [StrategicResource: Int]) -> Data? {
+    guard !endowments.isEmpty else { return nil }
+    let raw = Dictionary(uniqueKeysWithValues: endowments.map { ($0.key.rawValue, $0.value) })
+    do {
+        return try JSONEncoder().encode(raw)
+    } catch {
+        regionLogger.error("Failed to encode endowments: \(error.localizedDescription)")
+        return nil
+    }
+}
+
 @Model
 final class Region {
     @Attribute(.unique) var id: UUID
@@ -181,6 +209,10 @@ final class Region {
 
     // Governor (encoded)
     var governorData: Data?
+
+    // Strategic resource endowments (Phase 3.1)
+    // Encoded [StrategicResource.rawValue: Int] — extraction capacity per turn
+    var endowmentsData: Data?
 
     var game: Game?
 
@@ -1279,5 +1311,27 @@ enum RegionEventType: String, Codable, CaseIterable {
         case .borderIncident, .militaryMutiny: return 4
         case .secessionMovement: return 5
         }
+    }
+}
+
+// MARK: - Strategic Resource Endowments (Phase 3.1)
+
+extension Region {
+    /// Per-turn extraction capacity for each strategic resource this
+    /// region holds. Empty dictionary = no strategic endowments
+    /// (still contributes via industrialCapacity / agriculturalOutput).
+    var endowments: [StrategicResource: Int] {
+        get { decodeEndowments(from: endowmentsData) }
+        set { endowmentsData = encodeEndowments(newValue) }
+    }
+
+    /// Convenience: how much of a single resource this region produces per turn.
+    func extractionRate(of resource: StrategicResource) -> Int {
+        endowments[resource] ?? 0
+    }
+
+    /// Whether this region has any extraction capacity for a given resource.
+    func has(_ resource: StrategicResource) -> Bool {
+        extractionRate(of: resource) > 0
     }
 }
