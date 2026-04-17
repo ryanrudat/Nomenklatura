@@ -37,6 +37,11 @@ struct SectorDetailView: View {
                 // Performance bars
                 performanceSection
 
+                // Phase 3.3: Supply chain (inputs, outputs, source regions, shortfall)
+                if SectorRecipe.recipe(for: activeFocusId) != nil {
+                    supplyChainSection
+                }
+
                 // Dependencies
                 dependenciesSection
 
@@ -54,6 +59,168 @@ struct SectorDetailView: View {
                 onCancel: { /* dismissed; nothing to do */ }
             )
         }
+    }
+
+    // MARK: - Supply Chain (Phase 3.3)
+
+    private var activeRecipe: SectorRecipe? {
+        SectorRecipe.recipe(for: activeFocusId)
+    }
+
+    /// Last turn's satisfaction percentage for this sector (100 = fully
+    /// supplied; nil if engine hasn't run yet or sector has no shortfall).
+    private var lastTurnSatisfaction: Int? {
+        game.lastSupplyChainResult?.shortfallBySector[sector.rawValue]
+    }
+
+    private var supplyChainSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("SUPPLY CHAIN")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Spacer()
+
+                if let satisfaction = lastTurnSatisfaction {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                        Text("\(satisfaction)% LAST TURN")
+                            .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                            .tracking(1)
+                    }
+                    .foregroundColor(satisfaction < 50 ? theme.sovietRed : theme.warningAmber)
+                }
+            }
+
+            if let recipe = activeRecipe {
+                if !recipe.inputs.isEmpty {
+                    inputsList(for: recipe)
+                }
+                if !recipe.outputs.isEmpty {
+                    outputsList(for: recipe)
+                }
+                if recipe.inputs.isEmpty && recipe.outputs.isEmpty {
+                    Text("This focus has no strategic resource flow.")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.inkLight)
+                }
+            }
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(lastTurnSatisfaction != nil ? theme.sovietRed.opacity(0.4) : theme.borderTan, lineWidth: 1)
+        )
+    }
+
+    private func inputsList(for recipe: SectorRecipe) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("CONSUMES")
+                .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(theme.inkLight)
+
+            ForEach(recipe.inputs.keys.sorted(by: { $0.displayName < $1.displayName }), id: \.self) { resource in
+                let needed = recipe.inputs[resource] ?? 0
+                let sources = sourceRegions(for: resource)
+                let totalAvailable = sources.reduce(0) { $0 + $1.amount }
+                let isShortfall = totalAvailable < needed && !sources.isEmpty || sources.isEmpty
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: resource.iconName)
+                            .font(.system(size: 12))
+                            .foregroundColor(theme.inkGray)
+                            .frame(width: 16)
+                        Text(resource.displayName)
+                            .font(.system(size: 12))
+                            .foregroundColor(theme.inkBlack)
+                        Spacer()
+                        Text("\(needed)/turn")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundColor(isShortfall ? theme.sovietRed : theme.inkBlack)
+                    }
+
+                    // Source regions
+                    if sources.isEmpty {
+                        Text("⛔ No domestic source — must import")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(theme.sovietRed)
+                            .padding(.leading, 22)
+                    } else {
+                        ForEach(sources, id: \.regionId) { source in
+                            HStack(spacing: 4) {
+                                Text("↳")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundColor(theme.inkLight)
+                                Text(source.regionName)
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundColor(theme.inkGray)
+                                if source.status != "stable" {
+                                    Text("(\(source.status))")
+                                        .font(.system(size: 9, design: .monospaced))
+                                        .foregroundColor(theme.warningAmber)
+                                }
+                                Spacer()
+                                Text("\(source.amount)")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(theme.inkGray)
+                            }
+                            .padding(.leading, 22)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private func outputsList(for recipe: SectorRecipe) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("PRODUCES")
+                .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                .tracking(1.5)
+                .foregroundColor(theme.inkLight)
+                .padding(.top, 4)
+
+            ForEach(recipe.outputs.keys.sorted(by: { $0.displayName < $1.displayName }), id: \.self) { resource in
+                let yield = recipe.outputs[resource] ?? 0
+                HStack {
+                    Image(systemName: resource.iconName)
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.successGreen)
+                        .frame(width: 16)
+                    Text(resource.displayName)
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.inkBlack)
+                    Spacer()
+                    Text("+\(yield)/turn")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundColor(theme.successGreen)
+                }
+            }
+        }
+    }
+
+    /// All regions that produce a given resource with their amount and status.
+    private func sourceRegions(for resource: StrategicResource) -> [SourceRegionInfo] {
+        game.regions
+            .compactMap { region -> SourceRegionInfo? in
+                let amount = region.extractionRate(of: resource)
+                guard amount > 0 else { return nil }
+                return SourceRegionInfo(
+                    regionId: region.regionId,
+                    regionName: region.name,
+                    amount: amount,
+                    status: region.currentStatus
+                )
+            }
+            .sorted { $0.amount > $1.amount }
     }
 
     // MARK: - Header
@@ -210,6 +377,15 @@ struct SectorDetailView: View {
         event.game = game
         game.events.append(event)
     }
+}
+
+// MARK: - Source Region Info (Phase 3.3)
+
+private struct SourceRegionInfo {
+    let regionId: String
+    let regionName: String
+    let amount: Int
+    let status: String
 }
 
 // MARK: - Sector Stat Bar
