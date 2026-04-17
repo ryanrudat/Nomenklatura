@@ -47,4 +47,28 @@ enum TechEra: Int, Codable, Comparable, CaseIterable {
     static func < (lhs: TechEra, rhs: TechEra) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
+
+    /// Compute the tech era a player should be in given their plan history.
+    /// Mechanized requires 1 completed plan (any rating ≥ partial).
+    /// Atomic requires 1 Stakhanovite (4/4) plan.
+    /// Computerized requires 2 Stakhanovite plans.
+    /// Modern requires 3 Stakhanovite plans.
+    static func era(forCompletedPlans completedPlans: Int, stakhanovitePlans: Int) -> TechEra {
+        if stakhanovitePlans >= 3 { return .modern }
+        if stakhanovitePlans >= 2 { return .computerized }
+        if stakhanovitePlans >= 1 { return .atomic }
+        if completedPlans >= 1 { return .mechanized }
+        return .industrial
+    }
+
+    /// Player-facing announcement when an era unlocks (for notifications and Codex events).
+    var unlockHeadline: String {
+        switch self {
+        case .industrial:   return "Industrial Foundation"
+        case .mechanized:   return "Mechanization Achieved"
+        case .atomic:       return "Atomic Era Begins"
+        case .computerized: return "Computerized Apparatus Online"
+        case .modern:       return "Modern State Capability Unlocked"
+        }
+    }
 }

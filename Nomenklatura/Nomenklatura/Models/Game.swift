@@ -3095,6 +3095,46 @@ extension Game {
         } else if performance < 40 {
             applyStat("treasury", change: -10)
         }
+
+        // Phase 3.5: increment plan counts and check for tech era advancement
+        if targetCount >= 2 {
+            completedPlanCount += 1
+        }
+        if targetCount >= 4 {
+            stakhanovitePlanCount += 1
+        }
+
+        let previousEra = currentTechEra
+        let newEra = TechEra.era(
+            forCompletedPlans: completedPlanCount,
+            stakhanovitePlans: stakhanovitePlanCount
+        )
+        if newEra > previousEra {
+            currentTechEraRaw = newEra.rawValue
+            flags.append("tech_era_\(newEra.rawValue)_unlocked")
+
+            let event = GameEvent(
+                turnNumber: turnNumber,
+                eventType: .gameStart,
+                summary: "Technology era advanced: \(newEra.unlockHeadline). \(newEra.description)"
+            )
+            event.importance = 9
+            event.details = [
+                "type": "tech_era_unlock",
+                "era": String(newEra.rawValue),
+                "eraName": newEra.displayName,
+                "previousEra": String(previousEra.rawValue)
+            ]
+            event.game = self
+            events.append(event)
+
+            NotificationService.shared.notify(
+                .promotionAvailable,
+                title: newEra.unlockHeadline.uppercased(),
+                detail: newEra.description,
+                turn: turnNumber
+            )
+        }
     }
 
     /// Current Five-Year Plan phase (based on year)
