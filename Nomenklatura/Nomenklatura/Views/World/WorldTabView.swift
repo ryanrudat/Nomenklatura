@@ -689,8 +689,10 @@ struct InternationalEconomyView: View {
                     .foregroundColor(theme.inkLight)
                     .padding(12)
             } else {
-                ForEach(sortedCountries, id: \.id) { country in
-                    ForeignEconomyRow(country: country)
+                LazyVStack(alignment: .leading, spacing: 6) {
+                    ForEach(sortedCountries, id: \.id) { country in
+                        ForeignEconomyRow(country: country)
+                    }
                 }
             }
         }
