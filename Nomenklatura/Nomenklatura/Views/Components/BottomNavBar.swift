@@ -24,24 +24,15 @@ enum NavTab: String, CaseIterable {
         }
     }
 
-    var icon: String {
+    /// Maps each tab to a politically-charged SovietIcon kind.
+    /// Falls back to SF Symbol via SovietIcon when the icon system can't render.
+    var sovietIconKind: SovietIcon.Kind {
         switch self {
-        case .desk: return "doc.text.fill"
-        case .ledger: return "chart.bar.fill"
-        case .dossier: return "person.fill"
-        case .codex: return "text.bubble.fill"
-        case .economy: return "building.columns.fill"
-        }
-    }
-
-    // Fallback SF Symbol
-    var iconFallback: String {
-        switch self {
-        case .desk: return "doc.text.fill"
-        case .ledger: return "chart.bar.fill"
-        case .dossier: return "person.fill"
-        case .codex: return "text.bubble.fill"
-        case .economy: return "building.columns.fill"
+        case .desk: return .desk
+        case .ledger: return .ledger
+        case .dossier: return .dossier
+        case .codex: return .codex
+        case .economy: return .economy
         }
     }
 
@@ -124,8 +115,7 @@ struct NavBarItem: View {
 
                 // Icon with notification badge
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: tab.iconFallback)
-                        .font(.system(size: 20))
+                    SovietIcon(kind: tab.sovietIconKind, size: 20)
 
                     // Notification dot
                     if hasNotification && !isSelected {
