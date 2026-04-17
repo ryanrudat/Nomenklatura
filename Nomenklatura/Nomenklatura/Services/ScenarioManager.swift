@@ -93,11 +93,11 @@ class ScenarioManager {
         }
 
         // Build prompt and cache key on MainActor (needs Game access)
-        let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
-        let cacheKey = "turn_\(game.turnNumber)_\(game.phase)"
+        let promptParts = ScenarioPromptBuilder.buildPromptParts(for: game, config: config)
+        let cacheKey = ScenarioPromptBuilder.buildCacheKey(for: game)
 
         // Try AI generation
-        let result = await AIScenarioGenerator.shared.generateScenario(prompt: prompt, cacheKey: cacheKey)
+        let result = await AIScenarioGenerator.shared.generateScenario(systemPrompt: promptParts.systemPrompt, userPrompt: promptParts.userPrompt, cacheKey: cacheKey)
 
         switch result {
         case .success(let scenario, let metadata):
@@ -186,11 +186,11 @@ class ScenarioManager {
             }
 
             // Build prompt on main actor
-            let (prompt, cacheKey, useAI) = await MainActor.run {
-                let prompt = ScenarioPromptBuilder.buildPrompt(for: game, config: config)
-                let cacheKey = "turn_\(game.turnNumber)_\(game.phase)"
+            let (promptParts, cacheKey, useAI) = await MainActor.run {
+                let parts = ScenarioPromptBuilder.buildPromptParts(for: game, config: config)
+                let cacheKey = ScenarioPromptBuilder.buildCacheKey(for: game)
                 let useAI = Secrets.isAIEnabled && game.turnNumber > self.onboardingTurns
-                return (prompt, cacheKey, useAI)
+                return (parts, cacheKey, useAI)
             }
 
             var scenario: Scenario
@@ -198,7 +198,7 @@ class ScenarioManager {
 
             if useAI {
                 // Try AI generation
-                let result = await AIScenarioGenerator.shared.generateScenario(prompt: prompt, cacheKey: cacheKey)
+                let result = await AIScenarioGenerator.shared.generateScenario(systemPrompt: promptParts.systemPrompt, userPrompt: promptParts.userPrompt, cacheKey: cacheKey)
 
                 switch result {
                 case .success(let aiScenario, let metadata):

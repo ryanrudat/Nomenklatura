@@ -33,6 +33,7 @@ final class Game {
     @Transient private var _rivalCache: GameCharacter?
     @Attribute(.unique) var id: UUID
     var campaignId: String
+    var replaySeed: String = UUID().uuidString  // Per-game seed mixed into AI scenario cache keys so replays generate fresh content
     var turnNumber: Int
     var phase: String  // briefing, decision, outcome, directive, personalAction
 
@@ -263,6 +264,7 @@ final class Game {
     init(campaignId: String) {
         self.id = UUID()
         self.campaignId = campaignId
+        self.replaySeed = UUID().uuidString
         self.turnNumber = 1
         self.phase = GamePhase.briefing.rawValue
 
