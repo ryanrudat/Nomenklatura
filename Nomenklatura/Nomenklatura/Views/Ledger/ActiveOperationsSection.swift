@@ -99,22 +99,9 @@ struct ActiveOperationsSection: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        HStack {
-            Spacer()
-            VStack(spacing: 6) {
-                Image(systemName: "tray")
-                    .font(.system(size: 20))
-                    .foregroundColor(FiftiesColors.carbonCopy)
-
-                Text("No Active Operations")
-                    .font(.system(size: 10, design: .serif))
-                    .foregroundColor(FiftiesColors.fadedInk)
-            }
-            .padding(.vertical, 16)
-            Spacer()
-        }
-        .background(FiftiesColors.agedPaper.opacity(0.5))
-        .cornerRadius(4)
+        OfficialEmptyState(kind: .operationsDormant)
+            .background(FiftiesColors.agedPaper.opacity(0.5))
+            .cornerRadius(4)
     }
 
     // MARK: - Data Loading

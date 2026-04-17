@@ -434,6 +434,34 @@ enum GamePhase: String, Codable, CaseIterable {
     case outcome
     case directive
     case personalAction
+
+    var displayName: String {
+        switch self {
+        case .briefing: return "Briefing"
+        case .standingCommittee: return "Standing Committee"
+        case .decision: return "Decision"
+        case .outcome: return "Outcome"
+        case .directive: return "Directive"
+        case .personalAction: return "Personal Action"
+        }
+    }
+
+    /// 1-indexed step in the canonical 6-phase turn cycle.
+    var stepNumber: Int {
+        switch self {
+        case .briefing: return 1
+        case .standingCommittee: return 2
+        case .decision: return 3
+        case .outcome: return 4
+        case .directive: return 5
+        case .personalAction: return 6
+        }
+    }
+
+    /// Compact label for ScreenHeader: "PHASE 4/6 · OUTCOME".
+    var badgeText: String {
+        "PHASE \(stepNumber)/6 · \(displayName.uppercased())"
+    }
 }
 
 // MARK: - Game Status

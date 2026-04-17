@@ -36,7 +36,8 @@ struct OutcomeView: View {
                 // Header
                 ScreenHeader(
                     title: "Outcome",
-                    subtitle: "Turn \(game.turnNumber)"
+                    subtitle: "Turn \(game.turnNumber)",
+                    phase: .outcome
                 )
 
                 ScrollView {

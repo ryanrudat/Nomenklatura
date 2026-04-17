@@ -54,7 +54,8 @@ struct PersonalActionView: View {
                 // Header
                 ScreenHeader(
                     title: "Your Move",
-                    subtitle: "Personal Action Phase"
+                    subtitle: "Personal Action Phase",
+                    phase: .personalAction
                 )
 
                 // AP indicator

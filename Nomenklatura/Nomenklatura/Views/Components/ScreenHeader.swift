@@ -10,6 +10,7 @@ import SwiftUI
 struct ScreenHeader: View {
     let title: String
     let subtitle: String?
+    let phase: GamePhase?
     var showWorldButton: Bool = false
     var onWorldTap: (() -> Void)? = nil
     var showCongressButton: Bool = false
@@ -19,6 +20,7 @@ struct ScreenHeader: View {
     init(
         title: String,
         subtitle: String? = nil,
+        phase: GamePhase? = nil,
         showWorldButton: Bool = false,
         onWorldTap: (() -> Void)? = nil,
         showCongressButton: Bool = false,
@@ -26,6 +28,7 @@ struct ScreenHeader: View {
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.phase = phase
         self.showWorldButton = showWorldButton
         self.onWorldTap = onWorldTap
         self.showCongressButton = showCongressButton
@@ -59,6 +62,14 @@ struct ScreenHeader: View {
                             .font(theme.tagFont)
                             .tracking(2)
                             .foregroundColor(theme.accentGold)
+                    }
+
+                    if let phase = phase {
+                        Text(phase.badgeText)
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundColor(theme.sovietRed)
+                            .padding(.top, 2)
                     }
 
                     // Gold underline accent

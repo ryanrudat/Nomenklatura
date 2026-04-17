@@ -51,6 +51,7 @@ struct EconomicHubView: View {
     @State private var selectedSection: EconomicHubSection = .commandCenter
     @State private var showPropaganda: Bool = true
     @State private var selectedSector: EconomicSector?
+    @State private var lockToastMessage: String? = nil
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
@@ -79,6 +80,13 @@ struct EconomicHubView: View {
             ScrollView {
                 sectionContent
                     .padding(.bottom, 120)
+            }
+        }
+        .overlay(alignment: .top) {
+            if let msg = lockToastMessage {
+                LockToast(message: msg)
+                    .padding(.top, 70)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
     }
@@ -175,6 +183,8 @@ struct EconomicHubView: View {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 selectedSection = section
                             }
+                        } else {
+                            showLockToast(for: section)
                         }
                     } label: {
                         HStack(spacing: 4) {
@@ -204,8 +214,20 @@ struct EconomicHubView: View {
                         .opacity(!hasAccess ? 0.6 : 1.0)
                     }
                     .buttonStyle(.plain)
-                    .disabled(!hasAccess)
                 }
+            }
+        }
+    }
+
+    private func showLockToast(for section: EconomicHubSection) {
+        let currentLevel = accessLevel.effectiveLevel(for: .economic)
+        let msg = "\(section.rawValue) — Requires Economic Access \(section.requiredLevel) (you have \(currentLevel))"
+        withAnimation(.easeOut(duration: 0.25)) {
+            lockToastMessage = msg
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation(.easeIn(duration: 0.25)) {
+                lockToastMessage = nil
             }
         }
     }
