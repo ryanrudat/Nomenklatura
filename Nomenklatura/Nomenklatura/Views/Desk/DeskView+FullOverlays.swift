@@ -188,7 +188,7 @@ extension DeskView {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(StitchColors.stampRed)
+                    .background(ColdWarTheme.shared.stampRed)
                     .cornerRadius(4)
             }
             .buttonStyle(.plain)

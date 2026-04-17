@@ -99,7 +99,7 @@ struct ActivityFeedSection: View {
 
                 if entry.id != entries.prefix(8).last?.id {
                     Divider()
-                        .background(FiftiesColors.carbonCopy.opacity(0.3))
+                        .background(ColdWarTheme.shared.carbonCopy.opacity(0.3))
                 }
             }
         }
@@ -115,7 +115,7 @@ struct ActivityFeedSection: View {
 
     private var emptyState: some View {
         OfficialEmptyState(kind: .nothingToReport)
-            .background(FiftiesColors.agedPaper.opacity(0.5))
+            .background(ColdWarTheme.shared.agedPaper.opacity(0.5))
             .cornerRadius(4)
     }
 
@@ -182,7 +182,7 @@ struct ActivityFeedRow: View {
 
                 Text(entry.description)
                     .font(.system(size: 9, design: .serif))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
                     .lineLimit(1)
             }
 

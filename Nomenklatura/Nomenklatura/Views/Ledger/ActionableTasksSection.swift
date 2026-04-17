@@ -91,13 +91,13 @@ struct ActionableTasksSection: View {
             Text("AVAILABLE ACTIONS")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .tracking(1.2)
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
 
             Spacer()
 
             Text("\(availableTasks.count) available")
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(ColdWarTheme.shared.carbonCopy)
         }
     }
 
@@ -127,14 +127,14 @@ struct ActionableTasksSection: View {
                     HStack {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 9))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
 
                         Text("\(unavailableTasks.count) Locked Actions")
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
                     }
                 }
-                .tint(FiftiesColors.carbonCopy)
+                .tint(ColdWarTheme.shared.carbonCopy)
             }
         }
     }
@@ -143,7 +143,7 @@ struct ActionableTasksSection: View {
 
     private var emptyState: some View {
         OfficialEmptyState(kind: .queueEmpty)
-            .background(FiftiesColors.agedPaper.opacity(0.5))
+            .background(ColdWarTheme.shared.agedPaper.opacity(0.5))
             .cornerRadius(4)
     }
 
@@ -172,18 +172,18 @@ struct TaskCard: View {
                 // Icon
                 Image(systemName: task.iconName)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(isAvailable ? bureauColor : FiftiesColors.carbonCopy)
+                    .foregroundColor(isAvailable ? bureauColor : ColdWarTheme.shared.carbonCopy)
                     .frame(width: 24)
 
                 // Content
                 VStack(alignment: .leading, spacing: 2) {
                     Text(task.name)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(isAvailable ? FiftiesColors.typewriterInk : FiftiesColors.carbonCopy)
+                        .foregroundColor(isAvailable ? ColdWarTheme.shared.inkBlack : ColdWarTheme.shared.carbonCopy)
 
                     Text(task.briefDescription)
                         .font(.system(size: 9, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                         .lineLimit(1)
 
                     // Unavailable reason
@@ -214,11 +214,11 @@ struct TaskCard: View {
                 }
             }
             .padding(10)
-            .background(isAvailable ? FiftiesColors.manillaFolder : FiftiesColors.agedPaper.opacity(0.5))
+            .background(isAvailable ? ColdWarTheme.shared.manillaFolder : ColdWarTheme.shared.agedPaper.opacity(0.5))
             .cornerRadius(4)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(isAvailable ? bureauColor.opacity(0.3) : FiftiesColors.carbonCopy.opacity(0.2), lineWidth: 1)
+                    .stroke(isAvailable ? bureauColor.opacity(0.3) : ColdWarTheme.shared.carbonCopy.opacity(0.2), lineWidth: 1)
             )
         }
         .disabled(!isAvailable)
@@ -229,9 +229,9 @@ struct TaskCard: View {
         let riskColor: Color
         switch task.riskLevel {
         case .minimal, .low:
-            riskColor = FiftiesColors.approvedGreen
+            riskColor = ColdWarTheme.shared.approvedGreen
         case .moderate:
-            riskColor = FiftiesColors.brassGold
+            riskColor = ColdWarTheme.shared.bronzeGold
         case .high:
             riskColor = Color(hex: "CD853F")
         case .critical:
@@ -274,24 +274,24 @@ struct TaskConfirmationSheet: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(task.name)
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                         Text(task.briefDescription)
                             .font(.system(size: 12, design: .serif))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
                     }
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(FiftiesColors.manillaFolder)
+                .background(ColdWarTheme.shared.manillaFolder)
                 .cornerRadius(6)
 
                 // Description
                 Text(task.fullDescription)
                     .font(.system(size: 13, design: .serif))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
                     .padding()
-                    .background(FiftiesColors.agedPaper)
+                    .background(ColdWarTheme.shared.agedPaper)
                     .cornerRadius(4)
 
                 // Requirements & Effects
@@ -301,7 +301,7 @@ struct TaskConfirmationSheet: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("REQUIREMENTS")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(ColdWarTheme.shared.carbonCopy)
 
                             HStack(spacing: 16) {
                                 if task.networkCost > 0 {
@@ -311,7 +311,7 @@ struct TaskConfirmationSheet: View {
                                         Text("-\(task.networkCost) Network")
                                             .font(.system(size: 10, design: .monospaced))
                                     }
-                                    .foregroundColor(FiftiesColors.fadedInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkGray)
                                 }
 
                                 if task.cooldownTurns > 0 {
@@ -321,7 +321,7 @@ struct TaskConfirmationSheet: View {
                                         Text("\(task.cooldownTurns) turn cooldown")
                                             .font(.system(size: 10, design: .monospaced))
                                     }
-                                    .foregroundColor(FiftiesColors.fadedInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkGray)
                                 }
                             }
                         }
@@ -332,7 +332,7 @@ struct TaskConfirmationSheet: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("POTENTIAL EFFECTS")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(ColdWarTheme.shared.carbonCopy)
 
                             FlowLayout(spacing: 8) {
                                 ForEach(task.potentialEffects, id: \.self) { effect in
@@ -341,7 +341,7 @@ struct TaskConfirmationSheet: View {
                                         .foregroundColor(effectColor(for: effect))
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
-                                        .background(FiftiesColors.agedPaper)
+                                        .background(ColdWarTheme.shared.agedPaper)
                                         .cornerRadius(3)
                                 }
                             }
@@ -407,11 +407,11 @@ struct TaskConfirmationSheet: View {
 
     private func effectColor(for effect: String) -> Color {
         if effect.hasPrefix("+") {
-            return FiftiesColors.approvedGreen
+            return ColdWarTheme.shared.approvedGreen
         } else if effect.hasPrefix("-") {
             return Color(hex: "8B0000")
         } else {
-            return FiftiesColors.fadedInk
+            return ColdWarTheme.shared.inkGray
         }
     }
 }

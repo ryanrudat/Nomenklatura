@@ -100,7 +100,7 @@ struct ActiveOperationsSection: View {
 
     private var emptyState: some View {
         OfficialEmptyState(kind: .operationsDormant)
-            .background(FiftiesColors.agedPaper.opacity(0.5))
+            .background(ColdWarTheme.shared.agedPaper.opacity(0.5))
             .cornerRadius(4)
     }
 
@@ -142,9 +142,9 @@ struct OperationCard: View {
         case .awaitingResources:
             return Color(hex: "CD853F")
         case .pending:
-            return FiftiesColors.carbonCopy
+            return ColdWarTheme.shared.carbonCopy
         default:
-            return FiftiesColors.fadedInk
+            return ColdWarTheme.shared.inkGray
         }
     }
 
@@ -176,7 +176,7 @@ struct OperationCard: View {
                 if let targetName = operation.targetCharacterName ?? operation.targetRegionName {
                     Text(targetName)
                         .font(.system(size: 9, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                         .lineLimit(1)
                 }
 
@@ -185,7 +185,7 @@ struct OperationCard: View {
                     if let turnsRemaining = operation.turnsRemaining {
                         Label("\(turnsRemaining) turns", systemImage: "clock")
                             .font(.system(size: 8, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
                     }
 
                     // Success chance indicator
@@ -195,7 +195,7 @@ struct OperationCard: View {
                         Text("\(operation.successChance)%")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
                     }
-                    .foregroundColor(operation.successChance >= 60 ? FiftiesColors.approvedGreen : FiftiesColors.fadedInk)
+                    .foregroundColor(operation.successChance >= 60 ? FiftiesColors.approvedGreen : ColdWarTheme.shared.inkGray)
                 }
             }
 
@@ -215,7 +215,7 @@ struct OperationCard: View {
         .padding(10)
         .background(
             LinearGradient(
-                colors: [FiftiesColors.manillaFolder, FiftiesColors.agedPaper],
+                colors: [FiftiesColors.manillaFolder, ColdWarTheme.shared.agedPaper],
                 startPoint: .leading,
                 endPoint: .trailing
             )
