@@ -1,10 +1,30 @@
 # Nomenklatura Active Context
 
-Last updated: 2026-04-14
+Last updated: 2026-04-17
 Workspace: `/Users/ryanrudat/Desktop/Nomenklatura/Nomenklatura/Nomenklatura`
 
 ## Purpose
 This file is a living engineering context for the app. Read this first in future sessions to recover architecture, invariants, and current problem areas before patching.
+
+## Active Initiative — Comprehensive Redesign (Session 029, 2026-04-17)
+
+A 6-agent audit at the start of session 029 drove a 6-phase redesign initiative. After session 029:
+- **Phase 0** ✅ Foundation (bugs, design tokens, AI replayability cache, prompt caching, ValidationResult unification, position+law gating, RedactableText component)
+- **Phase 1** ✅ Chairman framing (~24 player-facing copy fixes + complete Achievement system overhaul with 35 tier-based achievements)
+- **Phase 2** ✅ Visual cohesion structurally complete (phase badges, themed empty states, lock toasts, modal manager refactor, collapsible sections, 3 legacy color systems wrapped + 4 high-traffic files migrated, SovietIcon system, persistent stat bar, stamp + paper grain modifiers)
+- **Phase 3** ✅ Deep economy (12 strategic resources, 5 tech eras, supply chain engine, sector detail UI, focus forecasting, tech era unlocks via plan completion, commodity-level trade, cross-system political feedback, emergency decrees)
+- **Phase 4** Politics interactivity — NOT STARTED
+- **Phase 5** Polish + tutorial — NOT STARTED
+
+Full session record: `docs/changelog/2026-04-17_session-029.md`
+Remaining work plan: `docs/plans/REDESIGN_REMAINING_PHASES.md`
+
+### Two Non-Negotiable Design Rules (locked in session 029)
+1. **The Chairman Sees Everything**: any "[REDACTED]" / "CLASSIFIED" UI must be tappable to reveal. Use `RedactableText` / `RedactableSection` components from `Views/Components/`.
+2. **AI Generates Narrative, Code Owns Mechanics**: newspapers, briefings, NPC dialogue are AI-generated for replayability (scenarios already done in session 029); action names, stats, UI labels stay coded.
+
+### Aesthetic Direction
+**Brutalist Bureaucratic Theater** for daily UI + **Constructivist propaganda accents** for dramatic moments. Game-internal Soviet-flavored terms (Politburo, Five-Year Plan, Stakhanovite) are OK; real-world Soviet figure names (Stalin/Lenin/Brezhnev) are never used.
 
 ## App Snapshot
 - Platform: SwiftUI + SwiftData iOS/macOS game app.
@@ -34,6 +54,46 @@ This file is a living engineering context for the app. Read this first in future
 - `Game.currentExpandedTrack` gates bureau actions; top leadership (`position >= 7`) bypasses strict track lock in bureau services.
 - Multi-turn systems depend on `turnNumber` and encoded payload keys in `game.variables`.
 - Any operation service change must preserve key names and decode fallback behavior.
+
+## Strategic Resource System (Phase 3, session 029)
+A full deep-economy layer added in session 029. The Chairman now manages a real supply chain, not just abstract sliders.
+
+- **Core models**:
+  - `Models/StrategicResource.swift` — 12-resource enum (4 energy + 4 heavy materials + 4 consumables). `displayName`, SF Symbol icon, `isRaw` flag, `minimumTechEra` gate.
+  - `Models/TechEra.swift` — 5-tier Comparable enum (industrial → mechanized → atomic → computerized → modern). `era(forCompletedPlans:stakhanovitePlans:)` static helper.
+  - `Models/SectorRecipe.swift` — 32 recipes (one per existing SectorFocus) declaring per-turn inputs/outputs/`requiredTechEra`. `RegionType.defaultEndowments` gives baseline extraction capacities per region type.
+  - `Models/SupplyChainResult.swift` — per-turn record with `extractedByRegion`, `producedBySector`, `consumedBySector`, `shortfallBySector`, `deficitResources`, `tradeImportsByPartner`, `tradeExportsByPartner`. Persisted on Game.
+  - `Models/EmergencyDecree.swift` — 6 decree types, each gated to a specific crisis. Cost + statEffects + resourceEffects + `isAvailable(in:)` + `lockReason`.
+  - `Models/FocusForecast.swift` — Identifiable preview struct with input/output deltas, reserve projection, cross-sector strain, stat changes.
+
+- **Game model fields added (Phase 3.1+)**:
+  - `completedPlanCount`, `stakhanovitePlanCount` — drive tech era unlock
+  - `currentTechEraRaw` (Int) + `currentTechEra` (TechEra) computed accessor
+  - `strategicReservesData` (Data?) + `strategicReserves` ([StrategicResource: Int]) computed accessor
+  - `lastSupplyChainResultData` (Data?) + `lastSupplyChainResult` (SupplyChainResult?) computed accessor
+  - `replaySeed` (String) — set on game creation, persists with save (cache key for AI scenario generation)
+  - `canUse(_:)` helper for tech-gated resource checks
+
+- **Region model fields added**:
+  - `endowmentsData` (Data?) + `endowments` ([StrategicResource: Int]) computed accessor
+  - `extractionRate(of:)`, `has(_:)`, `seedDefaultEndowmentsIfNeeded()` helpers
+
+- **TradeAgreement fields added (Phase 3.6)**:
+  - `commodityImportsData`, `commodityExportsData` — per-turn flows applied each turn
+  - `commodityImports`, `commodityExports`, `hasCommodityFlows` accessors
+  - 3 starter agreements (Soviet/Czech/Polish) seeded with commodity flows that match their existing flavor text
+
+- **Engine wiring**:
+  - `Services/EconomySupplyChainEngine.processSupplyChain(game:)` — extracts from regions (scaled by region status), applies trade flows, runs sector recipes (bottleneck-input ratio determines satisfaction), persists updated reserves + result. Hooks into `EconomyService.processEconomy` at step 7c (between loan payments and regional economies).
+  - `Services/FocusForecastService.forecast(switching:from:to:in:)` — simulates one turn ahead for the focus-change preview sheet.
+  - `Services/EmergencyDecreeService` — `decreesWithAvailability(in:)`, `apply(_:to:)`. Atomic stat + resource + treasury effects.
+  - `Services/GameEngine.applyStrategicResourceFeedback(game:)` — runs after the existing `applyEconomicPoliticalFeedback`. Resource deficits drain political stats (grain → popularSupport, steel → militaryLoyalty/eliteLoyalty, etc.). Sector-capacity feedback for sub-50% satisfaction. Multi-deficit crisis (3+ resources) fires importance-9 GameEvent + alert.
+  - `Game.completeFiveYearPlan()` — increments plan counts and advances `currentTechEraRaw` if thresholds met. Fires unlock notification.
+
+- **UI**:
+  - `Views/Economics/Sectors/SectorDetailView.swift` — supply chain section (inputs with source regions, outputs in green, "must import" alerts, last-turn satisfaction banner). EMERGENCY DECREES button surfaces when sector has shortfall AND any decree is available.
+  - `Views/Economics/Sectors/FocusForecastSheet.swift` — brutalist preview before any focus change.
+  - `Views/Economics/Sectors/EmergencyDecreeSheet.swift` — Constructivist decree selection.
 
 ## Bureau Operations System (Current)
 - Unified ledger layer:
@@ -111,6 +171,12 @@ Template:
 - Verified: ...
 - Remaining risk: ...
 ```
+
+### 2026-04-17 (Session 029 — Comprehensive Redesign Sweep)
+- Files: 25 commits across 40 new files + many modified. Full record in `docs/changelog/2026-04-17_session-029.md`.
+- Change: Phases 0 (foundation), 1 (Chairman framing), 2 (visual cohesion structural), 3 (deep economy) — all complete or structurally complete. Major new systems: StrategicResource + TechEra data layer, EconomySupplyChainEngine, SectorRecipe (32 recipes), commodity-level trade, FocusForecastSheet, EmergencyDecreeSheet, RedactableText components, SovietIcon system, PersistentStatBar, OfficialEmptyState, CollapsibleSection, LockToast, StampOverlay, PaperGrainOverlay, ActionValidationResult unification, LawGate + ActionAvailability gating infrastructure, AI replayability cache key fix + Anthropic prompt caching.
+- Verified: `xcodebuild build` returns BUILD SUCCEEDED at every commit. SourceKit cross-file resolution warnings throughout (project-wide, not session-specific).
+- Remaining risk: Phase 3 economy needs playtesting and balance tuning (recipe ratios, region endowments, tech era unlock pacing, decree availability thresholds — see `docs/plans/REDESIGN_REMAINING_PHASES.md` Phase 3 Tuning section). Phase 4 (politics interactivity) and Phase 5 (polish + tutorial) not started. ~45 files still use deprecated color wrappers (StitchColors / FiftiesColors / BureauColors) — wrappers forward to canonical `ColdWarTheme.shared` so functionality is identical, pure code hygiene migration tracked as ongoing tech debt.
 
 ### 2026-04-13
 - Files: `Views/Ledger/ActionableTasksSection.swift`
@@ -207,6 +273,12 @@ Template:
 - Change: Reworked desk document generation so “awaiting action” prompts are tied to the player’s actual current office and authority, not just raw rank or stale committed-track history. Document categories are now hard-filtered by active office track, top leadership gets more cross-bureau strategic material and less routine clerical paperwork, template selection now prefers the top two tiers available at the player’s current authority level, and `AuthorityLanguage` now resolves real ladder titles/track-aware authority instead of using the outdated generic rank mapping.
 - Verified: `swiftc -parse Services/DocumentQueueService.swift`, `swiftc -parse Models/World/AccessLevel.swift`, `swiftc -parse Models/Game.swift`
 - Remaining risk: This fixes routing and tiering logic, but the underlying document template library is still uneven across bureaus. Once Xcode/device testing is available, the next pass should be qualitative: check whether each track has enough genuinely role-specific prompt variety, especially for Party, Regional, and top-leadership desks.
+
+### 2026-04-15 (Session 028 — Six-Unit Systems Audit & Redesign, Batch Mode)
+- Files: `Services/EconomyService.swift`, `Services/CodexService.swift`, `Services/EconomicActionService.swift`, `Services/GameEngine.swift`, `Services/FiveYearPlanService.swift` (NEW), `Models/Game.swift`, `Models/Region.swift`, `Models/EconomicAction.swift`, `Models/CodexMessage.swift`, `Models/StateBankLoan.swift` (NEW), `Models/FiveYearPlanTargets.swift` (NEW), `Views/Ledger/LedgerView.swift`, `Views/Ledger/BureauOperationsView.swift` (NEW), `Views/Economics/FiveYearPlanWheelView.swift`, `Views/Economics/EconomicHubView.swift`, `Views/Economics/BudgetManagementView.swift`, `Views/Economics/RegionalEconomicsManagementView.swift`, `Views/Economics/StateBankView.swift` (NEW), `Views/Economics/PlanTargetSetupView.swift` (NEW), `Views/Codex/CodexView.swift`, `Views/Codex/CodexThreadView.swift`, `ContentView.swift`
+- Change: Six parallel workers landed on six separate branches (all builds SUCCEEDED). (1) **Treasury transparency**: `EconomicReport` now actually applies to treasury via `applyEconomicReport()`; GDP conversion halved and stored as `gdpAdjustment` line item so breakdown sum = real delta. Next-turn projection added. (2) **State Bank loans**: new `StateBankLoan` @Model with Gosbank/Socialist Bloc/Western sources, inflation side effects, obligation flags, early repayment; lives alongside legacy ForeignLoan via unified `totalDebtService`. (3) **Ledger redesigned as Political Situation Room**: 1,200 → 565 lines; removed economy stats and legacy bureau cards; added TrendBadge deltas and ThreatsSection with tab-switch nav; BureauOperationsCenter moved to its own sheet. (4) **Codex**: pacing tightened (patron 3, rival 5, check-in 7, 1/turn cap except during crisis); numeric effect chips on responses; trigger badges on messages; Terminal/Encyclopedia segmented control. (5) **Real Five-Year Plan**: `FiveYearPlanTargets` + `FiveYearPlanService` — six PlanSector goals per 20-turn cycle, preset difficulties, end-of-cycle consequences (Stakhanovite/Success/Mixed/Plan Failure); actions reduced 25→12+2 with `planSectorContributions` mapping; wheel shows real progress. (6) **Regions**: `Region.treasuryContribution` surfaced; 3 new actions (Deploy Cadres, Federal Aid, SEZ); dead governor/cultural data collapsed; cooldown map added.
+- Verified: `xcodebuild build` SUCCEEDED on all 6 worktrees (iPhone 17 Pro / iOS 26.2). No interactive simulator runs possible inside sandbox — PLAYTEST REQUIRED before merging.
+- Remaining risk: Units 1/2/5 all touch EconomyService.swift — manual merge conflict resolution required. Recommended merge order: 1 → 2 → 5, then 3, 4, 6. `EconomicDashboardView.PlanSector` was renamed to `LegacyDashboardSector` to disambiguate from new `PlanSector` enum — check downstream references. `CodexResponseEffects.calculate()` (UI side) must stay in sync with `CodexService.applyResponseEffects()` (service side) — effect map is duplicated. PR creation blocked by sandbox on all 6 workers; branches pushed, PRs need manual click at the URLs noted in session-028 changelog.
 
 ### 2026-04-14 (Session — Economics & Politics Overhaul)
 - Files: `Services/EconomyService.swift`, `Services/PolicyService.swift`, `Services/PoliticalAIService.swift`, `Models/Game.swift`, `Services/GameEngine.swift`, `Models/World/ForeignCountry.swift`, `Models/World/EconomicSystemType.swift`, `Views/Directive/DirectivePhaseView.swift`, `Views/Directive/BureauCommandCard.swift`, `Views/PersonalAction/ActionCardView.swift`, `Views/PersonalAction/PersonalActionView.swift`, `Views/Economy/EconomicHubView.swift` (NEW), `Views/Economy/TradeManagementView.swift` (NEW), `Views/Economy/RegionalEconomicsManagementView.swift` (NEW), `Views/Economy/BudgetManagementView.swift` (NEW), `Views/Economy/SectorDetailView.swift` (NEW), `Views/Economy/TradeProposalSheet.swift` (NEW), `Views/Economy/LoanProposalSheet.swift` (NEW), `Services/DocumentQueueService.swift`, `Views/Navigation/BottomNavBar.swift`, `Views/World/WorldTabView.swift`
