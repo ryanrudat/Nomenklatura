@@ -8,34 +8,45 @@
 
 import SwiftUI
 
-// MARK: - Design System Colors
+// MARK: - Design System Colors (DEPRECATED — migrating to ColdWarTheme)
+//
+// StitchColors was one of three competing color systems in the codebase
+// (alongside FiftiesColors and BureauColors). It now resolves to the
+// canonical ColdWarTheme.shared values so future call-site migrations
+// are zero-risk: each remaining StitchColors.X read returns the same
+// color it always did, just sourced from the unified theme.
+//
+// Migration path: replace each call site with @Environment(\.theme)
+// reads (in View bodies) or ColdWarTheme.shared.X (elsewhere). Once all
+// references are gone, this enum will be deleted.
 
+@available(*, deprecated, message: "Use @Environment(\\.theme) in views or ColdWarTheme.shared elsewhere")
 enum StitchColors {
     // Paper & Backgrounds
-    static let paper = Color(hex: "F5F0E1")
-    static let paperWarm = Color(hex: "FDFBF7")
-    static let paperDark = Color(hex: "E8E8E8")
+    static var paper: Color { ColdWarTheme.shared.parchment }
+    static var paperWarm: Color { ColdWarTheme.shared.parchmentDark }
+    static var paperDark: Color { ColdWarTheme.shared.paperGray }
 
     // Ink & Text
-    static let ink = Color(hex: "141414")
-    static let inkFaded = Color(hex: "4A4A4A")
-    static let inkLight = Color(hex: "757575")
+    static var ink: Color { ColdWarTheme.shared.inkBlack }
+    static var inkFaded: Color { ColdWarTheme.shared.inkGray }
+    static var inkLight: Color { ColdWarTheme.shared.inkLight }
 
     // Accents
-    static let stampRed = Color(hex: "B91C1C")
-    static let sovietRed = Color(hex: "B82E2E")
-    static let gold = Color(hex: "C4A962")
+    static var stampRed: Color { ColdWarTheme.shared.stampRed }
+    static var sovietRed: Color { ColdWarTheme.shared.sovietRed }
+    static var gold: Color { ColdWarTheme.shared.accentGold }
 
     // Dark Mode
-    static let darkBg = Color(hex: "1A1A1A")
-    static let darkCard = Color(hex: "2A2725")
-    static let darkBorder = Color(hex: "333333")
-    static let lightText = Color(hex: "E5E5E5")
+    static var darkBg: Color { ColdWarTheme.shared.schemeDark }
+    static var darkCard: Color { ColdWarTheme.shared.schemeCard }
+    static var darkBorder: Color { ColdWarTheme.shared.schemeBorder }
+    static var lightText: Color { ColdWarTheme.shared.schemeText }
 
     // Status Colors
-    static let positive = Color(hex: "15803D")  // Green-700
-    static let warning = Color(hex: "D97706")   // Amber-600
-    static let danger = Color(hex: "DC2626")    // Red-600
+    static var positive: Color { ColdWarTheme.shared.successGreen }
+    static var warning: Color { ColdWarTheme.shared.warningAmber }
+    static var danger: Color { ColdWarTheme.shared.dangerRed }
 }
 
 // MARK: - Circular Stat Gauge (Stitch Dossier Style)

@@ -8,49 +8,61 @@
 
 import SwiftUI
 
-// MARK: - 1950s Color Palette
+// MARK: - 1950s Color Palette (DEPRECATED — wraps ColdWarTheme.shared)
+//
+// FiftiesColors was one of three competing color systems (alongside
+// StitchColors and BureauColors). All values now resolve through the
+// canonical ColdWarTheme so future call-site migrations are zero-risk.
+// Migration path: replace each reference with @Environment(\.theme) in
+// view bodies, or ColdWarTheme.shared.X elsewhere.
 
+@available(*, deprecated, message: "Use @Environment(\\.theme) in views or ColdWarTheme.shared elsewhere")
 struct FiftiesColors {
     // Paper tones
-    static let agedPaper = Color(hex: "F5ECD7")        // Yellowed paper
-    static let freshPaper = Color(hex: "F8F5EC")       // Clean paper
-    static let cardstock = Color(hex: "EDE8D9")        // Heavier card stock
-    static let manillaFolder = Color(hex: "E8D4A8")    // File folder tan
+    static var agedPaper: Color { ColdWarTheme.shared.agedPaper }
+    static var freshPaper: Color { ColdWarTheme.shared.freshPaper }
+    static var cardstock: Color { ColdWarTheme.shared.cardstock }
+    static var manillaFolder: Color { ColdWarTheme.shared.manillaFolder }
 
     // Ink tones
-    static let typewriterInk = Color(hex: "1C1C1C")    // Fresh ribbon ink
-    static let fadedInk = Color(hex: "3D3D3D")         // Worn ribbon ink
-    static let carbonCopy = Color(hex: "5A5A5A")       // Carbon paper gray
+    static var typewriterInk: Color { ColdWarTheme.shared.inkBlack }
+    static var fadedInk: Color { ColdWarTheme.shared.inkGray }
+    static var carbonCopy: Color { ColdWarTheme.shared.carbonCopy }
 
     // Stamp colors
-    static let stampRed = Color(hex: "B82E2E")         // Official red stamp
-    static let stampRedDark = Color(hex: "8B0000")     // Darker red stamp
-    static let urgentRed = Color(hex: "C41E3A")        // Bright urgent red
-    static let approvedGreen = Color(hex: "2D5A27")    // Approved stamp green
-    static let deniedRed = Color(hex: "8B0000")        // Denied stamp
+    static var stampRed: Color { ColdWarTheme.shared.sovietRed }
+    static var stampRedDark: Color { ColdWarTheme.shared.stampRedDark }
+    static var urgentRed: Color { ColdWarTheme.shared.urgentRed }
+    static var approvedGreen: Color { ColdWarTheme.shared.approvedGreen }
+    static var deniedRed: Color { ColdWarTheme.shared.stampRedDark }
 
     // Accent colors
-    static let brassGold = Color(hex: "B8860B")        // Brass fixtures
-    static let steelGray = Color(hex: "708090")        // Steel/metal
-    static let leatherBrown = Color(hex: "5C4033")     // Leather binding
+    static var brassGold: Color { ColdWarTheme.shared.bronzeGold }
+    static var steelGray: Color { ColdWarTheme.shared.steelGray }
+    static var leatherBrown: Color { ColdWarTheme.shared.leatherBrown }
 }
 
-// MARK: - Bureau Colors
+// MARK: - Bureau Colors (DEPRECATED — wraps ColdWarTheme + ExpandedCareerTrack)
+//
+// BureauColors was a third competing color system. Logic preserved
+// exactly; the per-bureau hex values stay here for now since they are
+// unique to the bureau-mapping and not used elsewhere. Future cleanup
+// will move these into a theme-side `bureauColor(for:)` helper.
 
-/// Color palette for the three core bureaus
+@available(*, deprecated, message: "Use ColdWarTheme.shared bureau helpers (coming in a later sub-batch)")
 struct BureauColors {
 
     /// Primary color for a bureau (main accent/header)
     static func primary(for bureau: ExpandedCareerTrack) -> Color {
         switch bureau {
         case .securityServices:
-            return Color(hex: "8B0000")     // Dark red - surveillance, authority
+            return ColdWarTheme.shared.stampRedDark
         case .economicPlanning:
-            return Color(hex: "2D5A27")     // Soviet green - production, industry
+            return ColdWarTheme.shared.approvedGreen
         case .partyApparatus:
-            return Color(hex: "CC0000")     // Party red - ideology, power
+            return Color(hex: "CC0000")
         default:
-            return FiftiesColors.leatherBrown
+            return ColdWarTheme.shared.leatherBrown
         }
     }
 
@@ -58,13 +70,13 @@ struct BureauColors {
     static func accent(for bureau: ExpandedCareerTrack) -> Color {
         switch bureau {
         case .securityServices:
-            return FiftiesColors.stampRed   // Bright red accents
+            return ColdWarTheme.shared.sovietRed
         case .economicPlanning:
-            return Color(hex: "4A7C59")     // Lighter industrial green
+            return Color(hex: "4A7C59")
         case .partyApparatus:
-            return Color(hex: "FFD700")     // Gold - prestige, Party glory
+            return Color(hex: "FFD700")
         default:
-            return FiftiesColors.brassGold
+            return ColdWarTheme.shared.bronzeGold
         }
     }
 
@@ -72,13 +84,13 @@ struct BureauColors {
     static func background(for bureau: ExpandedCareerTrack) -> Color {
         switch bureau {
         case .securityServices:
-            return Color(hex: "8B0000").opacity(0.08)
+            return ColdWarTheme.shared.stampRedDark.opacity(0.08)
         case .economicPlanning:
-            return Color(hex: "2D5A27").opacity(0.08)
+            return ColdWarTheme.shared.approvedGreen.opacity(0.08)
         case .partyApparatus:
             return Color(hex: "CC0000").opacity(0.08)
         default:
-            return FiftiesColors.cardstock
+            return ColdWarTheme.shared.cardstock
         }
     }
 

@@ -34,6 +34,24 @@ protocol CampaignTheme {
     var concreteGray: Color { get }
     var steelBlue: Color { get }
 
+    // Semantic palette (state colors)
+    var paperGray: Color { get }
+    var successGreen: Color { get }
+    var warningAmber: Color { get }
+    var dangerRed: Color { get }
+
+    // Document / 1950s aesthetic palette (was FiftiesColors)
+    var agedPaper: Color { get }
+    var freshPaper: Color { get }
+    var cardstock: Color { get }
+    var manillaFolder: Color { get }
+    var carbonCopy: Color { get }
+    var stampRedDark: Color { get }
+    var urgentRed: Color { get }
+    var approvedGreen: Color { get }
+    var steelGray: Color { get }
+    var leatherBrown: Color { get }
+
     // Typography
     var headerFont: Font { get }
     var headerFontLarge: Font { get }
@@ -113,6 +131,24 @@ struct ColdWarTheme: CampaignTheme {
     let paperWhite = Color(hex: "F5F4F0")      // Clean paper
     let stoneGray = Color(hex: "78716C")       // Stone-500 equivalent
 
+    // Semantic palette (matches former StitchColors values for visual fidelity)
+    let paperGray = Color(hex: "E8E8E8")       // Neutral panel/divider
+    let successGreen = Color(hex: "15803D")    // Green-700, success/positive state
+    let warningAmber = Color(hex: "D97706")    // Amber-600, warning state
+    let dangerRed = Color(hex: "DC2626")       // Red-600, danger/error state
+
+    // Document / 1950s aesthetic (matches former FiftiesColors values)
+    let agedPaper = Color(hex: "F5ECD7")       // Yellowed paper
+    let freshPaper = Color(hex: "F8F5EC")      // Clean paper
+    let cardstock = Color(hex: "EDE8D9")       // Heavier card stock
+    let manillaFolder = Color(hex: "E8D4A8")   // File folder tan
+    let carbonCopy = Color(hex: "5A5A5A")      // Carbon paper gray
+    let stampRedDark = Color(hex: "8B0000")    // Darker red stamp
+    let urgentRed = Color(hex: "C41E3A")       // Bright urgent red
+    let approvedGreen = Color(hex: "2D5A27")   // Approved stamp green
+    let steelGray = Color(hex: "708090")       // Steel/metal
+    let leatherBrown = Color(hex: "5C4033")    // Leather binding
+
     // Typography - Soviet Brutalist
     // System fonts with appropriate weights for headers
     // American Typewriter for body (bureaucratic documents)
@@ -190,6 +226,17 @@ struct ColdWarTheme: CampaignTheme {
     var shadowDocument: ShadowToken {
         ShadowToken(color: Color(hex: "241F1C").opacity(0.15), radius: 4, x: 0, y: 2)
     }
+}
+
+// MARK: - Static Theme Accessor
+//
+// `ColdWarTheme.shared` is the single static instance used by code that
+// can't access the @Environment(\.theme) injection (e.g., enum cases,
+// model-layer code, deprecated wrappers like StitchColors). View code
+// should still prefer @Environment(\.theme).
+
+extension ColdWarTheme {
+    static let shared = ColdWarTheme()
 }
 
 // MARK: - Theme Manager
