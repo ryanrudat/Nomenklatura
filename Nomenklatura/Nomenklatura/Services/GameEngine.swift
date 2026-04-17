@@ -420,7 +420,7 @@ class GameEngine {
             return PromotionCheck(
                 canPromote: false,
                 nextPosition: nextPosition,
-                reason: "Your rival's influence blocks your advancement. Deal with them first."
+                reason: "Your rival's faction holds enough Standing Committee votes to block your proposals. Weaken their position first."
             )
         }
 

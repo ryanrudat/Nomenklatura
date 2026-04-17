@@ -461,7 +461,7 @@ class CharacterInteractionSystem {
             interactions.append(CharacterInteraction(
                 id: "cultivate_patronage_\(character.templateId)",
                 title: "Extend Patronage",
-                description: "Take \(character.name) under your protection and recommend them for advancement",
+                description: "Sponsor \(character.name) for higher office and bind their loyalty to your faction",
                 category: .diplomatic,
                 riskLevel: .medium,
                 costAP: 2,

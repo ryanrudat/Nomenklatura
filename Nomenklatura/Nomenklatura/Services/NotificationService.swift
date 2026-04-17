@@ -205,9 +205,9 @@ class NotificationService {
         notify(type, title: "\(statName) \(direction)", detail: "Current value: \(value)", turn: turn)
     }
 
-    /// Notify about promotion availability
+    /// Notify about a vacant position the Chairman can fill via succession.
     func notifyPromotionAvailable(positionName: String, turn: Int) {
-        notify(.promotionAvailable, title: "Advancement Possible", detail: "You may be ready for: \(positionName)", turn: turn)
+        notify(.promotionAvailable, title: "Succession Opportunity", detail: "A successor candidate is ready: \(positionName)", turn: turn)
     }
 
     /// Notify about new plot thread

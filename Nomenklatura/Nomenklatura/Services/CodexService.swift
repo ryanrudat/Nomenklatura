@@ -284,7 +284,7 @@ final class CodexService: ObservableObject {
         let content = selectTemplate(from: [
             "Comrade, I have noticed a certain... cooling in our relationship. I hope this is not due to any misunderstanding on your part about where your loyalties should lie.",
             "Your recent performance has been noted - and not always favorably. I had expected more from someone in whom I invested considerable political capital.",
-            "There are whispers that you have forgotten who helped you reach your current position. I trust these rumors are unfounded.",
+            "There are whispers that you are forgetting your allies now that you hold the highest office. I trust such gossip is unfounded — a General Secretary without loyal patrons is a General Secretary without a future.",
             "I am beginning to question whether my faith in you was misplaced. Prove me wrong."
         ])
 
@@ -541,7 +541,7 @@ final class CodexService: ObservableObject {
                     ],
                     .crisis: [
                         "You kept your head in a crisis. That is exactly what we need in our leadership.",
-                        "Your crisis management was impressive. I knew I was right to support your advancement."
+                        "Your crisis management was impressive. I knew I was right to back your claim to the chairmanship — and you continue to vindicate that choice."
                     ]
                 ], fallback: "Your handling of the \(decision.title.lowercased()) matter was commendable. Well done.")
                 return (content, .social)

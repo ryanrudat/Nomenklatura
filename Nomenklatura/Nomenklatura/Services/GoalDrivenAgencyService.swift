@@ -381,10 +381,10 @@ final class GoalDrivenAgencyService {
             return nil
         }
 
-        let title = frustrated ? "\(character.name) Makes Bold Move" : "\(character.name) Seeks Advancement"
+        let title = frustrated ? "\(character.name) Makes Bold Move" : "\(character.name) Petitions for Sponsorship"
         let text = frustrated
-            ? "\(character.name) has grown frustrated with their stalled career. They're considering drastic action to secure a promotion, and have approached you about potentially supporting their candidacy."
-            : "\(character.name) has been working to position themselves for advancement. They've come to discuss their ambitions with you - perhaps seeking your endorsement."
+            ? "\(character.name) has grown frustrated with their stalled career. They are weighing drastic action and have come to petition for your backing."
+            : "\(character.name) has come to petition for your sponsorship. They believe they are ready for greater responsibilities and await your judgment."
 
         return DynamicEvent(
             eventType: .characterMessage,

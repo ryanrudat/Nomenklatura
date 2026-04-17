@@ -900,12 +900,12 @@ struct PromotionNotificationView: View {
 
     private var promotionTitle: String {
         switch position.index {
-        case 6: return "SUPREME POWER"
-        case 5: return "THE INNER CIRCLE"
-        case 4: return "RISING STAR"
-        case 3: return "A SEAT AT THE TABLE"
-        case 2: return "ADVANCEMENT"
-        default: return "PROMOTION"
+        case 6: return "COMMAND"
+        case 5: return "AUTHORITY ESTABLISHED"
+        case 4: return "INFLUENCE GROWS"
+        case 3: return "STANDING ELEVATED"
+        case 2: return "POSITION SECURED"
+        default: return "APPOINTMENT"
         }
     }
 

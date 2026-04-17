@@ -172,7 +172,7 @@ final class AmbientActivityService {
                 "in a meeting with subordinates",
                 "working on department reports",
                 "attending to official duties",
-                "preparing briefings for superiors"
+                "preparing briefings for the Standing Committee"
             ].randomElement()!
 
         case .meeting:
@@ -224,7 +224,7 @@ final class AmbientActivityService {
 
         case .politicalManeuvering:
             return [
-                "positioning themselves for advancement",
+                "maneuvering for influence within their faction",
                 "building coalitions behind the scenes",
                 "working to undermine opponents",
                 "engaging in political calculation"

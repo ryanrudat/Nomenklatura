@@ -164,7 +164,7 @@ struct ScenarioPromptBuilder {
             return """
             ## REQUIRED SCENARIO TYPE: OPPORTUNITY
 
-            You MUST generate an OPPORTUNITY scenario - a chance for the player to advance their position.
+            You MUST generate an OPPORTUNITY scenario — a chance for the Chairman to consolidate power, eliminate a rival, or expand state authority.
             This should feel like a door opening: a delegation to lead, a vacancy to fill,
             information to exploit, a project to champion.
 
