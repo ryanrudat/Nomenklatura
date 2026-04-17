@@ -262,9 +262,13 @@ struct AffinityGainCard: View {
     /// Threshold to unlock bureau access
     private let accessThreshold = 25
 
-    /// Whether this bureau is already accessible
+    /// Whether this bureau is already accessible. The Chairman (Position 8)
+    /// has universal bureau access — track expertise here is just credibility
+    /// signaling that improves action-quality bonuses in the relevant
+    /// AccessLevel system, not gating bureau entry.
     private var hasAccess: Bool {
-        currentAffinity >= accessThreshold || game.currentCommittedTrack == track
+        if game.currentPositionIndex >= 8 { return true }
+        return currentAffinity >= accessThreshold || game.currentCommittedTrack == track
     }
 
     /// Progress toward access (0.0 to 1.0)

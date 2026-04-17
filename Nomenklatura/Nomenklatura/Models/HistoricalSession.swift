@@ -145,8 +145,12 @@ final class HistoricalSession {
 
     // MARK: - Access Control
 
-    /// Check if content should be redacted for a given player position
+    /// Check if content should be redacted for a given player position.
+    /// The Chairman (position 8) sees everything — there is no document
+    /// in the Apparatus they lack clearance for. Lower positions still
+    /// get clearance-gated redaction.
     func shouldRedact(forPosition position: Int, isOnCommittee: Bool) -> Bool {
+        if position >= 8 { return false }
         if accessLevel == 0 { return false }
         if accessLevel <= 5 && position >= 5 { return false }
         if accessLevel <= 7 && (position >= 7 || isOnCommittee) { return false }
