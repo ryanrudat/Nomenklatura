@@ -14,6 +14,8 @@ struct SectorDetailView: View {
     let sector: EconomicSector
     @Environment(\.theme) var theme
 
+    @State private var pendingForecast: FocusForecast?
+
     private var performance: SectorPerformance {
         game.sectorPerformance(for: sector)
     }
@@ -45,6 +47,13 @@ struct SectorDetailView: View {
             .padding(.bottom, 40)
         }
         .background(theme.parchment)
+        .sheet(item: $pendingForecast) { forecast in
+            FocusForecastSheet(
+                forecast: forecast,
+                onConfirm: { commitFocus(forecast.proposedFocus) },
+                onCancel: { /* dismissed; nothing to do */ }
+            )
+        }
     }
 
     // MARK: - Header
@@ -174,10 +183,19 @@ struct SectorDetailView: View {
 
     private func changeFocus(to focus: SectorFocus) {
         guard focus.focusId != activeFocusId else { return }
+        // Phase 3.4: present FocusForecastSheet instead of committing
+        // immediately. The sheet's CONFIRM button calls commitFocus.
+        pendingForecast = FocusForecastService.shared.forecast(
+            switching: sector,
+            from: activeFocusId,
+            to: focus,
+            in: game
+        )
+    }
 
+    private func commitFocus(_ focus: SectorFocus) {
         game.setSectorFocus(focus.focusId, for: sector)
 
-        // Log event
         let event = GameEvent(
             turnNumber: game.turnNumber,
             eventType: .personalAction,
