@@ -101,6 +101,11 @@ struct DeskView: View {
                     onTurnTap: { showEndTurnConfirmation = true }
                 )
 
+                // Phase 2.6: persistent stats bar — Treasury/Stability/Popular
+                // Support/Military Loyalty/AP always visible during scrolling
+                // so the Chairman can read the room without leaving the Desk
+                PersistentStatBar(game: game)
+
                 // Scrollable desk content
                 ScrollViewReader { proxy in
                     ScrollView {
