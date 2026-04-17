@@ -15,6 +15,7 @@ struct SectorDetailView: View {
     @Environment(\.theme) var theme
 
     @State private var pendingForecast: FocusForecast?
+    @State private var showingDecreeSheet = false
 
     private var performance: SectorPerformance {
         game.sectorPerformance(for: sector)
@@ -58,6 +59,9 @@ struct SectorDetailView: View {
                 onConfirm: { commitFocus(forecast.proposedFocus) },
                 onCancel: { /* dismissed; nothing to do */ }
             )
+        }
+        .sheet(isPresented: $showingDecreeSheet) {
+            EmergencyDecreeSheet(game: game, onDismiss: { showingDecreeSheet = false })
         }
     }
 
@@ -107,6 +111,29 @@ struct SectorDetailView: View {
                         .font(.system(size: 11))
                         .foregroundColor(theme.inkLight)
                 }
+            }
+
+            // Phase 3.8: Emergency decree button surfaces when there's a
+            // shortfall on this sector AND any decree is currently available.
+            if lastTurnSatisfaction != nil &&
+               EmergencyDecreeService.shared.hasAvailableDecrees(in: game) {
+                Button {
+                    showingDecreeSheet = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11))
+                        Text("EMERGENCY DECREES")
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .tracking(2)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(theme.sovietRed)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
             }
         }
         .padding(12)
