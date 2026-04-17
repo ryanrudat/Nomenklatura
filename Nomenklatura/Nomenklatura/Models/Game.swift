@@ -190,9 +190,10 @@ final class Game {
     var completedPlanCount: Int = 0            // Plans fully completed (regardless of rating)
     var stakhanovitePlanCount: Int = 0         // Plans completed at 6/6 Stakhanovite rating
 
-    // Strategic resources (Phase 3.1)
+    // Strategic resources (Phase 3.1 + 3.2)
     var currentTechEraRaw: Int = 0             // TechEra.rawValue — advances when plans complete
     var strategicReservesData: Data?           // Encoded [StrategicResource.rawValue: Int]
+    var lastSupplyChainResultData: Data?       // Encoded SupplyChainResult — what the engine did last turn
 
     // Economic history (for trends)
     var gdpHistoryData: Data?                  // Encoded [Int] - last 20 turns of GDP
@@ -565,6 +566,12 @@ extension Game {
     /// Whether a strategic resource is unlocked for the player's current era.
     func canUse(_ resource: StrategicResource) -> Bool {
         currentTechEra >= resource.minimumTechEra
+    }
+
+    /// Decoded SupplyChainResult from the most recent turn's processing.
+    /// Returns nil before the engine has run for the first time.
+    var lastSupplyChainResult: SupplyChainResult? {
+        decodeSupplyChainResult(from: lastSupplyChainResultData)
     }
 
     var currentPhase: GamePhase {

@@ -712,6 +712,13 @@ extension Region {
         ]
         regions.append(borderZone)
 
+        // Phase 3.2: seed strategic resource endowments based on region type.
+        // Idempotent: only fills regions that have no existing endowments,
+        // so manual scenario overrides take precedence.
+        for region in regions {
+            region.seedDefaultEndowmentsIfNeeded()
+        }
+
         return regions
     }
 }
@@ -1333,5 +1340,14 @@ extension Region {
     /// Whether this region has any extraction capacity for a given resource.
     func has(_ resource: StrategicResource) -> Bool {
         extractionRate(of: resource) > 0
+    }
+
+    /// Apply default endowments derived from the region's type. Idempotent
+    /// when called on a region with no existing endowments; leaves
+    /// existing entries alone so manual seeding / scenario overrides win.
+    func seedDefaultEndowmentsIfNeeded() {
+        guard endowments.isEmpty,
+              let type = RegionType(rawValue: regionType) else { return }
+        endowments = type.defaultEndowments
     }
 }

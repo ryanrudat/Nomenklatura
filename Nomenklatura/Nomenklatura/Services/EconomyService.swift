@@ -566,6 +566,13 @@ class EconomyService {
         // 7b. Process foreign loan payments
         processLoanPayments(game: game)
 
+        // 7c. Strategic resource supply chain (Phase 3.2)
+        // Extract from regions → consume in sectors → produce processed
+        // goods → record shortfalls. Reads region.endowments + active
+        // sector focuses; writes game.strategicReserves +
+        // game.lastSupplyChainResultData.
+        EconomySupplyChainEngine.shared.processSupplyChain(game: game)
+
         // 8. Process regional economies (interoperability with national economy)
         processRegionalEconomies(game: game)
 
