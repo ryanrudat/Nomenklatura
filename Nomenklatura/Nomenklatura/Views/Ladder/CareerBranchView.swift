@@ -178,7 +178,7 @@ private struct PathCard: View {
         case .capital:
             return "Return to the center. Navigate the intrigues of the Capital. Power is close, but so are your enemies."
         case .regional:
-            return "Take a distant posting. Build your own power base far from prying eyes. Prove yourself worthy of recall."
+            return "Take a distant posting. Build your own power base far from prying eyes. Cultivate independence from the Capital's intrigues — for now."
         case .shared:
             return "The common path."
         }

@@ -730,7 +730,7 @@ struct NoPartyActionsView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(theme.inkBlack)
 
-            Text("Advance in position to unlock party apparatus actions.")
+            Text("Party apparatus actions are gated. Build standing within the Party faction or pass relevant laws to unlock them.")
                 .font(theme.tagFont)
                 .foregroundColor(theme.inkGray)
                 .multilineTextAlignment(.center)

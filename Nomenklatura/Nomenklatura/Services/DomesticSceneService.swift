@@ -456,7 +456,7 @@ class DomesticSceneService {
 
             "It's the anniversary of your wedding. \(family.spouse?.name ?? "Your spouse") has managed to find real meat for dinner, a small miracle. The children are permitted to stay up late. For a few hours, you remember why this life is worth living.",
 
-            "News of your promotion arrives officially. The family celebrates cautiously—too much joy might attract attention—but there's warmth in the apartment tonight. \(family.spouse?.name ?? "Your spouse") squeezes your hand under the table."
+            "Word of a major political victory reaches the family — a successful Standing Committee vote, a rival neutralized. The family celebrates cautiously: too much joy might attract attention. But there's warmth in the apartment tonight, and \(family.spouse?.name ?? "your spouse") squeezes your hand under the table."
         ]
 
         return DomesticScene(

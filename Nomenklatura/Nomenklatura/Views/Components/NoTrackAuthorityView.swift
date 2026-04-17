@@ -74,7 +74,7 @@ struct NoTrackAuthorityView: View {
                     .tracking(1)
                     .foregroundColor(accentColor)
 
-                Text("Accept a position offer in this bureau's track, or advance to the Standing Committee.")
+                Text("This bureau falls outside your direct authority. Pass legislation through the Standing Committee to expand your reach into it.")
                     .font(theme.tagFont)
                     .foregroundColor(theme.inkGray)
                     .multilineTextAlignment(.center)

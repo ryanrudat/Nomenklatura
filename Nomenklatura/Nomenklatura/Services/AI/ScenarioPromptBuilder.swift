@@ -727,7 +727,7 @@ struct ScenarioPromptBuilder {
             - Paperwork and administrative duties within your small office
             - Managing relationships with immediate colleagues and superiors
             - Navigating petty office politics and bureaucratic procedures
-            - Proving yourself worthy of notice from those above you
+            - Building local reputation and surviving daily political pressures
             DO NOT give this player national policy decisions or access to senior leadership.
             """
         case 1:
@@ -1300,7 +1300,7 @@ struct ScenarioPromptBuilder {
         3. **Variety:** Include a mix of:
            - Crisis (urgent problems)
            - Routine governance (normal decisions)
-           - Opportunities (chances for advancement)
+           - Opportunities (chances to consolidate power, eliminate rivals, expand state authority)
            - Character-driven moments (relationship events)
         """
         }
@@ -1358,7 +1358,7 @@ struct ScenarioPromptBuilder {
 
            **GENERAL THEMES (appropriate for all bureaus):**
            - Patron/rival relationship dynamics
-           - Career advancement opportunities within your track
+           - Faction maneuvering and bureau rivalries within your domain
            - Faction politics affecting your bureau
            - Personal dilemmas and moral choices
            - Historical parallels to real socialist states
@@ -1484,7 +1484,7 @@ struct ScenarioPromptBuilder {
            **GENERAL THEMES (Entry Level):**
            - Local administrative matters
            - Office politics and colleague relationships
-           - Proving yourself to superiors
+           - Building credibility with peers and survival in office politics
            - Small-scale governance decisions
            - Building your reputation and network
            - Learning the bureaucratic system
