@@ -412,6 +412,22 @@ struct ContentView: View {
 
 // MARK: - Game View (with tab navigation)
 
+/// Identifies which modal sheet is currently presented in GameView.
+/// Single-source-of-truth replacement for the 8 separate sheet bools that
+/// could previously race each other when triggered close together.
+enum ActiveSheet: String, Identifiable {
+    case menu
+    case world
+    case congress
+    case security
+    case economic
+    case military
+    case party
+    case ministry
+
+    var id: String { rawValue }
+}
+
 struct GameView: View {
     @Bindable var game: Game
     @Binding var selectedTab: NavTab
@@ -429,29 +445,10 @@ struct GameView: View {
     @State private var gameOverReason: String = ""
     @State private var gameOverVictoryType: VictoryType?
 
-    // Menu sheet state
-    @State private var showingMenuSheet = false
-
-    // World sheet state
-    @State private var showingWorldSheet = false
-
-    // Congress sheet state
-    @State private var showingCongressSheet = false
-
-    // Security sheet state
-    @State private var showingSecuritySheet = false
-
-    // Economic sheet state
-    @State private var showingEconomicSheet = false
-
-    // Military sheet state
-    @State private var showingMilitarySheet = false
-
-    // Party sheet state
-    @State private var showingPartySheet = false
-
-    // Ministry sheet state
-    @State private var showingMinistrySheet = false
+    // Single source of truth for which modal sheet is presented.
+    // Replaces 8 separate Bool flags so SwiftUI can never accidentally
+    // try to present two sheets at once.
+    @State private var activeSheet: ActiveSheet?
 
     // Promotion notification state
     @State private var showPromotionNotification = false
@@ -489,19 +486,19 @@ struct GameView: View {
                     case .ledger:
                         LedgerView(
                             game: game,
-                            onWorldTap: { showingWorldSheet = true },
-                            onCongressTap: { showingCongressSheet = true },
-                            onSecurityTap: { showingSecuritySheet = true },
-                            onEconomicTap: { showingEconomicSheet = true },
-                            onMilitaryTap: { showingMilitarySheet = true },
-                            onPartyTap: { showingPartySheet = true },
-                            onMinistryTap: { showingMinistrySheet = true }
+                            onWorldTap: { activeSheet = .world },
+                            onCongressTap: { activeSheet = .congress },
+                            onSecurityTap: { activeSheet = .security },
+                            onEconomicTap: { activeSheet = .economic },
+                            onMilitaryTap: { activeSheet = .military },
+                            onPartyTap: { activeSheet = .party },
+                            onMinistryTap: { activeSheet = .ministry }
                         )
                     case .dossier:
                         DossierView(
                             game: game,
-                            onWorldTap: { showingWorldSheet = true },
-                            onCongressTap: { showingCongressSheet = true },
+                            onWorldTap: { activeSheet = .world },
+                            onCongressTap: { activeSheet = .congress },
                             initialTab: navigateToJournalEntry != nil ? .journal : nil,
                             highlightedEntryId: navigateToJournalEntry?.id.uuidString
                         )
@@ -525,40 +522,36 @@ struct GameView: View {
                     VStack {
                         Spacer()
                         BottomNavBar(selectedTab: $selectedTab) {
-                            showingMenuSheet = true
+                            activeSheet = .menu
                         }
                     }
                 }
             }
         }
-        .sheet(isPresented: $showingMenuSheet) {
-            GameMenuSheet(
-                onRestart: { startNewGame() },
-                onMainMenu: { onReturnToMenu() },
-                onDeleteAllData: onDeleteAllData
-            )
-            .presentationDetents([.medium])
-        }
-        .sheet(isPresented: $showingWorldSheet) {
-            WorldTabView(game: game)
-        }
-        .sheet(isPresented: $showingCongressSheet) {
-            CongressTabView(game: game)
-        }
-        .sheet(isPresented: $showingSecuritySheet) {
-            SecurityPortalView(game: game)
-        }
-        .sheet(isPresented: $showingEconomicSheet) {
-            EconomicHubView(game: game)
-        }
-        .sheet(isPresented: $showingMilitarySheet) {
-            MilitaryPortalView(game: game)
-        }
-        .sheet(isPresented: $showingPartySheet) {
-            PartyPortalView(game: game)
-        }
-        .sheet(isPresented: $showingMinistrySheet) {
-            StateMinistryPortalView(game: game)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .menu:
+                GameMenuSheet(
+                    onRestart: { startNewGame() },
+                    onMainMenu: { onReturnToMenu() },
+                    onDeleteAllData: onDeleteAllData
+                )
+                .presentationDetents([.medium])
+            case .world:
+                WorldTabView(game: game)
+            case .congress:
+                CongressTabView(game: game)
+            case .security:
+                SecurityPortalView(game: game)
+            case .economic:
+                EconomicHubView(game: game)
+            case .military:
+                MilitaryPortalView(game: game)
+            case .party:
+                PartyPortalView(game: game)
+            case .ministry:
+                StateMinistryPortalView(game: game)
+            }
         }
         .overlay {
             // Promotion notification overlay
@@ -614,8 +607,8 @@ struct GameView: View {
                 onDecisionMade: { outcomeData in
                     currentOutcome = outcomeData
                 },
-                onWorldTap: { showingWorldSheet = true },
-                onCongressTap: { showingCongressSheet = true },
+                onWorldTap: { activeSheet = .world },
+                onCongressTap: { activeSheet = .congress },
                 onDossierTap: { selectedTab = .dossier },  // Navigate to Dossier from memo tray
                 onLedgerTap: { selectedTab = .ledger },    // Navigate to Ledger from stats
                 onLadderTap: { selectedTab = .economy },   // Navigate to Economy tab
