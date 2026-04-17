@@ -384,16 +384,18 @@ struct TradeManagementView: View {
                             .stroke(theme.borderTan, lineWidth: 1)
                     )
             } else {
-                ForEach(sortedPartners, id: \.id) { country in
-                    TradePartnerCard(
-                        country: country,
-                        activeAgreementCount: game.agreements(with: country.countryId).filter(\.isActive).count,
-                        isEmbargoed: game.isEmbargoed(country.countryId),
-                        onNegotiate: {
-                            selectedCountry = country
-                            showProposalSheet = true
-                        }
-                    )
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    ForEach(sortedPartners, id: \.id) { country in
+                        TradePartnerCard(
+                            country: country,
+                            activeAgreementCount: game.agreements(with: country.countryId).filter(\.isActive).count,
+                            isEmbargoed: game.isEmbargoed(country.countryId),
+                            onNegotiate: {
+                                selectedCountry = country
+                                showProposalSheet = true
+                            }
+                        )
+                    }
                 }
             }
         }

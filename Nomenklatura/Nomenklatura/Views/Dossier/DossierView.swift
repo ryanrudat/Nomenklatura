@@ -26,6 +26,8 @@ struct DossierView: View {
     @State private var selectedTab: DossierTab = .profile
     @State private var characterFilter: CharacterFilter = .all
     @State private var searchText: String = ""
+    @State private var cachedHasPoliticalActivity: Bool = false
+    @State private var cachedHasDecisionEvents: Bool = false
     @Environment(\.theme) var theme
 
     // MARK: - Memoized Character Filters (Performance Optimization)
@@ -143,6 +145,13 @@ struct DossierView: View {
             if let initial = initialTab {
                 selectedTab = initial
             }
+            recomputeJournalCaches()
+        }
+        .onChange(of: game.journalEntries.count) { _, _ in
+            recomputeJournalCaches()
+        }
+        .onChange(of: game.events.count) { _, _ in
+            recomputeJournalCaches()
         }
     }
 
@@ -256,8 +265,10 @@ struct DossierView: View {
                         .italic()
                         .padding(.vertical, 20)
                 } else {
-                    ForEach(filtered) { character in
-                        CharacterCardView(character: character, game: game)
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(filtered) { character in
+                            CharacterCardView(character: character, game: game)
+                        }
                     }
                 }
             }
@@ -304,7 +315,7 @@ struct DossierView: View {
             PoliticalActivityView(game: game)
 
             // Divider
-            if hasPoliticalActivity {
+            if cachedHasPoliticalActivity {
                 Rectangle()
                     .fill(theme.borderTan)
                     .frame(height: 2)
@@ -315,7 +326,7 @@ struct DossierView: View {
             SavedNotesView(game: game)
 
             // Divider between sections
-            if !game.journalEntries.isEmpty && !game.events.filter({ $0.currentEventType == .decision }).isEmpty {
+            if !game.journalEntries.isEmpty && cachedHasDecisionEvents {
                 Rectangle()
                     .fill(theme.borderTan)
                     .frame(height: 2)
@@ -327,8 +338,11 @@ struct DossierView: View {
         }
     }
 
-    private var hasPoliticalActivity: Bool {
-        game.journalEntries.contains { $0.category == .npcActivity || $0.category == .committeeActivity }
+    private func recomputeJournalCaches() {
+        cachedHasPoliticalActivity = game.journalEntries.contains {
+            $0.category == .npcActivity || $0.category == .committeeActivity
+        }
+        cachedHasDecisionEvents = game.events.contains { $0.currentEventType == .decision }
     }
 }
 
@@ -597,8 +611,10 @@ struct SavedNotesView: View {
                 .padding(.vertical, 40)
             } else {
                 // Notes list
-                ForEach(sortedEntries) { entry in
-                    SavedNoteCard(entry: entry, game: game)
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    ForEach(sortedEntries) { entry in
+                        SavedNoteCard(entry: entry, game: game)
+                    }
                 }
             }
         }
@@ -779,8 +795,10 @@ struct DecisionJournalView: View {
                             .padding(.top, 8)
 
                         // Decision cards
-                        ForEach(events) { event in
-                            DecisionJournalCard(event: event, game: game)
+                        LazyVStack(alignment: .leading, spacing: 8) {
+                            ForEach(events) { event in
+                                DecisionJournalCard(event: event, game: game)
+                            }
                         }
                     }
                 }

@@ -292,8 +292,10 @@ struct SessionHistoryContent: View {
             if sortedMeetings.isEmpty {
                 EmptyHistoryCard()
             } else {
-                ForEach(sortedMeetings) { meeting in
-                    MeetingHistoryCard(meeting: meeting, game: game)
+                LazyVStack(spacing: 12) {
+                    ForEach(sortedMeetings) { meeting in
+                        MeetingHistoryCard(meeting: meeting, game: game)
+                    }
                 }
             }
         }
@@ -544,12 +546,14 @@ struct HistoricalArchivesContent: View {
             if filteredSessions.isEmpty {
                 EmptyArchivesCard()
             } else {
-                ForEach(filteredSessions) { session in
-                    HistoricalSessionCard(
-                        session: session,
-                        playerPosition: playerPosition,
-                        isOnCommittee: isOnCommittee
-                    )
+                LazyVStack(spacing: 12) {
+                    ForEach(filteredSessions) { session in
+                        HistoricalSessionCard(
+                            session: session,
+                            playerPosition: playerPosition,
+                            isOnCommittee: isOnCommittee
+                        )
+                    }
                 }
             }
 
