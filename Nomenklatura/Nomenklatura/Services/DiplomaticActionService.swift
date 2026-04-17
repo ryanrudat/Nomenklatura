@@ -10,23 +10,6 @@
 import Foundation
 import SwiftData
 
-// MARK: - Action Validation Result
-
-/// Result of validating whether an action can be executed
-struct ActionValidationResult {
-    let canExecute: Bool
-    let reason: String?
-    let successChance: Int
-
-    static func success(chance: Int) -> ActionValidationResult {
-        ActionValidationResult(canExecute: true, reason: nil, successChance: chance)
-    }
-
-    static func failure(_ reason: String) -> ActionValidationResult {
-        ActionValidationResult(canExecute: false, reason: reason, successChance: 0)
-    }
-}
-
 // MARK: - Action Execution Result
 
 /// Result of executing a diplomatic action

@@ -823,7 +823,7 @@ struct MinistryActionRow: View {
 
     private let actionService = StateMinistryActionService.shared
 
-    private var validation: StateMinistryActionService.ValidationResult {
+    private var validation: ActionValidationResult {
         actionService.validateAction(action, targetMinistry: nil, targetOfficial: nil, for: game)
     }
 

@@ -19,20 +19,12 @@ final class PartyActionService {
 
     // MARK: - Validation
 
-    /// Result of action validation
-    struct ValidationResult {
-        let canExecute: Bool
-        let reason: String?
-        let successChance: Int
-        let requiresApproval: Bool
-    }
-
     /// Validate whether a party action can be executed
     func validateAction(
         _ action: PartyAction,
         targetCadre: GameCharacter?,
         for game: Game
-    ) -> ValidationResult {
+    ) -> ActionValidationResult {
         let positionIndex = game.currentPositionIndex
 
         // Player is General Secretary — no position or track gate needed
@@ -41,7 +33,7 @@ final class PartyActionService {
         let cooldowns = getPartyCooldowns(for: game)
         if cooldowns.isOnCooldown(actionId: action.id, currentTurn: game.turnNumber) {
             let remaining = cooldowns.turnsRemaining(actionId: action.id, currentTurn: game.turnNumber)
-            return ValidationResult(
+            return ActionValidationResult(
                 canExecute: false,
                 reason: "On cooldown (\(remaining) turns remaining)",
                 successChance: 0,
@@ -53,7 +45,7 @@ final class PartyActionService {
         if action.successEffects.initiatesCampaign {
             let campaigns = getActiveCampaigns(for: game)
             if !campaigns.isEmpty {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "A campaign is already in progress",
                     successChance: 0,
@@ -66,7 +58,7 @@ final class PartyActionService {
         if let target = targetCadre, (action.successEffects.initiatesPromotion || action.successEffects.initiatesExpulsion) {
             let targetPosition = target.positionIndex ?? 0
             if targetPosition >= positionIndex && !action.requiresCommitteeApproval {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "Cannot affect cadres at or above your position without Central Committee approval",
                     successChance: 0,
@@ -78,7 +70,7 @@ final class PartyActionService {
         // Calculate success chance
         let successChance = calculateSuccessChance(action, targetCadre: targetCadre, for: game)
 
-        return ValidationResult(
+        return ActionValidationResult(
             canExecute: true,
             reason: nil,
             successChance: successChance,

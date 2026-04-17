@@ -19,21 +19,13 @@ final class StateMinistryActionService {
 
     // MARK: - Validation
 
-    /// Result of action validation
-    struct ValidationResult {
-        let canExecute: Bool
-        let reason: String?
-        let successChance: Int
-        let requiresApproval: Bool
-    }
-
     /// Validate whether a state ministry action can be executed
     func validateAction(
         _ action: StateMinistryAction,
         targetMinistry: MinistryDepartment?,
         targetOfficial: GameCharacter?,
         for game: Game
-    ) -> ValidationResult {
+    ) -> ActionValidationResult {
         let positionIndex = game.currentPositionIndex
 
         // Player is General Secretary — no position or track gate needed
@@ -42,7 +34,7 @@ final class StateMinistryActionService {
         let cooldowns = getMinistryCooldowns(for: game)
         if cooldowns.isOnCooldown(actionId: action.id, currentTurn: game.turnNumber) {
             let remaining = cooldowns.turnsRemaining(actionId: action.id, currentTurn: game.turnNumber)
-            return ValidationResult(
+            return ActionValidationResult(
                 canExecute: false,
                 reason: "On cooldown (\(remaining) turns remaining)",
                 successChance: 0,
@@ -54,7 +46,7 @@ final class StateMinistryActionService {
         if action.successEffects.initiatesProject {
             let projects = getActiveProjects(for: game)
             if projects.count >= 2 {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "Maximum active projects reached (2)",
                     successChance: 0,
@@ -68,7 +60,7 @@ final class StateMinistryActionService {
             let targetPosition = target.positionIndex ?? 0
             // Can only recommend appointments for those below your position
             if targetPosition >= positionIndex && !action.requiresCommitteeApproval {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "Cannot affect officials at or above your position without State Council approval",
                     successChance: 0,
@@ -85,7 +77,7 @@ final class StateMinistryActionService {
             for: game
         )
 
-        return ValidationResult(
+        return ActionValidationResult(
             canExecute: true,
             reason: nil,
             successChance: successChance,

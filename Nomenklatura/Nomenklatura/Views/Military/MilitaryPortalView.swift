@@ -900,7 +900,7 @@ struct MilitaryActionCard: View {
     let action: MilitaryAction
     let isOnCooldown: Bool
     let cooldownRemaining: Int
-    let validation: MilitaryActionService.ValidationResult
+    let validation: ActionValidationResult
     @Bindable var game: Game
     let modelContext: ModelContext
     @Environment(\.theme) var theme

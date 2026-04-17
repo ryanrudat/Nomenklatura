@@ -1183,7 +1183,7 @@ struct EconomicActionCard: View {
     let action: EconomicAction
     let isOnCooldown: Bool
     let cooldownRemaining: Int
-    let validation: EconomicActionService.ValidationResult
+    let validation: ActionValidationResult
     @Bindable var game: Game
     let modelContext: ModelContext
     @Environment(\.theme) var theme

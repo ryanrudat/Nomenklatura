@@ -19,28 +19,19 @@ final class EconomicActionService {
 
     // MARK: - Validation
 
-    /// Result of action validation
-    struct ValidationResult {
-        let canExecute: Bool
-        let reason: String?
-        let successChance: Int
-        let requiresApproval: Bool
-        let treasuryCost: Int
-    }
-
     /// Validate whether an action can be executed
     func validateAction(
         _ action: EconomicAction,
         targetSector: EconomicSector?,
         for game: Game
-    ) -> ValidationResult {
+    ) -> ActionValidationResult {
         // Player is General Secretary — no position or track gate needed
 
         // Check cooldown
         let cooldowns = getEconomicCooldowns(for: game)
         if cooldowns.isOnCooldown(actionId: action.id, currentTurn: game.turnNumber) {
             let remaining = cooldowns.turnsRemaining(actionId: action.id, currentTurn: game.turnNumber)
-            return ValidationResult(
+            return ActionValidationResult(
                 canExecute: false,
                 reason: "On cooldown (\(remaining) turns remaining)",
                 successChance: 0,
@@ -55,7 +46,7 @@ final class EconomicActionService {
             : 0
 
         if treasuryCost > 0 && game.treasury < treasuryCost {
-            return ValidationResult(
+            return ActionValidationResult(
                 canExecute: false,
                 reason: "Insufficient treasury (need \(treasuryCost), have \(game.treasury))",
                 successChance: 0,
@@ -68,7 +59,7 @@ final class EconomicActionService {
         if action.successEffects.startsProject {
             let activeProjects = getActiveProjects(for: game)
             if activeProjects.count >= 3 {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "Maximum concurrent projects reached (3)",
                     successChance: 0,
@@ -81,7 +72,7 @@ final class EconomicActionService {
         // Calculate success chance
         let successChance = calculateSuccessChance(action, targetSector: targetSector, for: game)
 
-        return ValidationResult(
+        return ActionValidationResult(
             canExecute: true,
             reason: nil,
             successChance: successChance,

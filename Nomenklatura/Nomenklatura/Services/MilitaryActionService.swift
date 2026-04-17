@@ -19,20 +19,12 @@ final class MilitaryActionService {
 
     // MARK: - Validation
 
-    /// Result of action validation
-    struct ValidationResult {
-        let canExecute: Bool
-        let reason: String?
-        let successChance: Int
-        let requiresApproval: Bool
-    }
-
     /// Validate whether a military action can be executed
     func validateAction(
         _ action: MilitaryAction,
         targetOfficer: GameCharacter?,
         for game: Game
-    ) -> ValidationResult {
+    ) -> ActionValidationResult {
         let positionIndex = game.currentPositionIndex
 
         // Player is General Secretary — no position or track gate needed
@@ -41,7 +33,7 @@ final class MilitaryActionService {
         let cooldowns = getMilitaryCooldowns(for: game)
         if cooldowns.isOnCooldown(actionId: action.id, currentTurn: game.turnNumber) {
             let remaining = cooldowns.turnsRemaining(actionId: action.id, currentTurn: game.turnNumber)
-            return ValidationResult(
+            return ActionValidationResult(
                 canExecute: false,
                 reason: "On cooldown (\(remaining) turns remaining)",
                 successChance: 0,
@@ -53,7 +45,7 @@ final class MilitaryActionService {
         if action.successEffects.startsCampaign {
             let campaigns = getActiveCampaigns(for: game)
             if !campaigns.isEmpty {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "A campaign is already in progress",
                     successChance: 0,
@@ -66,7 +58,7 @@ final class MilitaryActionService {
         if let target = targetOfficer, action.successEffects.initiatesPurge {
             let targetPosition = target.positionIndex ?? 0
             if targetPosition >= positionIndex && !action.requiresCommitteeApproval {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "Cannot target officers at or above your position without CMC approval",
                     successChance: 0,
@@ -78,7 +70,7 @@ final class MilitaryActionService {
         // Calculate success chance
         let successChance = calculateSuccessChance(action, targetOfficer: targetOfficer, for: game)
 
-        return ValidationResult(
+        return ActionValidationResult(
             canExecute: true,
             reason: nil,
             successChance: successChance,

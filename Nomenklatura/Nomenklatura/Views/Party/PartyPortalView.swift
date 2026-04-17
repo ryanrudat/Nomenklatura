@@ -792,7 +792,7 @@ struct PartyActionRow: View {
 
     private let actionService = PartyActionService.shared
 
-    private var validation: PartyActionService.ValidationResult {
+    private var validation: ActionValidationResult {
         actionService.validateAction(action, targetCadre: nil, for: game)
     }
 

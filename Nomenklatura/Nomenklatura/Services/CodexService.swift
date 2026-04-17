@@ -413,8 +413,8 @@ final class CodexService: ObservableObject {
     }
 
     private func generateNetworkContactMessage(milestone: Int, game: Game) async -> CodexMessage {
-        let contactName = ["Mikhail Petrov", "Anna Volkonsky", "Dmitri Orlov", "Elena Kozlova"].randomElement()!
-        let contactTitle = ["Economic Planning Aide", "Party Records Clerk", "Regional Liaison", "Cultural Affairs Deputy"].randomElement()!
+        let contactName = ["Mikhail Petrov", "Anna Volkonsky", "Dmitri Orlov", "Elena Kozlova"].randomElement() ?? "Mikhail Petrov"
+        let contactTitle = ["Economic Planning Aide", "Party Records Clerk", "Regional Liaison", "Cultural Affairs Deputy"].randomElement() ?? "Party Aide"
 
         let content = selectTemplate(from: [
             "A mutual acquaintance suggested we might find common ground. In these uncertain times, it helps to know who one's friends are.",

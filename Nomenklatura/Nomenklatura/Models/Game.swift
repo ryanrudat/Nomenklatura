@@ -1004,12 +1004,10 @@ extension Game {
     /// Record that an interaction was used this turn
     func useCharacterInteraction() {
         if lastInteractionTurn != turnNumber {
-            // New turn, reset counter
-            characterInteractionsThisTurn = 1
+            characterInteractionsThisTurn = 0
             lastInteractionTurn = turnNumber
-        } else {
-            characterInteractionsThisTurn += 1
         }
+        characterInteractionsThisTurn += 1
         updatedAt = Date()
     }
 

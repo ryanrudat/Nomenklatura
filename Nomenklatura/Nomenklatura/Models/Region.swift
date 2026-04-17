@@ -7,6 +7,9 @@
 
 import Foundation
 import SwiftData
+import os.log
+
+private let regionLogger = Logger(subsystem: "com.ryanrudat.Nomenklatura", category: "Region")
 
 // MARK: - Region Type
 
@@ -120,11 +123,22 @@ struct RegionGovernor: Codable, Identifiable {
 // Helper functions for JSON encoding/decoding outside of MainActor isolation
 private func decodeRegionGovernor(from data: Data?) -> RegionGovernor? {
     guard let data = data else { return nil }
-    return try? JSONDecoder().decode(RegionGovernor.self, from: data)
+    do {
+        return try JSONDecoder().decode(RegionGovernor.self, from: data)
+    } catch {
+        regionLogger.error("Failed to decode RegionGovernor: \(error.localizedDescription)")
+        return nil
+    }
 }
 
 private func encodeRegionGovernor(_ governor: RegionGovernor?) -> Data? {
-    try? JSONEncoder().encode(governor)
+    guard let governor = governor else { return nil }
+    do {
+        return try JSONEncoder().encode(governor)
+    } catch {
+        regionLogger.error("Failed to encode RegionGovernor: \(error.localizedDescription)")
+        return nil
+    }
 }
 
 @Model

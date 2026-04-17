@@ -293,12 +293,13 @@ struct EconomicAction: Identifiable, Codable {
     let successEffects: EconomicEffects
     let failureEffects: EconomicEffects
 
-    /// Check if action is available for position
-    /// Player is General Secretary — all actions are available regardless of position
+    /// Check if action is available for the player's position and track.
+    /// Position gating is permissive: player at 8 (Chairman) passes all current actions
+    /// (max minimumPositionIndex is 7). Phase 3+ mechanics use this for gating new actions.
     func isAvailable(forPosition position: Int, track: String?) -> Bool {
-        // Position gate removed: player always has access as General Secretary
+        guard position >= minimumPositionIndex else { return false }
         if let required = requiredTrack {
-            return track == required || position >= 6  // High positions transcend track limits
+            return track == required || position >= 6
         }
         return true
     }

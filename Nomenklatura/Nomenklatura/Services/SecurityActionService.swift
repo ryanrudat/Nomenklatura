@@ -19,29 +19,20 @@ final class SecurityActionService {
 
     // MARK: - Validation
 
-    /// Result of action validation
-    struct ValidationResult {
-        let canExecute: Bool
-        let reason: String?
-        let successChance: Int
-        let requiresApproval: Bool
-        let targetTooSenior: Bool
-    }
-
     /// Validate whether an action can be executed
     func validateAction(
         _ action: SecurityAction,
         targetCharacter: GameCharacter?,
         targetFaction: GameFaction?,
         for game: Game
-    ) -> ValidationResult {
+    ) -> ActionValidationResult {
         // Player is General Secretary — no position or track gate needed
 
         // Check cooldown
         let cooldowns = getSecurityCooldowns(for: game)
         if cooldowns.isOnCooldown(actionId: action.id, currentTurn: game.turnNumber) {
             let remaining = cooldowns.turnsRemaining(actionId: action.id, currentTurn: game.turnNumber)
-            return ValidationResult(
+            return ActionValidationResult(
                 canExecute: false,
                 reason: "On cooldown (\(remaining) turns remaining)",
                 successChance: 0,
@@ -59,7 +50,7 @@ final class SecurityActionService {
 
             // Check if target is too senior
             if let maxTarget = action.maxTargetPosition, targetPosition > maxTarget {
-                return ValidationResult(
+                return ActionValidationResult(
                     canExecute: false,
                     reason: "Target is Position \(targetPosition), maximum allowed is Position \(maxTarget)",
                     successChance: 0,
@@ -78,7 +69,7 @@ final class SecurityActionService {
         // Calculate success chance
         let successChance = calculateSuccessChance(action, targetCharacter: targetCharacter, for: game)
 
-        return ValidationResult(
+        return ActionValidationResult(
             canExecute: true,
             reason: nil,
             successChance: successChance,

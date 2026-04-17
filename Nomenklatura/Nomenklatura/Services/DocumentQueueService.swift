@@ -125,6 +125,18 @@ class DocumentQueueService: ObservableObject {
     ]
 
     /// Generate a list of random names with optional unit assignments
+    /// Lookup a character matching a CharacterReactionInfo. Prefers the stable
+    /// UUID when present; falls back to fuzzy name matching for legacy reactions.
+    private func findCharacter(forReaction reaction: CharacterReactionInfo, in game: Game) -> GameCharacter? {
+        if let id = reaction.characterId {
+            if let byId = game.characters.first(where: { $0.id.uuidString == id }) {
+                return byId
+            }
+        }
+        let lowered = reaction.characterName.lowercased()
+        return game.characters.first { $0.name.lowercased().contains(lowered) }
+    }
+
     private func generateNameList(count: Int, includeUnits: Bool = false) -> [String] {
         var names: Set<String> = []
         var attempts = 0
@@ -4049,15 +4061,13 @@ class DocumentQueueService: ObservableObject {
     ) {
         // Check if the document has a character reaction
         if let reaction = option.characterReaction {
-            // Find the reacting character
-            if let character = game.characters.first(where: { $0.name == reaction.characterName }) {
-                // Only schedule Codex message if disposition change is significant
+            if let character = findCharacter(forReaction: reaction, in: game) {
                 if abs(reaction.dispositionChange) >= 10 {
                     CodexService.shared.scheduleDecisionReaction(
                         character: character,
                         decision: document,
                         option: option,
-                        delay: 1,  // React next turn
+                        delay: 1,
                         game: game,
                         context: context
                     )
@@ -4065,8 +4075,14 @@ class DocumentQueueService: ObservableObject {
             }
         }
 
-        // Check if the document sender is a character who should react
-        if let senderCharacter = game.characters.first(where: { $0.name == document.sender || $0.title == document.senderTitle }) {
+        // Prefer stable senderCharacterId over fuzzy name/title match
+        let senderCharacter = game.characters.first { char in
+            if let senderId = document.senderCharacterId, char.id.uuidString == senderId {
+                return true
+            }
+            return char.name == document.sender || char.title == document.senderTitle
+        }
+        if let senderCharacter = senderCharacter {
             // Patron reacts to decisions that affect their interests
             if senderCharacter.isPatron {
                 // Check if decision affects patron favor
@@ -4132,15 +4148,7 @@ class DocumentQueueService: ObservableObject {
 
     /// Handle a character's reaction to a decision
     private func handleCharacterReaction(_ reaction: CharacterReactionInfo, game: Game) {
-        // Find the character
-        let character = game.characters.first { char in
-            if let id = reaction.characterId {
-                return char.id.uuidString == id
-            }
-            return char.name.lowercased().contains(reaction.characterName.lowercased())
-        }
-
-        guard let character = character else { return }
+        guard let character = findCharacter(forReaction: reaction, in: game) else { return }
 
         // Apply disposition change
         character.disposition += reaction.dispositionChange

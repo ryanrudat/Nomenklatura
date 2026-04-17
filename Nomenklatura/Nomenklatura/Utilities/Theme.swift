@@ -46,6 +46,36 @@ protocol CampaignTheme {
     var tagFont: Font { get }
     var statFont: Font { get }
     var stampFont: Font { get }
+
+    // Spacing scale (Phase 0 design tokens — Phase 2 will migrate hardcoded values)
+    var spacingXS: CGFloat { get }
+    var spacingSM: CGFloat { get }
+    var spacingBase: CGFloat { get }
+    var spacingMD: CGFloat { get }
+    var spacingLG: CGFloat { get }
+    var spacingXL: CGFloat { get }
+    var spacing2XL: CGFloat { get }
+
+    // Corner radius — kept small for brutalist Soviet aesthetic
+    var cornerRadiusSmall: CGFloat { get }
+    var cornerRadiusBase: CGFloat { get }
+    var cornerRadiusLarge: CGFloat { get }
+
+    // Border widths
+    var borderHairline: CGFloat { get }
+    var borderStandard: CGFloat { get }
+    var borderHeavy: CGFloat { get }
+
+    // Shadow tokens
+    var shadowSubtle: ShadowToken { get }
+    var shadowDocument: ShadowToken { get }
+}
+
+struct ShadowToken {
+    let color: Color
+    let radius: CGFloat
+    let x: CGFloat
+    let y: CGFloat
 }
 
 // MARK: - Cold War Theme (Soviet Brutalist)
@@ -131,6 +161,34 @@ struct ColdWarTheme: CampaignTheme {
 
     var stampFont: Font {
         .system(size: 11, weight: .black, design: .default)
+    }
+
+    // Spacing
+    var spacingXS: CGFloat { 2 }
+    var spacingSM: CGFloat { 4 }
+    var spacingBase: CGFloat { 8 }
+    var spacingMD: CGFloat { 12 }
+    var spacingLG: CGFloat { 16 }
+    var spacingXL: CGFloat { 24 }
+    var spacing2XL: CGFloat { 32 }
+
+    // Corner radius
+    var cornerRadiusSmall: CGFloat { 2 }
+    var cornerRadiusBase: CGFloat { 4 }
+    var cornerRadiusLarge: CGFloat { 8 }
+
+    // Border widths
+    var borderHairline: CGFloat { 0.5 }
+    var borderStandard: CGFloat { 1 }
+    var borderHeavy: CGFloat { 2 }
+
+    // Shadows — warm tint for paper feel
+    var shadowSubtle: ShadowToken {
+        ShadowToken(color: Color.black.opacity(0.10), radius: 2, x: 0, y: 1)
+    }
+
+    var shadowDocument: ShadowToken {
+        ShadowToken(color: Color(hex: "241F1C").opacity(0.15), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -249,6 +307,46 @@ extension EnvironmentValues {
     var theme: CampaignTheme {
         get { self[ThemeKey.self] }
         set { self[ThemeKey.self] = newValue }
+    }
+}
+
+// MARK: - Typography Modifiers
+//
+// Phase 2 will migrate hardcoded font calls to these. Use these instead of
+// raw Font calls so the entire app speaks one typographic voice:
+//   .statNumber()      — monospaced digits for any numeric data
+//   .documentHeader()  — all-caps spaced bold for card/section titles
+//   .officialBody()    — typewriter serif for body text
+//   .stampLabel()      — small bold all-caps for stamp/badge labels
+
+extension View {
+    func statNumber(size: CGFloat = 14) -> some View {
+        self.font(.system(size: size, weight: .bold, design: .monospaced))
+            .monospacedDigit()
+    }
+
+    func documentHeader(size: CGFloat = 14) -> some View {
+        self.font(.system(size: size, weight: .heavy, design: .default))
+            .textCase(.uppercase)
+            .tracking(1.5)
+    }
+
+    func officialBody(size: CGFloat = 15) -> some View {
+        self.font(.custom("AmericanTypewriter", size: size))
+    }
+
+    func stampLabel(size: CGFloat = 11) -> some View {
+        self.font(.system(size: size, weight: .black, design: .default))
+            .textCase(.uppercase)
+            .tracking(2.0)
+    }
+}
+
+// MARK: - Shadow Application Helper
+
+extension View {
+    func applyShadow(_ token: ShadowToken) -> some View {
+        self.shadow(color: token.color, radius: token.radius, x: token.x, y: token.y)
     }
 }
 
