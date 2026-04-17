@@ -79,57 +79,65 @@ struct LedgerView: View {
                         if let bureau = committedCoreBureau {
                             BureauOperationsCenter(game: game, bureau: bureau)
                         }
-                        // Stability section - CRITICAL
-                        StatCategoryCard(
-                            icon: "shield.fill",
-                            title: "STABILITY",
-                            subtitle: "Order & Control",
-                            accentColor: theme.sovietRed,
-                            stats: [
-                                StatItem(key: "stability", label: "Political Stability", value: game.stability, icon: "building.columns.fill"),
-                                StatItem(key: "popularSupport", label: "Popular Support", value: game.popularSupport, icon: "person.3.fill")
-                            ],
-                            selectedStatKey: $selectedStatKey
-                        )
+                        // Stability section - CRITICAL (default open)
+                        CollapsibleSection(title: "Stability", storageKey: "ledger.stability") {
+                            StatCategoryCard(
+                                icon: "shield.fill",
+                                title: "STABILITY",
+                                subtitle: "Order & Control",
+                                accentColor: theme.sovietRed,
+                                stats: [
+                                    StatItem(key: "stability", label: "Political Stability", value: game.stability, icon: "building.columns.fill"),
+                                    StatItem(key: "popularSupport", label: "Popular Support", value: game.popularSupport, icon: "person.3.fill")
+                                ],
+                                selectedStatKey: $selectedStatKey
+                            )
+                        }
 
-                        // Power Centers section
-                        StatCategoryCard(
-                            icon: "star.circle.fill",
-                            title: "POWER CENTERS",
-                            subtitle: "Institutional Loyalty",
-                            accentColor: theme.accentGold,
-                            stats: [
-                                StatItem(key: "militaryLoyalty", label: "Military Loyalty", value: game.militaryLoyalty, icon: "shield.checkered"),
-                                StatItem(key: "eliteLoyalty", label: "Party Elite Loyalty", value: game.eliteLoyalty, icon: "person.crop.rectangle.stack.fill")
-                            ],
-                            selectedStatKey: $selectedStatKey
-                        )
+                        // Power Centers section (default open)
+                        CollapsibleSection(title: "Power Centers", storageKey: "ledger.power") {
+                            StatCategoryCard(
+                                icon: "star.circle.fill",
+                                title: "POWER CENTERS",
+                                subtitle: "Institutional Loyalty",
+                                accentColor: theme.accentGold,
+                                stats: [
+                                    StatItem(key: "militaryLoyalty", label: "Military Loyalty", value: game.militaryLoyalty, icon: "shield.checkered"),
+                                    StatItem(key: "eliteLoyalty", label: "Party Elite Loyalty", value: game.eliteLoyalty, icon: "person.crop.rectangle.stack.fill")
+                                ],
+                                selectedStatKey: $selectedStatKey
+                            )
+                        }
 
-                        // Resources section
-                        StatCategoryCard(
-                            icon: "cube.box.fill",
-                            title: "RESOURCES",
-                            subtitle: "Economic Foundation",
-                            accentColor: Color(hex: "4A7C59"),
-                            stats: [
-                                StatItem(key: "treasury", label: "Treasury", value: game.treasury, icon: "rublesign.circle.fill"),
-                                StatItem(key: "industrialOutput", label: "Industrial Output", value: game.industrialOutput, icon: "gearshape.2.fill"),
-                                StatItem(key: "foodSupply", label: "Food Supply", value: game.foodSupply, icon: "leaf.fill")
-                            ],
-                            selectedStatKey: $selectedStatKey
-                        )
+                        // Resources section (default collapsed - less urgent)
+                        CollapsibleSection(title: "Resources", storageKey: "ledger.resources", defaultExpanded: false) {
+                            StatCategoryCard(
+                                icon: "cube.box.fill",
+                                title: "RESOURCES",
+                                subtitle: "Economic Foundation",
+                                accentColor: Color(hex: "4A7C59"),
+                                stats: [
+                                    StatItem(key: "treasury", label: "Treasury", value: game.treasury, icon: "rublesign.circle.fill"),
+                                    StatItem(key: "industrialOutput", label: "Industrial Output", value: game.industrialOutput, icon: "gearshape.2.fill"),
+                                    StatItem(key: "foodSupply", label: "Food Supply", value: game.foodSupply, icon: "leaf.fill")
+                                ],
+                                selectedStatKey: $selectedStatKey
+                            )
+                        }
 
-                        // External section
-                        StatCategoryCard(
-                            icon: "globe.europe.africa.fill",
-                            title: "EXTERNAL",
-                            subtitle: "Foreign Relations",
-                            accentColor: Color(hex: "4682B4"),
-                            stats: [
-                                StatItem(key: "internationalStanding", label: "International Standing", value: game.internationalStanding, icon: "flag.fill")
-                            ],
-                            selectedStatKey: $selectedStatKey
-                        )
+                        // External section (default collapsed)
+                        CollapsibleSection(title: "External", storageKey: "ledger.external", defaultExpanded: false) {
+                            StatCategoryCard(
+                                icon: "globe.europe.africa.fill",
+                                title: "EXTERNAL",
+                                subtitle: "Foreign Relations",
+                                accentColor: Color(hex: "4682B4"),
+                                stats: [
+                                    StatItem(key: "internationalStanding", label: "International Standing", value: game.internationalStanding, icon: "flag.fill")
+                                ],
+                                selectedStatKey: $selectedStatKey
+                            )
+                        }
 
                         // Bureau Hub - shows all 6 bureaus with access status
                         // Replaces individual quick-access cards with a unified bureau navigation
