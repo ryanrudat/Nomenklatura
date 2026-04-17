@@ -988,6 +988,101 @@ class GameEngine {
             game.applyStat("popularSupport", change: 1)
             game.applyStat("eliteLoyalty", change: 1)
         }
+
+        // Phase 3.7: Strategic resource feedback into political stats
+        applyStrategicResourceFeedback(game: game)
+    }
+
+    /// Phase 3.7: After the supply chain runs, translate resource deficits and
+    /// starved sectors into political stat changes so the new economy actually
+    /// matters politically. Healthy supply chain → no penalties; crisis →
+    /// compounding penalties across loyalty/support/output.
+    private func applyStrategicResourceFeedback(game: Game) {
+        let reserves = game.strategicReserves
+
+        // Resource deficits — each hits the constituency that depends on that resource
+        var deficitCount = 0
+
+        if (reserves[.grain] ?? 0) <= 0 {
+            game.applyStat("popularSupport", change: -2)
+            deficitCount += 1
+        }
+        if (reserves[.meat] ?? 0) <= 0 {
+            game.applyStat("popularSupport", change: -1)
+            deficitCount += 1
+        }
+        if (reserves[.coal] ?? 0) <= 0 || (reserves[.oil] ?? 0) <= 0 {
+            game.applyStat("industrialOutput", change: -2)
+            game.applyStat("militaryLoyalty", change: -1)
+            deficitCount += 1
+        }
+        if (reserves[.steel] ?? 0) <= 0 {
+            game.applyStat("militaryLoyalty", change: -2)
+            game.applyStat("eliteLoyalty", change: -1)
+            deficitCount += 1
+        }
+        if (reserves[.aluminum] ?? 0) <= 0 {
+            game.applyStat("militaryLoyalty", change: -1)
+            deficitCount += 1
+        }
+        if (reserves[.iron] ?? 0) <= 0 {
+            game.applyStat("industrialOutput", change: -1)
+            deficitCount += 1
+        }
+        if (reserves[.uranium] ?? 0) <= 0 && game.canUse(.uranium) {
+            game.applyStat("internationalStanding", change: -1)
+            deficitCount += 1
+        }
+        if (reserves[.rareEarths] ?? 0) <= 0 && game.canUse(.rareEarths) {
+            game.applyStat("internationalStanding", change: -1)
+            game.applyStat("eliteLoyalty", change: -1)
+            deficitCount += 1
+        }
+
+        // Sector capacity feedback — sectors running below half capacity have
+        // political consequences proportional to their constituency.
+        if let result = game.lastSupplyChainResult {
+            for (sectorRaw, satisfaction) in result.shortfallBySector where satisfaction < 50 {
+                guard let sector = EconomicSector(rawValue: sectorRaw) else { continue }
+                switch sector {
+                case .agriculture:
+                    game.applyStat("popularSupport", change: -2)
+                case .defense:
+                    game.applyStat("militaryLoyalty", change: -2)
+                case .lightIndustry:
+                    game.applyStat("popularSupport", change: -1)
+                case .heavyIndustry:
+                    game.applyStat("eliteLoyalty", change: -1)
+                case .energy:
+                    game.applyStat("industrialOutput", change: -2)
+                    game.applyStat("stability", change: -1)
+                case .mining, .construction, .transport:
+                    game.applyStat("eliteLoyalty", change: -1)
+                }
+            }
+        }
+
+        // Multi-deficit crisis: if 3+ resources are in deficit, fire a
+        // notification + log a high-importance event so the player sees the
+        // cascade clearly.
+        if deficitCount >= 3 {
+            let event = GameEvent(
+                turnNumber: game.turnNumber,
+                eventType: .crisis,
+                summary: "Strategic resource crisis: \(deficitCount) commodities exhausted. Apparatus strained across multiple sectors."
+            )
+            event.importance = 9
+            event.details = ["type": "strategic_resource_crisis", "deficitCount": String(deficitCount)]
+            event.game = game
+            game.events.append(event)
+
+            NotificationService.shared.notify(
+                .statCriticalLow,
+                title: "STRATEGIC RESERVES EXHAUSTED",
+                detail: "\(deficitCount) key commodities are depleted. Open trade or shift sector focus immediately.",
+                turn: game.turnNumber
+            )
+        }
     }
 
     /// Process international dynamics - foreign relations, treaties, espionage
