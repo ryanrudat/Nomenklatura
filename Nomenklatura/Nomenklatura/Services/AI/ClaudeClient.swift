@@ -15,11 +15,11 @@ final class ClaudeClient: Sendable {
     // Use proxy URL in production, direct API for local development
     private let baseURL = Secrets.proxyURL
     private let model = "claude-sonnet-4-5-20250929"  // Claude Sonnet 4.5 - best balance of intelligence, speed, and cost
-    private let maxTokens = 2048  // Reduced for faster responses - scenarios don't need 4k tokens
+    private let maxTokens = 2048  // Reduced for faster responses - scenarios do not need 4k tokens
 
     // MARK: - Public API
 
-    /// Generate a scenario using Claude
+    /// Generate a scenario using Claude (legacy single-prompt path).
     func generateScenario(prompt: String) async throws -> ClaudeResponse {
         guard Secrets.isAIEnabled else {
             #if DEBUG
@@ -27,47 +27,62 @@ final class ClaudeClient: Sendable {
             #endif
             throw ClaudeError.apiKeyMissing
         }
+        let request = try buildRequest(prompt: prompt)
+        return try await executeRequest(request)
+    }
 
+    /// Generate a scenario using Claude with prompt caching enabled.
+    /// The system prompt (static setting/role/guidance) is marked cacheable via cache_control so repeat calls pay only for the dynamic userPrompt tokens.
+    func generateScenario(systemPrompt: String, userPrompt: String) async throws -> ClaudeResponse {
+        guard Secrets.isAIEnabled else {
+            #if DEBUG
+            print("[ClaudeClient] AI not enabled - isAIEnabled returned false")
+            #endif
+            throw ClaudeError.apiKeyMissing
+        }
+        let request = try buildCachedRequest(systemPrompt: systemPrompt, userPrompt: userPrompt)
+        return try await executeRequest(request)
+    }
+
+    /// Check if the API is available and key is valid
+    func checkConnection() async -> Bool {
+        guard Secrets.isAIEnabled else { return false }
+
+        do {
+            let request = try buildRequest(prompt: "Respond with only the word 'connected'")
+            let (_, response) = try await URLSession.shared.data(for: request)
+            return (response as? HTTPURLResponse)?.statusCode == 200
+        } catch {
+            return false
+        }
+    }
+
+    // MARK: - Private Methods
+
+    /// Execute an already-built URLRequest and decode the response, with shared error handling.
+    private func executeRequest(_ request: URLRequest) async throws -> ClaudeResponse {
         #if DEBUG
         print("[ClaudeClient] Making request to: \(baseURL)")
         #endif
-
-        let request = try buildRequest(prompt: prompt)
-
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-
             guard let httpResponse = response as? HTTPURLResponse else {
                 #if DEBUG
                 print("[ClaudeClient] Invalid response - not HTTPURLResponse")
                 #endif
                 throw ClaudeError.invalidResponse
             }
-
             #if DEBUG
             print("[ClaudeClient] HTTP \(httpResponse.statusCode) - Response size: \(data.count) bytes")
             #endif
-
             switch httpResponse.statusCode {
             case 200:
                 return try decodeResponse(data)
             case 401:
-                #if DEBUG
-                print("[ClaudeClient] Unauthorized - check API key on proxy")
-                #endif
                 throw ClaudeError.unauthorized
             case 429:
-                #if DEBUG
-                print("[ClaudeClient] Rate limited")
-                #endif
                 throw ClaudeError.rateLimited
             case 500...599:
-                #if DEBUG
-                print("[ClaudeClient] Server error: \(httpResponse.statusCode)")
-                if let body = String(data: data, encoding: .utf8) {
-                    print("[ClaudeClient] Error body: \(body)")
-                }
-                #endif
                 throw ClaudeError.serverError(httpResponse.statusCode)
             default:
                 let body = String(data: data, encoding: .utf8)
@@ -86,48 +101,42 @@ final class ClaudeClient: Sendable {
         }
     }
 
-    /// Check if the API is available and key is valid
-    func checkConnection() async -> Bool {
-        guard Secrets.isAIEnabled else { return false }
-
-        do {
-            let request = try buildRequest(prompt: "Respond with only the word 'connected'")
-            let (_, response) = try await URLSession.shared.data(for: request)
-            return (response as? HTTPURLResponse)?.statusCode == 200
-        } catch {
-            return false
-        }
+    /// Build a URLRequest for a simple text prompt (no prompt caching).
+    private func buildRequest(prompt: String) throws -> URLRequest {
+        var request = try baseRequest()
+        let body = ClaudeRequest(
+            model: model,
+            max_tokens: maxTokens,
+            messages: [ClaudeMessage(role: "user", content: prompt)]
+        )
+        request.httpBody = try JSONEncoder().encode(body)
+        return request
     }
 
-    // MARK: - Private Methods
+    /// Build a URLRequest with prompt caching enabled: the system prompt is cacheable, the user prompt is dynamic.
+    private func buildCachedRequest(systemPrompt: String, userPrompt: String) throws -> URLRequest {
+        var request = try baseRequest()
+        let body = CachedClaudeRequest(
+            model: model,
+            max_tokens: maxTokens,
+            system: [SystemBlock(type: "text", text: systemPrompt, cache_control: CacheControl(type: "ephemeral"))],
+            messages: [ClaudeMessage(role: "user", content: userPrompt)]
+        )
+        request.httpBody = try JSONEncoder().encode(body)
+        return request
+    }
 
-    private func buildRequest(prompt: String) throws -> URLRequest {
-        guard let url = URL(string: baseURL) else {
-            throw ClaudeError.invalidURL
-        }
-
+    /// Shared URLRequest skeleton: URL, method, headers, timeout.
+    private func baseRequest() throws -> URLRequest {
+        guard let url = URL(string: baseURL) else { throw ClaudeError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        // Only add API key header for direct API access (local development)
-        // Proxy handles the API key server-side
         if Secrets.useDirectAPI {
             request.addValue(Secrets.anthropicAPIKey, forHTTPHeaderField: "x-api-key")
             request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         }
-
-        request.timeoutInterval = 45  // Allow time for complex scenario generation
-
-        let body = ClaudeRequest(
-            model: model,
-            max_tokens: maxTokens,
-            messages: [
-                ClaudeMessage(role: "user", content: prompt)
-            ]
-        )
-
-        request.httpBody = try JSONEncoder().encode(body)
+        request.timeoutInterval = 45
         return request
     }
 
@@ -135,7 +144,6 @@ final class ClaudeClient: Sendable {
         do {
             return try JSONDecoder().decode(ClaudeResponse.self, from: data)
         } catch {
-            // Try to get error message from API
             if let errorResponse = try? JSONDecoder().decode(ClaudeErrorResponse.self, from: data) {
                 throw ClaudeError.apiError(errorResponse.error.message)
             }
@@ -152,6 +160,26 @@ struct ClaudeRequest: Encodable, Sendable {
     let messages: [ClaudeMessage]
 }
 
+/// Request body with Anthropic prompt-caching markers on the system block.
+struct CachedClaudeRequest: Encodable, Sendable {
+    let model: String
+    let max_tokens: Int
+    let system: [SystemBlock]
+    let messages: [ClaudeMessage]
+}
+
+/// A system prompt content block that can carry a cache_control marker.
+struct SystemBlock: Encodable, Sendable {
+    let type: String
+    let text: String
+    let cache_control: CacheControl?
+}
+
+/// Anthropic cache control marker. {"type": "ephemeral"} turns on prompt caching for the preceding content.
+struct CacheControl: Encodable, Sendable {
+    let type: String  // Currently only "ephemeral" is supported
+}
+
 struct ClaudeMessage: Codable, Sendable {
     let role: String
     let content: String
@@ -166,7 +194,6 @@ struct ClaudeResponse: Decodable, Sendable {
     let stop_reason: String?
     let usage: ClaudeUsage
 
-    /// Extract the text content from the response
     nonisolated var text: String? {
         content.first { $0.type == "text" }?.text
     }
@@ -180,6 +207,8 @@ struct ClaudeContent: Decodable, Sendable {
 struct ClaudeUsage: Decodable, Sendable {
     let input_tokens: Int
     let output_tokens: Int
+    let cache_creation_input_tokens: Int?
+    let cache_read_input_tokens: Int?
 }
 
 struct ClaudeErrorResponse: Decodable, Sendable {

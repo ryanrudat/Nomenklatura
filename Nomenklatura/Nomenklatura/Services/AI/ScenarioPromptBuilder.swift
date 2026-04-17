@@ -12,59 +12,10 @@ import Foundation
 struct ScenarioPromptBuilder {
 
     /// Build a complete prompt for scenario generation with specified category
+    /// Returns the full concatenated prompt (single-message legacy path).
     static func buildPrompt(for game: Game, config: CampaignConfig, category: ScenarioCategory? = nil) -> String {
-        let selectedCategory = category ?? selectCategoryForPrompt(game: game)
-
-        return """
-        You are a narrative designer for a political simulation game set in the People's Socialist Republic (PSR), a fictional socialist nation on a fictional continent navigating Cold War tensions in the early 1950s. The capital is simply called "The Capital." Generate a scenario briefing that the player must respond to.
-
-        SETTING: Revolutionary Year 43 (circa 1950-1951). The PSR emerged from a revolutionary war against colonial powers, with Soviet aid. The PSR is a tentative USSR ally but not an Eastern Bloc satellite - willing to trade with the West.
-
-        PLAYER ROLE: The player is the GENERAL SECRETARY of the PSR — the supreme leader.
-        - The previous General Secretary died suddenly. The player was elected as a compromise candidate by a fractured Standing Committee.
-        - The player's power is real but FRAGILE. Rival factions, ambitious subordinates, and uncertain allies all threaten their hold on power.
-        - Address the player as "Comrade General Secretary" or "Comrade Chairman." Documents come FROM subordinates (ministers, generals, ambassadors, governors) — never from superiors.
-        - Decisions should concern statecraft: national policy, military deployments, diplomatic crises, factional struggles, economic planning. NOT office politics or clerical work.
-        - Reference the player's powerConsolidationScore when relevant: low consolidation means the Standing Committee can block or override the player.
-
-        TERMINOLOGY: Use "the Party" for supreme authority, "the Republic" or "the PSR" for the state, "the People's Congress" for the executive council, "the Bureau of People's Security (BPS)" for state security.
-
-        KEY HISTORICAL CONTEXT:
-        - Revolution: Workers rose against colonial rule with Soviet aid
-        - Consolidation Purges: Post-revolution terror that shaped current politics
-        - International: PSR is tentative Soviet ally, USA/UK do not recognize us
-        - The real world (USA, USSR, UK, etc.) exists as it did in 1950-1951
-        - Succession: The previous General Secretary's sudden death created a power vacuum. The player was chosen as a compromise — not everyone's first choice.
-
-        DOMESTIC REGIONS (7 Zones):
-        - Zone 1: Capital District (The Capital) - seat of government
-        - Zone 2: Industrial Zone (Fitzgerald City) - manufacturing heartland, revolution's birthplace
-        - Zone 3: Agricultural Zone (The People's Proletarian Town) - farming collectives, collectivization scars
-        - Zone 4: Northern Zone (Upton on Tye) - arctic resources, labor camps
-        - Zone 5: Coastal Zone (Red Harbor) - ports, foreign trade
-        - Zone 6: Mountain Zone (Highland) - mining, internal exile
-        - Zone 7: Border Zone (The Frontier) - frontier territories
-
-        \(buildContextSection(game: game, config: config))
-
-        \(buildRegionsSection(game: game))
-
-        \(buildInternationalSection(game: game))
-
-        \(buildLawsSection(game: game))
-
-        \(buildRecentHistorySection(game: game))
-
-        \(buildCharacterSection(game: game))
-
-        \(buildOngoingProjectsSection(game: game))
-
-        \(buildCategoryRequirement(category: selectedCategory, game: game))
-
-        \(buildInstructions(excludingVariety: true, forTrack: ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared))
-
-        \(buildOutputFormat(category: selectedCategory))
-        """
+        let parts = buildPromptParts(for: game, config: config, category: category)
+        return parts.systemPrompt + "\n\n" + parts.userPrompt
     }
 
     /// Select category based on game state and pacing (mirrors ScenarioManager logic)
@@ -1723,4 +1674,114 @@ struct ScenarioPromptBuilder {
 
         return traits.isEmpty ? "Unremarkable" : traits.joined(separator: ", ")
     }
+
+    /// Build a complete prompt, split into static (cacheable) system portion and dynamic user portion.
+    /// Anthropic prompt caching marks systemPrompt as ephemeral so repeated calls pay only for userPrompt tokens.
+    static func buildPromptParts(for game: Game, config: CampaignConfig, category: ScenarioCategory? = nil) -> PromptParts {
+        let selectedCategory = category ?? selectCategoryForPrompt(game: game)
+        let track = ExpandedCareerTrack(rawValue: game.currentExpandedTrack) ?? .shared
+
+        let systemPrompt = """
+        You are a narrative designer for a political simulation game set in the People's Socialist Republic (PSR), a fictional socialist nation on a fictional continent navigating Cold War tensions in the early 1950s. The capital is simply called "The Capital." Generate a scenario briefing that the player must respond to.
+
+        SETTING: Revolutionary Year 43 (circa 1950-1951). The PSR emerged from a revolutionary war against colonial powers, with Soviet aid. The PSR is a tentative USSR ally but not an Eastern Bloc satellite - willing to trade with the West.
+
+        PLAYER ROLE: The player is the GENERAL SECRETARY of the PSR — the supreme leader.
+        - The previous General Secretary died suddenly. The player was elected as a compromise candidate by a fractured Standing Committee.
+        - The player's power is real but FRAGILE. Rival factions, ambitious subordinates, and uncertain allies all threaten their hold on power.
+        - Address the player as "Comrade General Secretary" or "Comrade Chairman." Documents come FROM subordinates (ministers, generals, ambassadors, governors) — never from superiors.
+        - Decisions should concern statecraft: national policy, military deployments, diplomatic crises, factional struggles, economic planning. NOT office politics or clerical work.
+        - Reference the player's powerConsolidationScore when relevant: low consolidation means the Standing Committee can block or override the player.
+
+        TERMINOLOGY: Use "the Party" for supreme authority, "the Republic" or "the PSR" for the state, "the People's Congress" for the executive council, "the Bureau of People's Security (BPS)" for state security.
+
+        KEY HISTORICAL CONTEXT:
+        - Revolution: Workers rose against colonial rule with Soviet aid
+        - Consolidation Purges: Post-revolution terror that shaped current politics
+        - International: PSR is tentative Soviet ally, USA/UK do not recognize us
+        - The real world (USA, USSR, UK, etc.) exists as it did in 1950-1951
+        - Succession: The previous General Secretary's sudden death created a power vacuum. The player was chosen as a compromise — not everyone's first choice.
+
+        DOMESTIC REGIONS (7 Zones):
+        - Zone 1: Capital District (The Capital) - seat of government
+        - Zone 2: Industrial Zone (Fitzgerald City) - manufacturing heartland, revolution's birthplace
+        - Zone 3: Agricultural Zone (The People's Proletarian Town) - farming collectives, collectivization scars
+        - Zone 4: Northern Zone (Upton on Tye) - arctic resources, labor camps
+        - Zone 5: Coastal Zone (Red Harbor) - ports, foreign trade
+        - Zone 6: Mountain Zone (Highland) - mining, internal exile
+        - Zone 7: Border Zone (The Frontier) - frontier territories
+
+        \(getPositionScopeGuidance(forIndex: game.currentPositionIndex))
+
+        \(getBureauScopeGuidance(forTrack: track, atLevel: game.currentPositionIndex))
+
+        \(buildInstructions(excludingVariety: true, forTrack: track))
+        """
+
+        let userPrompt = """
+        \(buildContextSection(game: game, config: config))
+
+        \(buildRegionsSection(game: game))
+
+        \(buildInternationalSection(game: game))
+
+        \(buildLawsSection(game: game))
+
+        \(buildRecentHistorySection(game: game))
+
+        \(buildCharacterSection(game: game))
+
+        \(buildOngoingProjectsSection(game: game))
+
+        \(buildCategoryRequirement(category: selectedCategory, game: game))
+
+        \(buildOutputFormat(category: selectedCategory))
+        """
+
+        return PromptParts(systemPrompt: systemPrompt, userPrompt: userPrompt, category: selectedCategory)
+    }
+
+    // MARK: - Prompt Caching Support
+
+    /// Structured prompt parts that can be sent separately so the API can cache the static portion.
+    struct PromptParts: Sendable {
+        let systemPrompt: String
+        let userPrompt: String
+        let category: ScenarioCategory
+    }
+
+    /// Build a cache key unique per-playthrough, per-turn, per-phase, per-state.
+    /// Different games (different replaySeeds) never collide; replaying the same game returns fresh scenarios.
+    static func buildCacheKey(for game: Game) -> String {
+        let stateSignature = buildStateSignature(game: game)
+        return "seed_\(game.replaySeed)_turn_\(game.turnNumber)_phase_\(game.phase)_state_\(stateSignature)"
+    }
+
+    /// Compact signature of state that affects scenario content so mid-turn changes produce distinct cache entries.
+    private static func buildStateSignature(game: Game) -> String {
+        var hasher = Hasher()
+        hasher.combine(game.stability)
+        hasher.combine(game.popularSupport)
+        hasher.combine(game.militaryLoyalty)
+        hasher.combine(game.eliteLoyalty)
+        hasher.combine(game.treasury)
+        hasher.combine(game.industrialOutput)
+        hasher.combine(game.foodSupply)
+        hasher.combine(game.internationalStanding)
+        hasher.combine(game.worldTension)
+        hasher.combine(game.standing)
+        hasher.combine(game.patronFavor)
+        hasher.combine(game.rivalThreat)
+        hasher.combine(game.network)
+        hasher.combine(game.powerConsolidationScore)
+        hasher.combine(game.consecutiveDecisionEvents)
+        hasher.combine(game.recentScenarioCategories.joined(separator: ","))
+        let recentEventIds = game.events
+            .suffix(5)
+            .map { "\($0.turnNumber):\($0.eventType)" }
+            .joined(separator: "|")
+        hasher.combine(recentEventIds)
+        return String(UInt(bitPattern: hasher.finalize()), radix: 36)
+    }
+
 }

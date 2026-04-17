@@ -23,44 +23,19 @@ actor AIScenarioGenerator {
 
     // MARK: - Public API
 
-    /// Generate a scenario using AI, with fallback to local scenarios
-    /// The prompt must be pre-built on MainActor before calling this
+    /// Generate a scenario using AI, with fallback to local scenarios.
+    /// The prompt must be pre-built on MainActor before calling this.
     func generateScenario(prompt: String, cacheKey: String) async -> ScenarioResult {
-        // Check if AI is enabled (access from MainActor)
-        let aiEnabled = await MainActor.run { Secrets.isAIEnabled }
-        guard aiEnabled else {
-            return .fallback(reason: "AI not configured")
+        await runPipeline(cacheKey: cacheKey) {
+            try await self.generateFromAI(prompt: prompt)
         }
+    }
 
-        // Check circuit breaker
-        if isCircuitOpen() {
-            return .fallback(reason: "AI temporarily unavailable")
-        }
-
-        // Check cache
-        if let cached = getCachedScenario(key: cacheKey) {
-            return .success(cached.scenario, cached.metadata)
-        }
-
-        // Generate new scenario
-        do {
-            let (scenario, metadata) = try await generateFromAI(prompt: prompt)
-
-            // Cache successful result
-            cacheScenario(scenario, metadata: metadata, key: cacheKey)
-
-            // Reset failure count on success
-            consecutiveFailures = 0
-
-            return .success(scenario, metadata)
-        } catch {
-            // Track failure
-            consecutiveFailures += 1
-            if consecutiveFailures >= maxFailures {
-                openCircuitBreaker()
-            }
-
-            return .fallback(reason: error.localizedDescription)
+    /// Generate a scenario using AI with prompt caching, falling back to local scenarios on failure.
+    /// The systemPrompt is sent with cache_control markers; the userPrompt is dynamic per call.
+    func generateScenario(systemPrompt: String, userPrompt: String, cacheKey: String) async -> ScenarioResult {
+        await runPipeline(cacheKey: cacheKey) {
+            try await self.generateFromAICached(systemPrompt: systemPrompt, userPrompt: userPrompt)
         }
     }
 
@@ -85,35 +60,63 @@ actor AIScenarioGenerator {
 
     // MARK: - Private Methods
 
+    /// Shared pipeline: check AI availability, circuit breaker, cache, then run the provided generator and track the result.
+    private func runPipeline(cacheKey: String, generate: () async throws -> (Scenario, ScenarioNarrativeMetadata)) async -> ScenarioResult {
+        let aiEnabled = await MainActor.run { Secrets.isAIEnabled }
+        guard aiEnabled else {
+            return .fallback(reason: "AI not configured")
+        }
+        if isCircuitOpen() {
+            return .fallback(reason: "AI temporarily unavailable")
+        }
+        if let cached = getCachedScenario(key: cacheKey) {
+            return .success(cached.scenario, cached.metadata)
+        }
+        do {
+            let (scenario, metadata) = try await generate()
+            cacheScenario(scenario, metadata: metadata, key: cacheKey)
+            consecutiveFailures = 0
+            return .success(scenario, metadata)
+        } catch {
+            consecutiveFailures += 1
+            if consecutiveFailures >= maxFailures {
+                openCircuitBreaker()
+            }
+            return .fallback(reason: error.localizedDescription)
+        }
+    }
+
     private func generateFromAI(prompt: String) async throws -> (Scenario, ScenarioNarrativeMetadata) {
         let startTime = Date()
         let promptTokenEstimate = prompt.count / 4  // Rough estimate: 4 chars per token
         #if DEBUG
         print("[AI] Starting API call with ~\(promptTokenEstimate) input tokens...")
         #endif
-
-        // Call API
         let response = try await ClaudeClient.shared.generateScenario(prompt: prompt)
+        return try await parseScenarioResponse(response, startTime: startTime)
+    }
+
+    private func generateFromAICached(systemPrompt: String, userPrompt: String) async throws -> (Scenario, ScenarioNarrativeMetadata) {
+        let startTime = Date()
+        let promptTokenEstimate = (systemPrompt.count + userPrompt.count) / 4
+        #if DEBUG
+        print("[AI] Starting cached API call with ~\(promptTokenEstimate) total tokens (system+user)...")
+        #endif
+        let response = try await ClaudeClient.shared.generateScenario(systemPrompt: systemPrompt, userPrompt: userPrompt)
+        #if DEBUG
+        print("[AI] Cache creation tokens: \(response.usage.cache_creation_input_tokens ?? 0), cache read tokens: \(response.usage.cache_read_input_tokens ?? 0)")
+        #endif
+        return try await parseScenarioResponse(response, startTime: startTime)
+    }
+
+    /// Shared parsing: extract text, validate on MainActor, log metrics, return tuple or throw.
+    private func parseScenarioResponse(_ response: ClaudeResponse, startTime: Date) async throws -> (Scenario, ScenarioNarrativeMetadata) {
         let duration = Date().timeIntervalSince(startTime)
-
-        // Log AI metrics for diagnostics
-        logAIMetrics(
-            promptTokens: response.usage.input_tokens,
-            responseTokens: response.usage.output_tokens,
-            duration: duration,
-            success: true
-        )
-
-        // Extract text
+        logAIMetrics(promptTokens: response.usage.input_tokens, responseTokens: response.usage.output_tokens, duration: duration, success: true)
         guard let text = response.text else {
             throw AIGeneratorError.noContent
         }
-
-        // Validate and parse on MainActor
-        let result = await MainActor.run {
-            ScenarioValidator.validate(response: text)
-        }
-
+        let result = await MainActor.run { ScenarioValidator.validate(response: text) }
         switch result {
         case .valid(let scenario, let metadata):
             return (scenario, metadata)
