@@ -148,6 +148,12 @@ final class TradeAgreement {
     var totalValueExchanged: Int        // Cumulative economic value
     var turnsActive: Int                // How long active
 
+    // Phase 3.6: commodity-level flows. Each turn the supply chain
+    // engine subtracts exports from our reserves and adds imports.
+    // JSON-encoded [StrategicResource.rawValue: Int].
+    var commodityExportsData: Data?
+    var commodityImportsData: Data?
+
     var game: Game?
 
     init(partnerId: String, partnerName: String, type: AgreementType) {
@@ -195,6 +201,25 @@ final class TradeAgreement {
 
     var isPermanent: Bool {
         durationTurns == nil
+    }
+
+    /// Phase 3.6: per-turn commodity flows we send abroad under this agreement.
+    var commodityExports: [StrategicResource: Int] {
+        get { decodeCommodityFlow(from: commodityExportsData) }
+        set { commodityExportsData = encodeCommodityFlow(newValue) }
+    }
+
+    /// Phase 3.6: per-turn commodity flows we receive under this agreement.
+    var commodityImports: [StrategicResource: Int] {
+        get { decodeCommodityFlow(from: commodityImportsData) }
+        set { commodityImportsData = encodeCommodityFlow(newValue) }
+    }
+
+    /// Whether this agreement carries any commodity-level flow at all.
+    /// Older / abstract agreements return false — they still apply
+    /// their abstract treasuryEffect/industrialEffect/etc.
+    var hasCommodityFlows: Bool {
+        commodityExportsData != nil || commodityImportsData != nil
     }
 
     var turnsRemaining: Int? {
@@ -431,6 +456,10 @@ extension TradeAgreement {
             trade.treasuryEffect = 2
             trade.industrialEffect = 1
             trade.relationshipEffect = 5
+            // Phase 3.6: machinery and raw materials flow in;
+            // agricultural goods flow out.
+            trade.commodityImports = [.iron: 3]
+            trade.commodityExports = [.grain: 4]
             agreements.append(trade)
         }
 
@@ -452,6 +481,10 @@ extension TradeAgreement {
             techCoop.industrialEffect = 1
             techCoop.technologyEffect = 1
             techCoop.relationshipEffect = 5
+            // Phase 3.6: Czech industry sends aluminum stock in
+            // exchange for our agricultural surplus.
+            techCoop.commodityImports = [.aluminum: 2]
+            techCoop.commodityExports = [.grain: 2]
             agreements.append(techCoop)
         }
 
@@ -473,11 +506,39 @@ extension TradeAgreement {
             oil.treasuryEffect = 1
             oil.industrialEffect = 1
             oil.relationshipEffect = 5
+            // Phase 3.6: the coal-for-oil barter the description mentions
+            // — Polish coal in, our petroleum out.
+            oil.commodityImports = [.coal: 4]
+            oil.commodityExports = [.oil: 3]
             agreements.append(oil)
         }
 
         return agreements
     }
+}
+
+// MARK: - Commodity Flow Codec (Phase 3.6)
+
+private func decodeCommodityFlow(from data: Data?) -> [StrategicResource: Int] {
+    guard let data = data else { return [:] }
+    do {
+        let raw = try JSONDecoder().decode([String: Int].self, from: data)
+        var result: [StrategicResource: Int] = [:]
+        for (key, value) in raw {
+            if let resource = StrategicResource(rawValue: key) {
+                result[resource] = value
+            }
+        }
+        return result
+    } catch {
+        return [:]
+    }
+}
+
+private func encodeCommodityFlow(_ flow: [StrategicResource: Int]) -> Data? {
+    guard !flow.isEmpty else { return nil }
+    let raw = Dictionary(uniqueKeysWithValues: flow.map { ($0.key.rawValue, $0.value) })
+    return try? JSONEncoder().encode(raw)
 }
 
 // MARK: - Sanctions

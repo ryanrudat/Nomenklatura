@@ -32,6 +32,11 @@ struct SupplyChainResult: Codable {
     /// (reserve at end of turn ≤ 0). Helps surface "we need more X" alerts.
     let deficitResources: [String]                   // [StrategicResource.rawValue]
 
+    /// Phase 3.6: per-trade-agreement commodity inflows this turn,
+    /// keyed by partner country id.
+    let tradeImportsByPartner: [String: [String: Int]]
+    let tradeExportsByPartner: [String: [String: Int]]
+
     static func empty(turn: Int) -> SupplyChainResult {
         SupplyChainResult(
             turn: turn,
@@ -39,7 +44,9 @@ struct SupplyChainResult: Codable {
             producedBySector: [:],
             consumedBySector: [:],
             shortfallBySector: [:],
-            deficitResources: []
+            deficitResources: [],
+            tradeImportsByPartner: [:],
+            tradeExportsByPartner: [:]
         )
     }
 }

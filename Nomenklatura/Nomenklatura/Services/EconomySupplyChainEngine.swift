@@ -42,6 +42,8 @@ final class EconomySupplyChainEngine {
         var produced: [String: [String: Int]] = [:]
         var consumed: [String: [String: Int]] = [:]
         var shortfalls: [String: Int] = [:]
+        var tradeImports: [String: [String: Int]] = [:]
+        var tradeExports: [String: [String: Int]] = [:]
 
         // STEP 1: Extract from regions
         for region in game.regions {
@@ -58,6 +60,33 @@ final class EconomySupplyChainEngine {
             }
             if !regionExtraction.isEmpty {
                 extracted[region.regionId] = regionExtraction
+            }
+        }
+
+        // STEP 1.5: Apply commodity flows from active trade agreements (Phase 3.6).
+        // Imports add to reserves; exports subtract. If we don't have enough
+        // of the export commodity, ship what we can (clamped at 0) so we
+        // don't go negative purely from trade obligations.
+        for agreement in game.tradeAgreements where agreement.isActive && agreement.hasCommodityFlows {
+            var partnerImports: [String: Int] = [:]
+            for (resource, amount) in agreement.commodityImports where game.canUse(resource) && amount > 0 {
+                reserves[resource, default: 0] += amount
+                partnerImports[resource.rawValue, default: 0] += amount
+            }
+            if !partnerImports.isEmpty {
+                tradeImports[agreement.partnerCountryId, default: [:]].merge(partnerImports) { $0 + $1 }
+            }
+
+            var partnerExports: [String: Int] = [:]
+            for (resource, owed) in agreement.commodityExports where owed > 0 {
+                let available = max(0, reserves[resource] ?? 0)
+                let shipped = min(available, owed)
+                guard shipped > 0 else { continue }
+                reserves[resource, default: 0] -= shipped
+                partnerExports[resource.rawValue, default: 0] += shipped
+            }
+            if !partnerExports.isEmpty {
+                tradeExports[agreement.partnerCountryId, default: [:]].merge(partnerExports) { $0 + $1 }
             }
         }
 
@@ -89,7 +118,9 @@ final class EconomySupplyChainEngine {
             producedBySector: produced,
             consumedBySector: consumed,
             shortfallBySector: shortfalls,
-            deficitResources: deficits
+            deficitResources: deficits,
+            tradeImportsByPartner: tradeImports,
+            tradeExportsByPartner: tradeExports
         )
         game.lastSupplyChainResultData = encodeResult(result)
 
