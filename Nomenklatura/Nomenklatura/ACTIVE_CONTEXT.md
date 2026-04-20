@@ -1,6 +1,6 @@
 # Nomenklatura Active Context
 
-Last updated: 2026-04-17
+Last updated: 2026-04-20
 Workspace: `/Users/ryanrudat/Desktop/Nomenklatura/Nomenklatura/Nomenklatura`
 
 ## Purpose
@@ -177,6 +177,12 @@ Template:
 - Change: Phases 0 (foundation), 1 (Chairman framing), 2 (visual cohesion structural), 3 (deep economy) — all complete or structurally complete. Major new systems: StrategicResource + TechEra data layer, EconomySupplyChainEngine, SectorRecipe (32 recipes), commodity-level trade, FocusForecastSheet, EmergencyDecreeSheet, RedactableText components, SovietIcon system, PersistentStatBar, OfficialEmptyState, CollapsibleSection, LockToast, StampOverlay, PaperGrainOverlay, ActionValidationResult unification, LawGate + ActionAvailability gating infrastructure, AI replayability cache key fix + Anthropic prompt caching. **Late-session addendum (commit 7647bbd):** two Chairman-framing behavioral bugs fixed — `HistoricalSession.shouldRedact()` now bypasses for position >= 8 (Chairman never sees [REDACTED] in Sessions/Congress views), and `AffinityGainCard.hasAccess` returns true for Position 8 (the EXPERTISE GAINED card no longer claims bureau access is "locked" with a 0/25 progress bar at the Chairman who already has universal access).
 - Verified: `xcodebuild build` returns BUILD SUCCEEDED at every commit. SourceKit cross-file resolution warnings throughout (project-wide, not session-specific).
 - Remaining risk: Phase 3 economy needs playtesting and balance tuning (recipe ratios, region endowments, tech era unlock pacing, decree availability thresholds — see `docs/plans/REDESIGN_REMAINING_PHASES.md` Phase 3 Tuning section). Phase 4 (politics interactivity) and Phase 5 (polish + tutorial) not started. ~45 files still use deprecated color wrappers (StitchColors / FiftiesColors / BureauColors) — wrappers forward to canonical `ColdWarTheme.shared` so functionality is identical, pure code hygiene migration tracked as ongoing tech debt.
+
+### 2026-04-20 (Session 030 — Chairman Bypass Fixes + Documentation Cascade)
+- Files: 2 code commits (`7647bbd`, `8f4aa31`) + this doc refresh. Follow-on from session 029.
+- Change: Two behavioral Chairman-framing bugs patched — `HistoricalSession.shouldRedact()` now bypasses for `position >= 8` (Chairman no longer sees `[REDACTED]` on accessLevel-8 historical sessions); `AffinityGainCard.hasAccess` returns true for Position 8 (the EXPERTISE GAINED card no longer claims bureau access is "locked" with a `0/25` progress bar against a player who already has universal access). Design rule codified as the Chairman Bypass Pattern (see below) and propagated into `feedback_design_principles.md` auto-memory, `docs/plans/REDESIGN_REMAINING_PHASES.md` Phase 5.3 audit requirement, and the session 029 changelog's late-session addendum.
+- Verified: `xcodebuild build` returns BUILD SUCCEEDED. No new test coverage added (codebase has no test suite).
+- Remaining risk: Phase 4 (politics interactivity) will likely introduce more position/access gates that need the bypass applied; `docs/plans/REDESIGN_REMAINING_PHASES.md` Phase 5.3 polish step now explicitly requires a Chairman-bypass audit sweep.
 
 ### Chairman Bypass Pattern (locked in 2026-04-17)
 Whenever a UI feature gates content behind a clearance/access check that compares against the player's current position, **explicitly short-circuit at `position >= 8` to grant access**. This includes redaction logic, bureau-access threshold checks, intel clearance checks, lock indicators, and any future "you don't have permission to see X" gates. The Chairman is the head of the Apparatus; there is no state document or system area they should be told they lack access to. If you find yourself adding a clearance check, ask whether a Chairman would ever encounter the failure case — if not, add the bypass at the same time.
