@@ -50,6 +50,9 @@ struct DeskView: View {
     // End turn confirmation
     @State var showEndTurnConfirmation = false
 
+    // Settings sheet (gear icon in status bar)
+    @State var showSettingsSheet = false
+
     // Rival move counter sheet — set when the player taps a counter
     // option on a RivalMoveCard. The optional sheet binding is driven
     // off `presentedCounterContext`; when non-nil the sheet is shown.
@@ -103,7 +106,8 @@ struct DeskView: View {
                     hasNotifications: hasNotifications,
                     onCongressTap: onCongressTap,
                     onWorldTap: onWorldTap,
-                    onTurnTap: { showEndTurnConfirmation = true }
+                    onTurnTap: { showEndTurnConfirmation = true },
+                    onSettingsTap: { showSettingsSheet = true }
                 )
 
                 // Phase 2.6: persistent stats bar — Treasury/Stability/Popular
@@ -264,6 +268,10 @@ struct DeskView: View {
                 onDismiss: { presentedCounterContext = nil }
             )
             .presentationDetents([.large])
+        }
+        // Settings sheet — opened from the gear icon in StitchStatusBar.
+        .sheet(isPresented: $showSettingsSheet) {
+            SettingsView()
         }
     }
 

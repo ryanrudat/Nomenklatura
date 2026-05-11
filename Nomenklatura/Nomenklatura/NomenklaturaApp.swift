@@ -10,20 +10,6 @@ import SwiftData
 
 @main
 struct NomenklaturaApp: App {
-    // ============================================================================
-    // DEBUG/DEVELOPMENT CODE - REMOVE BEFORE APP STORE RELEASE
-    // ============================================================================
-    #if DEBUG
-    /// Check for test scenario launch argument (-testScenario <scenario_id>)
-    private var testScenarioId: String? {
-        if let index = CommandLine.arguments.firstIndex(of: "-testScenario"),
-           index + 1 < CommandLine.arguments.count {
-            return CommandLine.arguments[index + 1]
-        }
-        return nil
-    }
-    #endif
-
     var sharedModelContainer: ModelContainer = {
         // V1 versioned schema (see Models/Schema/NomenklaturaSchemaV1.swift)
         // + explicit SchemaMigrationPlan so future @Model changes can
@@ -74,18 +60,7 @@ struct NomenklaturaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // ============================================================================
-            // DEBUG/DEVELOPMENT CODE - REMOVE BEFORE APP STORE RELEASE
-            // ============================================================================
-            #if DEBUG
-            if let scenarioId = testScenarioId {
-                TestScenarioLaunchView(scenarioId: scenarioId)
-            } else {
-                ContentView()
-            }
-            #else
             ContentView()
-            #endif
         }
         .modelContainer(sharedModelContainer)
     }

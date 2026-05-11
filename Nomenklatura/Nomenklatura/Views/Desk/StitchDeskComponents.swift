@@ -16,6 +16,7 @@ struct StitchStatusBar: View {
     var onCongressTap: (() -> Void)? = nil
     var onWorldTap: (() -> Void)? = nil
     var onTurnTap: (() -> Void)? = nil
+    var onSettingsTap: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -118,6 +119,17 @@ struct StitchStatusBar: View {
                             .offset(x: 2, y: -2)
                     }
                 }
+            }
+
+            // Settings gear - opens the SettingsView sheet
+            if let onSettingsTap = onSettingsTap {
+                Button(action: onSettingsTap) {
+                    Image(systemName: "gear")
+                        .font(.system(size: 14))
+                        .foregroundColor(ColdWarTheme.shared.leatherBrown)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Settings")
             }
         }
         .padding(.horizontal, 16)
