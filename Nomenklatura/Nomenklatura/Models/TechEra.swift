@@ -44,7 +44,7 @@ enum TechEra: Int, Codable, Comparable, CaseIterable {
         }
     }
 
-    static func < (lhs: TechEra, rhs: TechEra) -> Bool {
+    nonisolated static func < (lhs: TechEra, rhs: TechEra) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 

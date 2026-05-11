@@ -42,112 +42,13 @@ struct FiftiesColors {
     static var leatherBrown: Color { ColdWarTheme.shared.leatherBrown }
 }
 
-// MARK: - Bureau Colors (DEPRECATED — wraps ColdWarTheme + ExpandedCareerTrack)
+// MARK: - Bureau Colors
 //
-// BureauColors was a third competing color system. Logic preserved
-// exactly; the per-bureau hex values stay here for now since they are
-// unique to the bureau-mapping and not used elsewhere. Future cleanup
-// will move these into a theme-side `bureauColor(for:)` helper.
-
-@available(*, deprecated, message: "Use ColdWarTheme.shared bureau helpers (coming in a later sub-batch)")
-struct BureauColors {
-
-    /// Primary color for a bureau (main accent/header)
-    static func primary(for bureau: ExpandedCareerTrack) -> Color {
-        switch bureau {
-        case .securityServices:
-            return ColdWarTheme.shared.stampRedDark
-        case .economicPlanning:
-            return ColdWarTheme.shared.approvedGreen
-        case .partyApparatus:
-            return Color(hex: "CC0000")
-        default:
-            return ColdWarTheme.shared.leatherBrown
-        }
-    }
-
-    /// Secondary/accent color for a bureau
-    static func accent(for bureau: ExpandedCareerTrack) -> Color {
-        switch bureau {
-        case .securityServices:
-            return ColdWarTheme.shared.sovietRed
-        case .economicPlanning:
-            return Color(hex: "4A7C59")
-        case .partyApparatus:
-            return Color(hex: "FFD700")
-        default:
-            return ColdWarTheme.shared.bronzeGold
-        }
-    }
-
-    /// Background color for bureau cards/sections
-    static func background(for bureau: ExpandedCareerTrack) -> Color {
-        switch bureau {
-        case .securityServices:
-            return ColdWarTheme.shared.stampRedDark.opacity(0.08)
-        case .economicPlanning:
-            return ColdWarTheme.shared.approvedGreen.opacity(0.08)
-        case .partyApparatus:
-            return Color(hex: "CC0000").opacity(0.08)
-        default:
-            return ColdWarTheme.shared.cardstock
-        }
-    }
-
-    /// Icon name for a bureau
-    static func icon(for bureau: ExpandedCareerTrack) -> String {
-        bureau.iconName
-    }
-
-    /// Short code for a bureau (BPS, GOSPLAN, CC)
-    static func code(for bureau: ExpandedCareerTrack) -> String {
-        bureau.shortName
-    }
-
-    /// Full display name for bureau header
-    static func headerTitle(for bureau: ExpandedCareerTrack) -> String {
-        switch bureau {
-        case .securityServices:
-            return "STATE PROTECTION BUREAU"
-        case .economicPlanning:
-            return "ECONOMIC PLANNING BUREAU"
-        case .partyApparatus:
-            return "PARTY APPARATUS BUREAU"
-        case .foreignAffairs:
-            return "FOREIGN AFFAIRS BUREAU"
-        case .militaryPolitical:
-            return "MILITARY-POLITICAL BUREAU"
-        case .stateMinistry:
-            return "STATE MINISTRY BUREAU"
-        case .regional:
-            return "REGIONAL ADMINISTRATION"
-        case .shared:
-            return "GENERAL ADMINISTRATION"
-        }
-    }
-
-    /// Subtitle for bureau identity
-    static func subtitle(for bureau: ExpandedCareerTrack) -> String {
-        switch bureau {
-        case .securityServices:
-            return "Security Services Official"
-        case .economicPlanning:
-            return "Gosplan Official"
-        case .partyApparatus:
-            return "Central Committee Official"
-        case .foreignAffairs:
-            return "Foreign Ministry Official"
-        case .militaryPolitical:
-            return "Military-Political Official"
-        case .stateMinistry:
-            return "State Ministry Official"
-        case .regional:
-            return "Regional Administrator"
-        case .shared:
-            return "Government Official"
-        }
-    }
-}
+// The former `struct BureauColors` deprecated wrapper has been deleted.
+// Bureau helpers live on `ColdWarTheme` directly — call
+// `ColdWarTheme.shared.bureauPrimary(for:)`, `.bureauAccent(for:)`, etc.
+// from non-view code, and `theme.bureauX(for:)` from view code that has
+// `@Environment(\.theme)`.
 
 // MARK: - Rubber Stamp Component
 

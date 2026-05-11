@@ -20,7 +20,7 @@ struct ActivityFeedSection: View {
     @State private var entries: [BureauActivityEntry] = []
 
     private var bureauColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var refreshToken: String {

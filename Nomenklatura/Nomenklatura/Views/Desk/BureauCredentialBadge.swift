@@ -31,27 +31,27 @@ struct BureauCredentialBadge: View {
 
     private var primaryColor: Color {
         guard let bureau = committedBureau else { return ColdWarTheme.shared.leatherBrown }
-        return BureauColors.primary(for: bureau)
+        return ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var accentColor: Color {
         guard let bureau = committedBureau else { return ColdWarTheme.shared.bronzeGold }
-        return BureauColors.accent(for: bureau)
+        return ColdWarTheme.shared.bureauAccent(for: bureau)
     }
 
     private var bureauTitle: String {
         guard let bureau = committedBureau else { return "GOVERNMENT BUREAU" }
-        return BureauColors.headerTitle(for: bureau)
+        return ColdWarTheme.shared.bureauHeaderTitle(for: bureau)
     }
 
     private var bureauSubtitle: String {
         guard let bureau = committedBureau else { return "Official" }
-        return BureauColors.subtitle(for: bureau)
+        return ColdWarTheme.shared.bureauSubtitle(for: bureau)
     }
 
     private var bureauCode: String {
         guard let bureau = committedBureau else { return "GOV" }
-        return BureauColors.code(for: bureau)
+        return ColdWarTheme.shared.bureauCode(for: bureau)
     }
 
     private var playerRankTitle: String {

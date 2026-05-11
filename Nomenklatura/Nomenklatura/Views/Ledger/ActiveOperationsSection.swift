@@ -20,11 +20,11 @@ struct ActiveOperationsSection: View {
     @State private var operations: [BureauOperation] = []
 
     private var bureauColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var accentColor: Color {
-        BureauColors.accent(for: bureau)
+        ColdWarTheme.shared.bureauAccent(for: bureau)
     }
 
     private var refreshToken: String {

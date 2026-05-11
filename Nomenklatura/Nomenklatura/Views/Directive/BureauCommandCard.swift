@@ -23,7 +23,7 @@ struct BureauCommandCard: View {
     @Environment(\.theme) var theme
 
     private var bureauColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     var body: some View {

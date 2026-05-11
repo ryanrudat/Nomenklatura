@@ -54,11 +54,11 @@ struct BureauEmblem: View {
     }
 
     private var primaryColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var accentColor: Color {
-        BureauColors.accent(for: bureau)
+        ColdWarTheme.shared.bureauAccent(for: bureau)
     }
 
     var body: some View {
@@ -354,12 +354,12 @@ struct CircularGauge: View {
 
         // Stamps
         HStack(spacing: 20) {
-            BureauStamp("AUTHORIZED", color: BureauColors.primary(for: .securityServices))
-            BureauStamp("APPROVED", color: BureauColors.primary(for: .economicPlanning))
+            BureauStamp("AUTHORIZED", color: ColdWarTheme.shared.bureauPrimary(for: .securityServices))
+            BureauStamp("APPROVED", color: ColdWarTheme.shared.bureauPrimary(for: .economicPlanning))
         }
 
         // Clearance
-        ClearanceBadge(level: 5, color: BureauColors.primary(for: .securityServices))
+        ClearanceBadge(level: 5, color: ColdWarTheme.shared.bureauPrimary(for: .securityServices))
 
         // Status lights
         HStack(spacing: 20) {
@@ -371,8 +371,8 @@ struct CircularGauge: View {
 
         // Gauges
         HStack(spacing: 20) {
-            CircularGauge(value: 75, label: "Progress", color: BureauColors.primary(for: .securityServices))
-            CircularGauge(value: 45, label: "Success", color: BureauColors.primary(for: .economicPlanning))
+            CircularGauge(value: 75, label: "Progress", color: ColdWarTheme.shared.bureauPrimary(for: .securityServices))
+            CircularGauge(value: 45, label: "Success", color: ColdWarTheme.shared.bureauPrimary(for: .economicPlanning))
         }
     }
     .padding()

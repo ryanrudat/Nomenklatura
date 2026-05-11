@@ -22,7 +22,7 @@ struct ActionableTasksSection: View {
     @State private var showingConfirmation = false
 
     private var bureauColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var availableTasks: [BureauTask] {

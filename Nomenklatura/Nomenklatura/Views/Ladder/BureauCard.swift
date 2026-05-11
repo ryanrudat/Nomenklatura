@@ -34,11 +34,11 @@ struct BureauCard: View {
 
     // Bureau-specific colors
     private var primaryColor: Color {
-        BureauColors.primary(for: track)
+        ColdWarTheme.shared.bureauPrimary(for: track)
     }
 
     private var accentColor: Color {
-        BureauColors.accent(for: track)
+        ColdWarTheme.shared.bureauAccent(for: track)
     }
 
     // Propaganda-style call to action
@@ -80,7 +80,7 @@ struct BureauCard: View {
                             .brightness(0.1)
 
                         // Bureau code
-                        Text(BureauColors.code(for: track))
+                        Text(ColdWarTheme.shared.bureauCode(for: track))
                             .font(.system(size: 14, weight: .black, design: .monospaced))
                             .tracking(2)
                             .foregroundColor(.white)
@@ -219,7 +219,7 @@ struct BureauPosterCard: View {
     }
 
     private var primaryColor: Color {
-        BureauColors.primary(for: track)
+        ColdWarTheme.shared.bureauPrimary(for: track)
     }
 
     private var affinityScore: Int {
@@ -257,7 +257,7 @@ struct BureauPosterCard: View {
                         BureauEmblem(bureau: track, size: .large)
 
                         // Bureau title
-                        Text(BureauColors.headerTitle(for: track))
+                        Text(ColdWarTheme.shared.bureauHeaderTitle(for: track))
                             .font(.system(size: 16, weight: .black, design: .monospaced))
                             .tracking(2)
                             .foregroundColor(.white)
@@ -265,7 +265,7 @@ struct BureauPosterCard: View {
                             .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
                         // Subtitle
-                        Text(BureauColors.subtitle(for: track).uppercased())
+                        Text(ColdWarTheme.shared.bureauSubtitle(for: track).uppercased())
                             .font(.system(size: 11, weight: .medium))
                             .tracking(1)
                             .foregroundColor(.white.opacity(0.8))

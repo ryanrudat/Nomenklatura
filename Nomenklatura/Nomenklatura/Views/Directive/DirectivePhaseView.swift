@@ -253,7 +253,7 @@ struct DirectivePhaseView: View {
     // MARK: - Expanded Task List
 
     private func expandedTaskList(tasks: [BureauTask], bureau: ExpandedCareerTrack) -> some View {
-        let bureauColor = BureauColors.primary(for: bureau)
+        let bureauColor = ColdWarTheme.shared.bureauPrimary(for: bureau)
 
         return VStack(spacing: 0) {
             // Section header

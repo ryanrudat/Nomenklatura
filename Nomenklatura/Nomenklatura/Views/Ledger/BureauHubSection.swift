@@ -38,11 +38,11 @@ struct BureauHubSection: View {
                 if let track = game.currentCommittedTrack {
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(BureauColors.primary(for: track))
+                            .fill(ColdWarTheme.shared.bureauPrimary(for: track))
                             .frame(width: 6, height: 6)
-                        Text(BureauColors.code(for: track))
+                        Text(ColdWarTheme.shared.bureauCode(for: track))
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(BureauColors.primary(for: track))
+                            .foregroundColor(ColdWarTheme.shared.bureauPrimary(for: track))
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)

@@ -32,32 +32,32 @@ struct BureauIdentityBadge: View {
 
     private var bureauPrimaryColor: Color {
         guard let bureau = committedBureau else { return ColdWarTheme.shared.leatherBrown }
-        return BureauColors.primary(for: bureau)
+        return ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var bureauAccentColor: Color {
         guard let bureau = committedBureau else { return ColdWarTheme.shared.bronzeGold }
-        return BureauColors.accent(for: bureau)
+        return ColdWarTheme.shared.bureauAccent(for: bureau)
     }
 
     private var bureauTitle: String {
         guard let bureau = committedBureau else { return "GOVERNMENT BUREAU" }
-        return BureauColors.headerTitle(for: bureau)
+        return ColdWarTheme.shared.bureauHeaderTitle(for: bureau)
     }
 
     private var bureauSubtitle: String {
         guard let bureau = committedBureau else { return "Official" }
-        return BureauColors.subtitle(for: bureau)
+        return ColdWarTheme.shared.bureauSubtitle(for: bureau)
     }
 
     private var bureauCode: String {
         guard let bureau = committedBureau else { return "GOV" }
-        return BureauColors.code(for: bureau)
+        return ColdWarTheme.shared.bureauCode(for: bureau)
     }
 
     private var bureauIcon: String {
         guard let bureau = committedBureau else { return "building.columns" }
-        return BureauColors.icon(for: bureau)
+        return ColdWarTheme.shared.bureauIcon(for: bureau)
     }
 
     private var playerRankTitle: String {
@@ -256,22 +256,22 @@ struct BureauIdentityBadgeCompact: View {
         if isCorebureau, let bureau = committedBureau {
             HStack(spacing: 8) {
                 // Icon
-                Image(systemName: BureauColors.icon(for: bureau))
+                Image(systemName: ColdWarTheme.shared.bureauIcon(for: bureau))
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(BureauColors.primary(for: bureau))
+                    .foregroundColor(ColdWarTheme.shared.bureauPrimary(for: bureau))
 
                 // Code
-                Text(BureauColors.code(for: bureau))
+                Text(ColdWarTheme.shared.bureauCode(for: bureau))
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(BureauColors.primary(for: bureau))
+                    .foregroundColor(ColdWarTheme.shared.bureauPrimary(for: bureau))
 
                 // Separator
                 Rectangle()
-                    .fill(BureauColors.primary(for: bureau).opacity(0.3))
+                    .fill(ColdWarTheme.shared.bureauPrimary(for: bureau).opacity(0.3))
                     .frame(width: 1, height: 14)
 
                 // Subtitle
-                Text(BureauColors.subtitle(for: bureau))
+                Text(ColdWarTheme.shared.bureauSubtitle(for: bureau))
                     .font(.system(size: 9, design: .serif))
                     .foregroundColor(ColdWarTheme.shared.inkGray)
             }
@@ -281,7 +281,7 @@ struct BureauIdentityBadgeCompact: View {
             .cornerRadius(3)
             .overlay(
                 RoundedRectangle(cornerRadius: 3)
-                    .stroke(BureauColors.primary(for: bureau).opacity(0.2), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.bureauPrimary(for: bureau).opacity(0.2), lineWidth: 1)
             )
         }
     }

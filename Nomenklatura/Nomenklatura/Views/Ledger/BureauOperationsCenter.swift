@@ -20,11 +20,11 @@ struct BureauOperationsCenter: View {
     @State private var isExpanded = true
 
     private var bureauColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     private var bureauTitle: String {
-        BureauColors.headerTitle(for: bureau)
+        ColdWarTheme.shared.bureauHeaderTitle(for: bureau)
     }
 
     private var summaryRefreshToken: String {
@@ -267,7 +267,7 @@ struct BureauOperationsCenter: View {
                 Image(systemName: "arrow.right.square")
                     .font(.system(size: 12))
 
-                Text("OPEN \(BureauColors.code(for: bureau)) COMMAND CENTER")
+                Text("OPEN \(ColdWarTheme.shared.bureauCode(for: bureau)) COMMAND CENTER")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .tracking(0.5)
             }
@@ -315,7 +315,7 @@ struct BureauOperationsCenterCompact: View {
     @State private var summary: BureauOperationsSummary?
 
     private var bureauColor: Color {
-        BureauColors.primary(for: bureau)
+        ColdWarTheme.shared.bureauPrimary(for: bureau)
     }
 
     var body: some View {
@@ -327,12 +327,12 @@ struct BureauOperationsCenterCompact: View {
 
             HStack(spacing: 12) {
                 // Icon
-                Image(systemName: BureauColors.icon(for: bureau))
+                Image(systemName: ColdWarTheme.shared.bureauIcon(for: bureau))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(bureauColor)
 
                 // Code
-                Text(BureauColors.code(for: bureau))
+                Text(ColdWarTheme.shared.bureauCode(for: bureau))
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundColor(bureauColor)
 

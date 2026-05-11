@@ -239,6 +239,83 @@ extension ColdWarTheme {
     static let shared = ColdWarTheme()
 }
 
+// MARK: - Bureau Helpers (replaces deprecated BureauColors struct)
+//
+// Per-bureau color + identity helpers. Previously lived in
+// `struct BureauColors` in FiftiesStyleComponents.swift; migrated here so
+// the call sites use `ColdWarTheme.shared.bureauX(for:)` consistently
+// with the rest of the theme system. Logic preserved exactly.
+
+extension ColdWarTheme {
+    /// Primary color for a bureau (main accent/header).
+    func bureauPrimary(for bureau: ExpandedCareerTrack) -> Color {
+        switch bureau {
+        case .securityServices: return stampRedDark
+        case .economicPlanning: return approvedGreen
+        case .partyApparatus:   return Color(hex: "CC0000")
+        default:                return leatherBrown
+        }
+    }
+
+    /// Secondary/accent color for a bureau.
+    func bureauAccent(for bureau: ExpandedCareerTrack) -> Color {
+        switch bureau {
+        case .securityServices: return sovietRed
+        case .economicPlanning: return Color(hex: "4A7C59")
+        case .partyApparatus:   return Color(hex: "FFD700")
+        default:                return bronzeGold
+        }
+    }
+
+    /// Background color for bureau cards/sections.
+    func bureauBackground(for bureau: ExpandedCareerTrack) -> Color {
+        switch bureau {
+        case .securityServices: return stampRedDark.opacity(0.08)
+        case .economicPlanning: return approvedGreen.opacity(0.08)
+        case .partyApparatus:   return Color(hex: "CC0000").opacity(0.08)
+        default:                return cardstock
+        }
+    }
+
+    /// SF Symbol name for a bureau.
+    func bureauIcon(for bureau: ExpandedCareerTrack) -> String {
+        bureau.iconName
+    }
+
+    /// Short code for a bureau (BPS, GOSPLAN, CC).
+    func bureauCode(for bureau: ExpandedCareerTrack) -> String {
+        bureau.shortName
+    }
+
+    /// Full display name for bureau header.
+    func bureauHeaderTitle(for bureau: ExpandedCareerTrack) -> String {
+        switch bureau {
+        case .securityServices: return "STATE PROTECTION BUREAU"
+        case .economicPlanning: return "ECONOMIC PLANNING BUREAU"
+        case .partyApparatus:   return "PARTY APPARATUS BUREAU"
+        case .foreignAffairs:   return "FOREIGN AFFAIRS BUREAU"
+        case .militaryPolitical: return "MILITARY-POLITICAL BUREAU"
+        case .stateMinistry:    return "STATE MINISTRY BUREAU"
+        case .regional:         return "REGIONAL ADMINISTRATION"
+        case .shared:           return "GENERAL ADMINISTRATION"
+        }
+    }
+
+    /// Subtitle for bureau identity.
+    func bureauSubtitle(for bureau: ExpandedCareerTrack) -> String {
+        switch bureau {
+        case .securityServices: return "Security Services Official"
+        case .economicPlanning: return "Gosplan Official"
+        case .partyApparatus:   return "Central Committee Official"
+        case .foreignAffairs:   return "Foreign Ministry Official"
+        case .militaryPolitical: return "Military-Political Official"
+        case .stateMinistry:    return "State Ministry Official"
+        case .regional:         return "Regional Administrator"
+        case .shared:           return "Government Official"
+        }
+    }
+}
+
 // MARK: - Theme Manager
 
 class ThemeManager: ObservableObject {
