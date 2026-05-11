@@ -770,6 +770,17 @@ class CharacterAgencyService {
             return score1 > score2
         }
 
+        // Pre-build the source→target relationship index once per turn. The hot
+        // per-NPC loop below previously did `game.npcRelationships.first(where:)`
+        // inside `selectNPCActionTarget`, `isAllied`, `isRival`, and
+        // `getOrCreateNPCRelationship`. With ~30 NPCs × ~30 targets × multiple
+        // helper calls per filter, that was effectively O(n^3). One index lookup
+        // is O(1).
+        var relationshipIndex: [NPCRelationshipKey: NPCRelationship]? = Dictionary(
+            game.npcRelationships.map { (NPCRelationshipKey(source: $0.sourceCharacterId, target: $0.targetCharacterId), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
         // Track all events generated this turn (for living world feel)
         var generatedEvents: [DynamicEvent] = []
 
@@ -781,7 +792,7 @@ class CharacterAgencyService {
         for npc in sortedNPCs {
             guard actionsThisTurn < maxActionsPerTurn else { break }
 
-            if let event = evaluateSingleNPCAction(npc, allNPCs: activeNPCs, game: game) {
+            if let event = evaluateSingleNPCAction(npc, allNPCs: activeNPCs, game: game, relationshipIndex: &relationshipIndex) {
                 generatedEvents.append(event)
                 actionsThisTurn += 1
             }
@@ -798,8 +809,18 @@ class CharacterAgencyService {
         }.first
     }
 
-    /// Evaluate if a single NPC should take an autonomous action
-    private func evaluateSingleNPCAction(_ actor: GameCharacter, allNPCs: [GameCharacter], game: Game) -> DynamicEvent? {
+    /// Evaluate if a single NPC should take an autonomous action.
+    ///
+    /// The `relationshipIndex` is supplied by the caller (one build per turn) so
+    /// `isAllied`/`isRival`/`getOrCreateNPCRelationship` can do O(1) lookups
+    /// instead of scanning `game.npcRelationships`. When a brand-new relationship
+    /// is created inside `getOrCreateNPCRelationship`, that helper also writes
+    /// the new row into the index, keeping it coherent for subsequent NPCs in
+    /// the same turn.
+    private func evaluateSingleNPCAction(_ actor: GameCharacter,
+                                         allNPCs: [GameCharacter],
+                                         game: Game,
+                                         relationshipIndex: inout [NPCRelationshipKey: NPCRelationship]?) -> DynamicEvent? {
         // Skip if NPC recently acted (1 turn cooldown for aggressive NPCs, 2 for others)
         let cooldown = actor.aggressionLevel > BalanceConfig.npcHighAggressionThreshold ? 1 : 2
         if let lastTurn = actor.lastInitiatedTurn, game.turnNumber - lastTurn < cooldown {
@@ -819,17 +840,22 @@ class CharacterAgencyService {
         // Determine action type based on personality and relationships
         let actionType = selectNPCActionType(actor, game: game)
 
+        // Snapshot the (non-optional) index for the per-target helpers — they
+        // only read, so they don't need the inout box.
+        let indexSnapshot = relationshipIndex ?? [:]
+
         // Find appropriate target for action
-        guard let target = selectNPCActionTarget(actor, actionType: actionType, targets: potentialTargets, game: game) else {
+        guard let target = selectNPCActionTarget(actor, actionType: actionType, targets: potentialTargets, game: game, relationshipIndex: indexSnapshot) else {
             return nil
         }
 
         // Per-pair cooldown: Same NPC pair shouldn't interact more than once every 2 turns
-        let relationship = getOrCreateNPCRelationship(from: actor, to: target, game: game)
+        let relationship = getOrCreateNPCRelationship(from: actor, to: target, game: game, relationshipIndex: &relationshipIndex)
         if game.turnNumber - relationship.lastInteractionTurn < 2 {
             // This pair interacted too recently - find a different target
             let alternateTargets = potentialTargets.filter { $0.id != target.id }
-            if let alternateTarget = selectNPCActionTarget(actor, actionType: actionType, targets: alternateTargets, game: game) {
+            let refreshedSnapshot = relationshipIndex ?? [:]
+            if let alternateTarget = selectNPCActionTarget(actor, actionType: actionType, targets: alternateTargets, game: game, relationshipIndex: refreshedSnapshot) {
                 return executeNPCAction(actor: actor, target: alternateTarget, actionType: actionType, game: game)
             }
             return nil // No valid alternate target, skip this action
@@ -1075,7 +1101,11 @@ class CharacterAgencyService {
         return .spreadRumors // fallback
     }
 
-    private func selectNPCActionTarget(_ actor: GameCharacter, actionType: NPCActionType, targets: [GameCharacter], game: Game) -> GameCharacter? {
+    private func selectNPCActionTarget(_ actor: GameCharacter,
+                                       actionType: NPCActionType,
+                                       targets: [GameCharacter],
+                                       game: Game,
+                                       relationshipIndex: [NPCRelationshipKey: NPCRelationship]) -> GameCharacter? {
         let actorPosition = actor.positionIndex ?? 0
 
         switch actionType {
@@ -1083,19 +1113,18 @@ class CharacterAgencyService {
             // Target: Someone in similar position, not already allied, positive or neutral disposition
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
-                return !isAllied(actor, with: target, game: game) &&
-                       !isRival(actor, with: target, game: game) &&
+                return !isAllied(actor, with: target, game: game, relationshipIndex: relationshipIndex) &&
+                       !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) &&
                        abs(actorPosition - targetPosition) <= 2
             }.randomElement()
 
         case .betrayAlliance:
             // Target: Current ally - but only if alliance is mature (3+ turns old)
             return targets.filter { target in
-                guard isAllied(actor, with: target, game: game) else { return false }
+                guard isAllied(actor, with: target, game: game, relationshipIndex: relationshipIndex) else { return false }
                 // Check alliance duration - require at least 3 turns before betrayal is possible
-                if let relationship = game.npcRelationships.first(where: {
-                    $0.sourceCharacterId == actor.templateId && $0.targetCharacterId == target.templateId
-                }), let formedTurn = relationship.allianceFormedTurn {
+                let key = NPCRelationshipKey(source: actor.templateId, target: target.templateId)
+                if let relationship = relationshipIndex[key], let formedTurn = relationship.allianceFormedTurn {
                     return game.turnNumber - formedTurn >= 3
                 }
                 return true // Allow if no formed turn tracked (legacy data)
@@ -1106,7 +1135,7 @@ class CharacterAgencyService {
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
                 return targetPosition < actorPosition ||
-                       isRival(actor, with: target, game: game)
+                       isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.sorted { $0.personalityCorrupt > $1.personalityCorrupt }.first
 
         case .blockPromotion:
@@ -1120,7 +1149,7 @@ class CharacterAgencyService {
         case .spreadRumors:
             // Target: Rival or someone who blocked actor previously
             return targets.filter { target in
-                isRival(actor, with: target, game: game) ||
+                isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) ||
                 target.disposition < 30
             }.randomElement()
 
@@ -1136,7 +1165,7 @@ class CharacterAgencyService {
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
                 return targetPosition < actorPosition &&
-                       !isRival(actor, with: target, game: game)
+                       !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.randomElement()
 
         case .shareIntelligence:
@@ -1144,7 +1173,7 @@ class CharacterAgencyService {
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
                 return abs(actorPosition - targetPosition) <= 1 &&
-                       !isRival(actor, with: target, game: game)
+                       !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.randomElement()
 
         case .organizeGathering:
@@ -1157,7 +1186,7 @@ class CharacterAgencyService {
             // Target: Rival or someone who wronged actor
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
-                return (isRival(actor, with: target, game: game) ||
+                return (isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) ||
                         target.disposition < 20) &&
                        targetPosition <= actorPosition
             }.randomElement()
@@ -1172,7 +1201,7 @@ class CharacterAgencyService {
         case .sabotageProject:
             // Target: Rival or competitor in same track
             return targets.filter { target in
-                (isRival(actor, with: target, game: game) ||
+                (isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) ||
                  target.positionTrack == actor.positionTrack) &&
                 target.disposition < 40
             }.randomElement()
@@ -1182,13 +1211,13 @@ class CharacterAgencyService {
             // Target: A colleague to coordinate treaty negotiations with
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
-                return targetPosition >= 3 && !isRival(actor, with: target, game: game)
+                return targetPosition >= 3 && !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.randomElement()
 
         case .diplomaticOutreach:
             // Target: Someone in same or related track to coordinate with
             return targets.filter { target in
-                !isRival(actor, with: target, game: game) &&
+                !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) &&
                 (target.positionTrack == ExpandedCareerTrack.foreignAffairs.rawValue ||
                  target.positionTrack == ExpandedCareerTrack.stateMinistry.rawValue)
             }.randomElement() ?? targets.randomElement()
@@ -1226,7 +1255,7 @@ class CharacterAgencyService {
         case .launchInvestigation:
             // Target: Someone to investigate - rival, corrupt, or random
             return targets.filter { target in
-                isRival(actor, with: target, game: game) ||
+                isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) ||
                 target.personalityCorrupt > 50 ||
                 target.disposition < 30
             }.randomElement() ?? targets.randomElement()
@@ -1234,7 +1263,7 @@ class CharacterAgencyService {
         case .conductSurveillance:
             // Target: Anyone of interest
             return targets.filter { target in
-                !isAllied(actor, with: target, game: game)
+                !isAllied(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.randomElement() ?? targets.randomElement()
 
         case .detainSuspect:
@@ -1265,7 +1294,7 @@ class CharacterAgencyService {
             // Target: Key official to coordinate crisis response with
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
-                return targetPosition >= 3 && !isRival(actor, with: target, game: game)
+                return targetPosition >= 3 && !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.randomElement() ?? targets.randomElement()
 
         // GOVERNANCE: Party Apparatus Track
@@ -1288,7 +1317,7 @@ class CharacterAgencyService {
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
                 return targetPosition < actorPosition &&
-                       (isRival(actor, with: target, game: game) || target.personalityCorrupt > 50)
+                       (isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) || target.personalityCorrupt > 50)
             }.randomElement()
 
         // GOVERNANCE: Military-Political Track
@@ -1342,7 +1371,7 @@ class CharacterAgencyService {
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
                 return targetPosition < actorPosition &&
-                       (isRival(actor, with: target, game: game) || target.disposition < 30)
+                       (isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex) || target.disposition < 30)
             }.randomElement()
 
         case .reorganizeDepartment:
@@ -1369,7 +1398,7 @@ class CharacterAgencyService {
             // Target: Key official to coordinate response with
             return targets.filter { target in
                 let targetPosition = target.positionIndex ?? 0
-                return targetPosition >= 3 && !isRival(actor, with: target, game: game)
+                return targetPosition >= 3 && !isRival(actor, with: target, game: game, relationshipIndex: relationshipIndex)
             }.randomElement() ?? targets.randomElement()
 
         case .addressShortage:
@@ -2157,11 +2186,28 @@ class CharacterAgencyService {
 
     // MARK: - NPC Relationship Helpers
 
-    private func getOrCreateNPCRelationship(from source: GameCharacter, to target: GameCharacter, game: Game) -> NPCRelationship {
-        // Find existing relationship
-        if let existing = game.npcRelationships.first(where: {
-            $0.sourceCharacterId == source.templateId && $0.targetCharacterId == target.templateId
-        }) {
+    /// Find or create the source→target relationship.
+    ///
+    /// Callers in hot loops should pass `relationshipIndex` so the existence
+    /// check is O(1). Newly-created relationships are written back into the
+    /// index so subsequent same-turn lookups stay O(1).
+    private func getOrCreateNPCRelationship(from source: GameCharacter,
+                                            to target: GameCharacter,
+                                            game: Game,
+                                            relationshipIndex: inout [NPCRelationshipKey: NPCRelationship]?) -> NPCRelationship {
+        let key = NPCRelationshipKey(source: source.templateId, target: target.templateId)
+
+        // O(1) path when index is available
+        if let existing = relationshipIndex?[key] {
+            return existing
+        }
+
+        // Fall-back scan (only hit on first lookup of this pair before insert,
+        // or for callers that don't provide an index)
+        if relationshipIndex == nil,
+           let existing = game.npcRelationships.first(where: {
+               $0.sourceCharacterId == source.templateId && $0.targetCharacterId == target.templateId
+           }) {
             return existing
         }
 
@@ -2183,10 +2229,36 @@ class CharacterAgencyService {
             relationship.trust = 40
         }
 
+        // Keep the caller's index in sync with the new row so subsequent
+        // lookups in the same turn don't go back to the linear scan.
+        relationshipIndex?[key] = relationship
+
         return relationship
     }
 
-    private func isAllied(_ npc1: GameCharacter, with npc2: GameCharacter, game: Game) -> Bool {
+    /// Convenience wrapper for callers that don't have (or need) a relationship
+    /// index. Falls back to the standard linear-scan / append path.
+    @discardableResult
+    private func getOrCreateNPCRelationship(from source: GameCharacter,
+                                            to target: GameCharacter,
+                                            game: Game) -> NPCRelationship {
+        var noIndex: [NPCRelationshipKey: NPCRelationship]? = nil
+        return getOrCreateNPCRelationship(from: source, to: target, game: game, relationshipIndex: &noIndex)
+    }
+
+    /// Check if two NPCs are formally allied.
+    ///
+    /// When `relationshipIndex` is supplied (preferred in hot per-turn loops), the
+    /// lookup is O(1). Falls back to a linear scan if no index is passed — used by
+    /// rare call sites where building an index would be wasteful.
+    private func isAllied(_ npc1: GameCharacter,
+                          with npc2: GameCharacter,
+                          game: Game,
+                          relationshipIndex: [NPCRelationshipKey: NPCRelationship]? = nil) -> Bool {
+        if let relationshipIndex {
+            let key = NPCRelationshipKey(source: npc1.templateId, target: npc2.templateId)
+            return relationshipIndex[key]?.isAllied ?? false
+        }
         guard let relationship = game.npcRelationships.first(where: {
             $0.sourceCharacterId == npc1.templateId && $0.targetCharacterId == npc2.templateId
         }) else {
@@ -2195,7 +2267,16 @@ class CharacterAgencyService {
         return relationship.isAllied
     }
 
-    private func isRival(_ npc1: GameCharacter, with npc2: GameCharacter, game: Game) -> Bool {
+    /// Check if two NPCs are formal rivals.
+    /// Same indexing semantics as `isAllied(_:with:game:relationshipIndex:)`.
+    private func isRival(_ npc1: GameCharacter,
+                         with npc2: GameCharacter,
+                         game: Game,
+                         relationshipIndex: [NPCRelationshipKey: NPCRelationship]? = nil) -> Bool {
+        if let relationshipIndex {
+            let key = NPCRelationshipKey(source: npc1.templateId, target: npc2.templateId)
+            return relationshipIndex[key]?.isRival ?? false
+        }
         guard let relationship = game.npcRelationships.first(where: {
             $0.sourceCharacterId == npc1.templateId && $0.targetCharacterId == npc2.templateId
         }) else {
@@ -2223,6 +2304,13 @@ class CharacterAgencyService {
         let activeNPCs = game.characters.filter { $0.isActive && !$0.isPatron }
         let npcByTemplateId = Dictionary(activeNPCs.map { ($0.templateId, $0) }, uniquingKeysWith: { first, _ in first })
 
+        // Build relationship index once so the reciprocal lookup below is O(1)
+        // instead of a fresh scan of `game.npcRelationships` per iteration.
+        var relationshipIndex: [NPCRelationshipKey: NPCRelationship]? = Dictionary(
+            game.npcRelationships.map { (NPCRelationshipKey(source: $0.sourceCharacterId, target: $0.targetCharacterId), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
         for relationship in game.npcRelationships {
             // Only form coalitions where trust exceeds threshold and they're not already allied
             guard relationship.trust >= BalanceConfig.npcCoalitionTrustThreshold,
@@ -2241,7 +2329,7 @@ class CharacterAgencyService {
             relationship.formAlliance(turn: game.turnNumber, strength: 40 + relationship.trust / 3)
 
             // Create reciprocal alliance
-            let reciprocal = getOrCreateNPCRelationship(from: target, to: source, game: game)
+            let reciprocal = getOrCreateNPCRelationship(from: target, to: source, game: game, relationshipIndex: &relationshipIndex)
             reciprocal.formAlliance(turn: game.turnNumber, strength: 40 + reciprocal.trust / 3)
 
             coalitionEvents.append(NPCWorldActionResult(

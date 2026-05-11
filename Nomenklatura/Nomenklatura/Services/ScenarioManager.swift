@@ -48,6 +48,19 @@ private struct PreGeneratedContent {
     let isAIGenerated: Bool
 }
 
+/// Sendable snapshot of the Game state needed by background scenario loading.
+///
+/// Captured on the MainActor before launching the background task so the task
+/// itself never touches the `@Model Game` instance from outside MainActor work.
+/// Adding a new background-loading input means extending this struct rather than
+/// reaching for `game` from the closure body.
+private struct ScenarioRequestSnapshot: Sendable {
+    let turnNumber: Int
+    let promptParts: ScenarioPromptBuilder.PromptParts
+    let cacheKey: String
+    let useAI: Bool
+}
+
 class ScenarioManager {
     static let shared = ScenarioManager()
 
@@ -124,7 +137,22 @@ class ScenarioManager {
     // MARK: - Background Loading API
 
     /// Start loading scenario in background (continues even if view disappears)
-    /// This is the preferred method - call this when entering a turn
+    /// This is the preferred method - call this when entering a turn.
+    ///
+    /// Implementation note: this method previously used `Task.detached`, which
+    /// captured the `@Model Game` reference into a non-MainActor closure. That
+    /// is rejected under Swift 6 strict concurrency (`@Model` is not Sendable)
+    /// and was always a latent race against MainActor mutations of the same
+    /// Game instance. The fix is two-pronged:
+    ///
+    ///   1. All Game-derived inputs are snapshotted into a `Sendable` struct
+    ///      (`ScenarioRequestSnapshot`) on the MainActor before the background
+    ///      task launches. The async AI call only reads the snapshot.
+    ///   2. The background task is now `Task { @MainActor … }` instead of
+    ///      `Task.detached`. The task still survives view dismissal because
+    ///      it's retained on `self.backgroundTask`. Awaiting the AI call
+    ///      suspends the MainActor, so the main thread isn't blocked while
+    ///      the HTTP request is in flight.
     @MainActor
     func startBackgroundLoading(for game: Game, config: CampaignConfig, checkDynamicEvents: @escaping () -> DynamicEvent?) {
         let currentTurn = game.turnNumber
@@ -160,93 +188,89 @@ class ScenarioManager {
         loadingState.isLoading = true
         loadingState.loadingMessage = "Preparing briefing..."
 
-        // Create detached task that won't be cancelled when view disappears
-        backgroundTask = Task.detached { [weak self] in
+        // Snapshot every Game-derived value the background task will need.
+        // After this point the task body never touches `game` outside of an
+        // explicit MainActor hop, so the snapshot can travel into the async
+        // closure without violating Sendable.
+        let snapshot = ScenarioRequestSnapshot(
+            turnNumber: currentTurn,
+            promptParts: ScenarioPromptBuilder.buildPromptParts(for: game, config: config),
+            cacheKey: ScenarioPromptBuilder.buildCacheKey(for: game),
+            useAI: Secrets.isAIEnabled && currentTurn > onboardingTurns
+        )
+
+        // STEP 1: Check for dynamic events synchronously on the MainActor.
+        // This used to be the first MainActor.run inside the detached task; we
+        // can do it inline now since we're already on the MainActor.
+        if let dynamicEvent = checkDynamicEvents() {
+            loadingState.cachedDynamicEvent = dynamicEvent
+            loadingState.isLoading = false
+            isLoadingInProgress = false
+            return
+        }
+
+        loadingState.loadingMessage = "Generating scenario..."
+
+        // STEP 2: Generate scenario.
+        // Run on the MainActor so any read/write of `game` or `loadingState` is
+        // already isolated. The AI generator suspends the actor via `await` so
+        // network I/O does not block the main thread.
+        backgroundTask = Task { @MainActor [weak self, game] in
             guard let self = self else { return }
-
-            // STEP 1: Check for dynamic events
-            await MainActor.run {
-                if let dynamicEvent = checkDynamicEvents() {
-                    self.loadingState.cachedDynamicEvent = dynamicEvent
-                    self.loadingState.isLoading = false
-                    self.isLoadingInProgress = false
-                    return
-                }
-            }
-
-            // Check if we got a dynamic event
-            let hasDynamicEvent = await MainActor.run { self.loadingState.cachedDynamicEvent != nil }
-            if hasDynamicEvent {
-                return
-            }
-
-            // STEP 2: Generate scenario
-            await MainActor.run {
-                self.loadingState.loadingMessage = "Generating scenario..."
-            }
-
-            // Build prompt on main actor
-            let (promptParts, cacheKey, useAI) = await MainActor.run {
-                let parts = ScenarioPromptBuilder.buildPromptParts(for: game, config: config)
-                let cacheKey = ScenarioPromptBuilder.buildCacheKey(for: game)
-                let useAI = Secrets.isAIEnabled && game.turnNumber > self.onboardingTurns
-                return (parts, cacheKey, useAI)
-            }
 
             var scenario: Scenario
             var wasAIGenerated = false
 
-            if useAI {
-                // Try AI generation
-                let result = await AIScenarioGenerator.shared.generateScenario(systemPrompt: promptParts.systemPrompt, userPrompt: promptParts.userPrompt, cacheKey: cacheKey)
+            if snapshot.useAI {
+                let result = await AIScenarioGenerator.shared.generateScenario(
+                    systemPrompt: snapshot.promptParts.systemPrompt,
+                    userPrompt: snapshot.promptParts.userPrompt,
+                    cacheKey: snapshot.cacheKey
+                )
 
                 switch result {
                 case .success(let aiScenario, let metadata):
                     scenario = aiScenario
                     wasAIGenerated = true
-                    await MainActor.run {
-                        self.lastNarrativeMetadata = metadata
-                    }
+                    self.lastNarrativeMetadata = metadata
 
                 case .fallback(let reason):
                     #if DEBUG
                     print("[ScenarioManager] AI fallback: \(reason)")
                     #endif
-                    scenario = await MainActor.run { self.getFallbackScenario(for: game) }
+                    scenario = self.getFallbackScenario(for: game)
                 }
             } else {
-                // Use sync fallback
-                scenario = await MainActor.run { self.getFallbackScenario(for: game) }
+                scenario = self.getFallbackScenario(for: game)
             }
 
-            // Store result on main actor
-            let aiGeneratedResult = wasAIGenerated
-            let scenarioResult = scenario
-            await MainActor.run {
-                self.lastWasAIGenerated = aiGeneratedResult
-                self.loadingState.isAIGenerated = aiGeneratedResult
-                self.markAsUsed(scenarioResult.templateId, category: scenarioResult.category, turnNumber: currentTurn, game: game)
+            // Apply results — entirely on MainActor, so reading/writing `game`
+            // and `loadingState` is race-free.
+            self.lastWasAIGenerated = wasAIGenerated
+            self.loadingState.isAIGenerated = wasAIGenerated
+            self.markAsUsed(scenario.templateId,
+                            category: scenario.category,
+                            turnNumber: snapshot.turnNumber,
+                            game: game)
 
-                // Handle newspaper vs regular scenario
-                if scenarioResult.format == .newspaper {
-                    let newspaper = NewspaperGenerator.shared.generateNewspaper(for: game)
-                    self.loadingState.cachedNewspaper = newspaper
+            if scenario.format == .newspaper {
+                let newspaper = NewspaperGenerator.shared.generateNewspaper(for: game)
+                self.loadingState.cachedNewspaper = newspaper
 
-                    if SamizdatGenerator.shared.isSamizdatAvailable(for: game) {
-                        self.loadingState.cachedSamizdat = SamizdatGenerator.shared.generateSamizdat(for: game)
-                    }
-                } else {
-                    self.loadingState.cachedScenario = scenarioResult
+                if SamizdatGenerator.shared.isSamizdatAvailable(for: game) {
+                    self.loadingState.cachedSamizdat = SamizdatGenerator.shared.generateSamizdat(for: game)
                 }
-
-                self.loadingState.isLoading = false
-                self.isLoadingInProgress = false
-                self.loadingState.loadingMessage = "Preparing briefing..."
-
-                #if DEBUG
-                print("[ScenarioManager] Background loading complete for turn \(currentTurn)")
-                #endif
+            } else {
+                self.loadingState.cachedScenario = scenario
             }
+
+            self.loadingState.isLoading = false
+            self.isLoadingInProgress = false
+            self.loadingState.loadingMessage = "Preparing briefing..."
+
+            #if DEBUG
+            print("[ScenarioManager] Background loading complete for turn \(snapshot.turnNumber)")
+            #endif
         }
     }
 
