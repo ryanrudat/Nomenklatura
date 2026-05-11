@@ -25,56 +25,49 @@ struct NomenklaturaApp: App {
     #endif
 
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Game.self,
-            GameCharacter.self,
-            GameFaction.self,
-            GameEvent.self,
-            Policy.self,
-            PositionHolder.self,
-            SuccessionRelationship.self,
-            PurgeCampaign.self,
-            UnlockedAchievement.self,
-            // Models added for World/Diplomacy features
-            Region.self,
-            ForeignCountry.self,
-            Law.self,
-            PositionOffer.self,
-            TradeAgreement.self,
-            // NPC autonomy and Congress models
-            NPCRelationship.self,
-            CongressSession.self,
-            WorldEventRecord.self,
-            // Historical records
-            HistoricalSession.self
-        ])
+        // V1 versioned schema (see Models/Schema/NomenklaturaSchemaV1.swift)
+        // + explicit SchemaMigrationPlan so future @Model changes can
+        // migrate user saves rather than wiping them on schema mismatch.
+        let schema = Schema(versionedSchema: NomenklaturaSchemaV1.self)
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                migrationPlan: NomenklaturaMigrationPlan.self,
+                configurations: [modelConfiguration]
+            )
         } catch {
-            // Schema changed - try to delete existing data and recreate
-            #if DEBUG
-            print("SwiftData migration error: \(error)")
-            print("Attempting to delete existing store and recreate...")
-            #endif
+            // IMPORTANT: do NOT delete the on-disk store here. Earlier
+            // revisions of this code silently destroyed players' saves on
+            // any schema mismatch — losing dozens of hours of run state.
+            //
+            // If the container fails to open (e.g. the migration plan
+            // is incomplete for some V_N → V_M transition), we instead:
+            //   1) log the error verbosely, and
+            //   2) fall back to an in-memory ModelContainer so the app
+            //      still launches.
+            //
+            // The on-disk save file remains untouched so a future build
+            // — with a fixed migration plan — can still recover it.
+            print("[NomenklaturaApp] CRITICAL: persistent ModelContainer failed to open.")
+            print("[NomenklaturaApp] Error: \(error)")
+            print("[NomenklaturaApp] Falling back to in-memory store. The on-disk save has NOT been modified.")
 
-            // Get the default store URL and delete it
-            let url = URL.applicationSupportDirectory
-                .appending(path: "default.store")
-
-            try? FileManager.default.removeItem(at: url)
-            // Also remove the -shm and -wal files
-            let shmUrl = url.deletingPathExtension().appendingPathExtension("store-shm")
-            let walUrl = url.deletingPathExtension().appendingPathExtension("store-wal")
-            try? FileManager.default.removeItem(at: shmUrl)
-            try? FileManager.default.removeItem(at: walUrl)
-
-            // Try again with fresh store
+            let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             do {
-                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+                return try ModelContainer(
+                    for: schema,
+                    migrationPlan: NomenklaturaMigrationPlan.self,
+                    configurations: [inMemoryConfig]
+                )
             } catch {
-                fatalError("Could not create ModelContainer after reset: \(error)")
+                // If even the in-memory container fails, something is
+                // fundamentally broken about the schema declarations
+                // (e.g. a malformed @Model class). At this point a
+                // fatalError is acceptable because there is nothing to
+                // lose — no on-disk data is being destroyed.
+                fatalError("Could not create even an in-memory ModelContainer: \(error)")
             }
         }
     }()
