@@ -64,10 +64,13 @@ final class RivalMoveGenerator {
         var expiredEvents: [GameEvent] = []
         for idx in expiredIndices {
             let move = moves[idx]
-            applyExpiredMove(move, to: game)
+            // Expiration applies 1.5× pendingEffect — caught-unaware penalty.
+            // Players who explicitly tap "Take no action" pay 1.0× via
+            // applyExpiredMove called from DeskView+TurnManagement.swift.
+            applyExpiredMove(move, to: game, multiplier: 1.5)
             moves[idx].resolution = .expired
 
-            let magnitude = Int(abs(move.pendingEffect.magnitude).rounded())
+            let magnitude = Int((abs(move.pendingEffect.magnitude) * 1.5).rounded())
             let stat = move.pendingEffect.stat
             let summary = "\(move.rivalName)'s \(move.kind.shortLabel) cost you \(magnitude) \(stat)"
             let event = GameEvent(
@@ -207,14 +210,21 @@ final class RivalMoveGenerator {
         return move
     }
 
-    /// Apply the pending effect of a move whose deadline has expired.
+    /// Apply the pending effect of a move that the player did not counter.
+    ///
+    /// - Parameter multiplier: Scale factor on `pendingEffect.magnitude`.
+    ///   Use `1.0` when the player explicitly chose `.ignored` ("Take no
+    ///   action"); use `1.5` when the move silently `.expired` (player
+    ///   let the deadline pass without responding — caught-unaware penalty).
+    ///
     /// Caller is responsible for marking the move's resolution to
-    /// `.expired` and persisting the updated list.
-    func applyExpiredMove(_ move: RivalMove, to game: Game) {
+    /// `.expired` / `.ignored` and persisting the updated list.
+    func applyExpiredMove(_ move: RivalMove, to game: Game, multiplier: Double = 1.0) {
         // applyStat takes an Int; round half-away-from-zero.
-        let change = Int(move.pendingEffect.magnitude.rounded())
+        let scaled = move.pendingEffect.magnitude * multiplier
+        let change = Int(scaled.rounded())
         game.applyStat(move.pendingEffect.stat, change: change)
-        rivalMoveLogger.info("Applied expired RivalMove: \(move.rivalName, privacy: .public) → \(move.pendingEffect.stat, privacy: .public) \(change)")
+        rivalMoveLogger.info("Applied RivalMove damage: \(move.rivalName, privacy: .public) → \(move.pendingEffect.stat, privacy: .public) \(change) (×\(multiplier))")
     }
 
     /// Apply a player-chosen counter option. Rolls for success, applies

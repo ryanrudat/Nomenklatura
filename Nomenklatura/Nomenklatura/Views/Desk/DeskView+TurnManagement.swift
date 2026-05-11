@@ -151,6 +151,11 @@ extension DeskView {
     /// removes the card from the Desk so they aren't stuck staring
     /// at a brief they've already decided to take on the chin.
     func handleRivalMoveIgnored(_ move: RivalMove) {
+        // "Take no action" applies base pendingEffect damage (multiplier 1.0).
+        // Distinct from .expired (deadline passed without input), which
+        // applies 1.5× as a caught-unaware penalty. Rewards the player for
+        // engaging — even a deliberate "pass" hurts less than forgetting.
+        RivalMoveGenerator.shared.applyExpiredMove(move, to: game, multiplier: 1.0)
         var moves = game.activeRivalMoves
         guard let idx = moves.firstIndex(where: { $0.id == move.id }) else { return }
         moves[idx].resolution = .ignored

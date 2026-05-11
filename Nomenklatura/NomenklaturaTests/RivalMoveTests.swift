@@ -239,9 +239,10 @@ final class RivalMoveTests: XCTestCase {
         XCTAssertEqual(updated.resolution, .expired,
                        "Overdue move must be marked .expired after processTurn")
 
-        // Pending damage must have landed (rounded magnitude is -6).
-        XCTAssertEqual(game.eliteLoyalty, max(0, preElite - 6),
-                       "Pending effect must apply on expiration")
+        // Pending damage must have landed at 1.5× pendingEffect magnitude
+        // (deadline-pass penalty — base -6 × 1.5 = -9).
+        XCTAssertEqual(game.eliteLoyalty, max(0, preElite - 9),
+                       "Expired moves apply 1.5× pendingEffect (caught-unaware penalty)")
     }
 
     // MARK: - Test 5: processTurn generates a move when none pending
