@@ -43,6 +43,10 @@ enum NomenklaturaSchemaV1: VersionedSchema {
 
             // Player dynasty / family
             PlayerFamily.self,
+            // DynastyLegacy is currently orphan code (no live game system reads or writes it),
+            // but it remains registered here because it is part of the V1 persisted schema.
+            // Removing it requires a V2 schema + MigrationStage to drop the table; defer to the
+            // next schema bump rather than risking a data-loss migration mid-wave.
             DynastyLegacy.self,
 
             // Policy + standing-committee infrastructure
