@@ -59,6 +59,8 @@ final class MemoryIntegrationService {
 
     /// Assign diplomatic goals to Foreign Affairs NPCs
     private func assignDiplomaticGoals(character: GameCharacter, game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         let positionIndex = character.positionIndex ?? 1
 
         // Check existing goals to avoid duplicates
@@ -68,17 +70,17 @@ final class MemoryIntegrationService {
 
         // Senior officials (Position 5+) get policy and treaty goals
         if positionIndex >= 5 {
-            if !existingGoalTypes.contains(.proposeForeignPolicy) && Bool.random() {
+            if !existingGoalTypes.contains(.proposeForeignPolicy) && Bool.random(using: &rng) {
                 goalsToAdd.append(NPCGoal(
                     goalType: .proposeForeignPolicy,
-                    priority: 60 + Int.random(in: 0...20),
+                    priority: 60 + Int.random(in: 0...20, using: &rng),
                     turnCreated: game.turnNumber
                 ))
             }
-            if !existingGoalTypes.contains(.negotiateTreaty) && Bool.random() {
+            if !existingGoalTypes.contains(.negotiateTreaty) && Bool.random(using: &rng) {
                 goalsToAdd.append(NPCGoal(
                     goalType: .negotiateTreaty,
-                    priority: 55 + Int.random(in: 0...20),
+                    priority: 55 + Int.random(in: 0...20, using: &rng),
                     turnCreated: game.turnNumber
                 ))
             }
@@ -89,14 +91,14 @@ final class MemoryIntegrationService {
             if !existingGoalTypes.contains(.improveAllyRelations) && goalsToAdd.count < 2 {
                 goalsToAdd.append(NPCGoal(
                     goalType: .improveAllyRelations,
-                    priority: 50 + Int.random(in: 0...20),
+                    priority: 50 + Int.random(in: 0...20, using: &rng),
                     turnCreated: game.turnNumber
                 ))
             }
-            if !existingGoalTypes.contains(.expandTradeNetwork) && goalsToAdd.count < 2 && Bool.random() {
+            if !existingGoalTypes.contains(.expandTradeNetwork) && goalsToAdd.count < 2 && Bool.random(using: &rng) {
                 goalsToAdd.append(NPCGoal(
                     goalType: .expandTradeNetwork,
-                    priority: 45 + Int.random(in: 0...15),
+                    priority: 45 + Int.random(in: 0...15, using: &rng),
                     turnCreated: game.turnNumber
                 ))
             }
@@ -111,7 +113,7 @@ final class MemoryIntegrationService {
             if hasCapitalistThreat {
                 goalsToAdd.append(NPCGoal(
                     goalType: .containCapitalistThreat,
-                    priority: 55 + Int.random(in: 0...20),
+                    priority: 55 + Int.random(in: 0...20, using: &rng),
                     turnCreated: game.turnNumber
                 ))
             }
@@ -123,7 +125,7 @@ final class MemoryIntegrationService {
             if hasCrisis {
                 goalsToAdd.append(NPCGoal(
                     goalType: .defuseInternationalCrisis,
-                    priority: 75 + Int.random(in: 0...15),
+                    priority: 75 + Int.random(in: 0...15, using: &rng),
                     turnCreated: game.turnNumber
                 ))
             }
@@ -465,6 +467,8 @@ final class MemoryIntegrationService {
 
     /// Check if a character should act on gratitude
     private func checkGratitudeAction(character: GameCharacter, game: Game) -> DynamicEvent? {
+        var rng = game.rng
+        defer { game.rng = rng }
         let gratitudeMemories = character.npcMemoriesEnhanced.filter { memory in
             memory.involvedCharacterId == "player" &&
             memory.memoryType.isPositive &&
@@ -477,7 +481,7 @@ final class MemoryIntegrationService {
         }
 
         // Only trigger occasionally
-        guard Int.random(in: 0...100) < 20 else { return nil }
+        guard Int.random(in: 0...100, using: &rng) < 20 else { return nil }
 
         // Create decision context
         let context = DecisionContext(

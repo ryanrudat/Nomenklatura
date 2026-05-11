@@ -29,6 +29,8 @@ final class CorruptionService {
 
     /// Check if player should face investigation this turn
     func shouldTriggerInvestigation(for game: Game) -> Bool {
+        var rng = game.rng
+        defer { game.rng = rng }
         let riskLevel = getRiskLevel(for: game)
 
         switch riskLevel {
@@ -36,13 +38,13 @@ final class CorruptionService {
             return false
         case .exposed:
             // 5% chance per turn
-            return Int.random(in: 1...100) <= 5
+            return Int.random(in: 1...100, using: &rng) <= 5
         case .dangerous:
             // 15% chance per turn
-            return Int.random(in: 1...100) <= 15
+            return Int.random(in: 1...100, using: &rng) <= 15
         case .imminent:
             // 30% chance per turn
-            return Int.random(in: 1...100) <= 30
+            return Int.random(in: 1...100, using: &rng) <= 30
         }
     }
 
@@ -50,15 +52,17 @@ final class CorruptionService {
 
     /// Attempt to launder wealth (reduce visibility and evidence)
     func launderWealth(for game: Game) -> LaunderResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Can't launder if nothing to launder
         guard game.personalWealth > 10 else {
             return LaunderResult(success: false, message: "You have no significant wealth to launder.")
         }
 
         // Laundering has a cost and risk
-        let visibilityReduction = Int.random(in: 15...25)
-        let evidenceReduction = Int.random(in: 10...20)
-        let wealthCost = Int.random(in: 5...15)  // Some wealth lost in the process
+        let visibilityReduction = Int.random(in: 15...25, using: &rng)
+        let evidenceReduction = Int.random(in: 10...20, using: &rng)
+        let wealthCost = Int.random(in: 5...15, using: &rng)  // Some wealth lost in the process
 
         game.applyStat("wealthVisibility", change: -visibilityReduction)
         game.applyStat("corruptionEvidence", change: -evidenceReduction)
@@ -123,6 +127,8 @@ final class CorruptionService {
 
     /// Handle investigation result
     func handleInvestigation(for game: Game) -> InvestigationResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         let evidence = game.corruptionEvidence
         let position = game.currentPositionIndex
         let patronFavor = game.patronFavor
@@ -132,7 +138,7 @@ final class CorruptionService {
         let patronProtection = patronFavor / 4
 
         // Roll against evidence
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let threshold = evidence - protectionBonus - patronProtection
 
         if roll > threshold {
@@ -230,14 +236,17 @@ struct Detention: Codable, Identifiable {
 
     var outcome: DetentionOutcome?
 
-    init(target: GameCharacter, turn: Int, playerOrdered: Bool, initiator: GameCharacter? = nil) {
+    init(target: GameCharacter, turn: Int, playerOrdered: Bool, initiator: GameCharacter? = nil, durationTurns: Int? = nil) {
         self.targetId = target.templateId
         self.targetName = target.name
         self.initiatorId = initiator?.templateId
         self.playerOrdered = playerOrdered
         self.phase = .detention
         self.turnStarted = turn
-        self.durationTurns = Int.random(in: 2...4)
+        // Default to 3 (midpoint of 2...4) when caller doesn't pass a seeded value.
+        // initiateDetention(game:) supplies a seeded RNG draw, keeping the
+        // determinism contract while old call sites stay buildable.
+        self.durationTurns = durationTurns ?? 3
         self.accusations = []
         self.evidenceLevel = 0
         self.confessionObtained = false
@@ -291,11 +300,14 @@ extension CorruptionService {
         initiator: GameCharacter? = nil,
         accusations: [String]? = nil
     ) -> Detention {
+        var rng = game.rng
+        defer { game.rng = rng }
         var detention = Detention(
             target: target,
             turn: game.turnNumber,
             playerOrdered: playerOrdered,
-            initiator: initiator
+            initiator: initiator,
+            durationTurns: Int.random(in: 2...4, using: &rng)
         )
 
         // Generate accusations if not provided
@@ -306,7 +318,7 @@ extension CorruptionService {
         }
 
         // Initial evidence based on target's corruption
-        detention.evidenceLevel = min(100, target.personalityCorrupt + Int.random(in: 10...30))
+        detention.evidenceLevel = min(100, target.personalityCorrupt + Int.random(in: 10...30, using: &rng))
 
         // Target is now detained
         target.status = CharacterStatus.detained.rawValue
@@ -340,6 +352,8 @@ extension CorruptionService {
 
     /// Process detention for one turn
     func processDetention(detention: inout Detention, game: Game) -> DetentionPhaseResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         let turnsElapsed = game.turnNumber - detention.turnStarted
 
         switch detention.phase {
@@ -363,7 +377,7 @@ extension CorruptionService {
         case .interrogation:
             if turnsElapsed < detention.durationTurns {
                 // Still being interrogated
-                let newEvidence = Int.random(in: 5...15)
+                let newEvidence = Int.random(in: 5...15, using: &rng)
                 detention.evidenceLevel = min(100, detention.evidenceLevel + newEvidence)
 
                 return DetentionPhaseResult(
@@ -377,12 +391,12 @@ extension CorruptionService {
             // Interrogation complete - determine if confession obtained
             let target = game.characters.first { $0.templateId == detention.targetId }
             let confessionChance = detention.evidenceLevel + (100 - (target?.personalityLoyal ?? 50))
-            detention.confessionObtained = Int.random(in: 1...200) < confessionChance
+            detention.confessionObtained = Int.random(in: 1...200, using: &rng) < confessionChance
 
             if detention.confessionObtained {
                 // Possibly implicate others
-                if Int.random(in: 1...100) < 40 {
-                    detention.othersImplicated = findPotentialImplicants(target: target, game: game)
+                if Int.random(in: 1...100, using: &rng) < 40 {
+                    detention.othersImplicated = findPotentialImplicants(target: target, game: game, using: &rng)
                 }
             }
 
@@ -400,7 +414,7 @@ extension CorruptionService {
 
         case .review:
             // Determine outcome based on evidence, confession, and politics
-            detention.outcome = determineOutcome(detention: detention, game: game)
+            detention.outcome = determineOutcome(detention: detention, game: game, using: &rng)
             detention.phase = .completed
 
             let outcomeNarrative: String
@@ -442,7 +456,7 @@ extension CorruptionService {
     }
 
     /// Find characters who might be implicated
-    private func findPotentialImplicants(target: GameCharacter?, game: Game) -> [String] {
+    private func findPotentialImplicants(target: GameCharacter?, game: Game, using rng: inout SeededRNG) -> [String] {
         guard let target = target else { return [] }
 
         let candidates = game.characters.filter { char in
@@ -452,12 +466,12 @@ extension CorruptionService {
             (char.positionIndex ?? 0) <= (target.positionIndex ?? 0) + 1
         }
 
-        let count = min(candidates.count, Int.random(in: 1...2))
-        return candidates.shuffled().prefix(count).map { $0.templateId }
+        let count = min(candidates.count, Int.random(in: 1...2, using: &rng))
+        return candidates.shuffled(using: &rng).prefix(count).map { $0.templateId }
     }
 
     /// Determine detention outcome
-    private func determineOutcome(detention: Detention, game: Game) -> DetentionOutcome {
+    private func determineOutcome(detention: Detention, game: Game, using rng: inout SeededRNG) -> DetentionOutcome {
         let evidenceStrength = detention.evidenceLevel
         let confessed = detention.confessionObtained
 
@@ -482,7 +496,7 @@ extension CorruptionService {
         }
 
         // High evidence, no confession, small chance of death in detention
-        if !confessed && evidenceStrength >= 80 && Int.random(in: 1...100) < 10 {
+        if !confessed && evidenceStrength >= 80 && Int.random(in: 1...100, using: &rng) < 10 {
             return .executed
         }
 
@@ -635,6 +649,8 @@ extension CorruptionService {
 
     /// Check if conditions warrant launching an anti-corruption campaign
     func shouldLaunchCampaign(game: Game) -> Bool {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Only launch if no active campaign
         guard game.activeAntiCorruptionCampaign == nil else { return false }
 
@@ -646,13 +662,15 @@ extension CorruptionService {
             game.eliteLoyalty < 40                          // Need to shake up elite
         ]
 
-        return triggers.contains(true) && Int.random(in: 1...100) <= 25
+        return triggers.contains(true) && Int.random(in: 1...100, using: &rng) <= 25
     }
 
     /// Launch an anti-corruption campaign
     func launchCampaign(game: Game, type: AntiCorruptionCampaign.CampaignType? = nil) -> AntiCorruptionCampaign {
-        let campaignType = type ?? determineCampaignType(game: game)
-        let campaignName = generateCampaignName(type: campaignType)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let campaignType = type ?? determineCampaignType(game: game, using: &rng)
+        let campaignName = generateCampaignName(type: campaignType, using: &rng)
 
         var campaign = AntiCorruptionCampaign(
             name: campaignName,
@@ -681,21 +699,21 @@ extension CorruptionService {
             // Target a faction with low standing (purge masquerading)
             let targetFaction = game.factions
                 .filter { $0.playerStanding < 40 }
-                .randomElement()
+                .randomElement(using: &rng)
             campaign.targetedFaction = targetFaction?.factionId
             campaign.intensityLevel = 90
 
         case .sectoral:
             // Target a track with corruption issues
             let tracks = ["economicPlanning", "stateMinistry", "foreignAffairs"]
-            campaign.targetedTrack = tracks.randomElement()
+            campaign.targetedTrack = tracks.randomElement(using: &rng)
             campaign.intensityLevel = 60
         }
 
         return campaign
     }
 
-    private func determineCampaignType(game: Game) -> AntiCorruptionCampaign.CampaignType {
+    private func determineCampaignType(game: Game, using rng: inout SeededRNG) -> AntiCorruptionCampaign.CampaignType {
         // Weighted selection based on game state
         var weights: [AntiCorruptionCampaign.CampaignType: Int] = [
             .tigers: 20,
@@ -721,7 +739,7 @@ extension CorruptionService {
         }
 
         let total = weights.values.reduce(0, +)
-        var roll = Int.random(in: 0..<total)
+        var roll = Int.random(in: 0..<total, using: &rng)
 
         for (type, weight) in weights {
             roll -= weight
@@ -731,18 +749,18 @@ extension CorruptionService {
         return .flies
     }
 
-    private func generateCampaignName(type: AntiCorruptionCampaign.CampaignType) -> String {
+    private func generateCampaignName(type: AntiCorruptionCampaign.CampaignType, using rng: inout SeededRNG) -> String {
         switch type {
         case .tigers:
-            return ["Operation Clean Slate", "Campaign to Purify the Party", "The High-Level Rectification"][Int.random(in: 0...2)]
+            return ["Operation Clean Slate", "Campaign to Purify the Party", "The High-Level Rectification"][Int.random(in: 0...2, using: &rng)]
         case .flies:
-            return ["Anti-Corruption in the Grassroots", "Cleaning the Base", "Local Rectification Campaign"][Int.random(in: 0...2)]
+            return ["Anti-Corruption in the Grassroots", "Cleaning the Base", "Local Rectification Campaign"][Int.random(in: 0...2, using: &rng)]
         case .comprehensive:
-            return ["Comprehensive Anti-Corruption Movement", "Tigers and Flies Together", "The Great Cleansing"][Int.random(in: 0...2)]
+            return ["Comprehensive Anti-Corruption Movement", "Tigers and Flies Together", "The Great Cleansing"][Int.random(in: 0...2, using: &rng)]
         case .factional:
-            return ["Campaign Against Factionalism", "Unity Through Purity", "Eliminating Cliques"][Int.random(in: 0...2)]
+            return ["Campaign Against Factionalism", "Unity Through Purity", "Eliminating Cliques"][Int.random(in: 0...2, using: &rng)]
         case .sectoral:
-            return ["Sectoral Anti-Corruption Initiative", "Ministry Rectification", "Bureau Cleansing"][Int.random(in: 0...2)]
+            return ["Sectoral Anti-Corruption Initiative", "Ministry Rectification", "Bureau Cleansing"][Int.random(in: 0...2, using: &rng)]
         }
     }
 
@@ -754,11 +772,13 @@ extension CorruptionService {
             return CampaignTurnResult(narrative: "The campaign has concluded.", events: [], headline: nil)
         }
 
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [DynamicEvent] = []
 
         // Check if campaign should end
         let turnsActive = game.turnNumber - campaign.turnStarted
-        if turnsActive > Int.random(in: 6...12) {
+        if turnsActive > Int.random(in: 6...12, using: &rng) {
             campaign.isActive = false
             campaign.turnEnded = game.turnNumber
             return CampaignTurnResult(
@@ -773,11 +793,11 @@ extension CorruptionService {
 
         // Chance to investigate someone new each turn
         let investigationChance = Double(campaign.intensityLevel) / 100.0
-        if !targets.isEmpty && Double.random(in: 0...1) < investigationChance {
-            let target = targets.randomElement()!
+        if !targets.isEmpty && Double.random(in: 0...1, using: &rng) < investigationChance {
+            let target = targets.randomElement(using: &rng)!
 
             // Generate investigation event
-            let event = generateCampaignInvestigationEvent(target: target, campaign: campaign, game: game)
+            let event = generateCampaignInvestigationEvent(target: target, campaign: campaign, game: game, using: &rng)
             events.append(event)
 
             campaign.charactersInvestigated.append(target.templateId)
@@ -819,7 +839,8 @@ extension CorruptionService {
     private func generateCampaignInvestigationEvent(
         target: GameCharacter,
         campaign: AntiCorruptionCampaign,
-        game: Game
+        game: Game,
+        using rng: inout SeededRNG
     ) -> DynamicEvent {
         let positionTitle = target.title ?? "official"
 
@@ -838,7 +859,7 @@ extension CorruptionService {
             )
         ]
 
-        let selected = texts.randomElement()!
+        let selected = texts.randomElement(using: &rng)!
 
         return DynamicEvent(
             eventType: .worldNews,

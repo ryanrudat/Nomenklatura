@@ -205,6 +205,8 @@ class PositionOfferService {
         config: CampaignConfig,
         currentTurn: Int
     ) -> PositionOffer? {
+        var rng = game.rng
+        defer { game.rng = rng }
 
         // Only offer laterals if patron favor is moderate and player hasn't committed
         guard game.patronFavor >= 50,
@@ -220,7 +222,7 @@ class PositionOfferService {
             $0 != .shared && $0 != .regional && scores.score(for: $0) < 10
         }
 
-        guard let targetTrack = lowAffinityTracks.randomElement() else {
+        guard let targetTrack = lowAffinityTracks.randomElement(using: &rng) else {
             return nil
         }
 
@@ -249,6 +251,8 @@ class PositionOfferService {
 
     /// Evaluate whether player should receive offers this turn
     func shouldGenerateOffers(game: Game) -> Bool {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Already have pending offers
         if game.hasPendingOffers {
             return false
@@ -283,12 +287,12 @@ class PositionOfferService {
         let recentDeclines = game.flags.filter { $0.hasPrefix("declined_offer_") }.count
         if recentDeclines >= 2 {
             // Too many declines - Party is less likely to offer again
-            return Int.random(in: 1...100) <= 10
+            return Int.random(in: 1...100, using: &rng) <= 10
         }
 
         // Random chance based on standing and favor
         let offerChance = (game.standing + game.patronFavor) / 4
-        return Int.random(in: 1...100) <= offerChance
+        return Int.random(in: 1...100, using: &rng) <= offerChance
     }
 
     // MARK: - Offer Processing

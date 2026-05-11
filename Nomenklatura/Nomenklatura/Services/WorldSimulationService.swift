@@ -171,6 +171,8 @@ final class WorldSimulationService {
 
     /// Natural drift of relationships based on ideology and history
     private func simulateRelationshipDrift(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         for country in game.foreignCountries {
             var drift: Int = 0
 
@@ -181,7 +183,7 @@ final class WorldSimulationService {
             drift += calculateEconomicPressure(country: country, game: game)
 
             // Random factor (-2 to +2)
-            drift += Int.random(in: -2...2)
+            drift += Int.random(in: -2...2, using: &rng)
 
             // Apply drift (small amounts)
             country.modifyRelationship(by: drift)
@@ -221,10 +223,12 @@ final class WorldSimulationService {
 
     /// Generate random world events for the turn
     private func generateWorldEvents(game: Game) -> [WorldEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [WorldEvent] = []
 
         // Limit events per turn (max 2-3 to avoid overwhelming)
-        let maxEvents = Int.random(in: 1...3)
+        let maxEvents = Int.random(in: 1...3, using: &rng)
         var eventCount = 0
 
         for country in game.foreignCountries {
@@ -240,8 +244,8 @@ final class WorldSimulationService {
                 let baseProbability = eventProbabilities[eventType] ?? 0.01
                 let modifiedProbability = baseProbability * probabilityModifier(for: eventType, country: country, game: game)
 
-                if Double.random(in: 0...1) < modifiedProbability {
-                    if let event = createEvent(type: eventType, country: country, game: game) {
+                if Double.random(in: 0...1, using: &rng) < modifiedProbability {
+                    if let event = createEvent(type: eventType, country: country, game: game, using: &rng) {
                         events.append(event)
                         eventCount += 1
                     }
@@ -388,7 +392,7 @@ final class WorldSimulationService {
     }
 
     /// Create a specific event
-    private func createEvent(type: WorldEventType, country: ForeignCountry, game: Game) -> WorldEvent? {
+    private func createEvent(type: WorldEventType, country: ForeignCountry, game: Game, using rng: inout SeededRNG) -> WorldEvent? {
         let headline = generateHeadline(type: type, country: country)
         let description = generateDescription(type: type, country: country, game: game)
 
@@ -402,7 +406,7 @@ final class WorldSimulationService {
         )
 
         // Add consequences
-        event.consequences = generateConsequences(type: type, country: country, game: game)
+        event.consequences = generateConsequences(type: type, country: country, game: game, using: &rng)
 
         return event
     }
@@ -474,7 +478,7 @@ final class WorldSimulationService {
 
     // MARK: - Consequences
 
-    private func generateConsequences(type: WorldEventType, country: ForeignCountry, game: Game) -> [WorldEventConsequence] {
+    private func generateConsequences(type: WorldEventType, country: ForeignCountry, game: Game, using rng: inout SeededRNG) -> [WorldEventConsequence] {
         var consequences: [WorldEventConsequence] = []
 
         switch type {
@@ -520,7 +524,7 @@ final class WorldSimulationService {
             consequences.append(WorldEventConsequence(
                 type: .relationshipChange,
                 targetId: country.countryId,
-                amount: Int.random(in: -20...20),
+                amount: Int.random(in: -20...20, using: &rng),
                 description: "New government's alignment uncertain"
             ))
 
@@ -537,6 +541,8 @@ final class WorldSimulationService {
     /// Uses LOW probability (15-25%) cascades for a stable but reactive world
     /// Max cascade depth of 2 to prevent runaway event chains
     private func processCascadingConsequences(events: [WorldEvent], game: Game) -> [WorldEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var cascadedEvents: [WorldEvent] = []
 
         for event in events {
@@ -547,14 +553,15 @@ final class WorldSimulationService {
 
             // Border incident cascades (18% chance)
             case .borderIncident:
-                if Double.random(in: 0...1) < 0.18 {
+                if Double.random(in: 0...1, using: &rng) < 0.18 {
                     if let country = game.country(withId: event.countryId) {
                         if let cascadeEvent = createCascadeEvent(
                             type: .armsBuildUp,
                             parentEvent: event,
                             country: country,
                             narrativeHint: "Following tensions from the recent border incident",
-                            game: game
+                            game: game,
+                            using: &rng
                         ) {
                             cascadedEvents.append(cascadeEvent)
                         }
@@ -563,14 +570,15 @@ final class WorldSimulationService {
 
             // Arms buildup cascades (16% chance)
             case .armsBuildUp:
-                if Double.random(in: 0...1) < 0.16 {
+                if Double.random(in: 0...1, using: &rng) < 0.16 {
                     if let country = game.country(withId: event.countryId) {
                         if let cascadeEvent = createCascadeEvent(
                             type: .militaryExercise,
                             parentEvent: event,
                             country: country,
                             narrativeHint: "In response to the recent military expansion",
-                            game: game
+                            game: game,
+                            using: &rng
                         ) {
                             cascadedEvents.append(cascadeEvent)
                         }
@@ -588,13 +596,14 @@ final class WorldSimulationService {
                     }
 
                     for vulnerable in vulnerableCountries.prefix(2) {  // Max 2 potential spreads
-                        if Double.random(in: 0...1) < 0.20 {
+                        if Double.random(in: 0...1, using: &rng) < 0.20 {
                             if let cascadeEvent = createCascadeEvent(
                                 type: .revolution,
                                 parentEvent: event,
                                 country: vulnerable,
                                 narrativeHint: "Inspired by recent events in \(originCountry.name)",
-                                game: game
+                                game: game,
+                                using: &rng
                             ) {
                                 cascadedEvents.append(cascadeEvent)
                                 break  // Only one spread per turn
@@ -604,14 +613,15 @@ final class WorldSimulationService {
 
                     // Atlantic Union response to capitalist revolution (25% chance)
                     if originCountry.politicalBloc == .capitalist {
-                        if Double.random(in: 0...1) < 0.25 {
+                        if Double.random(in: 0...1, using: &rng) < 0.25 {
                             if let atlanticUnion = game.foreignCountries.first(where: { $0.countryId == "atlantic_union" }) {
                                 if let cascadeEvent = createCascadeEvent(
                                     type: .militaryExercise,
                                     parentEvent: event,
                                     country: atlanticUnion,
                                     narrativeHint: "In response to revolutionary unrest in \(originCountry.name)",
-                                    game: game
+                                    game: game,
+                                    using: &rng
                                 ) {
                                     cascadedEvents.append(cascadeEvent)
                                 }
@@ -622,14 +632,15 @@ final class WorldSimulationService {
 
             // Coup cascades (22% chance)
             case .coup:
-                if Double.random(in: 0...1) < 0.22 {
+                if Double.random(in: 0...1, using: &rng) < 0.22 {
                     if let country = game.country(withId: event.countryId) {
                         if let cascadeEvent = createCascadeEvent(
                             type: .purge,
                             parentEvent: event,
                             country: country,
                             narrativeHint: "As the new leadership consolidates power",
-                            game: game
+                            game: game,
+                            using: &rng
                         ) {
                             cascadedEvents.append(cascadeEvent)
                         }
@@ -638,14 +649,15 @@ final class WorldSimulationService {
 
             // Economic crisis cascades (17% chance)
             case .economicCrisis:
-                if Double.random(in: 0...1) < 0.17 {
+                if Double.random(in: 0...1, using: &rng) < 0.17 {
                     if let country = game.country(withId: event.countryId) {
                         if let cascadeEvent = createCascadeEvent(
                             type: .tradeDispute,
                             parentEvent: event,
                             country: country,
                             narrativeHint: "As economic difficulties strain trade relations",
-                            game: game
+                            game: game,
+                            using: &rng
                         ) {
                             cascadedEvents.append(cascadeEvent)
                         }
@@ -654,14 +666,15 @@ final class WorldSimulationService {
 
             // Treaty violation cascades (23% chance)
             case .treatyViolation:
-                if Double.random(in: 0...1) < 0.23 {
+                if Double.random(in: 0...1, using: &rng) < 0.23 {
                     if let country = game.country(withId: event.countryId) {
                         if let cascadeEvent = createCascadeEvent(
                             type: .ambassadorRecall,
                             parentEvent: event,
                             country: country,
                             narrativeHint: "Following the breach of diplomatic agreements",
-                            game: game
+                            game: game,
+                            using: &rng
                         ) {
                             cascadedEvents.append(cascadeEvent)
                         }
@@ -670,14 +683,15 @@ final class WorldSimulationService {
 
             // Purge cascades (15% chance)
             case .purge:
-                if Double.random(in: 0...1) < 0.15 {
+                if Double.random(in: 0...1, using: &rng) < 0.15 {
                     if let country = game.country(withId: event.countryId) {
                         if let cascadeEvent = createCascadeEvent(
                             type: .economicCrisis,
                             parentEvent: event,
                             country: country,
                             narrativeHint: "As political instability disrupts economic management",
-                            game: game
+                            game: game,
+                            using: &rng
                         ) {
                             cascadedEvents.append(cascadeEvent)
                         }
@@ -701,7 +715,8 @@ final class WorldSimulationService {
         parentEvent: WorldEvent,
         country: ForeignCountry,
         narrativeHint: String,
-        game: Game
+        game: Game,
+        using rng: inout SeededRNG
     ) -> WorldEvent? {
         let headline = generateHeadline(type: type, country: country)
         let description = generateDescription(type: type, country: country, game: game)
@@ -721,7 +736,7 @@ final class WorldSimulationService {
         event.narrativeHint = narrativeHint
 
         // Add consequences
-        event.consequences = generateConsequences(type: type, country: country, game: game)
+        event.consequences = generateConsequences(type: type, country: country, game: game, using: &rng)
 
         return event
     }
@@ -898,6 +913,8 @@ final class WorldSimulationService {
     /// Generate dynamic economic events: trade proposals, sanctions, and foreign reform shifts.
     /// These queue DynamicEvents for the player rather than returning WorldEvents.
     private func generateDynamicEconomicEvents(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         let playerSystem = game.currentEconomicSystem
 
         for country in game.foreignCountries {
@@ -907,7 +924,7 @@ final class WorldSimulationService {
             if country.relationshipScore > 30
                 && compatibility >= 2
                 && !country.hasTreaty(of: .tradeAgreement)
-                && Double.random(in: 0...1) < 0.05
+                && Double.random(in: 0...1, using: &rng) < 0.05
             {
                 let event = DynamicEvent(
                     eventType: .worldNews,
@@ -956,7 +973,7 @@ final class WorldSimulationService {
             // Hostile powerful country may disrupt trade
             if country.relationshipScore < -50
                 && country.economicPower > 60
-                && Double.random(in: 0...1) < 0.08
+                && Double.random(in: 0...1, using: &rng) < 0.08
             {
                 let impactEstimate = country.economicPower / 20  // 3-5 range
                 var event = DynamicEvent(
@@ -988,7 +1005,7 @@ final class WorldSimulationService {
             // --- Foreign Economic Reform Events ---
             // Country under sustained economic pressure may shift its system
             if (country.consecutiveGDPDeclines >= 3 || country.hasEconomicCrisis)
-                && Double.random(in: 0...1) < 0.07
+                && Double.random(in: 0...1, using: &rng) < 0.07
             {
                 let currentSystem = country.currentEconomicSystem
 
@@ -1028,6 +1045,8 @@ final class WorldSimulationService {
     }
 
     func checkForEconomicReforms(game: Game) -> [WorldEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [WorldEvent] = []
 
         for country in game.foreignCountries {
@@ -1038,10 +1057,10 @@ final class WorldSimulationService {
             let reformChance = Double(country.economicReformTendency) / 100.0
 
             // Random check
-            guard Double.random(in: 0...1) < reformChance * 0.1 else { continue }  // 10% of tendency
+            guard Double.random(in: 0...1, using: &rng) < reformChance * 0.1 else { continue }  // 10% of tendency
 
             // Determine reform direction
-            let newSystem = determineReformDirection(for: country)
+            let newSystem = determineReformDirection(for: country, using: &rng)
             guard newSystem != country.currentEconomicSystem else { continue }
 
             // Apply the reform
@@ -1062,7 +1081,7 @@ final class WorldSimulationService {
     }
 
     /// Determine what economic system a country might reform toward
-    private func determineReformDirection(for country: ForeignCountry) -> EconomicSystemType {
+    private func determineReformDirection(for country: ForeignCountry, using rng: inout SeededRNG) -> EconomicSystemType {
         let current = country.currentEconomicSystem
 
         // Reform paths depend on current system and crisis type
@@ -1078,7 +1097,7 @@ final class WorldSimulationService {
             // Market socialism can go either direction
             if country.gdpGrowth < -3 {
                 // Crisis might push toward more control OR more market
-                return Bool.random() ? .commandEconomy : .mixedEconomy
+                return Bool.random(using: &rng) ? .commandEconomy : .mixedEconomy
             }
             return .marketSocialism
 
@@ -1102,7 +1121,7 @@ final class WorldSimulationService {
         case .cronyCapitalism:
             // Crony capitalism might reform after crisis
             if country.hasEconomicCrisis {
-                return Bool.random() ? .mixedEconomy : .marketSocialism
+                return Bool.random(using: &rng) ? .mixedEconomy : .marketSocialism
             }
             return .cronyCapitalism
         }

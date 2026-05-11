@@ -45,6 +45,8 @@ final class IntelligenceLeakService {
     /// Try to generate a leak event based on Network stat
     /// Returns a leak if conditions are met, nil otherwise
     func tryGenerateLeakEvent(for game: Game) -> IntelligenceLeak? {
+        var rng = game.rng
+        defer { game.rng = rng }
         let network = game.network
 
         // Minimum threshold for any leaks
@@ -57,26 +59,28 @@ final class IntelligenceLeakService {
         let probability = baseProbability + networkBonus
 
         // Roll for leak
-        guard Double.random(in: 0...1) < probability else { return nil }
+        guard Double.random(in: 0...1, using: &rng) < probability else { return nil }
 
         // Determine quality
-        let quality = determineQuality(network: network)
+        let quality = determineQuality(network: network, using: &rng)
 
         // Generate appropriate leak
-        return generateLeak(quality: quality, game: game)
+        return generateLeak(quality: quality, game: game, using: &rng)
     }
 
     /// Generate a specific type of leak (for testing or scripted events)
     func generateSpecificLeak(quality: IntelligenceQuality, game: Game) -> IntelligenceLeak {
-        return generateLeak(quality: quality, game: game)
+        var rng = game.rng
+        defer { game.rng = rng }
+        return generateLeak(quality: quality, game: game, using: &rng)
     }
 
     // MARK: - Quality Determination
 
-    private func determineQuality(network: Int) -> IntelligenceQuality {
-        if network >= 70 && Double.random(in: 0...1) < 0.3 {
+    private func determineQuality(network: Int, using rng: inout SeededRNG) -> IntelligenceQuality {
+        if network >= 70 && Double.random(in: 0...1, using: &rng) < 0.3 {
             return .high
-        } else if network >= 50 && Double.random(in: 0...1) < 0.5 {
+        } else if network >= 50 && Double.random(in: 0...1, using: &rng) < 0.5 {
             return .medium
         } else {
             return .low
@@ -85,18 +89,18 @@ final class IntelligenceLeakService {
 
     // MARK: - Leak Generation
 
-    private func generateLeak(quality: IntelligenceQuality, game: Game) -> IntelligenceLeak {
+    private func generateLeak(quality: IntelligenceQuality, game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         switch quality {
         case .low:
-            return generateLowQualityLeak(game: game)
+            return generateLowQualityLeak(game: game, using: &rng)
         case .medium:
-            return generateMediumQualityLeak(game: game)
+            return generateMediumQualityLeak(game: game, using: &rng)
         case .high:
-            return generateHighQualityLeak(game: game)
+            return generateHighQualityLeak(game: game, using: &rng)
         }
     }
 
-    private func generateLowQualityLeak(game: Game) -> IntelligenceLeak {
+    private func generateLowQualityLeak(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         let leaks: [(title: String, content: String, character: Bool, faction: Bool)] = [
             (
                 "Whispers in the Corridor",
@@ -125,16 +129,16 @@ final class IntelligenceLeakService {
             )
         ]
 
-        let selected = leaks.randomElement()!
+        let selected = leaks.randomElement(using: &rng)!
         var characterId: String? = nil
         var factionId: String? = nil
 
         if selected.character {
             characterId = game.characters.filter { $0.isAlive && ($0.positionIndex ?? 0) >= 4 }
-                .randomElement()?.templateId
+                .randomElement(using: &rng)?.templateId
         }
         if selected.faction {
-            factionId = game.factions.randomElement()?.factionId
+            factionId = game.factions.randomElement(using: &rng)?.factionId
         }
 
         return IntelligenceLeak(
@@ -147,18 +151,18 @@ final class IntelligenceLeakService {
         )
     }
 
-    private func generateMediumQualityLeak(game: Game) -> IntelligenceLeak {
+    private func generateMediumQualityLeak(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         // Try to leak faction scheming or character information
-        if Bool.random() {
-            return generateFactionSchemeLeaks(game: game)
+        if Bool.random(using: &rng) {
+            return generateFactionSchemeLeaks(game: game, using: &rng)
         } else {
-            return generateCharacterSecretLeak(game: game)
+            return generateCharacterSecretLeak(game: game, using: &rng)
         }
     }
 
-    private func generateFactionSchemeLeaks(game: Game) -> IntelligenceLeak {
+    private func generateFactionSchemeLeaks(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         let factions = game.factions
-        guard let faction = factions.randomElement() else {
+        guard let faction = factions.randomElement(using: &rng) else {
             return generateGenericMediumLeak()
         }
 
@@ -172,19 +176,19 @@ final class IntelligenceLeakService {
         return IntelligenceLeak(
             quality: .medium,
             title: "Faction Intelligence: \(faction.name)",
-            content: schemes.randomElement()!,
+            content: schemes.randomElement(using: &rng)!,
             relatedCharacterId: nil,
             relatedFactionId: faction.factionId,
             revealsHistoricalSecrets: false
         )
     }
 
-    private func generateCharacterSecretLeak(game: Game) -> IntelligenceLeak {
+    private func generateCharacterSecretLeak(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         let candidates = game.characters.filter {
             $0.isAlive && ($0.positionIndex ?? 0) >= 4 && !$0.isFullyRevealed
         }
 
-        guard let character = candidates.randomElement() else {
+        guard let character = candidates.randomElement(using: &rng) else {
             return generateGenericMediumLeak()
         }
 
@@ -196,7 +200,7 @@ final class IntelligenceLeakService {
             ("competence", "Internal performance reviews reveal that \(character.name)'s department has been falsifying production statistics. The discrepancies are significant.")
         ]
 
-        let selected = secrets.randomElement()!
+        let selected = secrets.randomElement(using: &rng)!
 
         return IntelligenceLeak(
             quality: .medium,
@@ -219,16 +223,16 @@ final class IntelligenceLeakService {
         )
     }
 
-    private func generateHighQualityLeak(game: Game) -> IntelligenceLeak {
+    private func generateHighQualityLeak(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         // High quality leaks can reveal historical secrets or major plot information
-        if Bool.random() {
-            return generateHistoricalSecretLeak(game: game)
+        if Bool.random(using: &rng) {
+            return generateHistoricalSecretLeak(game: game, using: &rng)
         } else {
-            return generateHighLevelSourceLeak(game: game)
+            return generateHighLevelSourceLeak(game: game, using: &rng)
         }
     }
 
-    private func generateHistoricalSecretLeak(game: Game) -> IntelligenceLeak {
+    private func generateHistoricalSecretLeak(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         let secrets: [(title: String, content: String)] = [
             (
                 "Declassified Archive Fragment",
@@ -252,7 +256,7 @@ final class IntelligenceLeakService {
             )
         ]
 
-        let selected = secrets.randomElement()!
+        let selected = secrets.randomElement(using: &rng)!
 
         return IntelligenceLeak(
             quality: .high,
@@ -264,12 +268,12 @@ final class IntelligenceLeakService {
         )
     }
 
-    private func generateHighLevelSourceLeak(game: Game) -> IntelligenceLeak {
+    private func generateHighLevelSourceLeak(game: Game, using rng: inout SeededRNG) -> IntelligenceLeak {
         let seniorCharacters = game.characters.filter {
             $0.isAlive && ($0.positionIndex ?? 0) >= 7
         }
 
-        let character = seniorCharacters.randomElement()
+        let character = seniorCharacters.randomElement(using: &rng)
 
         let leaks: [(title: String, content: String)] = [
             (
@@ -290,7 +294,7 @@ final class IntelligenceLeakService {
             )
         ]
 
-        let selected = leaks.randomElement()!
+        let selected = leaks.randomElement(using: &rng)!
 
         return IntelligenceLeak(
             quality: .high,

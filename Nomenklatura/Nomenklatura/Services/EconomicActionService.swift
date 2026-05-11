@@ -257,8 +257,10 @@ final class EconomicActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> ExecutionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Determine effects
@@ -405,8 +407,10 @@ final class EconomicActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> ProjectCompletionEvent {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= project.successChance
 
         // Get the original action
@@ -446,6 +450,8 @@ final class EconomicActionService {
 
     /// Process autonomous economic NPC actions each turn
     func processNPCEconomicActions(game: Game, modelContext: ModelContext) -> [NPCEconomicEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [NPCEconomicEvent] = []
 
         // Get economic planning officials (Position 2+)
@@ -457,9 +463,9 @@ final class EconomicActionService {
 
         for official in economicOfficials {
             // 20% chance to take action each turn
-            guard Int.random(in: 1...100) <= 20 else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= 20 else { continue }
 
-            if let actionPlan = evaluateNPCEconomicAction(for: official, game: game) {
+            if let actionPlan = evaluateNPCEconomicAction(for: official, game: game, using: &rng) {
                 let event = executeNPCEconomicAction(actionPlan, by: official, game: game, modelContext: modelContext)
                 events.append(event)
             }
@@ -471,7 +477,8 @@ final class EconomicActionService {
     /// Evaluate what economic action an NPC should take
     private func evaluateNPCEconomicAction(
         for character: GameCharacter,
-        game: Game
+        game: Game,
+        using rng: inout SeededRNG
     ) -> NPCEconomicActionPlan? {
         let position = character.positionIndex ?? 0
 
@@ -496,7 +503,7 @@ final class EconomicActionService {
         if position >= 2 {
             return NPCEconomicActionPlan(
                 actionId: "set_regional_quota",
-                targetSector: EconomicSector.allCases.randomElement(),
+                targetSector: EconomicSector.allCases.randomElement(using: &rng),
                 priority: 40
             )
         }
@@ -535,7 +542,9 @@ final class EconomicActionService {
 
         // Calculate success
         let successChance = calculateSuccessChance(action, targetSector: plan.targetSector, for: game)
-        let roll = Int.random(in: 1...100)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Apply effects if succeeded

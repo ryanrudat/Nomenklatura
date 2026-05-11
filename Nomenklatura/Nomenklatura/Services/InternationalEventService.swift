@@ -173,13 +173,15 @@ class InternationalEventService {
 
     /// Process espionage activities
     private func processEspionage(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         for country in game.foreignCountries {
             // Their spying on us
             if country.espionageActivity > 50 {
-                let discoveryRoll = Int.random(in: 1...100)
+                let discoveryRoll = Int.random(in: 1...100, using: &rng)
                 if discoveryRoll <= country.espionageActivity / 3 {
                     // They discovered something
-                    let effect = processEspionageDiscovery(country: country, game: game)
+                    let effect = processEspionageDiscovery(country: country, game: game, using: &rng)
                     if effect {
                         game.flags.append("espionage_incident_\(country.countryId)_\(game.turnNumber)")
                     }
@@ -188,7 +190,7 @@ class InternationalEventService {
 
             // Our spying on them
             if country.ourIntelligenceAssets > 30 {
-                let counterIntelRoll = Int.random(in: 1...100)
+                let counterIntelRoll = Int.random(in: 1...100, using: &rng)
                 if counterIntelRoll <= country.espionageActivity / 4 {
                     // Our agents discovered/compromised
                     country.ourIntelligenceAssets = max(0, country.ourIntelligenceAssets - 10)
@@ -199,9 +201,9 @@ class InternationalEventService {
         }
     }
 
-    private func processEspionageDiscovery(country: ForeignCountry, game: Game) -> Bool {
+    private func processEspionageDiscovery(country: ForeignCountry, game: Game, using rng: inout SeededRNG) -> Bool {
         // Random type of intelligence loss
-        let discoveryType = Int.random(in: 1...4)
+        let discoveryType = Int.random(in: 1...4, using: &rng)
         switch discoveryType {
         case 1:
             // Military secrets
@@ -223,11 +225,13 @@ class InternationalEventService {
     // MARK: - Event Triggers
 
     private func checkProxyWarOpportunities(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Check for countries where we could get involved
         for country in game.foreignCountries {
             if country.politicalBloc == .nonAligned && country.diplomaticTension > 50 {
                 // Opportunity to support one side in a developing conflict
-                if Int.random(in: 1...20) == 1 {
+                if Int.random(in: 1...20, using: &rng) == 1 {
                     game.variables["proxy_opportunity_\(country.countryId)"] = String(game.turnNumber)
                 }
             }
@@ -235,10 +239,12 @@ class InternationalEventService {
     }
 
     private func checkDiplomaticCrises(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         for country in game.foreignCountries {
             // High tension can trigger crises
             if country.diplomaticTension > 80 {
-                let crisisRoll = Int.random(in: 1...100)
+                let crisisRoll = Int.random(in: 1...100, using: &rng)
                 if crisisRoll <= country.diplomaticTension / 4 {
                     // Diplomatic crisis triggered
                     game.variables["diplomatic_crisis_\(country.countryId)"] = String(game.turnNumber)
@@ -277,6 +283,9 @@ class InternationalEventService {
 
     /// Execute a diplomatic action against a country
     func executeDiplomaticAction(_ action: DiplomaticActionType, target: ForeignCountry, game: Game) -> DiplomaticActionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         var result = DiplomaticActionResult(
             success: true,
             actionType: action,
@@ -296,7 +305,7 @@ class InternationalEventService {
             result.narrativeOutcome = "Cultural delegation exchanges strengthen ties with \(target.name)."
 
         case .tradeNegotiation:
-            let successRoll = Int.random(in: 1...100)
+            let successRoll = Int.random(in: 1...100, using: &rng)
             if successRoll <= 60 + target.relationshipScore / 2 {
                 target.tradeVolume = min(100, target.tradeVolume + 10)
                 target.modifyRelationship(by: action.relationshipEffect)
@@ -348,7 +357,7 @@ class InternationalEventService {
             result.narrativeOutcome = "Military threats issued against \(target.name). Tension rises dangerously."
 
         case .plantAssets:
-            let successRoll = Int.random(in: 1...100)
+            let successRoll = Int.random(in: 1...100, using: &rng)
             let counterIntel = target.espionageActivity
             if successRoll > counterIntel / 2 {
                 target.ourIntelligenceAssets = min(100, target.ourIntelligenceAssets + 15)
@@ -363,7 +372,7 @@ class InternationalEventService {
             }
 
         case .supportDissidents:
-            let successRoll = Int.random(in: 1...100)
+            let successRoll = Int.random(in: 1...100, using: &rng)
             if successRoll > 40 {
                 // Internal pressure on target
                 game.variables["dissidents_supported_\(target.countryId)"] = String(game.turnNumber)
@@ -379,7 +388,7 @@ class InternationalEventService {
             }
 
         case .propaganda:
-            let effectiveness = Int.random(in: 1...100)
+            let effectiveness = Int.random(in: 1...100, using: &rng)
             if effectiveness > 50 {
                 target.modifyRelationship(by: -5)
                 result.narrativeOutcome = "Propaganda campaign targeting \(target.name) shows some effect."
@@ -388,7 +397,7 @@ class InternationalEventService {
             }
 
         case .sabotage:
-            let successRoll = Int.random(in: 1...100)
+            let successRoll = Int.random(in: 1...100, using: &rng)
             if successRoll > 60 {
                 target.economicPower = max(0, target.economicPower - 5)
                 if target.hasOurMilitaryBases {
@@ -420,6 +429,8 @@ class InternationalEventService {
 
     /// Propose a treaty to a foreign country
     func proposeTreaty(_ type: TreatyType, to country: ForeignCountry, game: Game, terms: String = "") -> TreatyProposalResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         var result = TreatyProposalResult(accepted: false, treatyType: type, countryId: country.countryId)
 
         // Calculate acceptance chance
@@ -473,7 +484,7 @@ class InternationalEventService {
         }
 
         // Roll for acceptance
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         if roll <= acceptanceChance {
             result.accepted = true
 
@@ -542,14 +553,16 @@ class InternationalEventService {
 
     /// Generate international crisis events for the turn
     func generateInternationalEvents(for game: Game) -> [InternationalCrisisEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [InternationalCrisisEvent] = []
 
         for country in game.foreignCountries {
             // Check if crisis conditions exist
             if country.diplomaticTension > 70 {
                 let crisisChance = country.diplomaticTension / 3
-                if Int.random(in: 1...100) <= crisisChance {
-                    if let crisis = generateCrisis(with: country, game: game) {
+                if Int.random(in: 1...100, using: &rng) <= crisisChance {
+                    if let crisis = generateCrisis(with: country, game: game, using: &rng) {
                         events.append(crisis)
                     }
                 }
@@ -558,7 +571,7 @@ class InternationalEventService {
             // Check for bloc-specific events
             if country.politicalBloc == .socialist && country.relationshipScore < 30 {
                 let defectionRisk = 30 - country.relationshipScore
-                if Int.random(in: 1...100) <= defectionRisk / 3 {
+                if Int.random(in: 1...100, using: &rng) <= defectionRisk / 3 {
                     events.append(InternationalCrisisEvent(
                         id: UUID().uuidString,
                         countryId: country.countryId,
@@ -575,7 +588,7 @@ class InternationalEventService {
         // Check for superpower confrontation
         if let atlanticUnion = game.foreignCountries.first(where: { $0.countryId == "atlantic_union" }) {
             if atlanticUnion.diplomaticTension > 80 && game.variables["world_tension"] ?? "0" != "0" {
-                let confrontationRisk = Int.random(in: 1...100)
+                let confrontationRisk = Int.random(in: 1...100, using: &rng)
                 if confrontationRisk <= 10 {
                     events.append(InternationalCrisisEvent(
                         id: UUID().uuidString,
@@ -593,7 +606,7 @@ class InternationalEventService {
         return events
     }
 
-    private func generateCrisis(with country: ForeignCountry, game: Game) -> InternationalCrisisEvent? {
+    private func generateCrisis(with country: ForeignCountry, game: Game, using rng: inout SeededRNG) -> InternationalCrisisEvent? {
         let crisisTypes: [InternationalCrisisType]
 
         switch country.politicalBloc {
@@ -607,7 +620,7 @@ class InternationalEventService {
             crisisTypes = [.borderIncident, .ideologicalChallenge, .militaryProvocation]
         }
 
-        guard let crisisType = crisisTypes.randomElement() else { return nil }
+        guard let crisisType = crisisTypes.randomElement(using: &rng) else { return nil }
 
         return InternationalCrisisEvent(
             id: UUID().uuidString,
@@ -840,8 +853,10 @@ extension InternationalEventService {
         for character: GameCharacter,
         game: Game
     ) -> NPCDiplomaticActionPlan? {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Only act occasionally (30% chance per turn)
-        guard Int.random(in: 1...100) <= 30 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 30 else { return nil }
 
         // Get character's diplomatic goals
         let allGoals = character.goals ?? []
@@ -880,7 +895,7 @@ extension InternationalEventService {
             // Expand trade with non-aligned nations
             if let tradePartner = game.foreignCountries
                 .filter({ $0.politicalBloc == .nonAligned && $0.relationshipScore > 0 && $0.tradeVolume < 50 })
-                .randomElement() {
+                .randomElement(using: &rng) {
                 return NPCDiplomaticActionPlan(
                     actionType: .expandedTrade,
                     targetCountryId: tradePartner.countryId,
@@ -904,7 +919,7 @@ extension InternationalEventService {
             // Negotiate with countries we don't have major treaties with
             if let potential = game.foreignCountries
                 .filter({ $0.relationshipScore > 20 && $0.treaties.count < 2 })
-                .randomElement() {
+                .randomElement(using: &rng) {
                 return NPCDiplomaticActionPlan(
                     actionType: .proposedTreaty,
                     targetCountryId: potential.countryId,
@@ -924,7 +939,7 @@ extension InternationalEventService {
             // Strengthen relations with socialist bloc
             if let ally = game.foreignCountries
                 .filter({ $0.politicalBloc == .socialist })
-                .randomElement() {
+                .randomElement(using: &rng) {
                 return NPCDiplomaticActionPlan(
                     actionType: .conductedNegotiations,
                     targetCountryId: ally.countryId,
@@ -945,6 +960,8 @@ extension InternationalEventService {
         by character: GameCharacter,
         game: Game
     ) -> NPCDiplomaticEvent {
+        var rng = game.rng
+        defer { game.rng = rng }
         var success = true
         var effects: [String: Int] = [:]
 
@@ -1003,7 +1020,7 @@ extension InternationalEventService {
         case .conductedEspionage:
             // Espionage operations - chance of discovery
             if let country = targetCountry {
-                let discoveryRoll = Int.random(in: 1...100)
+                let discoveryRoll = Int.random(in: 1...100, using: &rng)
                 if discoveryRoll <= 20 {
                     success = false
                     country.diplomaticTension = min(100, country.diplomaticTension + 10)
@@ -1017,7 +1034,7 @@ extension InternationalEventService {
         case .respondedToCrisis:
             if let country = targetCountry {
                 // Appropriate response to crisis
-                let change = Int.random(in: 3...8)
+                let change = Int.random(in: 3...8, using: &rng)
                 country.diplomaticTension = max(0, country.diplomaticTension - change)
                 effects["tension"] = -change
             }

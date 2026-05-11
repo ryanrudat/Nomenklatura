@@ -19,11 +19,13 @@ class ConsequenceEngine {
 
     /// Generate consequences when a law is modified
     func generateConsequences(for law: Law, newState: LawState, game: Game, wasForced: Bool) -> [ScheduledConsequence] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var consequences: [ScheduledConsequence] = []
         let currentTurn = game.turnNumber
 
         // Base delay for consequences (2-8 turns in the future)
-        let baseDelay = Int.random(in: 2...5)
+        let baseDelay = Int.random(in: 2...5, using: &rng)
 
         // Forced changes generate more severe consequences
         let severityMultiplier = wasForced ? 1.5 : 1.0
@@ -45,7 +47,7 @@ class ConsequenceEngine {
         case .economic:
             consequences.append(contentsOf: generateEconomicConsequences(
                 law: law, newState: newState, currentTurn: currentTurn,
-                baseDelay: baseDelay, severity: severityMultiplier
+                baseDelay: baseDelay, severity: severityMultiplier, using: &rng
             ))
 
         case .social:
@@ -146,12 +148,13 @@ class ConsequenceEngine {
         newState: LawState,
         currentTurn: Int,
         baseDelay: Int,
-        severity: Double
+        severity: Double,
+        using rng: inout SeededRNG
     ) -> [ScheduledConsequence] {
         var consequences: [ScheduledConsequence] = []
 
         // Economic changes have delayed economic effects
-        let economicDelay = baseDelay + Int.random(in: 2...4) // Longer delay for economic effects
+        let economicDelay = baseDelay + Int.random(in: 2...4, using: &rng) // Longer delay for economic effects
 
         consequences.append(ScheduledConsequence(
             triggerTurn: currentTurn + economicDelay,
@@ -239,6 +242,8 @@ class ConsequenceEngine {
     }
 
     private func generateTermLimitConsequences(currentTurn: Int, game: Game) -> [ScheduledConsequence] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var consequences: [ScheduledConsequence] = []
 
         // Immediate elite concern
@@ -284,7 +289,7 @@ class ConsequenceEngine {
         // Character reactions - rivals become more dangerous
         for rival in game.characters.filter({ $0.isRival && $0.status == CharacterStatus.active.rawValue }) {
             consequences.append(ScheduledConsequence(
-                triggerTurn: currentTurn + Int.random(in: 2...5),
+                triggerTurn: currentTurn + Int.random(in: 2...5, using: &rng),
                 type: .characterAction,
                 magnitude: 35,
                 description: "\(rival.name) begins making quiet overtures to potential allies. Your consolidation of power has made enemies.",
@@ -308,41 +313,43 @@ class ConsequenceEngine {
         tensionChange: Int,
         game: Game
     ) {
+        var rng = game.rng
+        defer { game.rng = rng }
         var consequences: [ScheduledConsequence] = []
         let currentTurn = game.turnNumber
 
         if wasHostile {
             consequences.append(ScheduledConsequence(
-                triggerTurn: currentTurn + Int.random(in: 2...3),
+                triggerTurn: currentTurn + Int.random(in: 2...3, using: &rng),
                 type: .diplomaticRetaliation,
                 magnitude: abs(relationshipChange),
                 description: "\(targetCountryName) retaliates against PSR diplomatic actions",
                 statEffects: [
-                    "internationalStanding": Int.random(in: -10 ... -5),
-                    "treasury": Int.random(in: -8 ... -3)
+                    "internationalStanding": Int.random(in: -10 ... -5, using: &rng),
+                    "treasury": Int.random(in: -8 ... -3, using: &rng)
                 ]
             ))
 
             consequences.append(ScheduledConsequence(
-                triggerTurn: currentTurn + Int.random(in: 1...2),
+                triggerTurn: currentTurn + Int.random(in: 1...2, using: &rng),
                 type: .allianceResponse,
                 magnitude: abs(relationshipChange) / 2,
                 description: "\(targetCountryName)'s allies express concern over PSR aggression",
                 statEffects: [
-                    "internationalStanding": Int.random(in: -5 ... -3)
+                    "internationalStanding": Int.random(in: -5 ... -3, using: &rng)
                 ]
             ))
 
             // Severe hostility triggers military buildup
             if tensionChange >= 15 || relationshipChange <= -15 {
                 consequences.append(ScheduledConsequence(
-                    triggerTurn: currentTurn + Int.random(in: 3...5),
+                    triggerTurn: currentTurn + Int.random(in: 3...5, using: &rng),
                     type: .militaryBuildupResponse,
                     magnitude: tensionChange,
                     description: "\(targetCountryName) begins military buildup along PSR borders",
                     statEffects: [
                         "militaryReadiness": -5,
-                        "stability": Int.random(in: -5 ... -3)
+                        "stability": Int.random(in: -5 ... -3, using: &rng)
                     ]
                 ))
             }
@@ -353,17 +360,17 @@ class ConsequenceEngine {
                 magnitude: relationshipChange,
                 description: "Trade benefits from improved relations with \(targetCountryName) begin flowing",
                 statEffects: [
-                    "treasury": Int.random(in: 5...10)
+                    "treasury": Int.random(in: 5...10, using: &rng)
                 ]
             ))
 
             consequences.append(ScheduledConsequence(
-                triggerTurn: currentTurn + Int.random(in: 1...2),
+                triggerTurn: currentTurn + Int.random(in: 1...2, using: &rng),
                 type: .allianceResponse,
                 magnitude: relationshipChange / 2,
                 description: "Relations warm across the \(targetCountryName) political bloc",
                 statEffects: [
-                    "internationalStanding": Int.random(in: 2...3)
+                    "internationalStanding": Int.random(in: 2...3, using: &rng)
                 ]
             ))
         }

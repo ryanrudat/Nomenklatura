@@ -256,8 +256,10 @@ final class MilitaryActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> ExecutionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Determine effects
@@ -439,8 +441,10 @@ final class MilitaryActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> CampaignCompletionEvent {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= campaign.successChance
 
         // Get the original action
@@ -476,6 +480,8 @@ final class MilitaryActionService {
 
     /// Process autonomous military NPC actions each turn
     func processNPCMilitaryActions(game: Game, modelContext: ModelContext) -> [NPCMilitaryEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [NPCMilitaryEvent] = []
 
         // Get military-political officials (Position 2+)
@@ -488,7 +494,7 @@ final class MilitaryActionService {
 
         for official in militaryOfficials {
             // 20% chance to take action each turn
-            guard Int.random(in: 1...100) <= 20 else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= 20 else { continue }
 
             if let actionPlan = evaluateNPCMilitaryAction(for: official, game: game) {
                 let event = executeNPCMilitaryAction(actionPlan, by: official, game: game, modelContext: modelContext)
@@ -581,7 +587,9 @@ final class MilitaryActionService {
 
         // Calculate success
         let successChance = calculateSuccessChance(action, targetOfficer: targetOfficer, for: game)
-        let roll = Int.random(in: 1...100)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Apply effects if succeeded

@@ -23,14 +23,16 @@ final class AmbientActivityService {
 
     /// Generate ambient activities for all NPCs
     func processAmbientActivities(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         for character in game.characters where character.isActive {
             // Only process some characters each turn
-            guard Double.random(in: 0...1) < GameplayConstants.AmbientActivity.baseAmbientActionChance else {
+            guard Double.random(in: 0...1, using: &rng) < GameplayConstants.AmbientActivity.baseAmbientActionChance else {
                 continue
             }
 
             // Generate ambient activity based on character state
-            if let activity = generateAmbientActivity(character: character, game: game) {
+            if let activity = generateAmbientActivity(character: character, game: game, using: &rng) {
                 character.addAmbientActivity(activity)
                 ambientLogger.debug("\(character.name): \(activity.description)")
             }
@@ -41,24 +43,24 @@ final class AmbientActivityService {
     }
 
     /// Generate an ambient activity for a character
-    private func generateAmbientActivity(character: GameCharacter, game: Game) -> AmbientActivity? {
+    private func generateAmbientActivity(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> AmbientActivity? {
         // Activity influenced by goals, needs, and role
-        let activityType = selectActivityType(character: character, game: game)
+        let activityType = selectActivityType(character: character, game: game, using: &rng)
 
         guard let type = activityType else { return nil }
 
         return AmbientActivity(
             type: type,
             turn: game.turnNumber,
-            description: generateActivityDescription(type: type, character: character, game: game),
-            targetCharacterId: selectActivityTarget(type: type, character: character, game: game),
-            location: selectActivityLocation(type: type, character: character),
+            description: generateActivityDescription(type: type, character: character, game: game, using: &rng),
+            targetCharacterId: selectActivityTarget(type: type, character: character, game: game, using: &rng),
+            location: selectActivityLocation(type: type, character: character, using: &rng),
             visibility: determineVisibility(type: type, character: character)
         )
     }
 
     /// Select an activity type based on character state
-    private func selectActivityType(character: GameCharacter, game: Game) -> AmbientActivityType? {
+    private func selectActivityType(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> AmbientActivityType? {
         var weights: [(AmbientActivityType, Int)] = []
 
         // Goal-driven activities
@@ -152,7 +154,7 @@ final class AmbientActivityService {
         let totalWeight = weights.reduce(0) { $0 + $1.1 }
         guard totalWeight > 0 else { return .working }
 
-        var roll = Int.random(in: 0..<totalWeight)
+        var roll = Int.random(in: 0..<totalWeight, using: &rng)
         for (type, weight) in weights {
             roll -= weight
             if roll < 0 {
@@ -164,7 +166,7 @@ final class AmbientActivityService {
     }
 
     /// Generate a description for the activity
-    private func generateActivityDescription(type: AmbientActivityType, character: GameCharacter, game: Game) -> String {
+    private func generateActivityDescription(type: AmbientActivityType, character: GameCharacter, game: Game, using rng: inout SeededRNG) -> String {
         switch type {
         case .working:
             return [
@@ -173,11 +175,11 @@ final class AmbientActivityService {
                 "working on department reports",
                 "attending to official duties",
                 "preparing briefings for the Standing Committee"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .meeting:
             let others = game.characters.filter { $0.isActive && $0.id != character.id }
-            if let other = others.randomElement() {
+            if let other = others.randomElement(using: &rng) {
                 return "in a meeting with \(other.name)"
             }
             return "in an official meeting"
@@ -188,7 +190,7 @@ final class AmbientActivityService {
                 "chatting with colleagues in the corridor",
                 "attending an official reception",
                 "at a Party social function"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .traveling:
             return [
@@ -196,7 +198,7 @@ final class AmbientActivityService {
                 "en route to an official function",
                 "on assignment outside the capital",
                 "visiting a state enterprise"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .networking:
             return [
@@ -204,7 +206,7 @@ final class AmbientActivityService {
                 "attending an informal gathering of officials",
                 "building relationships with useful people",
                 "consolidating their network of supporters"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .gatheringIntelligence:
             return [
@@ -212,7 +214,7 @@ final class AmbientActivityService {
                 "listening to rumors and whispers",
                 "meeting with informants",
                 "piecing together useful intelligence"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .secretMeeting:
             return [
@@ -220,7 +222,7 @@ final class AmbientActivityService {
                 "conducting confidential discussions",
                 "in a discreet rendezvous",
                 "engaged in clandestine consultations"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .politicalManeuvering:
             return [
@@ -228,7 +230,7 @@ final class AmbientActivityService {
                 "building coalitions behind the scenes",
                 "working to undermine opponents",
                 "engaging in political calculation"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .factionMeeting:
             if let factionId = character.factionId,
@@ -243,7 +245,7 @@ final class AmbientActivityService {
                 "attending ideological training",
                 "reviewing Marxist-Leninist texts",
                 "participating in political education"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .writing:
             return [
@@ -251,7 +253,7 @@ final class AmbientActivityService {
                 "composing a report for the Standing Committee",
                 "writing a position paper",
                 "preparing a speech"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .dining:
             return [
@@ -259,7 +261,7 @@ final class AmbientActivityService {
                 "dining with colleagues",
                 "at a working dinner",
                 "eating in the executive dining room"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .resting:
             return [
@@ -267,7 +269,7 @@ final class AmbientActivityService {
                 "at home with family",
                 "recovering from official duties",
                 "on approved leave"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
 
         case .issuingDirectives:
             return [
@@ -275,25 +277,25 @@ final class AmbientActivityService {
                 "directing operations in their domain",
                 "supervising department activities",
                 "exercising their authority"
-            ].randomElement()!
+            ].randomElement(using: &rng)!
         }
     }
 
     /// Select a target for relationship-based activities
-    private func selectActivityTarget(type: AmbientActivityType, character: GameCharacter, game: Game) -> String? {
+    private func selectActivityTarget(type: AmbientActivityType, character: GameCharacter, game: Game, using rng: inout SeededRNG) -> String? {
         switch type {
         case .meeting, .networking, .secretMeeting:
             let candidates = game.characters.filter {
                 $0.isActive && $0.id != character.id
             }
-            return candidates.randomElement()?.id.uuidString
+            return candidates.randomElement(using: &rng)?.id.uuidString
 
         case .factionMeeting:
             if let factionId = character.factionId {
                 let factionMembers = game.characters.filter {
                     $0.isActive && $0.id != character.id && $0.factionId == factionId
                 }
-                return factionMembers.randomElement()?.id.uuidString
+                return factionMembers.randomElement(using: &rng)?.id.uuidString
             }
             return nil
 
@@ -303,22 +305,22 @@ final class AmbientActivityService {
     }
 
     /// Select a location for the activity
-    private func selectActivityLocation(type: AmbientActivityType, character: GameCharacter) -> String? {
+    private func selectActivityLocation(type: AmbientActivityType, character: GameCharacter, using rng: inout SeededRNG) -> String? {
         switch type {
         case .working, .writing, .issuingDirectives:
             return "Ministry offices"
         case .meeting:
-            return ["Ministry conference room", "Committee chambers", "Official office"].randomElement()
+            return ["Ministry conference room", "Committee chambers", "Official office"].randomElement(using: &rng)
         case .socializing, .dining:
-            return ["Ministry canteen", "Reception hall", "Official function"].randomElement()
+            return ["Ministry canteen", "Reception hall", "Official function"].randomElement(using: &rng)
         case .traveling:
             return "In transit"
         case .secretMeeting:
-            return ["Private location", "Undisclosed venue", "Secure room"].randomElement()
+            return ["Private location", "Undisclosed venue", "Secure room"].randomElement(using: &rng)
         case .factionMeeting:
             return "Private gathering"
         case .ideologicalStudy:
-            return ["Party school", "Study group", "Library"].randomElement()
+            return ["Party school", "Study group", "Library"].randomElement(using: &rng)
         case .resting:
             return "Personal quarters"
         default:

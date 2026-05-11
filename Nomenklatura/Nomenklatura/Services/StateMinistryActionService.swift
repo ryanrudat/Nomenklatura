@@ -316,8 +316,10 @@ final class StateMinistryActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> ExecutionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Determine effects
@@ -516,8 +518,10 @@ final class StateMinistryActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> MinistryProjectCompletionEvent {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= project.successChance
 
         // Get the original action
@@ -553,6 +557,8 @@ final class StateMinistryActionService {
 
     /// Process autonomous state ministry NPC actions each turn
     func processNPCMinistryActions(game: Game, modelContext: ModelContext) -> [NPCMinistryEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [NPCMinistryEvent] = []
 
         // Get ministry officials (Position 2+)
@@ -566,9 +572,9 @@ final class StateMinistryActionService {
 
         for official in ministryOfficials {
             // 15% chance to take action each turn (government is methodical)
-            guard Int.random(in: 1...100) <= 15 else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= 15 else { continue }
 
-            if let actionPlan = evaluateNPCMinistryAction(for: official, game: game) {
+            if let actionPlan = evaluateNPCMinistryAction(for: official, game: game, using: &rng) {
                 let event = executeNPCMinistryAction(actionPlan, by: official, game: game, modelContext: modelContext)
                 events.append(event)
             }
@@ -580,7 +586,8 @@ final class StateMinistryActionService {
     /// Evaluate what ministry action an NPC should take
     private func evaluateNPCMinistryAction(
         for character: GameCharacter,
-        game: Game
+        game: Game,
+        using rng: inout SeededRNG
     ) -> NPCMinistryActionPlan? {
         let position = character.positionIndex ?? 0
 
@@ -620,7 +627,7 @@ final class StateMinistryActionService {
         if position >= 3 {
             return NPCMinistryActionPlan(
                 actionId: "conduct_inspection",
-                targetMinistry: MinistryDepartment.allCases.randomElement(),
+                targetMinistry: MinistryDepartment.allCases.randomElement(using: &rng),
                 targetOfficialId: nil,
                 priority: 40
             )
@@ -664,7 +671,9 @@ final class StateMinistryActionService {
 
         // Simple success check for NPC actions
         let successChance = action.baseSuccessChance + (character.positionIndex ?? 0) * 5
-        let roll = Int.random(in: 1...100)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Apply effects if succeeded

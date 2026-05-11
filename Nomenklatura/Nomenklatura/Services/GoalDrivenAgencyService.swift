@@ -37,12 +37,14 @@ final class GoalDrivenAgencyService {
             return []
         }
 
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [DynamicEvent] = []
 
         // Get all active NPCs with goals, shuffled for variety
         let npcsWithGoals = game.characters.filter { character in
             character.isActive && !character.npcGoals.isEmpty
-        }.shuffled()
+        }.shuffled(using: &rng)
 
         // Prioritize high-grudge and high-aggression NPCs (they act first)
         let prioritizedNPCs = npcsWithGoals.sorted { npc1, npc2 in
@@ -77,7 +79,7 @@ final class GoalDrivenAgencyService {
                 }
             }
 
-            if let event = evaluateCharacterGoals(character, game: game) {
+            if let event = evaluateCharacterGoals(character, game: game, using: &rng) {
                 // Position filtering is relaxed for General Secretary:
                 // As GS, you see events at ALL levels (you're at the top)
                 if game.currentPositionIndex < 7 {
@@ -110,7 +112,7 @@ final class GoalDrivenAgencyService {
     }
 
     /// Evaluate a single character's goals and potentially generate an action
-    private func evaluateCharacterGoals(_ character: GameCharacter, game: Game) -> DynamicEvent? {
+    private func evaluateCharacterGoals(_ character: GameCharacter, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         guard let primaryGoal = character.primaryGoal else { return nil }
 
         // Skip if this goal type was used recently (prevents "Seeks Advancement" spam)
@@ -142,7 +144,7 @@ final class GoalDrivenAgencyService {
         // High-grudge NPCs are more likely to act even if the decision maker said no
         if !shouldAct && character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
             let grudgeOverrideChance = Double(character.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 100.0
-            if Double.random(in: 0...1) < grudgeOverrideChance {
+            if Double.random(in: 0...1, using: &rng) < grudgeOverrideChance {
                 goalLogger.info("\(character.name) grudge override (grudge: \(character.grudgeLevel)) — acting despite risk assessment")
                 shouldAct = true
             }
@@ -151,7 +153,7 @@ final class GoalDrivenAgencyService {
         // High-aggression NPCs are also more likely to push through
         if !shouldAct && character.aggressionLevel > BalanceConfig.npcHighAggressionThreshold {
             let aggressionOverrideChance = Double(character.aggressionLevel - BalanceConfig.npcHighAggressionThreshold) / 150.0
-            if Double.random(in: 0...1) < aggressionOverrideChance {
+            if Double.random(in: 0...1, using: &rng) < aggressionOverrideChance {
                 goalLogger.info("\(character.name) aggression override (aggression: \(character.aggressionLevel)) — forcing action")
                 shouldAct = true
             }
@@ -160,7 +162,7 @@ final class GoalDrivenAgencyService {
         // Low-fear NPCs are bolder: slight boost to act
         if !shouldAct && character.fearLevel < BalanceConfig.npcLowFearThreshold {
             let boldnessChance = Double(BalanceConfig.npcLowFearThreshold - character.fearLevel) / 200.0
-            if Double.random(in: 0...1) < boldnessChance {
+            if Double.random(in: 0...1, using: &rng) < boldnessChance {
                 goalLogger.info("\(character.name) bold action (low fear: \(character.fearLevel))")
                 shouldAct = true
             }
@@ -177,7 +179,7 @@ final class GoalDrivenAgencyService {
         goalLogger.info("\(character.name) acting on goal: \(primaryGoal.goalType.displayName)")
 
         // Generate event based on goal type
-        let event = generateGoalEvent(character: character, goal: primaryGoal, game: game)
+        let event = generateGoalEvent(character: character, goal: primaryGoal, game: game, using: &rng)
 
         // Track this goal type to prevent repetition
         if event != nil {
@@ -193,7 +195,7 @@ final class GoalDrivenAgencyService {
     // MARK: - Goal Event Generation
 
     /// Generate an event based on the NPC's goal
-    private func generateGoalEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateGoalEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         switch goal.goalType {
         // Ambition Goals
         case .seekPromotion:
@@ -217,7 +219,7 @@ final class GoalDrivenAgencyService {
         case .buildFaction:
             return generateFactionBuildingEvent(character: character, goal: goal, game: game)
         case .accumulateWealth:
-            return generateCorruptionEvent(character: character, goal: goal, game: game)
+            return generateCorruptionEvent(character: character, goal: goal, game: game, using: &rng)
         case .expandInfluence:
             return generateInfluenceExpansionEvent(character: character, goal: goal, game: game)
 
@@ -233,13 +235,13 @@ final class GoalDrivenAgencyService {
         case .serveTheParty, .defendPartyOrthodoxy:
             return generatePartyServiceEvent(character: character, goal: goal, game: game)
         case .rootOutTraitors:
-            return generateTraitorHuntEvent(character: character, goal: goal, game: game)
+            return generateTraitorHuntEvent(character: character, goal: goal, game: game, using: &rng)
         case .strengthenTheState:
             return generateStateStrengtheningEvent(character: character, goal: goal, game: game)
 
         // Espionage Goals
         case .spyForForeignPower:
-            return generateEspionageEvent(character: character, goal: goal, game: game)
+            return generateEspionageEvent(character: character, goal: goal, game: game, using: &rng)
         case .recruitAssets:
             return generateRecruitmentEvent(character: character, goal: goal, game: game)
         case .sabotageFromWithin:
@@ -269,17 +271,17 @@ final class GoalDrivenAgencyService {
         case .advanceIdeologicalGoals:
             return generateIdeologicalAdvancementEvent(character: character, goal: goal, game: game)
         case .proposeForeignPolicy:
-            return generateForeignPolicyProposalEvent(character: character, goal: goal, game: game)
+            return generateForeignPolicyProposalEvent(character: character, goal: goal, game: game, using: &rng)
         case .negotiateTreaty:
-            return generateTreatyNegotiationEvent(character: character, goal: goal, game: game)
+            return generateTreatyNegotiationEvent(character: character, goal: goal, game: game, using: &rng)
 
         // Security Goals (CCDI/MSS)
         case .investigateCorruption:
-            return generateInvestigateCorruptionEvent(character: character, goal: goal, game: game)
+            return generateInvestigateCorruptionEvent(character: character, goal: goal, game: game, using: &rng)
         case .expandSurveillance:
             return generateExpandSurveillanceEvent(character: character, goal: goal, game: game)
         case .conductPurge:
-            return generateConductPurgeEvent(character: character, goal: goal, game: game)
+            return generateConductPurgeEvent(character: character, goal: goal, game: game, using: &rng)
         case .buildDossiers:
             return generateBuildDossiersEvent(character: character, goal: goal, game: game)
         case .protectPatron:
@@ -289,13 +291,13 @@ final class GoalDrivenAgencyService {
         case .eliminateRivals:
             return generateEliminateRivalsEvent(character: character, goal: goal, game: game)
         case .huntForeignSpies:
-            return generateHuntForeignSpiesEvent(character: character, goal: goal, game: game)
+            return generateHuntForeignSpiesEvent(character: character, goal: goal, game: game, using: &rng)
 
         // Economic Goals (Gosplan)
         case .meetProductionQuotas:
-            return generateMeetQuotasEvent(character: character, goal: goal, game: game)
+            return generateMeetQuotasEvent(character: character, goal: goal, game: game, using: &rng)
         case .exceedException:
-            return generateExceedQuotaEvent(character: character, goal: goal, game: game)
+            return generateExceedQuotaEvent(character: character, goal: goal, game: game, using: &rng)
         case .expandIndustrialOutput:
             return generateExpandIndustrialEvent(character: character, goal: goal, game: game)
         case .modernizeSector:
@@ -721,9 +723,9 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateCorruptionEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateCorruptionEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Only generate if player might discover
-        guard Int.random(in: 0...100) < 30 else { return nil }
+        guard Int.random(in: 0...100, using: &rng) < 30 else { return nil }
 
         return DynamicEvent(
             eventType: .networkIntel,
@@ -941,10 +943,10 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateTraitorHuntEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateTraitorHuntEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Pick a random potential "suspect"
         let suspects = game.characters.filter { $0.isActive && $0.id != character.id && $0.disposition < 50 }
-        guard let suspect = suspects.randomElement() else { return nil }
+        guard let suspect = suspects.randomElement(using: &rng) else { return nil }
 
         return DynamicEvent(
             eventType: .networkIntel,
@@ -1017,10 +1019,10 @@ final class GoalDrivenAgencyService {
 
     // MARK: - Espionage Goal Events
 
-    private func generateEspionageEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateEspionageEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Player might discover spy activity
         guard character.foreignAgentStatus.isForeignAgent else { return nil }
-        guard Int.random(in: 0...100) < character.foreignAgentStatus.detectionRisk else { return nil }
+        guard Int.random(in: 0...100, using: &rng) < character.foreignAgentStatus.detectionRisk else { return nil }
 
         return DynamicEvent(
             eventType: .networkIntel,
@@ -1533,7 +1535,7 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateForeignPolicyProposalEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateForeignPolicyProposalEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Only for senior Foreign Affairs officials
         guard (character.positionIndex ?? 0) >= 5 else { return nil }
 
@@ -1543,7 +1545,7 @@ final class GoalDrivenAgencyService {
             ("Economic Diplomacy First", "prioritizes trade over military posturing"),
             ("Socialist Unity Policy", "mandates support for all socialist states")
         ]
-        let policy = policies.randomElement() ?? policies[0]
+        let policy = policies.randomElement(using: &rng) ?? policies[0]
 
         return DynamicEvent(
             eventType: .characterMessage,
@@ -1579,7 +1581,7 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateTreatyNegotiationEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateTreatyNegotiationEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Find a potential treaty partner
         guard let partner = game.foreignCountries.first(where: {
             $0.relationshipScore > 40 && $0.politicalBloc != .capitalist
@@ -1591,7 +1593,7 @@ final class GoalDrivenAgencyService {
             ("Cultural Exchange Program", "promotes educational and artistic cooperation"),
             ("Non-Aggression Pact", "guarantees peaceful relations")
         ]
-        let treaty = treatyTypes.randomElement() ?? treatyTypes[0]
+        let treaty = treatyTypes.randomElement(using: &rng) ?? treatyTypes[0]
 
         return DynamicEvent(
             eventType: .characterMessage,
@@ -1629,7 +1631,7 @@ final class GoalDrivenAgencyService {
 
     // MARK: - Security Goal Events (CCDI/MSS)
 
-    private func generateInvestigateCorruptionEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateInvestigateCorruptionEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Security NPC investigating corruption - find a corrupt target
         let corruptOfficials = game.characters.filter { other in
             other.isActive &&
@@ -1637,7 +1639,7 @@ final class GoalDrivenAgencyService {
             other.personality.corrupt > 60 &&
             (other.positionIndex ?? 0) >= 3
         }
-        guard let target = corruptOfficials.randomElement() else { return nil }
+        guard let target = corruptOfficials.randomElement(using: &rng) else { return nil }
 
         return DynamicEvent(
             eventType: .networkIntel,
@@ -1717,13 +1719,13 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateConductPurgeEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateConductPurgeEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Senior security official recommending a purge/anti-corruption campaign
         guard (character.positionIndex ?? 0) >= 5 else { return nil }
 
         // Find a faction or sector to target
         let factions = game.factions.filter { $0.power > 30 }
-        guard let targetFaction = factions.randomElement() else { return nil }
+        guard let targetFaction = factions.randomElement(using: &rng) else { return nil }
 
         return DynamicEvent(
             eventType: .urgentInterruption,
@@ -1924,17 +1926,17 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateHuntForeignSpiesEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateHuntForeignSpiesEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // MSS counter-intelligence - looking for spies
         let potentialSpies = game.characters.filter { other in
             other.isActive && other.foreignAgentStatus.isForeignAgent
         }
 
         // Random chance to discover a real spy or create false accusation
-        let hasRealSpy = !potentialSpies.isEmpty && Int.random(in: 0...100) < 50
+        let hasRealSpy = !potentialSpies.isEmpty && Int.random(in: 0...100, using: &rng) < 50
         let suspect = hasRealSpy
-            ? potentialSpies.randomElement()
-            : game.characters.filter { $0.isActive && $0.disposition < 40 }.randomElement()
+            ? potentialSpies.randomElement(using: &rng)
+            : game.characters.filter { $0.isActive && $0.disposition < 40 }.randomElement(using: &rng)
 
         guard let suspectCharacter = suspect else { return nil }
 
@@ -1980,10 +1982,10 @@ final class GoalDrivenAgencyService {
 
     // MARK: - Economic Goal Events
 
-    private func generateMeetQuotasEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateMeetQuotasEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Production officials reporting on quota progress
         let frustrated = goal.isFrustrated
-        let success = Int.random(in: 0...100) < (frustrated ? 40 : 70)
+        let success = Int.random(in: 0...100, using: &rng) < (frustrated ? 40 : 70)
 
         let title = success ? "Quota Fulfillment Report" : "Production Shortfall Alert"
         let text = success
@@ -2018,9 +2020,9 @@ final class GoalDrivenAgencyService {
         )
     }
 
-    private func generateExceedQuotaEvent(character: GameCharacter, goal: NPCGoal, game: Game) -> DynamicEvent? {
+    private func generateExceedQuotaEvent(character: GameCharacter, goal: NPCGoal, game: Game, using rng: inout SeededRNG) -> DynamicEvent? {
         // Stakhanovite-style overachievement
-        let success = Int.random(in: 0...100) < 45
+        let success = Int.random(in: 0...100, using: &rng) < 45
 
         guard success else { return nil }
 

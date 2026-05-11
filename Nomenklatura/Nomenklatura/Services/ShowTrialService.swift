@@ -47,6 +47,8 @@ final class ShowTrialService {
 
     /// Advance a trial to the next phase
     func advanceTrialPhase(trial: inout ShowTrial, game: Game) -> DynamicEvent? {
+        var rng = game.rng
+        defer { game.rng = rng }
         switch trial.phase {
         case .accusation:
             trial.phase = .confessionExtraction
@@ -55,15 +57,15 @@ final class ShowTrialService {
         case .confessionExtraction:
             // Determine if confession was obtained based on character traits
             let defendant = game.characters.first { $0.id == trial.defendantId }
-            let confessionResult = determineConfessionOutcome(for: defendant, trial: trial)
+            let confessionResult = determineConfessionOutcome(for: defendant, trial: trial, using: &rng)
             trial.confessionObtained = confessionResult.obtained
             trial.confessionType = confessionResult.type
             trial.phase = .publicTrial
-            return generatePublicTrialEvent(trial: trial, confessionResult: confessionResult, game: game)
+            return generatePublicTrialEvent(trial: trial, confessionResult: confessionResult, game: game, using: &rng)
 
         case .publicTrial:
             trial.phase = .sentencing
-            return generateSentencingEvent(trial: trial, game: game)
+            return generateSentencingEvent(trial: trial, game: game, using: &rng)
 
         case .sentencing:
             // Determine and apply sentence
@@ -123,7 +125,8 @@ final class ShowTrialService {
 
     private func determineConfessionOutcome(
         for defendant: GameCharacter?,
-        trial: ShowTrial
+        trial: ShowTrial,
+        using rng: inout SeededRNG
     ) -> ConfessionResult {
         guard let defendant = defendant else {
             return ConfessionResult(
@@ -135,7 +138,7 @@ final class ShowTrialService {
 
         // Calculate resistance based on personality
         let resistance = calculateResistance(for: defendant)
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
 
         if roll > resistance {
             // Confession obtained
@@ -342,7 +345,8 @@ final class ShowTrialService {
     private func generatePublicTrialEvent(
         trial: ShowTrial,
         confessionResult: ConfessionResult,
-        game: Game
+        game: Game,
+        using rng: inout SeededRNG
     ) -> DynamicEvent {
         let defendant = game.characters.first { $0.id == trial.defendantId }
         let name = defendant?.name ?? trial.defendantName
@@ -408,7 +412,7 @@ final class ShowTrialService {
         )
     }
 
-    private func generateSentencingEvent(trial: ShowTrial, game: Game) -> DynamicEvent {
+    private func generateSentencingEvent(trial: ShowTrial, game: Game, using rng: inout SeededRNG) -> DynamicEvent {
         let defendant = game.characters.first { $0.id == trial.defendantId }
         let name = defendant?.name ?? trial.defendantName
 
@@ -421,7 +425,7 @@ final class ShowTrialService {
             title: "Verdict Delivered",
             briefText: "The People's Court has delivered its verdict against \(name).",
             detailedText: """
-            After deliberation lasting \(Int.random(in: 15...45)) minutes, the People's Court \
+            After deliberation lasting \(Int.random(in: 15...45, using: &rng)) minutes, the People's Court \
             has reached its verdict. The defendant was found guilty on all counts.
 
             Sentence: \(preliminarySentence.displayName)

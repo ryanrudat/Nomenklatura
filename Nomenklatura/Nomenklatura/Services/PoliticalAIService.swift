@@ -153,6 +153,9 @@ class PoliticalAIService {
     /// Generate event for GS targeting a rival
     /// Returns nil if the target is already under investigation or was recently targeted (cooldown)
     private func generateRivalTargetingEvent(gs: GameCharacter, targetId: String, game: Game) -> PoliticalEvent? {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Find target character
         guard let target = game.characters.first(where: { $0.templateId == targetId }) else {
             return nil
@@ -193,7 +196,7 @@ class PoliticalAIService {
             characterName: gs.name,
             slotId: nil,
             optionId: nil,
-            narrative: narratives.randomElement()!,
+            narrative: narratives.randomElement(using: &rng)!,
             consequences: [],
             turn: game.turnNumber
         )
@@ -441,9 +444,12 @@ class PoliticalAIService {
 
     /// Select a policy the GS wants to change
     private func selectPolicyTarget(for agenda: GSAgenda, gs: GameCharacter, game: Game) -> PolicyChangeTarget? {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Roll chance to act this turn (not every turn)
         let actChance = min(30, 10 + gs.personalityAmbitious / 5)
-        guard Int.random(in: 1...100) <= actChance else {
+        guard Int.random(in: 1...100, using: &rng) <= actChance else {
             return nil
         }
 
@@ -675,8 +681,10 @@ class PoliticalAIService {
 
     /// A powerful faction pressures for policy changes
     private func processFactionPressure(faction: GameFaction, game: Game) -> PoliticalEvent? {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Low chance per turn
-        guard Int.random(in: 1...100) <= 5 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 5 else { return nil }
 
         let factionPrefs = getFactionPolicyPreferences(factionId: faction.factionId)
 
@@ -713,6 +721,8 @@ class PoliticalAIService {
     /// Process proposals from Foreign Affairs track NPCs
     /// These officials can propose foreign policy changes and submit diplomatic agenda items
     private func processForeignAffairsProposals(game: Game) -> [PoliticalEvent]? {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [PoliticalEvent] = []
 
         // Find Foreign Affairs track officials
@@ -746,7 +756,7 @@ class PoliticalAIService {
                 proposeChance = 0  // Don't propose if they already have one pending
             }
 
-            guard Int.random(in: 1...100) <= proposeChance else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= proposeChance else { continue }
 
             // Determine what type of proposal to make
             if let proposal = selectForeignPolicyProposal(official: official, game: game) {

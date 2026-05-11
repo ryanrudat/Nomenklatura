@@ -287,8 +287,10 @@ final class PartyActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> ExecutionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Determine effects
@@ -546,8 +548,10 @@ final class PartyActionService {
         for game: Game,
         modelContext: ModelContext
     ) -> PartyCampaignCompletionEvent {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= campaign.successChance
 
         // Get the original action
@@ -583,6 +587,8 @@ final class PartyActionService {
 
     /// Process autonomous party NPC actions each turn
     func processNPCPartyActions(game: Game, modelContext: ModelContext) -> [NPCPartyEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [NPCPartyEvent] = []
 
         // Get party officials (Position 2+)
@@ -595,7 +601,7 @@ final class PartyActionService {
 
         for official in partyOfficials {
             // 20% chance to take action each turn
-            guard Int.random(in: 1...100) <= 20 else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= 20 else { continue }
 
             if let actionPlan = evaluateNPCPartyAction(for: official, game: game) {
                 let event = executeNPCPartyAction(actionPlan, by: official, game: game, modelContext: modelContext)
@@ -678,7 +684,9 @@ final class PartyActionService {
 
         // Simple success check for NPC actions
         let successChance = action.baseSuccessChance + (character.positionIndex ?? 0) * 5
-        let roll = Int.random(in: 1...100)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Apply effects if succeeded

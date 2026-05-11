@@ -248,8 +248,10 @@ class DiplomaticActionService {
         modelContext: ModelContext,
         successChance: Int
     ) -> ActionExecutionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Determine effects to apply

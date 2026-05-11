@@ -374,26 +374,28 @@ class DocumentQueueService: ObservableObject {
 
     /// Calculate how many documents to generate this turn
     private func calculateDocumentsToGenerate(game: Game, maxNew: Int) -> Int {
+        var rng = game.rng
+        defer { game.rng = rng }
         var count = 0
 
         // Base chance for first document
-        if Double.random(in: 0...1) < baseDocumentChance {
+        if Double.random(in: 0...1, using: &rng) < baseDocumentChance {
             count += 1
         }
 
         // Additional documents based on game state
         // High tension = more documents
-        if game.stability < 40 && Double.random(in: 0...1) < 0.5 {
+        if game.stability < 40 && Double.random(in: 0...1, using: &rng) < 0.5 {
             count += 1
         }
 
         // Crisis situations generate more paperwork
-        if game.flags.contains("active_crisis") && Double.random(in: 0...1) < 0.6 {
+        if game.flags.contains("active_crisis") && Double.random(in: 0...1, using: &rng) < 0.6 {
             count += 1
         }
 
         // General Secretary always gets the extra document load
-        if Double.random(in: 0...1) < 0.4 {
+        if Double.random(in: 0...1, using: &rng) < 0.4 {
             count += 1
         }
 
@@ -428,6 +430,9 @@ class DocumentQueueService: ObservableObject {
 
     /// Select which category of document to generate
     private func selectDocumentCategory(for game: Game) -> DocumentCategory {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Weight categories based on game state
         var weights: [DocumentCategory: Double] = [
             .security: 15,
@@ -455,7 +460,7 @@ class DocumentQueueService: ObservableObject {
 
         // Weighted random selection
         let totalWeight = weights.values.reduce(0, +)
-        var random = Double.random(in: 0..<totalWeight)
+        var random = Double.random(in: 0..<totalWeight, using: &rng)
 
         for (category, weight) in weights {
             random -= weight

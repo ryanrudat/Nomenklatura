@@ -150,6 +150,8 @@ class EconomyService {
 
     /// Apply per-turn bonuses based on budget allocation priorities
     private func applyBudgetPriorityEffects(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
         let priorities = game.budgetPriorities
 
         // High military priority: +1 military loyalty
@@ -164,7 +166,7 @@ class EconomyService {
 
         // High infrastructure priority: +1 to a random region's infrastructure
         if (priorities["infrastructure"] ?? 20) > 25, !game.regions.isEmpty {
-            let randomIndex = Int.random(in: 0..<game.regions.count)
+            let randomIndex = Int.random(in: 0..<game.regions.count, using: &rng)
             let region = game.regions[randomIndex]
             region.infrastructureQuality = min(100, region.infrastructureQuality + 1)
         }
@@ -767,6 +769,8 @@ class EconomyService {
 
     /// Calculate inflation change based on policies and conditions
     private func calculateInflationChange(game: Game) -> Int {
+        var rng = game.rng
+        defer { game.rng = rng }
         let system = game.currentEconomicSystem
         let targetInflation = system.inflationTendency
 
@@ -798,13 +802,15 @@ class EconomyService {
         }
 
         // Random economic shocks
-        change += Int.random(in: -1...1)
+        change += Int.random(in: -1...1, using: &rng)
 
         return max(-5, min(5, change))
     }
 
     /// Calculate unemployment change based on economic conditions
     private func calculateUnemploymentChange(game: Game) -> Int {
+        var rng = game.rng
+        defer { game.rng = rng }
         var change = 0
 
         // GDP growth reduces unemployment
@@ -833,7 +839,7 @@ class EconomyService {
         }
 
         // Random fluctuation
-        change += Int.random(in: -1...1)
+        change += Int.random(in: -1...1, using: &rng)
 
         return max(-3, min(3, change))
     }
@@ -1391,6 +1397,9 @@ class EconomyService {
         print("[Economy] Processing foreign economies for \(game.foreignCountries.count) countries")
         #endif
 
+        var rng = game.rng
+        defer { game.rng = rng }
+
         for country in game.foreignCountries {
             // 1. Process the country's internal economy
             country.processEconomicTurn()
@@ -1402,10 +1411,10 @@ class EconomyService {
             applyForeignEconomyEffects(from: country, to: game)
 
             // 4. Check for economic reform triggers
-            checkForeignEconomicReforms(country: country, game: game)
+            checkForeignEconomicReforms(country: country, game: game, using: &rng)
 
             // 5. Check for crisis contagion
-            checkEconomicContagion(from: country, to: game)
+            checkEconomicContagion(from: country, to: game, using: &rng)
         }
 
         // 6. Calculate global economic trend
@@ -1471,17 +1480,17 @@ class EconomyService {
     }
 
     /// Check if foreign country triggers economic reform
-    private func checkForeignEconomicReforms(country: ForeignCountry, game: Game) {
+    private func checkForeignEconomicReforms(country: ForeignCountry, game: Game, using rng: inout SeededRNG) {
         // Countries in crisis may reform
         guard country.hasReformPressure else { return }
 
         // Roll for reform (higher tendency = higher chance)
         let reformChance = country.economicReformTendency + (country.consecutiveGDPDeclines * 10)
-        let roll = Int.random(in: 0...100)
+        let roll = Int.random(in: 0...100, using: &rng)
 
         if roll < reformChance {
             let currentSystem = country.currentEconomicSystem
-            let newSystem = determineEconomicReform(from: currentSystem, for: country)
+            let newSystem = determineEconomicReform(from: currentSystem, for: country, using: &rng)
 
             if newSystem != currentSystem {
                 country.changeEconomicSystem(to: newSystem)
@@ -1494,7 +1503,7 @@ class EconomyService {
     }
 
     /// Determine what economic system a country reforms to
-    private func determineEconomicReform(from current: EconomicSystemType, for country: ForeignCountry) -> EconomicSystemType {
+    private func determineEconomicReform(from current: EconomicSystemType, for country: ForeignCountry, using rng: inout SeededRNG) -> EconomicSystemType {
         switch current {
         case .commandEconomy:
             // Command economies can liberalize
@@ -1502,7 +1511,7 @@ class EconomyService {
 
         case .cronyCapitalism:
             // Crony capitalism can reform toward free market or mixed
-            return Bool.random() ? .mixedEconomy : .freeMarket
+            return Bool.random(using: &rng) ? .mixedEconomy : .freeMarket
 
         case .freeMarket:
             // Free market in crisis may adopt more state control
@@ -1513,17 +1522,17 @@ class EconomyService {
             if country.governmentType == .communistState || country.governmentType == .socialistRepublic {
                 return .marketSocialism
             } else {
-                return Bool.random() ? .freeMarket : .mixedEconomy
+                return Bool.random(using: &rng) ? .freeMarket : .mixedEconomy
             }
 
         case .marketSocialism:
             // Market socialism can revert to command or liberalize further
-            return Bool.random() ? .commandEconomy : .mixedEconomy
+            return Bool.random(using: &rng) ? .commandEconomy : .mixedEconomy
         }
     }
 
     /// Economic crisis contagion - crisis in one country can spread
-    private func checkEconomicContagion(from country: ForeignCountry, to game: Game) {
+    private func checkEconomicContagion(from country: ForeignCountry, to game: Game, using rng: inout SeededRNG) {
         guard country.hasEconomicCrisis else { return }
         guard country.relationshipScore > -50 else { return }  // Must have some connection
 
@@ -1549,7 +1558,7 @@ class EconomyService {
         contagionRisk += country.economicPower / 10
 
         // Roll for contagion
-        let roll = Int.random(in: 0...100)
+        let roll = Int.random(in: 0...100, using: &rng)
         if roll < contagionRisk {
             // Contagion effect - minor economic impact
             game.applyStat("stability", change: -1)

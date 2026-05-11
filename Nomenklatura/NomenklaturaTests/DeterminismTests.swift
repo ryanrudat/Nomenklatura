@@ -136,4 +136,70 @@ final class DeterminismTests: XCTestCase {
         // pair-of-draws not to match.
         XCTAssertNotEqual(rngA.next(), rngB.next(), "Different seeds produced identical first draws — seed is being ignored")
     }
+
+    /// Wave 4 (cross-service): the previous test (testSameSeedProducesIdenticalOutcomes)
+    /// passes today largely because GameEngine drives the dominant random source.
+    /// After Wave 4 migrated ~30 game-state-mutating services from system PRNG to
+    /// `game.rng`, deeper turn-counts should still produce byte-identical stats.
+    ///
+    /// 100 turns is long enough to exercise EconomyService, PoliticalAIService,
+    /// InternationalEventService, RegionSecessionService, IntelligenceLeakService,
+    /// MemoryIntegrationService, AmbientActivityService, NPCLifeEventsService,
+    /// WorldSimulationService, GoalDrivenAgencyService, NPCWorldActionService,
+    /// StandingCommitteeMeetingService, and PositionOfferService — every service in
+    /// the basic `endTurnUpdates` pipeline that mutates game state.
+    ///
+    /// If this fails, a service is still touching the system PRNG inside the turn
+    /// pipeline. Bisect by skipping individual `runStep` calls in GameEngine, or by
+    /// grepping for `.random(in:` / `.randomElement()` (without `using: &rng`) in
+    /// the call graph below `endTurnUpdates`.
+    func testCrossServiceDeterminismOver100Turns() throws {
+        let container1 = try makeContainer()
+        let context1 = ModelContext(container1)
+        let game1 = makeGame(seed: 12345, in: context1)
+        let ladder: [LadderPosition] = []
+        for _ in 0..<100 {
+            GameEngine.shared.endTurnUpdates(game: game1, ladder: ladder, recordHistory: true)
+            game1.turnNumber += 1
+        }
+        let snapshot1: [Int] = [
+            game1.stability,
+            game1.popularSupport,
+            game1.militaryLoyalty,
+            game1.eliteLoyalty,
+            game1.internationalStanding,
+            game1.treasury,
+            game1.industrialOutput,
+            game1.foodSupply,
+            game1.gdpIndex,
+            game1.turnNumber
+        ]
+
+        let container2 = try makeContainer()
+        let context2 = ModelContext(container2)
+        let game2 = makeGame(seed: 12345, in: context2)
+        for _ in 0..<100 {
+            GameEngine.shared.endTurnUpdates(game: game2, ladder: ladder, recordHistory: true)
+            game2.turnNumber += 1
+        }
+        let snapshot2: [Int] = [
+            game2.stability,
+            game2.popularSupport,
+            game2.militaryLoyalty,
+            game2.eliteLoyalty,
+            game2.internationalStanding,
+            game2.treasury,
+            game2.industrialOutput,
+            game2.foodSupply,
+            game2.gdpIndex,
+            game2.turnNumber
+        ]
+
+        XCTAssertEqual(
+            snapshot1,
+            snapshot2,
+            "After Wave 4 service RNG migration, two 100-turn runs from seed 12345 must produce identical stats. " +
+            "snapshot1=\(snapshot1) snapshot2=\(snapshot2)"
+        )
+    }
 }

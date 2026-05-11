@@ -274,8 +274,10 @@ class RegionSecessionService {
 
     /// Replace regional governor
     func replaceGovernor(in region: Region, game: Game, newGovernorId: String, isLoyalist: Bool) {
-        let loyaltyToPlayer = isLoyalist ? Int.random(in: 70...90) : Int.random(in: 30...60)
-        let competence = isLoyalist ? Int.random(in: 40...70) : Int.random(in: 50...80)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let loyaltyToPlayer = isLoyalist ? Int.random(in: 70...90, using: &rng) : Int.random(in: 30...60, using: &rng)
+        let competence = isLoyalist ? Int.random(in: 40...70, using: &rng) : Int.random(in: 50...80, using: &rng)
 
         region.governor = RegionGovernor(
             characterId: newGovernorId,
@@ -329,11 +331,13 @@ class RegionSecessionService {
     /// Generate regional events based on conditions
     /// Rate-limited: max 1 regional crisis event per turn, with per-region cooldowns
     func generateRegionalEvents(for game: Game) -> [RegionalCrisisEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [RegionalCrisisEvent] = []
 
         for region in game.regions {
             // Skip stable regions usually
-            if region.status == .stable && Int.random(in: 1...10) > 2 {
+            if region.status == .stable && Int.random(in: 1...10, using: &rng) > 2 {
                 continue
             }
 
@@ -346,10 +350,10 @@ class RegionSecessionService {
 
             // Determine if event should occur
             let eventChance = calculateEventChance(region: region, game: game)
-            guard Int.random(in: 1...100) <= eventChance else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= eventChance else { continue }
 
             // Generate appropriate event type
-            if let event = generateEvent(for: region, game: game) {
+            if let event = generateEvent(for: region, game: game, using: &rng) {
                 events.append(event)
                 game.setIntVariable(cooldownKey, game.turnNumber)
             }
@@ -400,7 +404,7 @@ class RegionSecessionService {
         return min(60, chance)
     }
 
-    private func generateEvent(for region: Region, game: Game) -> RegionalCrisisEvent? {
+    private func generateEvent(for region: Region, game: Game, using rng: inout SeededRNG) -> RegionalCrisisEvent? {
         // Weight event types based on region characteristics
         var weights: [RegionEventType: Int] = [:]
 
@@ -433,7 +437,7 @@ class RegionSecessionService {
         let totalWeight = weights.values.reduce(0, +)
         guard totalWeight > 0 else { return nil }
 
-        var roll = Int.random(in: 1...totalWeight)
+        var roll = Int.random(in: 1...totalWeight, using: &rng)
         var selectedType: RegionEventType = .demonstration
 
         for (type, weight) in weights {

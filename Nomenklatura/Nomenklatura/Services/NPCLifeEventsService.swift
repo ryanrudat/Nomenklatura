@@ -35,6 +35,8 @@ class NPCLifeEventsService {
     /// Process life events for all NPCs each turn
     /// Returns events that should be shown to the player based on visibility rules
     func processLifeEvents(game: Game) -> [NPCLifeEventResult] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var results: [NPCLifeEventResult] = []
 
         // Only process after early game protection
@@ -46,14 +48,14 @@ class NPCLifeEventsService {
             guard !character.isPatron else { continue }
 
             // Check for various life events based on character personality and state
-            if let event = checkForLifeEvent(character: character, game: game) {
+            if let event = checkForLifeEvent(character: character, game: game, using: &rng) {
                 // Filter by visibility rules
                 if shouldPlayerSeeEvent(event: event, game: game) {
                     results.append(event)
                 }
 
                 // Always apply effects regardless of visibility
-                applyLifeEventEffects(event: event, character: character, game: game)
+                applyLifeEventEffects(event: event, character: character, game: game, using: &rng)
 
                 lifeEventsLogger.info("Life event for \(character.name): \(event.eventType.rawValue) [visible: \(event.visibilityLevel.rawValue)]")
             }
@@ -79,46 +81,46 @@ class NPCLifeEventsService {
 
     // MARK: - Life Event Checking (Personality-Driven)
 
-    private func checkForLifeEvent(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkForLifeEvent(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         // Priority order - most impactful first
 
         // Health crisis (stress-induced, affects paranoid/under-pressure characters)
-        if let healthEvent = checkHealthCrisis(character: character, game: game) {
+        if let healthEvent = checkHealthCrisis(character: character, game: game, using: &rng) {
             return healthEvent
         }
 
         // Scandal (affects corrupt characters)
-        if let scandalEvent = checkScandal(character: character, game: game) {
+        if let scandalEvent = checkScandal(character: character, game: game, using: &rng) {
             return scandalEvent
         }
 
         // Nervous breakdown (affects paranoid characters under investigation)
-        if let breakdownEvent = checkNervousBreakdown(character: character, game: game) {
+        if let breakdownEvent = checkNervousBreakdown(character: character, game: game, using: &rng) {
             return breakdownEvent
         }
 
         // Defection attempt (affects disillusioned characters)
-        if let defectionEvent = checkDefection(character: character, game: game) {
+        if let defectionEvent = checkDefection(character: character, game: game, using: &rng) {
             return defectionEvent
         }
 
         // Unexpected success (affects loyal, competent characters)
-        if let successEvent = checkUnexpectedSuccess(character: character, game: game) {
+        if let successEvent = checkUnexpectedSuccess(character: character, game: game, using: &rng) {
             return successEvent
         }
 
         // Natural death (affects elderly)
-        if let deathEvent = checkNaturalDeath(character: character, game: game) {
+        if let deathEvent = checkNaturalDeath(character: character, game: game, using: &rng) {
             return deathEvent
         }
 
         // Family crisis
-        if let familyEvent = checkFamilyCrisis(character: character, game: game) {
+        if let familyEvent = checkFamilyCrisis(character: character, game: game, using: &rng) {
             return familyEvent
         }
 
         // Public disgrace (affects ambitious who overreach)
-        if let disgraceEvent = checkPublicDisgrace(character: character, game: game) {
+        if let disgraceEvent = checkPublicDisgrace(character: character, game: game, using: &rng) {
             return disgraceEvent
         }
 
@@ -127,7 +129,7 @@ class NPCLifeEventsService {
 
     // MARK: - Health Crisis (Paranoid/High-Stress)
 
-    private func checkHealthCrisis(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkHealthCrisis(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         var chance = 0 // Base chance
 
         // Personality: Paranoid characters under stress
@@ -155,10 +157,10 @@ class NPCLifeEventsService {
             chance += 3
         }
 
-        guard chance > 0 && Int.random(in: 1...100) <= chance else { return nil }
+        guard chance > 0 && Int.random(in: 1...100, using: &rng) <= chance else { return nil }
 
         // Determine severity
-        let severity = Int.random(in: 1...100)
+        let severity = Int.random(in: 1...100, using: &rng)
 
         if severity <= 8 {
             // Fatal heart attack (8% of health events)
@@ -166,7 +168,7 @@ class NPCLifeEventsService {
                 character: character,
                 eventType: .suddenDeath,
                 headline: "\(character.name) Suffers Fatal Heart Attack",
-                details: generateHeartAttackNarrative(character: character, fatal: true),
+                details: generateHeartAttackNarrative(character: character, fatal: true, using: &rng),
                 visibilityLevel: .public,  // Deaths are always public
                 severity: .fatal,
                 affectsStatus: .dead
@@ -177,7 +179,7 @@ class NPCLifeEventsService {
                 character: character,
                 eventType: .seriousIllness,
                 headline: "\(character.name) Hospitalized with Undisclosed Illness",
-                details: generateIllnessNarrative(character: character, serious: true),
+                details: generateIllnessNarrative(character: character, serious: true, using: &rng),
                 visibilityLevel: .public,
                 severity: .major,
                 temporaryEffect: "hospitalized"
@@ -188,7 +190,7 @@ class NPCLifeEventsService {
                 character: character,
                 eventType: .healthScare,
                 headline: "\(character.name) Takes Medical Leave",
-                details: generateIllnessNarrative(character: character, serious: false),
+                details: generateIllnessNarrative(character: character, serious: false, using: &rng),
                 visibilityLevel: .rumor,  // Requires Network >= 30
                 severity: .minor
             )
@@ -197,7 +199,7 @@ class NPCLifeEventsService {
 
     // MARK: - Scandal (Corrupt Characters)
 
-    private func checkScandal(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkScandal(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         var chance = 0
 
         // Personality: Corrupt characters attract scandal
@@ -218,10 +220,10 @@ class NPCLifeEventsService {
         }.count
         chance += min(enemyCount, 3)
 
-        guard chance > 0 && Int.random(in: 1...100) <= chance else { return nil }
+        guard chance > 0 && Int.random(in: 1...100, using: &rng) <= chance else { return nil }
 
         // Determine type of scandal based on personality
-        let scandalType = determineScandalType(for: character)
+        let scandalType = determineScandalType(for: character, using: &rng)
 
         return NPCLifeEventResult(
             character: character,
@@ -235,7 +237,7 @@ class NPCLifeEventsService {
         )
     }
 
-    private func determineScandalType(for character: GameCharacter) -> ScandalType {
+    private func determineScandalType(for character: GameCharacter, using rng: inout SeededRNG) -> ScandalType {
         // Weight scandal types by personality
         var weights: [(ScandalType, Int)] = []
 
@@ -258,12 +260,12 @@ class NPCLifeEventsService {
 
         // If no specific weights, use default
         if weights.isEmpty {
-            return ScandalType.allCases.randomElement() ?? .corruption
+            return ScandalType.allCases.randomElement(using: &rng) ?? .corruption
         }
 
         // Weighted random selection
         let totalWeight = weights.reduce(0) { $0 + $1.1 }
-        var roll = Int.random(in: 0..<totalWeight)
+        var roll = Int.random(in: 0..<totalWeight, using: &rng)
         for (type, weight) in weights {
             roll -= weight
             if roll < 0 {
@@ -275,7 +277,7 @@ class NPCLifeEventsService {
 
     // MARK: - Nervous Breakdown (Paranoid Under Pressure)
 
-    private func checkNervousBreakdown(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkNervousBreakdown(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         var chance = 0
 
         // Under investigation + paranoid = high risk
@@ -299,7 +301,7 @@ class NPCLifeEventsService {
             chance = max(0, chance - 3)
         }
 
-        guard chance > 0 && Int.random(in: 1...100) <= chance else { return nil }
+        guard chance > 0 && Int.random(in: 1...100, using: &rng) <= chance else { return nil }
 
         let outcomes: [(String, String, CharacterStatus?, EventVisibilityLevel)] = [
             ("public outburst",
@@ -320,7 +322,7 @@ class NPCLifeEventsService {
              .rumor)
         ]
 
-        guard let outcome = outcomes.randomElement() else { return nil }
+        guard let outcome = outcomes.randomElement(using: &rng) else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -336,7 +338,7 @@ class NPCLifeEventsService {
 
     // MARK: - Defection (Disillusioned Characters)
 
-    private func checkDefection(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkDefection(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         // Must be disillusioned (low ideological commitment)
         guard character.isDisillusioned else { return nil }
 
@@ -362,10 +364,10 @@ class NPCLifeEventsService {
             chance += 8
         }
 
-        guard Int.random(in: 1...100) <= chance else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= chance else { return nil }
 
         // Determine if defection succeeds (40% success rate)
-        let success = Int.random(in: 1...100) <= 40
+        let success = Int.random(in: 1...100, using: &rng) <= 40
 
         if success {
             return NPCLifeEventResult(
@@ -393,12 +395,12 @@ class NPCLifeEventsService {
 
     // MARK: - Unexpected Success (Loyal/Competent Characters)
 
-    private func checkUnexpectedSuccess(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkUnexpectedSuccess(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         // Only loyal and competent characters get windfalls
         guard character.personalityLoyal > 60 && character.personalityCompetent > 50 else { return nil }
 
         // Low chance (positive events are rarer)
-        guard Int.random(in: 1...100) <= 2 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 2 else { return nil }
 
         let successes = [
             ("Receives State Commendation",
@@ -415,7 +417,7 @@ class NPCLifeEventsService {
              10)
         ]
 
-        guard let success = successes.randomElement() else { return nil }
+        guard let success = successes.randomElement(using: &rng) else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -430,12 +432,12 @@ class NPCLifeEventsService {
 
     // MARK: - Natural Death (Elderly)
 
-    private func checkNaturalDeath(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkNaturalDeath(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         // Only affects elderly characters
         guard character.ageCategory == "elderly" else { return nil }
 
         // Very low chance (1% per turn for elderly)
-        guard Int.random(in: 1...100) <= 1 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 1 else { return nil }
 
         let causes = [
             ("heart failure", "passed away peacefully at home after a brief illness"),
@@ -444,7 +446,7 @@ class NPCLifeEventsService {
             ("illness", "succumbed to a long-hidden illness that they had concealed for years")
         ]
 
-        guard let cause = causes.randomElement() else { return nil }
+        guard let cause = causes.randomElement(using: &rng) else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -459,9 +461,9 @@ class NPCLifeEventsService {
 
     // MARK: - Family Crisis
 
-    private func checkFamilyCrisis(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkFamilyCrisis(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         // Low base chance
-        guard Int.random(in: 1...100) <= 2 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 2 else { return nil }
 
         let crises: [(String, String, Int, EventVisibilityLevel)] = [
             ("Child's Disgrace",
@@ -482,7 +484,7 @@ class NPCLifeEventsService {
              .rumor)
         ]
 
-        guard let crisis = crises.randomElement() else { return nil }
+        guard let crisis = crises.randomElement(using: &rng) else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -497,12 +499,12 @@ class NPCLifeEventsService {
 
     // MARK: - Public Disgrace (Ambitious Overreachers)
 
-    private func checkPublicDisgrace(character: GameCharacter, game: Game) -> NPCLifeEventResult? {
+    private func checkPublicDisgrace(character: GameCharacter, game: Game, using rng: inout SeededRNG) -> NPCLifeEventResult? {
         // Only for very ambitious characters
         guard character.personalityAmbitious > 70 else { return nil }
 
         // Low chance
-        guard Int.random(in: 1...100) <= 2 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 2 else { return nil }
 
         let disgraces = [
             ("Public Criticism",
@@ -516,7 +518,7 @@ class NPCLifeEventsService {
              -15)
         ]
 
-        guard let disgrace = disgraces.randomElement() else { return nil }
+        guard let disgrace = disgraces.randomElement(using: &rng) else { return nil }
 
         return NPCLifeEventResult(
             character: character,
@@ -531,7 +533,7 @@ class NPCLifeEventsService {
 
     // MARK: - Effect Application
 
-    private func applyLifeEventEffects(event: NPCLifeEventResult, character: GameCharacter, game: Game) {
+    private func applyLifeEventEffects(event: NPCLifeEventResult, character: GameCharacter, game: Game, using rng: inout SeededRNG) {
         // Apply status change if specified
         if let newStatus = event.affectsStatus {
             character.status = newStatus.rawValue
@@ -546,13 +548,13 @@ class NPCLifeEventsService {
                 game.invalidateCharacterRoleCaches()
             case .detained, .imprisoned:
                 character.canReturnFlag = true
-                character.returnProbability = Int.random(in: 15...40)
+                character.returnProbability = Int.random(in: 15...40, using: &rng)
             case .exiled:
                 character.canReturnFlag = true
-                character.returnProbability = Int.random(in: 5...20)
+                character.returnProbability = Int.random(in: 5...20, using: &rng)
             case .underInvestigation:
                 character.canReturnFlag = true
-                character.returnProbability = Int.random(in: 40...70)
+                character.returnProbability = Int.random(in: 40...70, using: &rng)
             default:
                 break
             }
@@ -629,27 +631,27 @@ class NPCLifeEventsService {
 
     // MARK: - Narrative Generation
 
-    private func generateHeartAttackNarrative(character: GameCharacter, fatal: Bool) -> String {
+    private func generateHeartAttackNarrative(character: GameCharacter, fatal: Bool, using rng: inout SeededRNG) -> String {
         if fatal {
             let narratives = [
                 "\(character.name) collapsed in their office during an evening meeting and could not be revived. Doctors cite 'acute myocardial infarction.' The official obituary will praise their 'tireless service to the Party and the People.'",
                 "\(character.name) was found unresponsive at their desk by staff early the following morning. Despite immediate medical attention, they could not be saved. Colleagues speak of their dedication in hushed, careful tones.",
                 "After complaining of chest pains during a reception at the Cultural Palace, \(character.name) was rushed to the Central Clinical Hospital where they died shortly after arrival. The funeral will be held with full state honors."
             ]
-            return narratives.randomElement() ?? narratives[0]
+            return narratives.randomElement(using: &rng) ?? narratives[0]
         } else {
             return "\(character.name) suffered a minor cardiac event and is recovering in hospital. They are expected to return to duties within weeks, though some whisper that the strain of office is taking its toll."
         }
     }
 
-    private func generateIllnessNarrative(character: GameCharacter, serious: Bool) -> String {
+    private func generateIllnessNarrative(character: GameCharacter, serious: Bool, using rng: inout SeededRNG) -> String {
         if serious {
             let illnesses = [
                 "The official statement cites 'exhaustion from overwork,' though insiders whisper of more serious conditions. \(character.name) remains under observation, their office curiously silent.",
                 "\(character.name) has been diagnosed with a serious but treatable condition. Their duties have been temporarily reassigned as they undergo treatment at the special clinic reserved for senior cadres.",
                 "Following weeks of declining health that could no longer be concealed, \(character.name) has finally been hospitalized. The prognosis remains guarded, and their position grows uncertain."
             ]
-            return illnesses.randomElement() ?? illnesses[0]
+            return illnesses.randomElement(using: &rng) ?? illnesses[0]
         } else {
             return "\(character.name) has taken a brief medical leave to address 'minor health concerns.' They are expected to return shortly, though rivals note the opportunity with interest."
         }

@@ -228,8 +228,10 @@ final class SecurityActionService {
         modelContext: ModelContext,
         setCooldown: Bool = true
     ) -> ExecutionResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         // Roll for success
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Determine effects
@@ -249,7 +251,7 @@ final class SecurityActionService {
             }
 
             if effects.implicatesOthers, let target = targetCharacter {
-                implicatedCharacters = generateImplicatedCharacters(from: target, game: game)
+                implicatedCharacters = generateImplicatedCharacters(from: target, game: game, using: &rng)
             }
 
             if effects.initiatesTrial, let target = targetCharacter {
@@ -374,10 +376,12 @@ final class SecurityActionService {
 
     /// Advance shuanggui detention by one turn
     func advanceDetention(_ detention: inout ShuangguiDetention, game: Game, modelContext: ModelContext) {
+        var rng = game.rng
+        defer { game.rng = rng }
         detention.turnsInDetention += 1
 
         // Evidence accumulates each turn
-        let evidenceGain = Int.random(in: 5...15)
+        let evidenceGain = Int.random(in: 5...15, using: &rng)
         detention.evidenceAccumulated = min(100, detention.evidenceAccumulated + evidenceGain)
 
         // Phase progression based on evidence and time
@@ -394,13 +398,13 @@ final class SecurityActionService {
             // Check for confession based on target personality
             if let target = game.character(withId: detention.targetCharacterId) {
                 let confessionChance = calculateConfessionChance(target: target, detention: detention)
-                if Int.random(in: 1...100) <= confessionChance {
+                if Int.random(in: 1...100, using: &rng) <= confessionChance {
                     detention.confessionObtained = true
-                    detention.confessionType = determineConfessionType(target: target)
+                    detention.confessionType = determineConfessionType(target: target, using: &rng)
 
                     // Implicates others?
                     if detention.confessionType == .implicatedOthers {
-                        detention.implicatedCharacterIds = generateImplicatedCharacters(from: target, game: game)
+                        detention.implicatedCharacterIds = generateImplicatedCharacters(from: target, game: game, using: &rng)
                     }
 
                     detention.phase = .documentation
@@ -417,7 +421,7 @@ final class SecurityActionService {
 
         // Check for "accidents" - rare death in detention
         if detention.turnsInDetention > 8 && detention.evidenceAccumulated >= 80 {
-            if Int.random(in: 1...100) <= 5 { // 5% chance
+            if Int.random(in: 1...100, using: &rng) <= 5 { // 5% chance
                 detention.outcome = .diedInDetention
                 if let target = game.character(withId: detention.targetCharacterId) {
                     executeCharacter(target, method: .detention, game: game, modelContext: modelContext)
@@ -450,8 +454,8 @@ final class SecurityActionService {
 
     /// Determine type of confession
     /// Uses ConfessionType from HistoricalMechanics: .scripted, .resisted, .recanted, .implicatedOthers
-    private func determineConfessionType(target: GameCharacter) -> ConfessionType {
-        let roll = Int.random(in: 1...100)
+    private func determineConfessionType(target: GameCharacter, using rng: inout SeededRNG) -> ConfessionType {
+        let roll = Int.random(in: 1...100, using: &rng)
 
         if target.personality.loyal > 80 {
             // Loyal characters more likely to resist
@@ -472,17 +476,17 @@ final class SecurityActionService {
     }
 
     /// Generate list of implicated characters from confession
-    private func generateImplicatedCharacters(from target: GameCharacter, game: Game) -> [String] {
+    private func generateImplicatedCharacters(from target: GameCharacter, game: Game, using rng: inout SeededRNG) -> [String] {
         var implicated: [String] = []
 
         // 40% chance to implicate each known associate
         for character in game.characters where character.id != target.id && character.isAlive {
             // Same faction = more likely to implicate
             if character.factionId == target.factionId {
-                if Int.random(in: 1...100) <= 40 {
+                if Int.random(in: 1...100, using: &rng) <= 40 {
                     implicated.append(character.id.uuidString)
                 }
-            } else if Int.random(in: 1...100) <= 15 {
+            } else if Int.random(in: 1...100, using: &rng) <= 15 {
                 implicated.append(character.id.uuidString)
             }
 
@@ -603,6 +607,8 @@ final class SecurityActionService {
 
     /// Process autonomous security NPC actions each turn
     func processNPCSecurityActions(game: Game, modelContext: ModelContext) -> [NPCSecurityEvent] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var events: [NPCSecurityEvent] = []
 
         // Get security track officials (Position 3+)
@@ -615,9 +621,9 @@ final class SecurityActionService {
 
         for official in securityOfficials {
             // 25% chance to take action each turn
-            guard Int.random(in: 1...100) <= 25 else { continue }
+            guard Int.random(in: 1...100, using: &rng) <= 25 else { continue }
 
-            if let action = evaluateNPCSecurityAction(for: official, game: game) {
+            if let action = evaluateNPCSecurityAction(for: official, game: game, using: &rng) {
                 let event = executeNPCSecurityAction(action, by: official, game: game, modelContext: modelContext)
                 events.append(event)
             }
@@ -629,7 +635,8 @@ final class SecurityActionService {
     /// Evaluate what security action an NPC should take
     private func evaluateNPCSecurityAction(
         for character: GameCharacter,
-        game: Game
+        game: Game,
+        using rng: inout SeededRNG
     ) -> NPCSecurityActionPlan? {
         let position = character.positionIndex ?? 0
         let goals = character.goals ?? []
@@ -643,7 +650,7 @@ final class SecurityActionService {
         // Find potential targets based on goals
         if hasInvestigateGoal {
             // Look for characters with high corruption evidence
-            if let target = findCorruptTarget(for: character, game: game) {
+            if let target = findCorruptTarget(for: character, game: game, using: &rng) {
                 // Choose action based on position
                 let actionId: String
                 if position >= 5 {
@@ -664,7 +671,7 @@ final class SecurityActionService {
 
         // Routine surveillance on random characters
         if position >= 2 {
-            if let randomTarget = game.characters.filter({ $0.isAlive && $0.id != character.id }).randomElement() {
+            if let randomTarget = game.characters.filter({ $0.isAlive && $0.id != character.id }).randomElement(using: &rng) {
                 return NPCSecurityActionPlan(
                     actionId: "conduct_surveillance",
                     targetCharacterId: randomTarget.id.uuidString,
@@ -677,7 +684,7 @@ final class SecurityActionService {
     }
 
     /// Find a corrupt target for investigation
-    private func findCorruptTarget(for investigator: GameCharacter, game: Game) -> GameCharacter? {
+    private func findCorruptTarget(for investigator: GameCharacter, game: Game, using rng: inout SeededRNG) -> GameCharacter? {
         let investigatorPosition = investigator.positionIndex ?? 0
 
         // Find characters with corruption indicators
@@ -689,7 +696,7 @@ final class SecurityActionService {
                 (target.positionIndex ?? 0) < investigatorPosition && // Can only target juniors
                 (target.factionId != investigator.factionId || investigatorPosition >= 5) // Different faction unless senior
             }
-            .randomElement()
+            .randomElement(using: &rng)
     }
 
     /// Execute an NPC security action
@@ -718,7 +725,9 @@ final class SecurityActionService {
 
         // Calculate success
         let successChance = calculateSuccessChance(action, targetCharacter: target, for: game)
-        let roll = Int.random(in: 1...100)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Int.random(in: 1...100, using: &rng)
         let succeeded = roll <= successChance
 
         // Apply effects if succeeded

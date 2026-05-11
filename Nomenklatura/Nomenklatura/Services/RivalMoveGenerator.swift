@@ -49,6 +49,9 @@ final class RivalMoveGenerator {
     ///     characters at position ≥ `minimumRivalPosition`)
     ///   - all eligible rivals already have an unresolved active move
     func generateNextMove(for game: Game) -> RivalMove? {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Gate: rival threat must be high enough for named schemes to fire.
         guard game.rivalThreat >= Self.minimumRivalThreat else {
             rivalMoveLogger.debug("RivalMove suppressed: rivalThreat \(game.rivalThreat) < \(Self.minimumRivalThreat)")
@@ -87,10 +90,10 @@ final class RivalMoveGenerator {
         }
 
         // Pick a kind biased by the rival's personality / role.
-        let kind = pickKind(for: rival, game: game)
+        let kind = pickKind(for: rival, game: game, using: &rng)
 
         // Pick a template for the chosen kind.
-        let template = pickTemplate(for: kind, rivalName: rival.name)
+        let template = pickTemplate(for: kind, rivalName: rival.name, using: &rng)
 
         // Pending effect: kind drives stat; magnitude scaled by threat.
         let magnitude = pendingEffectMagnitude(for: game)
@@ -133,10 +136,9 @@ final class RivalMoveGenerator {
     /// already resolved or never added), the stat deltas are still
     /// applied but no list mutation happens.
     func resolve(move: RivalMove, with option: RivalCounterOption, in game: Game) {
-        // TODO(seeded-rng): swap to game.rng once the parallel seeded-RNG
-        // agent's PRNG lands. System random is fine for this commit
-        // because no integration with the turn pipeline exists yet.
-        let roll = Double.random(in: 0...1)
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Double.random(in: 0...1, using: &rng)
         let success = roll < option.outcome.successChance
         let deltas = success ? option.outcome.onSuccess : option.outcome.onFailure
 
@@ -188,7 +190,7 @@ final class RivalMoveGenerator {
 
     // MARK: - Kind selection
 
-    private func pickKind(for rival: GameCharacter, game: Game) -> RivalMoveKind {
+    private func pickKind(for rival: GameCharacter, game: Game, using rng: inout SeededRNG) -> RivalMoveKind {
         // Personality-driven biases. Falls through to a default if
         // nothing matches.
         let amb = rival.personalityAmbitious
@@ -234,11 +236,11 @@ final class RivalMoveGenerator {
     /// Pull a template (headline + 2-3 sentence body) for the chosen
     /// kind. Keep it simple — 2-3 variants per kind is plenty for this
     /// commit; LLM-driven content can come in a later wave.
-    private func pickTemplate(for kind: RivalMoveKind, rivalName: String) -> (headline: String, body: String) {
+    private func pickTemplate(for kind: RivalMoveKind, rivalName: String, using rng: inout SeededRNG) -> (headline: String, body: String) {
         let templates: [(String, String)] = templateLibrary(for: kind, rivalName: rivalName)
         // Deterministic-ish: pick by element count modulo a random index
         // so repeated calls don't always hit the same template.
-        let i = Int.random(in: 0..<templates.count)
+        let i = Int.random(in: 0..<templates.count, using: &rng)
         return templates[i]
     }
 

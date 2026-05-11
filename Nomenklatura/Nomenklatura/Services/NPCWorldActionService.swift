@@ -40,6 +40,8 @@ class NPCWorldActionService {
     /// Process NPC-to-NPC world actions each turn
     /// Returns events visible to the player based on their Network stat
     func processWorldActions(game: Game) -> [NPCWorldActionResult] {
+        var rng = game.rng
+        defer { game.rng = rng }
         var results: [NPCWorldActionResult] = []
 
         // Only process after early game
@@ -48,7 +50,7 @@ class NPCWorldActionService {
         // Check for various NPC-to-NPC interactions
 
         // 1. Grudge-driven actions (NPCs attacking each other)
-        if let grudgeEvent = checkGrudgeActions(game: game) {
+        if let grudgeEvent = checkGrudgeActions(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: grudgeEvent, game: game) {
                 results.append(grudgeEvent)
             }
@@ -56,7 +58,7 @@ class NPCWorldActionService {
         }
 
         // 2. Alliance formation or betrayal
-        if let allianceEvent = checkAllianceEvents(game: game) {
+        if let allianceEvent = checkAllianceEvents(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: allianceEvent, game: game) {
                 results.append(allianceEvent)
             }
@@ -64,7 +66,7 @@ class NPCWorldActionService {
         }
 
         // 3. Position competition
-        if let competitionEvent = checkPositionCompetition(game: game) {
+        if let competitionEvent = checkPositionCompetition(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: competitionEvent, game: game) {
                 results.append(competitionEvent)
             }
@@ -72,14 +74,14 @@ class NPCWorldActionService {
         }
 
         // 4. Faction maneuvering
-        if let factionEvent = checkFactionManeuvering(game: game) {
+        if let factionEvent = checkFactionManeuvering(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: factionEvent, game: game) {
                 results.append(factionEvent)
             }
         }
 
         // 5. Mentor/protégé actions
-        if let patronageEvent = checkPatronageActions(game: game) {
+        if let patronageEvent = checkPatronageActions(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: patronageEvent, game: game) {
                 results.append(patronageEvent)
             }
@@ -87,21 +89,21 @@ class NPCWorldActionService {
         }
 
         // 6. Private meetings (alliance signals visible to the player)
-        if let meetingEvent = checkPrivateMeetings(game: game) {
+        if let meetingEvent = checkPrivateMeetings(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: meetingEvent, game: game) {
                 results.append(meetingEvent)
             }
         }
 
         // 7. Public policy criticism (opposition signals)
-        if let criticismEvent = checkPolicyCriticism(game: game) {
+        if let criticismEvent = checkPolicyCriticism(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: criticismEvent, game: game) {
                 results.append(criticismEvent)
             }
         }
 
         // 8. Production report discrepancies (corruption signals)
-        if let corruptionEvent = checkProductionDiscrepancies(game: game) {
+        if let corruptionEvent = checkProductionDiscrepancies(game: game, using: &rng) {
             if shouldPlayerSeeEvent(event: corruptionEvent, game: game) {
                 results.append(corruptionEvent)
             }
@@ -124,7 +126,7 @@ class NPCWorldActionService {
         }
 
         // Allow up to 4 events per turn for a livelier political world
-        let limitedResults = Array(results.shuffled().prefix(4))
+        let limitedResults = Array(results.shuffled(using: &rng).prefix(4))
 
         // Log visible events to journal
         for event in limitedResults {
@@ -149,7 +151,7 @@ class NPCWorldActionService {
 
     // MARK: - Grudge-Driven Actions
 
-    private func checkGrudgeActions(game: Game) -> NPCWorldActionResult? {
+    private func checkGrudgeActions(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // Find NPCs with grudges against other NPCs (lowered threshold for more activity)
         let grudgeRelationships = game.npcRelationships.filter { rel in
             rel.grudgeLevel >= 40 && rel.disposition < -10
@@ -157,35 +159,35 @@ class NPCWorldActionService {
 
         guard !grudgeRelationships.isEmpty else { return nil }
 
-        guard Int.random(in: 1...100) <= 12 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 12 else { return nil }
 
         // Pick a random grudge relationship
-        guard let relationship = grudgeRelationships.randomElement(),
+        guard let relationship = grudgeRelationships.randomElement(using: &rng),
               let attacker = game.characters.first(where: { $0.templateId == relationship.sourceCharacterId && $0.isActive }),
               let target = game.characters.first(where: { $0.templateId == relationship.targetCharacterId && $0.isActive }) else {
             return nil
         }
 
         // Determine attack type based on attacker's personality
-        let attackType = determineAttackType(attacker: attacker, target: target, relationship: relationship)
+        let attackType = determineAttackType(attacker: attacker, target: target, relationship: relationship, using: &rng)
 
         return attackType.generateEvent(attacker: attacker, target: target, game: game)
     }
 
-    private func determineAttackType(attacker: GameCharacter, target: GameCharacter, relationship: NPCRelationship) -> GrudgeAttackType {
+    private func determineAttackType(attacker: GameCharacter, target: GameCharacter, relationship: NPCRelationship, using rng: inout SeededRNG) -> GrudgeAttackType {
         // Ruthless attackers go for the throat
         if attacker.personalityRuthless > 70 {
-            return [.publicAccusation, .formalComplaint, .sabotage].randomElement()!
+            return [.publicAccusation, .formalComplaint, .sabotage].randomElement(using: &rng)!
         }
 
         // Ambitious attackers try to benefit politically
         if attacker.personalityAmbitious > 60 {
-            return [.publicAccusation, .factionPressure].randomElement()!
+            return [.publicAccusation, .factionPressure].randomElement(using: &rng)!
         }
 
         // Paranoid attackers act defensively
         if attacker.personalityParanoid > 60 {
-            return [.spreadRumors, .formalComplaint].randomElement()!
+            return [.spreadRumors, .formalComplaint].randomElement(using: &rng)!
         }
 
         // Default: spread rumors
@@ -194,9 +196,9 @@ class NPCWorldActionService {
 
     // MARK: - Alliance Events
 
-    private func checkAllianceEvents(game: Game) -> NPCWorldActionResult? {
+    private func checkAllianceEvents(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 8% chance per turn - alliances form more readily
-        guard Int.random(in: 1...100) <= 8 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 8 else { return nil }
 
         // Check for alliance formation (shared enemies create alliances)
         if let formationEvent = checkAllianceFormation(game: game) {
@@ -204,7 +206,7 @@ class NPCWorldActionService {
         }
 
         // Check for alliance betrayal
-        if let betrayalEvent = checkAllianceBetrayal(game: game) {
+        if let betrayalEvent = checkAllianceBetrayal(game: game, using: &rng) {
             return betrayalEvent
         }
 
@@ -255,11 +257,11 @@ class NPCWorldActionService {
         return nil
     }
 
-    private func checkAllianceBetrayal(game: Game) -> NPCWorldActionResult? {
+    private func checkAllianceBetrayal(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // Find existing alliances
         let alliances = game.npcRelationships.filter { $0.isAllied && $0.allianceStrength < 40 }
 
-        guard let weakAlliance = alliances.randomElement(),
+        guard let weakAlliance = alliances.randomElement(using: &rng),
               let betrayer = game.characters.first(where: { $0.templateId == weakAlliance.sourceCharacterId && $0.isActive }),
               let victim = game.characters.first(where: { $0.templateId == weakAlliance.targetCharacterId && $0.isActive }) else {
             return nil
@@ -268,7 +270,7 @@ class NPCWorldActionService {
         // Ambitious and low-loyalty characters are more likely to betray
         // Range: 0-100, where 100 = max ambitious + min loyal, 0 = min ambitious + max loyal
         let betrayalChance = (betrayer.personalityAmbitious + (100 - betrayer.personalityLoyal)) / 2
-        guard Int.random(in: 1...100) <= betrayalChance else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= betrayalChance else { return nil }
 
         return NPCWorldActionResult(
             eventType: .allianceBetrayed,
@@ -281,9 +283,9 @@ class NPCWorldActionService {
 
     // MARK: - Position Competition
 
-    private func checkPositionCompetition(game: Game) -> NPCWorldActionResult? {
+    private func checkPositionCompetition(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 10% chance per turn - ambitious NPCs compete openly
-        guard Int.random(in: 1...100) <= 10 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 10 else { return nil }
 
         // Find NPCs with seekPromotion goal at similar position levels
         let promotionSeekers = game.characters.filter { character in
@@ -318,16 +320,16 @@ class NPCWorldActionService {
 
     // MARK: - Faction Maneuvering
 
-    private func checkFactionManeuvering(game: Game) -> NPCWorldActionResult? {
+    private func checkFactionManeuvering(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 8% chance per turn - factions are always maneuvering
-        guard Int.random(in: 1...100) <= 8 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 8 else { return nil }
 
         // Find factions with significant power differences
         let factions = game.factions.filter { $0.power > 20 }
         guard factions.count >= 2 else { return nil }
 
         let strongestFaction = factions.max(by: { $0.power < $1.power })
-        let challengerFaction = factions.filter { $0.id != strongestFaction?.id }.randomElement()
+        let challengerFaction = factions.filter { $0.id != strongestFaction?.id }.randomElement(using: &rng)
 
         guard let dominant = strongestFaction, let challenger = challengerFaction else { return nil }
 
@@ -347,7 +349,7 @@ class NPCWorldActionService {
              .rumor)
         ]
 
-        let maneuver = maneuverTypes.randomElement()!
+        let maneuver = maneuverTypes.randomElement(using: &rng)!
 
         return NPCWorldActionResult(
             eventType: .factionManeuvering,
@@ -360,14 +362,14 @@ class NPCWorldActionService {
 
     // MARK: - Patronage Actions
 
-    private func checkPatronageActions(game: Game) -> NPCWorldActionResult? {
+    private func checkPatronageActions(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 7% chance per turn - patronage networks are active
-        guard Int.random(in: 1...100) <= 7 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 7 else { return nil }
 
         // Find patron-client relationships
         let patronRelations = game.npcRelationships.filter { $0.isPatron }
 
-        guard let relation = patronRelations.randomElement(),
+        guard let relation = patronRelations.randomElement(using: &rng),
               let patron = game.characters.first(where: { $0.templateId == relation.sourceCharacterId && $0.isActive }),
               let client = game.characters.first(where: { $0.templateId == relation.targetCharacterId && $0.isActive }) else {
             return nil
@@ -389,7 +391,7 @@ class NPCWorldActionService {
              .secret)
         ]
 
-        let action = actionTypes.randomElement()!
+        let action = actionTypes.randomElement(using: &rng)!
 
         return NPCWorldActionResult(
             eventType: action.0,
@@ -402,25 +404,25 @@ class NPCWorldActionService {
 
     // MARK: - Private Meetings (Alliance Signals)
 
-    private func checkPrivateMeetings(game: Game) -> NPCWorldActionResult? {
+    private func checkPrivateMeetings(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 10% chance per turn
-        guard Int.random(in: 1...100) <= 10 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 10 else { return nil }
 
         let activeNPCs = game.characters.filter { $0.isActive && !$0.isPatron }
         guard activeNPCs.count >= 2 else { return nil }
 
         // Find pairs with high trust or shared faction who aren't already allied
-        let npc1 = activeNPCs.randomElement()!
+        let npc1 = activeNPCs.randomElement(using: &rng)!
         let potentialPartners = activeNPCs.filter { npc in
             npc.id != npc1.id &&
             ((npc.factionId == npc1.factionId && npc.factionId != nil) ||
              npc.trustLevel > 50)
         }
 
-        guard let npc2 = potentialPartners.randomElement() else { return nil }
+        guard let npc2 = potentialPartners.randomElement(using: &rng) else { return nil }
 
         let locations = ["the government dacha", "a private dining room at the Metropol", "an unmarked office in the old quarter", "the Party archives reading room"]
-        let location = locations.randomElement()!
+        let location = locations.randomElement(using: &rng)!
 
         let subjects = [
             "The subject of their conversation remains unknown, but both appeared pleased afterward.",
@@ -428,7 +430,7 @@ class NPCWorldActionService {
             "They were reportedly comparing notes on your recent policy directives.",
             "The meeting lasted over two hours. Your intelligence suggests they are coordinating strategy."
         ]
-        let subject = subjects.randomElement()!
+        let subject = subjects.randomElement(using: &rng)!
 
         return NPCWorldActionResult(
             eventType: .allianceFormed,
@@ -441,10 +443,10 @@ class NPCWorldActionService {
 
     // MARK: - Policy Criticism (Opposition Signals)
 
-    private func checkPolicyCriticism(game: Game) -> NPCWorldActionResult? {
+    private func checkPolicyCriticism(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 8% chance per turn, higher during instability
         let baseChance = game.stability < 50 ? 15 : 8
-        guard Int.random(in: 1...100) <= baseChance else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= baseChance else { return nil }
 
         // Find NPCs with low disposition or high aggression who might criticize
         let critics = game.characters.filter { npc in
@@ -453,7 +455,7 @@ class NPCWorldActionService {
             npc.fearLevel < BalanceConfig.npcHighFearThreshold  // Not too afraid to speak up
         }
 
-        guard let critic = critics.randomElement() else { return nil }
+        guard let critic = critics.randomElement(using: &rng) else { return nil }
 
         let policies = [
             "economic reform program",
@@ -463,7 +465,7 @@ class NPCWorldActionService {
             "military modernization priorities",
             "ideological education campaign"
         ]
-        let policy = policies.randomElement()!
+        let policy = policies.randomElement(using: &rng)!
 
         let criticisms: [(String, WorldActionVisibilityLevel)] = [
             ("\(critic.name) publicly questioned the wisdom of your \(policy) during the morning briefing. Their remarks drew careful attention from several committee members.", .public),
@@ -471,7 +473,7 @@ class NPCWorldActionService {
             ("Your sources report that \(critic.name) has been circulating a memorandum critiquing your \(policy) among senior officials. The document stops short of open opposition but lays groundwork for a formal challenge.", .intel),
             ("\(critic.name) made disparaging remarks about your \(policy) at a private gathering. 'The General Secretary's approach shows a troubling detachment from reality,' they reportedly said.", .rumor)
         ]
-        let (details, visibility) = criticisms.randomElement()!
+        let (details, visibility) = criticisms.randomElement(using: &rng)!
 
         return NPCWorldActionResult(
             eventType: .positionCompetition,
@@ -484,9 +486,9 @@ class NPCWorldActionService {
 
     // MARK: - Production Discrepancies (Corruption Signals)
 
-    private func checkProductionDiscrepancies(game: Game) -> NPCWorldActionResult? {
+    private func checkProductionDiscrepancies(game: Game, using rng: inout SeededRNG) -> NPCWorldActionResult? {
         // 6% chance per turn
-        guard Int.random(in: 1...100) <= 6 else { return nil }
+        guard Int.random(in: 1...100, using: &rng) <= 6 else { return nil }
 
         // Find NPCs with corrupt personality traits
         let suspects = game.characters.filter { npc in
@@ -495,7 +497,7 @@ class NPCWorldActionService {
             (npc.positionIndex ?? 0) >= 2  // Must have enough position to embezzle
         }
 
-        guard let suspect = suspects.randomElement() else { return nil }
+        guard let suspect = suspects.randomElement(using: &rng) else { return nil }
 
         let discrepancies: [(String, String, WorldActionVisibilityLevel)] = [
             ("\(suspect.name)'s Production Reports Contain Discrepancies",
@@ -511,7 +513,7 @@ class NPCWorldActionService {
              "Routine review of financial records has uncovered that \(suspect.name) authorized several unusual transfers to entities with no apparent connection to state operations. The amounts are modest individually but substantial in aggregate.",
              .secret)
         ]
-        let (headline, details, visibility) = discrepancies.randomElement()!
+        let (headline, details, visibility) = discrepancies.randomElement(using: &rng)!
 
         return NPCWorldActionResult(
             eventType: .grudgeAttack,

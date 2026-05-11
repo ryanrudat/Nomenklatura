@@ -413,8 +413,10 @@ final class CodexService: ObservableObject {
     }
 
     private func generateNetworkContactMessage(milestone: Int, game: Game) async -> CodexMessage {
-        let contactName = ["Mikhail Petrov", "Anna Volkonsky", "Dmitri Orlov", "Elena Kozlova"].randomElement() ?? "Mikhail Petrov"
-        let contactTitle = ["Economic Planning Aide", "Party Records Clerk", "Regional Liaison", "Cultural Affairs Deputy"].randomElement() ?? "Party Aide"
+        var rng = game.rng
+        defer { game.rng = rng }
+        let contactName = ["Mikhail Petrov", "Anna Volkonsky", "Dmitri Orlov", "Elena Kozlova"].randomElement(using: &rng) ?? "Mikhail Petrov"
+        let contactTitle = ["Economic Planning Aide", "Party Records Clerk", "Regional Liaison", "Cultural Affairs Deputy"].randomElement(using: &rng) ?? "Party Aide"
 
         let content = selectTemplate(from: [
             "A mutual acquaintance suggested we might find common ground. In these uncertain times, it helps to know who one's friends are.",
@@ -468,6 +470,8 @@ final class CodexService: ObservableObject {
 
     private func characterApprovesDecision(character: GameCharacter, option: DocumentOption, game: Game) -> Bool {
         // Determine approval based on option effects and character personality
+        var rng = game.rng
+        defer { game.rng = rng }
 
         // Calculate net effect of the option
         let netEffect = option.effects.values.reduce(0, +)
@@ -495,13 +499,13 @@ final class CodexService: ObservableObject {
 
         // Default: base on disposition (friendly characters more forgiving)
         if character.disposition > 60 {
-            return Double.random(in: 0...1) > 0.3  // 70% approval
+            return Double.random(in: 0...1, using: &rng) > 0.3  // 70% approval
         } else if character.disposition < 40 {
-            return Double.random(in: 0...1) > 0.7  // 30% approval
+            return Double.random(in: 0...1, using: &rng) > 0.7  // 30% approval
         }
 
         // Neutral: 50/50
-        return Bool.random()
+        return Bool.random(using: &rng)
     }
 
     private func generateDecisionReactionContent(

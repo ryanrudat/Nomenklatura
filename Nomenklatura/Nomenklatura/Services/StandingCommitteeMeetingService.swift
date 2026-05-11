@@ -302,6 +302,8 @@ final class StandingCommitteeMeetingService {
 
     /// Resolve a vote of no confidence against the player
     func resolveNoConfidenceVote(game: Game) -> NoConfidenceResult {
+        var rng = game.rng
+        defer { game.rng = rng }
         guard let committee = game.standingCommittee else {
             return NoConfidenceResult(passed: false, votesFor: 0, votesAgainst: 0, narrative: "")
         }
@@ -335,7 +337,7 @@ final class StandingCommitteeMeetingService {
             }
 
             // Random variance
-            voteScore += Int.random(in: -10...10)
+            voteScore += Int.random(in: -10...10, using: &rng)
 
             if voteScore >= 50 {
                 votesAgainstRemoval += 1  // Defend player
@@ -420,6 +422,8 @@ final class StandingCommitteeMeetingService {
         committee: StandingCommittee,
         game: Game
     ) -> PlayerVote {
+        var rng = game.rng
+        defer { game.rng = rng }
         var voteScore = 50  // Neutral starting point
 
         // Disposition toward player affects alignment with player's vote
@@ -493,7 +497,7 @@ final class StandingCommitteeMeetingService {
         }
 
         // Random variance — wider for early game uncertainty
-        let variance = game.turnNumber < 5 ? Int.random(in: -18...18) : Int.random(in: -12...12)
+        let variance = game.turnNumber < 5 ? Int.random(in: -18...18, using: &rng) : Int.random(in: -12...12, using: &rng)
         voteScore += variance
 
         if voteScore > 55 {
