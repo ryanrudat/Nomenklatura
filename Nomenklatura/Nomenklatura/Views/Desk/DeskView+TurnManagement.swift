@@ -104,6 +104,59 @@ extension DeskView {
         }
     }
 
+    // MARK: - Rival Moves Section (Wave 5 / Audit "deep-politics")
+
+    /// Renders one `RivalMoveCard` per pending RivalMove on the game.
+    /// Empty when no moves are pending — takes zero vertical space so
+    /// quiet turns don't pad the scroll stack. Section header uses
+    /// tracked monospace and only appears when there is at least one
+    /// card to label.
+    @ViewBuilder
+    var rivalMovesSection: some View {
+        let pending = game.activeRivalMoves.filter { !$0.resolution.isResolved }
+        if !pending.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text("PENDING THREATS")
+                        .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                        .tracking(2)
+                        .foregroundColor(ColdWarTheme.shared.stampRed)
+                    Rectangle()
+                        .fill(ColdWarTheme.shared.stampRed.opacity(0.4))
+                        .frame(height: 1)
+                }
+                .padding(.horizontal, 2)
+
+                ForEach(pending) { move in
+                    RivalMoveCard(
+                        game: game,
+                        move: move,
+                        onSelectCounter: { option in
+                            presentedCounterContext = RivalCounterPresentation(
+                                move: move,
+                                option: option
+                            )
+                        },
+                        onTakeNoAction: {
+                            handleRivalMoveIgnored(move)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    /// Mark a RivalMove as `.ignored`. Pending damage still triggers
+    /// at the deadline — this just records the player's stance and
+    /// removes the card from the Desk so they aren't stuck staring
+    /// at a brief they've already decided to take on the chin.
+    func handleRivalMoveIgnored(_ move: RivalMove) {
+        var moves = game.activeRivalMoves
+        guard let idx = moves.firstIndex(where: { $0.id == move.id }) else { return }
+        moves[idx].resolution = .ignored
+        game.activeRivalMoves = moves
+    }
+
     // MARK: - Content Section
 
     @ViewBuilder

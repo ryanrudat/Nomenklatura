@@ -845,6 +845,21 @@ class GameEngine {
             logTurnStepFailure(step: "applyStatDrift", error: error, turnNumber: game.turnNumber)
         }
 
+        // Rival moves (Wave 5 / Audit "deep-politics"):
+        //   - expire any overdue moves and apply their pendingEffect
+        //   - generate a new named scheme if none currently pending
+        // Runs BEFORE simulateNPCActions so the Desk surfaces a fresh
+        // move on the same turn the NPC pipeline runs against it.
+        // Wrapped in the same try/catch pattern as every other step so a
+        // generator failure cannot abort the turn.
+        do {
+            try runStep("processRivalMoves") {
+                RivalMoveGenerator.shared.processTurn(for: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processRivalMoves", error: error, turnNumber: game.turnNumber)
+        }
+
         // Character actions (rivals plotting, etc.)
         do {
             try runStep("simulateNPCActions") {

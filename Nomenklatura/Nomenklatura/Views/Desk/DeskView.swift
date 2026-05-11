@@ -50,6 +50,11 @@ struct DeskView: View {
     // End turn confirmation
     @State var showEndTurnConfirmation = false
 
+    // Rival move counter sheet — set when the player taps a counter
+    // option on a RivalMoveCard. The optional sheet binding is driven
+    // off `presentedCounterContext`; when non-nil the sheet is shown.
+    @State var presentedCounterContext: RivalCounterPresentation?
+
     // Loading snapshot cycling
     @State var currentSnapshotIndex = 0
     @State var snapshotOpacity: Double = 1.0
@@ -140,6 +145,13 @@ struct DeskView: View {
 
                             // Threat Assessment Dashboard
                             ThreatDashboardView(game: game)
+
+                            // Wave 5 / Audit "deep-politics": named rival
+                            // schemes appear here so the player sees them
+                            // before scanning to the scenario content. The
+                            // section renders nothing when there are no
+                            // pending moves, so empty turns don't add bulk.
+                            rivalMovesSection
 
                             if let report = latestEconomicReport {
                                 treasuryBriefingSection(report: report)
@@ -242,6 +254,17 @@ struct DeskView: View {
             )
             .presentationDetents([.medium])
         }
+        // Rival move counter sheet. The item-binding form ensures the
+        // sheet rebuilds with fresh (move, option) on each invocation.
+        .sheet(item: $presentedCounterContext) { ctx in
+            RivalMoveCounterSheet(
+                game: game,
+                move: ctx.move,
+                option: ctx.option,
+                onDismiss: { presentedCounterContext = nil }
+            )
+            .presentationDetents([.large])
+        }
     }
 
     // MARK: - Computed Properties
@@ -306,6 +329,18 @@ struct ConfirmDecisionButton: View {
     }
     .modelContainer(container)
     .environment(\.theme, ColdWarTheme())
+}
+
+// MARK: - Rival Counter Presentation
+
+/// Identifiable wrapper carrying a (move, option) pair so the counter
+/// sheet binding can use SwiftUI's `.sheet(item:)`. Both pieces are
+/// needed at present time: the sheet resolves through the generator
+/// and inspects the resulting `activeRivalMoves` for the stamp flash.
+struct RivalCounterPresentation: Identifiable, Equatable {
+    let id = UUID()
+    let move: RivalMove
+    let option: RivalCounterOption
 }
 
 // MARK: - Seeded Random Number Generator

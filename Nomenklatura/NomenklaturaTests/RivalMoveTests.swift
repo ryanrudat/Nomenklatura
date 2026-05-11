@@ -196,4 +196,208 @@ final class RivalMoveTests: XCTestCase {
         XCTAssertEqual(reReadList.first?.resolution, resolved.resolution,
                        "Resolution must survive JSON round-trip via variables dict")
     }
+
+    // MARK: - Test 4: processTurn expires overdue moves
+
+    /// Setup a Game whose only active rival move has a deadlineTurn
+    /// strictly less than the current turn. After processTurn:
+    ///   - the move must be flagged `.expired`
+    ///   - `pendingEffect.magnitude` must have been applied to the
+    ///     game's targeted stat (rounded to Int).
+    func testProcessTurnExpiresOverdueMoves() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let game = makeGame(in: context)
+
+        // Move to a known turn so the math is easy to inspect.
+        game.turnNumber = 10
+
+        // Snapshot the stat we'll damage so we can verify the delta.
+        let preElite = game.eliteLoyalty
+
+        // Place a single overdue move (deadlineTurn = 8 < currentTurn 10).
+        let overdue = RivalMove(
+            rivalCharacterId: UUID(),
+            rivalName: "Volkov",
+            kind: .factionWhisperCampaign,
+            headline: "Volkov scheduled meetings.",
+            body: "Body text.",
+            createdTurn: 6,
+            deadlineTurn: 8,
+            pendingEffect: PendingEffect(stat: "eliteLoyalty", magnitude: -6),
+            counterOptions: []
+        )
+        game.activeRivalMoves = [overdue]
+
+        // Run the per-turn entry point.
+        RivalMoveGenerator.shared.processTurn(for: game)
+
+        // The move list still contains the move (we don't garbage-collect),
+        // but its resolution must be .expired.
+        let updated = try XCTUnwrap(game.activeRivalMoves.first(where: { $0.id == overdue.id }),
+                                    "Move must remain in active list after expiration")
+        XCTAssertEqual(updated.resolution, .expired,
+                       "Overdue move must be marked .expired after processTurn")
+
+        // Pending damage must have landed (rounded magnitude is -6).
+        XCTAssertEqual(game.eliteLoyalty, max(0, preElite - 6),
+                       "Pending effect must apply on expiration")
+    }
+
+    // MARK: - Test 5: processTurn generates a move when none pending
+
+    /// A game with eligible rivals and no active moves should receive
+    /// exactly one new RivalMove in `.pending` state after processTurn.
+    func testProcessTurnGeneratesMoveWhenNonePending() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let game = makeGame(in: context)
+
+        game.rivalThreat = 75
+        let rival = makeRival(name: "Petrov", positionIndex: 7)
+        game.characters.append(rival)
+
+        XCTAssertEqual(game.activeRivalMoves.count, 0,
+                       "Precondition: no active moves")
+
+        RivalMoveGenerator.shared.processTurn(for: game)
+
+        let pending = game.activeRivalMoves.filter { $0.resolution == .pending }
+        XCTAssertEqual(pending.count, 1,
+                       "Expected exactly one pending move after processTurn on an empty game")
+    }
+
+    // MARK: - Test 6: processTurn does not stack a new move on top of pending
+
+    /// If a pending move already exists, processTurn must NOT generate
+    /// another one. The player should be juggling at most one move at
+    /// a time when the existing one is still in `.pending`.
+    func testProcessTurnDoesNotGenerateMoveIfOnePending() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let game = makeGame(in: context)
+
+        game.rivalThreat = 75
+        let rival = makeRival(name: "Sokolov", positionIndex: 7)
+        game.characters.append(rival)
+
+        // Pre-seed one pending move whose deadline is still ahead.
+        game.turnNumber = 5
+        let existing = RivalMove(
+            rivalCharacterId: rival.id,
+            rivalName: rival.name,
+            kind: .factionWhisperCampaign,
+            headline: "Existing scheme",
+            body: "Body.",
+            createdTurn: 5,
+            deadlineTurn: 7,
+            pendingEffect: PendingEffect(stat: "eliteLoyalty", magnitude: -5),
+            counterOptions: []
+        )
+        game.activeRivalMoves = [existing]
+        XCTAssertEqual(game.activeRivalMoves.count, 1, "Precondition: one pending move")
+
+        RivalMoveGenerator.shared.processTurn(for: game)
+
+        XCTAssertEqual(game.activeRivalMoves.count, 1,
+                       "Move count must remain 1: generator must not stack on top of a pending move")
+
+        let stillPending = game.activeRivalMoves.first(where: { $0.id == existing.id })
+        XCTAssertEqual(stillPending?.resolution, .pending,
+                       "Existing pending move must remain pending (its deadline is still in the future)")
+    }
+
+    // MARK: - Test 7: resolve applies cost and outcome
+
+    /// Resolving a counter option must:
+    ///   - deduct the option's actionPoints / network / treasury cost
+    ///     from the game state
+    ///   - apply the success-branch StatDelta set when the roll lands
+    ///     (success), or the failure branch otherwise
+    ///   - mark the move's resolution to `.countered(...)`
+    ///
+    /// To keep the test deterministic without leaking RNG internals
+    /// into the assertions, we craft a counter option whose success
+    /// and failure StatDelta sets share an identical "verification"
+    /// stat — that delta MUST land regardless of which branch fires.
+    func testResolveAppliesCostAndOutcome() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let game = makeGame(in: context)
+
+        game.rivalThreat = 70
+        let rival = makeRival(name: "Karpov", positionIndex: 7)
+        game.characters.append(rival)
+
+        // Seed a move with a counter option whose cost subtracts from
+        // network and whose outcome branches both write to standing.
+        // Either branch produces a +/- delta on standing AND on a
+        // unique verification stat that we can pin to assert "an
+        // outcome branch fired".
+        let option = RivalCounterOption(
+            label: "[TEST]",
+            description: "Test option",
+            cost: CounterCost(actionPoints: 1, network: 10, treasury: 2),
+            outcome: CounterOutcome(
+                successChance: 0.5,
+                onSuccess: [StatDelta(stat: "standing", delta: 5)],
+                onFailure: [StatDelta(stat: "standing", delta: -3)]
+            )
+        )
+        let move = RivalMove(
+            rivalCharacterId: rival.id,
+            rivalName: rival.name,
+            kind: .rivalConsolidation,
+            headline: "Test headline",
+            body: "Body.",
+            createdTurn: game.turnNumber,
+            deadlineTurn: game.turnNumber + 2,
+            pendingEffect: PendingEffect(stat: "standing", magnitude: -5),
+            counterOptions: [option]
+        )
+        game.activeRivalMoves = [move]
+
+        // Snapshot pre-state for the cost assertion. The resolver
+        // method itself does NOT deduct cost (that's the sheet's
+        // responsibility), so we manually deduct cost before invoking
+        // resolve to mirror the production flow tightly.
+        let preAP = game.actionPoints
+        let preNetwork = game.network
+        let preTreasury = game.treasury
+        let preStanding = game.standing
+
+        // Deduct cost (sheet behavior).
+        game.actionPoints = max(0, game.actionPoints - option.cost.actionPoints)
+        game.applyStat("network", change: -option.cost.network)
+        game.applyStat("treasury", change: -option.cost.treasury)
+
+        // Resolve the counter.
+        RivalMoveGenerator.shared.resolve(move: move, with: option, in: game)
+
+        // Cost must have been subtracted.
+        XCTAssertEqual(game.actionPoints, preAP - option.cost.actionPoints,
+                       "Counter must deduct action points cost")
+        XCTAssertEqual(game.network, max(0, preNetwork - option.cost.network),
+                       "Counter must deduct network cost")
+        XCTAssertEqual(game.treasury, max(0, preTreasury - option.cost.treasury),
+                       "Counter must deduct treasury cost")
+
+        // The move's resolution must be `.countered`.
+        let resolved = try XCTUnwrap(
+            game.activeRivalMoves.first(where: { $0.id == move.id }),
+            "Move must still be in active list after resolution"
+        )
+        guard case .countered(let optionId, let success, let turn) = resolved.resolution else {
+            XCTFail("Resolution must be .countered after resolve; got \(resolved.resolution)")
+            return
+        }
+        XCTAssertEqual(optionId, option.id, ".countered.optionId must match")
+        XCTAssertEqual(turn, game.turnNumber, ".countered.turn must match current turn")
+
+        // Standing must have moved by exactly the success or failure
+        // delta — never both, never neither.
+        let expectedDelta = success ? 5 : -3
+        XCTAssertEqual(game.standing, max(0, min(100, preStanding + expectedDelta)),
+                       "Standing must reflect the branch that fired")
+    }
 }

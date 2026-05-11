@@ -4,13 +4,9 @@
 //
 //  Wave 3 / Audit "deep-politics" — once-per-turn generator that picks
 //  the most threatening eligible rival and produces 1 RivalMove for
-//  them. UI integration is intentionally deferred to a future wave; the
-//  generator is callable but is NOT yet wired into the turn pipeline.
-//
-//  RNG: this commit uses `Double.random(in:)` (system random) for
-//  resolution rolls. When the parallel "Seeded RNG" agent lands, switch
-//  the resolver to `game.rng` so per-game seeds make rival outcomes
-//  reproducible. Marked with `// TODO(seeded-rng):` below.
+//  them. Wave 5 wired this into the turn pipeline via `processTurn` and
+//  added the matching Desk UI; resolution rolls thread through
+//  `game.rng` so outcomes are reproducible per-seed.
 //
 
 import Foundation
@@ -38,6 +34,99 @@ final class RivalMoveGenerator {
     private static let deadlineTurnsAhead: Int = 2
 
     // MARK: - Public API
+
+    /// Per-turn entry point called from GameEngine.endTurnUpdates.
+    ///
+    /// Responsibilities:
+    ///   1. Expires any move whose `deadlineTurn < game.turnNumber` and
+    ///      applies its `pendingEffect` to game stats.
+    ///   2. Generates one new move if no pending move exists (the
+    ///      player should only juggle 1-2 at a time, not a stack).
+    ///   3. Emits GameEvents for both expirations and new appearances
+    ///      so the Journal records the political dance.
+    ///
+    /// All RNG is threaded through `game.rng` via the resolve/generate
+    /// callees, which already take a `var rng` snapshot and restore on
+    /// exit. This method itself does no random rolls — kind/template
+    /// selection happens inside `generateNextMove`.
+    func processTurn(for game: Game) {
+        // 1. Expire overdue moves — apply pending damage, mark resolved.
+        var moves = game.activeRivalMoves
+        let expiredIndices = moves.indices.filter { idx in
+            let move = moves[idx]
+            // Treat moves whose deadline has passed (deadlineTurn < current)
+            // as expired. Equality means "deadline is THIS turn" — the
+            // player still gets one final chance to respond before
+            // expiration applies at the next turn boundary.
+            return move.resolution == .pending && move.deadlineTurn < game.turnNumber
+        }
+
+        var expiredEvents: [GameEvent] = []
+        for idx in expiredIndices {
+            let move = moves[idx]
+            applyExpiredMove(move, to: game)
+            moves[idx].resolution = .expired
+
+            let magnitude = Int(abs(move.pendingEffect.magnitude).rounded())
+            let stat = move.pendingEffect.stat
+            let summary = "\(move.rivalName)'s \(move.kind.shortLabel) cost you \(magnitude) \(stat)"
+            let event = GameEvent(
+                turnNumber: game.turnNumber,
+                eventType: .crisis,
+                summary: summary
+            )
+            event.importance = 7
+            event.details = [
+                "kind": "rival_move_expired",
+                "rivalName": move.rivalName,
+                "moveKind": move.kind.rawValue,
+                "stat": stat,
+                "magnitude": String(magnitude)
+            ]
+            event.game = game
+            expiredEvents.append(event)
+
+            rivalMoveLogger.info("Expired RivalMove on processTurn: \(move.rivalName, privacy: .public) → \(stat, privacy: .public) -\(magnitude)")
+        }
+
+        // Persist mutated list before generation so generator sees the
+        // newly-expired moves as resolved (they no longer count toward
+        // "pending" for candidate gating).
+        if !expiredIndices.isEmpty {
+            game.activeRivalMoves = moves
+        }
+
+        // Append expiration events.
+        for event in expiredEvents {
+            game.events.append(event)
+        }
+
+        // 2. Generate a new move only if no pending move exists.
+        let pendingCount = game.activeRivalMoves.filter { !$0.resolution.isResolved }.count
+        if pendingCount == 0, let newMove = generateNextMove(for: game) {
+            var updated = game.activeRivalMoves
+            updated.append(newMove)
+            game.activeRivalMoves = updated
+
+            let summary = "\(newMove.rivalName) is making a move: \(newMove.headline)"
+            let event = GameEvent(
+                turnNumber: game.turnNumber,
+                eventType: .crisis,
+                summary: summary
+            )
+            event.importance = 8
+            event.details = [
+                "kind": "rival_move_appeared",
+                "rivalName": newMove.rivalName,
+                "moveKind": newMove.kind.rawValue,
+                "deadlineTurn": String(newMove.deadlineTurn)
+            ]
+            event.game = game
+            game.events.append(event)
+
+            rivalMoveLogger.info("Appeared RivalMove on processTurn: \(newMove.rivalName, privacy: .public) → \(newMove.kind.rawValue, privacy: .public)")
+        }
+    }
 
     /// Called once per turn (from GameEngine end-of-turn pipeline,
     /// eventually). Selects the most threatening rival who isn't
@@ -561,6 +650,64 @@ final class RivalMoveGenerator {
                     )
                 )
             ]
+        }
+    }
+}
+
+// MARK: - RivalMoveKind display helpers
+
+extension RivalMoveKind {
+
+    /// Short, lowercased label used in Journal summaries — e.g.
+    /// "Volkov's whisper campaign cost you 6 eliteLoyalty". Kept tight
+    /// so the summary fits the existing GameEvent.summary phrasing.
+    var shortLabel: String {
+        switch self {
+        case .factionWhisperCampaign: return "whisper campaign"
+        case .militaryCircleApproach: return "military outreach"
+        case .publicCriticism:        return "public criticism"
+        case .foreignContact:         return "foreign contact"
+        case .patronUnderminding:     return "patron undermining"
+        case .rivalConsolidation:     return "consolidation push"
+        }
+    }
+
+    /// Display label for the targeted stat — used in the Desk card's
+    /// "IF UNANSWERED" line and the counter sheet's outcome rows.
+    var threatStatDisplay: String {
+        switch self {
+        case .factionWhisperCampaign: return "ELITE LOYALTY"
+        case .militaryCircleApproach: return "MILITARY LOYALTY"
+        case .publicCriticism:        return "POPULAR SUPPORT"
+        case .foreignContact:         return "INTERNATIONAL STANDING"
+        case .patronUnderminding:     return "PATRON FAVOR"
+        case .rivalConsolidation:     return "STANDING"
+        }
+    }
+}
+
+// MARK: - StatDelta display helpers
+
+extension StatDelta {
+
+    /// Uppercased monospace-friendly stat label used in the counter
+    /// sheet's outcome rows. Keeps the wire stat keys ("eliteLoyalty")
+    /// out of the player-facing UI.
+    var displayStat: String {
+        switch stat {
+        case "stability":             return "STABILITY"
+        case "popularSupport":        return "POPULAR SUPPORT"
+        case "militaryLoyalty":       return "MILITARY LOYALTY"
+        case "eliteLoyalty":          return "ELITE LOYALTY"
+        case "treasury":              return "TREASURY"
+        case "industrialOutput":      return "INDUSTRIAL OUTPUT"
+        case "foodSupply":            return "FOOD SUPPLY"
+        case "internationalStanding": return "INTERNATIONAL STANDING"
+        case "standing":              return "STANDING"
+        case "patronFavor":           return "PATRON FAVOR"
+        case "rivalThreat":           return "RIVAL THREAT"
+        case "network":               return "NETWORK"
+        default:                      return stat.uppercased()
         }
     }
 }
