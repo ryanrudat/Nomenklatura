@@ -3381,3 +3381,45 @@ extension Game {
         return crises
     }
 }
+
+// MARK: - Deterministic RNG
+
+extension Game {
+    /// Mutable seeded RNG for deterministic turn-pipeline randomness.
+    ///
+    /// Seed is persisted through `variables["rng_seed"]` (the only existing
+    /// flexible-state dictionary on `Game`) so saves stay reproducible across
+    /// launches without adding a new stored property.
+    ///
+    /// On first read for a brand-new game (no stored seed yet) the seed
+    /// bootstraps from `replaySeed.hashValue` — the per-game UUID already
+    /// generated at init and already persisted. This means a freshly
+    /// installed game gets a unique seed; a save/load reuses the persisted
+    /// seed; and tests can override the seed by assigning
+    /// `variables["rng_seed"]` directly.
+    ///
+    /// USAGE (mutation-write-back pattern):
+    /// ```
+    /// var rng = game.rng
+    /// let roll = Int.random(in: 1...100, using: &rng)
+    /// game.rng = rng  // persist mutated state
+    /// ```
+    /// The `set` captures `currentState` from the post-use generator so the
+    /// next read continues from where the previous mutation left off — this
+    /// is what makes the stream deterministic across method calls.
+    var rng: SeededRNG {
+        get {
+            if let stored = variables["rng_seed"].flatMap({ UInt64($0) }) {
+                return SeededRNG(seed: stored)
+            }
+            // Bootstrap from replaySeed (already a persisted per-game UUID).
+            // hashValue is process-local in Swift, but the resulting seed is
+            // immediately written back below the next time `rng` is assigned,
+            // so the persisted stream becomes stable from that point on.
+            return SeededRNG(seed: UInt64(truncatingIfNeeded: replaySeed.hashValue))
+        }
+        set {
+            variables["rng_seed"] = String(newValue.currentState)
+        }
+    }
+}

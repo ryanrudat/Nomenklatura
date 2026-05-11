@@ -182,8 +182,10 @@ class GameEngine {
         // Clamp
         discoveryChance = max(0, min(80, discoveryChance))
 
-        // Roll
-        let roll = Int.random(in: 1...100)
+        // Roll — use seeded RNG so player bug reports are reproducible.
+        var rng = game.rng
+        defer { game.rng = rng }
+        let roll = Int.random(in: 1...100, using: &rng)
         let wasDiscovered = roll <= discoveryChance
 
         // Who discovered?
@@ -192,7 +194,7 @@ class GameEngine {
             // Usually the rival or security apparatus
             if let rival = game.primaryRival {
                 discoveredBy = rival.name
-            } else if let patron = game.patron, Int.random(in: 1...100) <= 30 {
+            } else if let patron = game.patron, Int.random(in: 1...100, using: &rng) <= 30 {
                 discoveredBy = patron.name
             } else {
                 discoveredBy = "State Security"
@@ -1779,10 +1781,13 @@ class GameEngine {
     }
 
     private func simulateNPCActions(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Rivals always scheming
         if let rival = game.primaryRival, rival.isAlive {
             // Rival threat naturally increases if not addressed
-            let threatIncrease = Int.random(in: 1...3)
+            let threatIncrease = Int.random(in: 1...3, using: &rng)
             game.applyStat("rivalThreat", change: threatIncrease)
         }
 
@@ -1856,16 +1861,19 @@ class GameEngine {
     }
 
     private func applyRandomEvents(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Small random fluctuations to keep things dynamic
-        let roll = Int.random(in: 1...100)
+        let roll = Int.random(in: 1...100, using: &rng)
 
         if roll <= 10 {
             // Minor economic fluctuation
-            let change = Int.random(in: -5...5)
+            let change = Int.random(in: -5...5, using: &rng)
             game.applyStat("treasury", change: change)
         } else if roll <= 20 {
             // International event
-            let change = Int.random(in: -3...3)
+            let change = Int.random(in: -3...3, using: &rng)
             game.applyStat("internationalStanding", change: change)
         }
     }
@@ -1877,17 +1885,20 @@ class GameEngine {
         // This makes fates feel more responsive to player actions
         guard game.turnNumber > 5 else { return }
 
+        var rng = game.rng
+        defer { game.rng = rng }
+
         let activeCharacters = game.characters.filter { $0.isAlive && !$0.isPatron }
 
         for character in activeCharacters {
-            let fateRoll = Int.random(in: 1...100)
+            let fateRoll = Int.random(in: 1...100, using: &rng)
 
             // Rivals can be eliminated if rival threat is very low (you've won)
             // ~5% per turn (was 15% every 3 turns = same overall rate)
             if character.isRival && game.rivalThreat < 20 {
                 if fateRoll <= 5 {
                     let fates: [CharacterStatus] = [.executed, .imprisoned, .exiled]
-                    applyFate(to: character, fate: fates.randomElement()!, game: game)
+                    applyFate(to: character, fate: fates.randomElement(using: &rng)!, game: game, using: &rng)
                     continue
                 }
             }
@@ -1897,7 +1908,7 @@ class GameEngine {
             if character.disposition < 30 && game.stability < 40 {
                 if fateRoll <= 3 {
                     let fates: [CharacterStatus] = [.detained, .disappeared, .imprisoned]
-                    applyFate(to: character, fate: fates.randomElement()!, game: game)
+                    applyFate(to: character, fate: fates.randomElement(using: &rng)!, game: game, using: &rng)
                     continue
                 }
             }
@@ -1906,28 +1917,28 @@ class GameEngine {
             if fateRoll <= 1 {
                 let fates: [CharacterStatus] = [.dead, .disappeared, .retired]
                 let weights = [1, 2, 3] // Retirement most common, death least
-                let fate = weightedRandom(fates, weights: weights) ?? .retired
-                applyFate(to: character, fate: fate, game: game)
+                let fate = weightedRandom(fates, weights: weights, using: &rng) ?? .retired
+                applyFate(to: character, fate: fate, game: game, using: &rng)
                 continue
             }
 
             // Corrupt characters can get caught (~2% per turn)
             if character.personalityCorrupt > 70 && fateRoll <= 2 {
-                applyFate(to: character, fate: .underInvestigation, game: game)
+                applyFate(to: character, fate: .underInvestigation, game: game, using: &rng)
                 continue
             }
 
             // Very old patrons can die naturally (~3% per turn after turn 20)
             if character.currentRole == .leader && game.turnNumber > 20 && fateRoll <= 3 {
-                applyFate(to: character, fate: .dead, game: game)
+                applyFate(to: character, fate: .dead, game: game, using: &rng)
             }
         }
 
         // Check if patron needs to die (very rare, destabilizing event)
         if let patron = game.patron, game.turnNumber > 15 {
-            let patronDeathRoll = Int.random(in: 1...100)
+            let patronDeathRoll = Int.random(in: 1...100, using: &rng)
             if patronDeathRoll <= 3 { // 3% chance after turn 15
-                applyFate(to: patron, fate: .dead, game: game)
+                applyFate(to: patron, fate: .dead, game: game, using: &rng)
                 // Losing patron is significant but not campaign-ending
                 // Player must find a new patron but shouldn't be instantly doomed
                 game.applyStat("patronFavor", change: -30)
@@ -1936,7 +1947,7 @@ class GameEngine {
         }
     }
 
-    private func applyFate(to character: GameCharacter, fate: CharacterStatus, game: Game) {
+    private func applyFate(to character: GameCharacter, fate: CharacterStatus, game: Game, using rng: inout SeededRNG) {
         character.status = fate.rawValue
         character.statusChangedTurn = game.turnNumber
 
@@ -1961,15 +1972,15 @@ class GameEngine {
         switch fate {
         case .disappeared:
             character.canReturnFlag = true
-            character.returnProbability = Int.random(in: 10...40)
-            character.remainingInfluence = Int.random(in: 20...50)
+            character.returnProbability = Int.random(in: 10...40, using: &rng)
+            character.remainingInfluence = Int.random(in: 20...50, using: &rng)
         case .imprisoned, .exiled:
             character.canReturnFlag = true
-            character.returnProbability = Int.random(in: 5...20)
-            character.remainingInfluence = Int.random(in: 10...30)
+            character.returnProbability = Int.random(in: 5...20, using: &rng)
+            character.remainingInfluence = Int.random(in: 10...30, using: &rng)
         case .underInvestigation, .detained:
             character.canReturnFlag = true
-            character.returnProbability = Int.random(in: 30...60)
+            character.returnProbability = Int.random(in: 30...60, using: &rng)
         default:
             character.canReturnFlag = false
             character.returnProbability = 0
@@ -2006,7 +2017,7 @@ class GameEngine {
         }
     }
 
-    private func weightedRandom<T>(_ items: [T], weights: [Int]) -> T? {
+    private func weightedRandom<T>(_ items: [T], weights: [Int], using rng: inout SeededRNG) -> T? {
         // Guard against empty arrays - return nil instead of crashing
         guard !items.isEmpty else {
             assertionFailure("weightedRandom called with empty items array")
@@ -2020,7 +2031,7 @@ class GameEngine {
             return items[0]
         }
 
-        var random = Int.random(in: 0..<totalWeight)
+        var random = Int.random(in: 0..<totalWeight, using: &rng)
 
         for (index, weight) in weights.enumerated() {
             random -= weight
@@ -2166,11 +2177,14 @@ extension GameEngine {
         // Threshold: if risk > 60, assassination attempt possible (10% per check)
         guard riskScore > 60 else { return nil }
 
+        var rng = game.rng
+        defer { game.rng = rng }
+
         let attemptChance = Double(riskScore - 50) / 500.0 // 2-10% chance
-        guard Double.random(in: 0...1) < attemptChance else { return nil }
+        guard Double.random(in: 0...1, using: &rng) < attemptChance else { return nil }
 
         // Assassination attempt!
-        return generateAssassinationAttempt(game: game, riskScore: riskScore)
+        return generateAssassinationAttempt(game: game, riskScore: riskScore, using: &rng)
     }
 
     /// Calculate assassination risk score for player
@@ -2213,18 +2227,19 @@ extension GameEngine {
     }
 
     /// Generate assassination attempt event
-    private func generateAssassinationAttempt(game: Game, riskScore: Int) -> DynamicEvent {
+    private func generateAssassinationAttempt(game: Game, riskScore: Int, using rng: inout SeededRNG) -> DynamicEvent {
         // Determine method
-        let method = AssassinationMethod.allCases.randomElement()!
+        let method = AssassinationMethod.allCases.randomElement(using: &rng)!
 
         // Calculate survival
         let survivalChance = calculateSurvivalChance(game: game, method: method)
-        let survived = Double.random(in: 0...1) < survivalChance
+        let survived = Double.random(in: 0...1, using: &rng) < survivalChance
 
         let (title, text, responses) = generateAssassinationText(
             method: method,
             survived: survived,
-            game: game
+            game: game,
+            using: &rng
         )
 
         return DynamicEvent(
@@ -2278,9 +2293,9 @@ extension GameEngine {
     }
 
     /// Generate assassination attempt text
-    private func generateAssassinationText(method: AssassinationMethod, survived: Bool, game: Game) -> (title: String, text: String, responses: [EventResponse]) {
+    private func generateAssassinationText(method: AssassinationMethod, survived: Bool, game: Game, using rng: inout SeededRNG) -> (title: String, text: String, responses: [EventResponse]) {
         if survived {
-            let (title, text) = method.survivedText
+            let (title, text) = method.survivedText(using: &rng)
             let responses = [
                 EventResponse(
                     id: "investigate",
@@ -2305,7 +2320,7 @@ extension GameEngine {
             return (title, text, responses)
         } else {
             // Player dies - this will trigger game over
-            let (title, text) = method.deathText
+            let (title, text) = method.deathText(using: &rng)
             let responses = [
                 EventResponse(
                     id: "dead",
@@ -2320,15 +2335,18 @@ extension GameEngine {
 
     /// Check for NPC-to-NPC assassinations
     private func checkNPCAssassinationRisk(game: Game) -> DynamicEvent? {
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Very rare event
-        guard Double.random(in: 0...1) < 0.02 else { return nil }
+        guard Double.random(in: 0...1, using: &rng) < 0.02 else { return nil }
 
         // Find ruthless NPCs with enemies
         let ruthlessNPCs = game.characters.filter {
             $0.isActive && $0.personalityRuthless > 70 && !$0.isPatron
         }
 
-        guard let assassin = ruthlessNPCs.randomElement() else { return nil }
+        guard let assassin = ruthlessNPCs.randomElement(using: &rng) else { return nil }
 
         // Find potential victims (NPCs the assassin hates)
         let potentialVictims = game.characters.filter { target in
@@ -2342,14 +2360,14 @@ extension GameEngine {
             return false
         }
 
-        guard let victim = potentialVictims.randomElement() else { return nil }
+        guard let victim = potentialVictims.randomElement(using: &rng) else { return nil }
 
         // 60% chance the attempt succeeds
-        let succeeded = Double.random(in: 0...1) < 0.6
+        let succeeded = Double.random(in: 0...1, using: &rng) < 0.6
 
         if succeeded {
             // Victim dies
-            applyFate(to: victim, fate: .dead, game: game)
+            applyFate(to: victim, fate: .dead, game: game, using: &rng)
             victim.fateNarrative = "Died under mysterious circumstances. Foul play suspected."
         }
 
@@ -2410,7 +2428,7 @@ enum AssassinationMethod: String, CaseIterable {
         }
     }
 
-    var survivedText: (title: String, text: String) {
+    func survivedText(using rng: inout SeededRNG) -> (title: String, text: String) {
         switch self {
         case .poison:
             let variants = [
@@ -2423,7 +2441,7 @@ enum AssassinationMethod: String, CaseIterable {
                     "The vodka has an aftertaste. You've drunk enough of it over the years to know. Your stomach heaves as you force yourself to vomit.\n\nThe doctors say you ingested a lethal dose - but not quite enough. Your enemies miscalculated."
                 )
             ]
-            return variants.randomElement()!
+            return variants.randomElement(using: &rng)!
 
         case .accident:
             let variants = [
@@ -2436,7 +2454,7 @@ enum AssassinationMethod: String, CaseIterable {
                     "The ZiL swerves at the last moment as the military truck bears down on you. Your chauffeur - a man you've trusted for years - is pale and shaking.\n\n\"They tried to box us in, Comrade. It was deliberate.\""
                 )
             ]
-            return variants.randomElement()!
+            return variants.randomElement(using: &rng)!
 
         case .directAttack:
             let variants = [
@@ -2449,7 +2467,7 @@ enum AssassinationMethod: String, CaseIterable {
                     "Glass shatters. Your bodyguard throws himself in front of you as you're bundled into the car. He'll live - barely.\n\nThe shooter had a clear line of sight. Someone told them where you'd be."
                 )
             ]
-            return variants.randomElement()!
+            return variants.randomElement(using: &rng)!
 
         case .medicatedSleep:
             return (
@@ -2471,7 +2489,7 @@ enum AssassinationMethod: String, CaseIterable {
         }
     }
 
-    var deathText: (title: String, text: String) {
+    func deathText(using rng: inout SeededRNG) -> (title: String, text: String) {
         switch self {
         case .poison:
             let variants = [
@@ -2484,7 +2502,7 @@ enum AssassinationMethod: String, CaseIterable {
                     "Your hand trembles as you set down the glass. The numbness starts in your fingers, spreads to your arms, your chest.\n\nThe last face you see is your aide's - expressionless, watching. Waiting. He's been one of them all along."
                 )
             ]
-            return variants.randomElement()!
+            return variants.randomElement(using: &rng)!
 
         case .accident:
             let variants = [
@@ -2497,7 +2515,7 @@ enum AssassinationMethod: String, CaseIterable {
                     "The ZiL's brakes fail on the mountain road. Time slows as the car breaks through the barrier.\n\nThe People's Voice will report a tragic accident. Your successor has already been chosen."
                 )
             ]
-            return variants.randomElement()!
+            return variants.randomElement(using: &rng)!
 
         case .directAttack:
             let variants = [
@@ -2510,7 +2528,7 @@ enum AssassinationMethod: String, CaseIterable {
                     "You see the gun barrel rising. You see the flash. Then nothing.\n\nThe assassin will be killed 'resisting arrest'. The investigation will conclude quickly. The truth will be buried with you."
                 )
             ]
-            return variants.randomElement()!
+            return variants.randomElement(using: &rng)!
 
         case .medicatedSleep:
             return (
@@ -2543,8 +2561,11 @@ extension GameEngine {
         // Only generate warnings at moderate-high risk
         guard riskScore > 40, riskScore < 70 else { return nil }
 
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Small chance per turn at this risk level
-        guard Double.random(in: 0...1) < 0.05 else { return nil }
+        guard Double.random(in: 0...1, using: &rng) < 0.05 else { return nil }
 
         let warningTypes: [(title: String, text: String, effects: [String: Int])] = [
             (
@@ -2574,7 +2595,7 @@ extension GameEngine {
             )
         ]
 
-        let warning = warningTypes.randomElement()!
+        let warning = warningTypes.randomElement(using: &rng)!
 
         return DynamicEvent(
             eventType: .ambientTension,
