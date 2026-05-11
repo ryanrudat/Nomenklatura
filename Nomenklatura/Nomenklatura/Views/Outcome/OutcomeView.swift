@@ -16,6 +16,8 @@ struct OutcomeView: View {
     let onContinue: () -> Void
     @Environment(\.theme) var theme
 
+    @State private var showStamp = false
+    @State private var stampScale: Double = 0.3
     @State private var showOutcome = false
     @State private var showReactions = false
     @State private var showStats = false
@@ -25,6 +27,39 @@ struct OutcomeView: View {
     /// State mood based on current conditions
     private var stateMood: String? {
         NarrativeGenerator.shared.getStateMoodDescription(game: game)
+    }
+
+    /// Prototype-style stamp text derived from the chosen archetype.
+    /// The stamp lands first in the choreography so the outcome feels
+    /// "filed" before the player reads the narrative.
+    private var outcomeStampText: String {
+        switch optionArchetype {
+        case .repress?, .attack?, .mobilize?, .military?:
+            return "EXECUTED"
+        case .reform?, .appease?, .negotiate?, .trade?:
+            return "APPROVED"
+        case .surveil?, .investigate?, .ideological?:
+            return "CLASSIFIED"
+        case .delay?, .regulate?, .administrative?:
+            return "FILED"
+        case .deflect?, .sacrifice?:
+            return "NOTED"
+        default:
+            return "FILED"
+        }
+    }
+
+    /// Stamp ink color — red for decisive/punitive beats, green for
+    /// approvals/concessions, inked-gray for bureaucratic fillers.
+    private var outcomeStampColor: Color {
+        switch optionArchetype {
+        case .repress?, .attack?, .mobilize?, .military?, .surveil?:
+            return theme.sovietRed
+        case .reform?, .appease?, .negotiate?, .trade?:
+            return theme.successGreen
+        default:
+            return theme.concreteGray
+        }
     }
 
     var body: some View {
@@ -42,6 +77,13 @@ struct OutcomeView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
+                        // Stamp lands first — the choreography cue that
+                        // "your directive has been processed." Scale-in
+                        // from 0.3 to 1.0 matches the prototype's reveal.
+                        if showStamp {
+                            outcomeStampHeader
+                        }
+
                         // Outcome narrative
                         if showOutcome {
                             OutcomeNarrativeCard(text: outcomeText, game: game)
@@ -99,40 +141,70 @@ struct OutcomeView: View {
     }
 
     private func animateIn() {
-        // Stagger the animations
-        withAnimation(.easeOut(duration: 0.5)) {
+        // 0.0s → stamp lands (scale + fade) — prototype beat 1
+        showStamp = true
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+            stampScale = 1.0
+        }
+
+        // 0.35s → narrative fades in — prototype beat 2
+        withAnimation(.easeOut(duration: 0.5).delay(0.35)) {
             showOutcome = true
         }
 
-        // Show reactions section after outcome (if archetype provided)
+        // Remaining staggered reveals (existing behavior) — prototype beat 3
         if optionArchetype != nil {
-            withAnimation(.easeOut(duration: 0.5).delay(0.6)) {
+            withAnimation(.easeOut(duration: 0.5).delay(0.95)) {
                 showReactions = true
             }
-            withAnimation(.easeOut(duration: 0.5).delay(1.1)) {
+            withAnimation(.easeOut(duration: 0.5).delay(1.45)) {
                 showStats = true
             }
-            // Show affinity gain after stats (if archetype has an associated track)
             if optionArchetype?.associatedTrack != nil {
-                withAnimation(.easeOut(duration: 0.5).delay(1.5)) {
+                withAnimation(.easeOut(duration: 0.5).delay(1.85)) {
                     showAffinity = true
                 }
-                withAnimation(.easeOut(duration: 0.4).delay(2.0)) {
+                withAnimation(.easeOut(duration: 0.4).delay(2.35)) {
                     showButton = true
                 }
             } else {
-                withAnimation(.easeOut(duration: 0.4).delay(1.6)) {
+                withAnimation(.easeOut(duration: 0.4).delay(1.95)) {
                     showButton = true
                 }
             }
         } else {
-            withAnimation(.easeOut(duration: 0.5).delay(0.6)) {
+            withAnimation(.easeOut(duration: 0.5).delay(0.95)) {
                 showStats = true
             }
-            withAnimation(.easeOut(duration: 0.4).delay(1.2)) {
+            withAnimation(.easeOut(duration: 0.4).delay(1.55)) {
                 showButton = true
             }
         }
+    }
+
+    /// Rotated rubber-stamp header. Lives inside the scroll content so
+    /// it scrolls with the rest of the outcome — not a floating overlay
+    /// — which preserves the "document" metaphor.
+    private var outcomeStampHeader: some View {
+        HStack {
+            Spacer()
+            Text(outcomeStampText)
+                .font(.system(size: 26, weight: .black, design: .default))
+                .tracking(4)
+                .foregroundColor(outcomeStampColor.opacity(0.82))
+                .padding(.horizontal, 22)
+                .padding(.vertical, 8)
+                .overlay(
+                    Rectangle()
+                        .stroke(outcomeStampColor.opacity(0.82), lineWidth: 3)
+                )
+                .rotationEffect(.degrees(-6))
+                .scaleEffect(stampScale)
+                .opacity(stampScale)
+            Spacer()
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 }
 

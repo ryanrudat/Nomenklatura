@@ -1,0 +1,105 @@
+// themes.jsx — three aesthetic directions for the Desk screen
+// V1 PARCHMENT DOSSIER — vintage archival, ink stamps, carbon copy
+// V2 RED APPARATUS — brutalist socialist-realist, flat red + ink
+// V3 REDACTED FILE — classified dark archive, censor bars, paranoid
+
+const THEMES = {
+  parchment: {
+    key: 'parchment',
+    name: 'PARCHMENT DOSSIER',
+    tagline: 'The Archive',
+    // surfaces
+    bg: '#d9c9a8',
+    bgDeep: '#c5b28f',
+    paper: '#efe4c9',
+    paperDeep: '#e5d5b1',
+    ink: '#2a2216',
+    inkSoft: '#5a4a32',
+    inkFaint: '#8a7a5a',
+    accent: '#8b1818', // oxblood stamp
+    accent2: '#b08830', // gold leaf
+    rule: 'rgba(42, 34, 22, 0.28)',
+    ruleSoft: 'rgba(42, 34, 22, 0.12)',
+    // type
+    display: '"IM Fell English", "Playfair Display", Georgia, serif',
+    body: '"Source Serif 4", "Crimson Pro", Georgia, serif',
+    mono: '"Special Elite", "Courier Prime", ui-monospace, monospace',
+    // geometry
+    radius: 2,
+    cardRadius: 3,
+    // motif
+    paperNoise: true,
+    showStamps: true,
+    showPaperclip: true,
+    showWax: true,
+    carbonCopy: false,
+    censored: false,
+    dark: false,
+    // iconography
+    star: '#8b1818',
+    // status bar
+    statusDark: false,
+  },
+  red: {
+    key: 'red',
+    name: 'RED APPARATUS',
+    tagline: 'The Vanguard',
+    bg: '#f3ece0',
+    bgDeep: '#e4dac6',
+    paper: '#fbf6ec',
+    paperDeep: '#f1e8d6',
+    ink: '#1a1412',
+    inkSoft: '#3a2a26',
+    inkFaint: '#7a5a52',
+    accent: '#cc1a1a',
+    accent2: '#1a1412',
+    rule: 'rgba(26, 20, 18, 0.35)',
+    ruleSoft: 'rgba(26, 20, 18, 0.14)',
+    display: '"Oswald", "Bebas Neue", "Arial Black", sans-serif',
+    body: '"Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif',
+    mono: '"JetBrains Mono", ui-monospace, monospace',
+    radius: 0,
+    cardRadius: 0,
+    paperNoise: false,
+    showStamps: true,
+    showPaperclip: false,
+    showWax: false,
+    carbonCopy: false,
+    censored: false,
+    dark: false,
+    star: '#cc1a1a',
+    statusDark: false,
+  },
+  redacted: {
+    key: 'redacted',
+    name: 'REDACTED FILE',
+    tagline: 'Eyes Only',
+    bg: '#14120f',
+    bgDeep: '#0a0907',
+    paper: '#1e1b15',
+    paperDeep: '#15130e',
+    ink: '#d4c8a8',
+    inkSoft: '#9a8e70',
+    inkFaint: '#6a5e48',
+    accent: '#c72828',
+    accent2: '#b08830',
+    rule: 'rgba(212, 200, 168, 0.24)',
+    ruleSoft: 'rgba(212, 200, 168, 0.10)',
+    display: '"Special Elite", "Courier Prime", ui-monospace, monospace',
+    body: '"JetBrains Mono", "Courier Prime", ui-monospace, monospace',
+    mono: '"JetBrains Mono", "Courier Prime", ui-monospace, monospace',
+    radius: 0,
+    cardRadius: 2,
+    paperNoise: true,
+    showStamps: true,
+    showPaperclip: false,
+    showWax: false,
+    carbonCopy: true,
+    censored: true,
+    dark: true,
+    star: '#c72828',
+    statusDark: true,
+  },
+};
+
+Object.assign(window, { THEMES });

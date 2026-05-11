@@ -2,7 +2,7 @@
 
 **Created:** 2026-04-17 (end of session 029)
 **Initiative origin:** Session 029 6-agent audit (see `docs/changelog/2026-04-17_session-029.md`)
-**Status:** Phase 0 + 1 + 2 (structural) + 3 ✅ COMPLETE. Phase 4 + 5 + Phase 2.5 ongoing tech debt remain.
+**Status:** Phase 0 + 1 + 2 + 3 ✅ COMPLETE. Phase 2.5 color migration ✅ COMPLETE (session 031, 2026-04-21) — only BureauColors helpers remain. Phase 4 + 5 remain.
 
 This document captures the unfinished work from the redesign initiative so it can be resumed cleanly in a future session.
 
@@ -126,59 +126,34 @@ Anything caught during Phase 1-4 that wasn't surface-level. Including:
 
 ---
 
-## Phase 2.5 Ongoing Tech Debt — Color Call-Site Migration
+## Phase 2.5 Color Call-Site Migration — ✅ COMPLETE (session 031)
 
-**Status:** ~45 files still use deprecated wrappers. Wrappers forward to canonical theme so functionality is identical — pure code hygiene.
+**Status as of 2026-04-21:** `FiftiesColors` + `StitchColors` call-site migration is DONE. Build has zero deprecation warnings.
 
-### Files With Highest Wrapper Usage
-- `Views/Components/StitchDesignComponents.swift` (53 internal `StitchColors.*` references — but the StitchColors enum lives here too, so this is the file that needs internal migration)
-- `Views/Desk/StitchDeskComponents.swift` (33 `StitchColors.*`)
-- `Views/Components/FiftiesStyleComponents.swift` (48 internal `FiftiesColors.*` references)
-- `Views/Components/BureauEmblem.swift` (uses `BureauColors.*`)
-- `Views/Ledger/BureauOperationsCenter.swift` (17 `FiftiesColors.*`)
+### What landed (session 031)
+- ~420 `FiftiesColors.X` / `StitchColors.X` references rewritten across 30 files.
+- Rule applied per call site: `theme.X` if the enclosing struct declares `@Environment(\.theme)`, otherwise `ColdWarTheme.shared.X`. In `#Preview` blocks: always `ColdWarTheme.shared.X`.
+- Renames applied where the wrapper aliased to a differently-named property:
+  - `FiftiesColors.stampRed` → `.sovietRed` (NOT `.stampRed`)
+  - `FiftiesColors.brassGold` → `.bronzeGold`
+  - `FiftiesColors.deniedRed` → `.stampRedDark`
+  - `FiftiesColors.typewriterInk` → `.inkBlack`
+  - `FiftiesColors.fadedInk` → `.inkGray`
+  - `StitchColors.paper` / `.paperWarm` / `.paperDark` → `.parchment` / `.parchmentDark` / `.paperGray`
+  - `StitchColors.gold` → `.accentGold`
 
-### Migration Pattern (mechanical 1:1)
-For files NOT using `@Environment(\.theme)`, replace via `replace_all` with `ColdWarTheme.shared.X`:
-- `StitchColors.paper` → `ColdWarTheme.shared.parchment`
-- `StitchColors.paperWarm` → `ColdWarTheme.shared.parchmentDark`
-- `StitchColors.paperDark` → `ColdWarTheme.shared.paperGray`
-- `StitchColors.ink` → `ColdWarTheme.shared.inkBlack`
-- `StitchColors.inkFaded` → `ColdWarTheme.shared.inkGray`
-- `StitchColors.inkLight` → `ColdWarTheme.shared.inkLight`
-- `StitchColors.stampRed` → `ColdWarTheme.shared.stampRed`
-- `StitchColors.sovietRed` → `ColdWarTheme.shared.sovietRed`
-- `StitchColors.gold` → `ColdWarTheme.shared.accentGold`
-- `StitchColors.darkBg` → `ColdWarTheme.shared.schemeDark`
-- `StitchColors.darkCard` → `ColdWarTheme.shared.schemeCard`
-- `StitchColors.darkBorder` → `ColdWarTheme.shared.schemeBorder`
-- `StitchColors.lightText` → `ColdWarTheme.shared.schemeText`
-- `StitchColors.positive` → `ColdWarTheme.shared.successGreen`
-- `StitchColors.warning` → `ColdWarTheme.shared.warningAmber`
-- `StitchColors.danger` → `ColdWarTheme.shared.dangerRed`
-- `FiftiesColors.typewriterInk` → `ColdWarTheme.shared.inkBlack`
-- `FiftiesColors.fadedInk` → `ColdWarTheme.shared.inkGray`
-- `FiftiesColors.carbonCopy` → `ColdWarTheme.shared.carbonCopy`
-- `FiftiesColors.agedPaper` → `ColdWarTheme.shared.agedPaper`
-- `FiftiesColors.freshPaper` → `ColdWarTheme.shared.freshPaper`
-- `FiftiesColors.cardstock` → `ColdWarTheme.shared.cardstock`
-- `FiftiesColors.manillaFolder` → `ColdWarTheme.shared.manillaFolder`
-- `FiftiesColors.stampRed` → `ColdWarTheme.shared.sovietRed`
-- `FiftiesColors.stampRedDark` → `ColdWarTheme.shared.stampRedDark`
-- `FiftiesColors.deniedRed` → `ColdWarTheme.shared.stampRedDark`
-- `FiftiesColors.urgentRed` → `ColdWarTheme.shared.urgentRed`
-- `FiftiesColors.approvedGreen` → `ColdWarTheme.shared.approvedGreen`
-- `FiftiesColors.brassGold` → `ColdWarTheme.shared.bronzeGold`
-- `FiftiesColors.steelGray` → `ColdWarTheme.shared.steelGray`
-- `FiftiesColors.leatherBrown` → `ColdWarTheme.shared.leatherBrown`
+### Still to do (NOT done in session 031)
+- **`BureauColors` migration target doesn't exist yet.** Its deprecation message reads "Use ColdWarTheme.shared bureau helpers (coming in a later sub-batch)" but no `ColdWarTheme.bureauPrimary(for:)` / `.bureauAccent(for:)` / `.bureauBackground(for:)` helpers have been added. ~10 call sites remain.
+- **Dead wrapper cleanup.** `struct FiftiesColors` in `FiftiesStyleComponents.swift` and `enum StitchColors` in `StitchDesignComponents.swift` are now unused. A future session can delete them after a final grep confirms no indirect references.
 
-For files INSIDE View bodies, can also use `@Environment(\.theme) var theme` then `theme.X` — no `ColdWarTheme.shared` prefix needed.
-
-### Final Cleanup
-Once all call sites migrate:
-1. Delete the `StitchColors` enum from `StitchDesignComponents.swift`
-2. Delete the `FiftiesColors` struct from `FiftiesStyleComponents.swift`
-3. Delete the `BureauColors` struct from `FiftiesStyleComponents.swift` (or refactor as `ColdWarTheme.bureauPrimary(for:)` instance method)
-4. Confirm `~30 deprecation warnings` from Phase 2.4 drop to zero
+### Phase 2.5 completion checklist
+1. [x] Migrate every `FiftiesColors.X` call site — done session 031
+2. [x] Migrate every `StitchColors.X` call site — done session 031
+3. [x] Confirm deprecation warnings drop to zero — done (was ~200, now 0)
+4. [ ] Add bureau helpers to `CampaignTheme` protocol + `ColdWarTheme` struct (`bureauPrimary(for:)`, `bureauAccent(for:)`, `bureauBackground(for:)`)
+5. [ ] Migrate ~10 `BureauColors.X` call sites using the new helpers
+6. [ ] Delete `struct FiftiesColors` + `enum StitchColors` wrapper types
+7. [ ] Delete `struct BureauColors` wrapper (or keep and mark with final deprecated message)
 
 ---
 

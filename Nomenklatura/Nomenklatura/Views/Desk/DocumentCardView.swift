@@ -28,7 +28,7 @@ struct DocumentCardView: View {
                     // Divider
                     Text(String(repeating: "-", count: 45))
                         .font(.system(size: 7, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk.opacity(0.3))
+                        .foregroundColor(theme.inkGray.opacity(0.3))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
 
@@ -38,7 +38,7 @@ struct DocumentCardView: View {
                     // Body preview
                     Text(String(document.bodyText.prefix(80)) + "...")
                         .font(.system(size: 10, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(theme.inkBlack)
                         .lineLimit(2)
                         .lineSpacing(2)
                         .padding(.horizontal, 10)
@@ -54,7 +54,7 @@ struct DocumentCardView: View {
                 .clipShape(Rectangle())
                 .overlay(
                     Rectangle()
-                        .stroke(FiftiesColors.leatherBrown.opacity(0.15), lineWidth: 0.5)
+                        .stroke(theme.leatherBrown.opacity(0.15), lineWidth: 0.5)
                 )
             }
             .rotationEffect(.degrees(document.rotation))
@@ -102,7 +102,7 @@ struct DocumentCardView: View {
                 // Category
                 Text(document.categoryEnum.displayName.uppercased())
                     .font(.system(size: 7, design: .monospaced))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(theme.inkGray)
             }
             .padding(.leading, 6)
 
@@ -122,7 +122,7 @@ struct DocumentCardView: View {
             // Unread indicator
             if document.statusEnum == .unread {
                 Circle()
-                    .fill(FiftiesColors.urgentRed)
+                    .fill(theme.urgentRed)
                     .frame(width: 6, height: 6)
                     .padding(.trailing, 8)
             }
@@ -138,11 +138,11 @@ struct DocumentCardView: View {
         HStack(spacing: 4) {
             Text("FROM:")
                 .font(.system(size: 7, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(theme.inkGray)
 
             Text(document.sender.uppercased())
                 .font(.system(size: 8, weight: .semibold, design: .monospaced))
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(theme.inkBlack)
                 .lineLimit(1)
         }
         .padding(.horizontal, 10)
@@ -161,7 +161,7 @@ struct DocumentCardView: View {
                     Text("DUE")
                         .font(.system(size: 7, weight: .bold, design: .monospaced))
                 }
-                .foregroundColor(FiftiesColors.urgentRed.opacity(0.8))
+                .foregroundColor(theme.urgentRed.opacity(0.8))
             }
 
             // Options count
@@ -172,7 +172,7 @@ struct DocumentCardView: View {
                     Text("\(document.options.count) OPTIONS")
                         .font(.system(size: 7, weight: .medium, design: .monospaced))
                 }
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(theme.inkGray)
             }
 
             Spacer()
@@ -185,7 +185,7 @@ struct DocumentCardView: View {
                 Image(systemName: "arrow.right")
                     .font(.system(size: 6))
             }
-            .foregroundColor(FiftiesColors.fadedInk)
+            .foregroundColor(theme.inkGray)
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 8)
@@ -208,13 +208,13 @@ struct DocumentCardView: View {
                     var path = Path()
                     path.move(to: CGPoint(x: x, y: y))
                     path.addLine(to: CGPoint(x: x + length, y: y))
-                    context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.02)), lineWidth: 0.5)
+                    context.stroke(path, with: .color(theme.inkBlack.opacity(0.02)), lineWidth: 0.5)
                 }
             }
 
             // Edge aging
             LinearGradient(
-                colors: [FiftiesColors.leatherBrown.opacity(0.05), Color.clear],
+                colors: [theme.leatherBrown.opacity(0.05), Color.clear],
                 startPoint: .topLeading,
                 endPoint: .center
             )
@@ -226,18 +226,18 @@ struct DocumentCardView: View {
     private var stripeColor: Color {
         switch document.urgencyEnum {
         case .critical, .urgent:
-            return FiftiesColors.urgentRed
+            return theme.urgentRed
         case .priority:
-            return FiftiesColors.leatherBrown
+            return theme.leatherBrown
         case .routine:
-            return FiftiesColors.fadedInk
+            return theme.inkGray
         }
     }
 
     private var paperColor: Color {
         switch document.documentTypeEnum.visualStyle {
         case .officialMemo, .formalReport:
-            return FiftiesColors.agedPaper
+            return theme.agedPaper
         case .handwrittenLetter:
             return Color(hex: "F5F0E0") // Slightly warmer
         case .classifiedCable:
@@ -247,7 +247,7 @@ struct DocumentCardView: View {
         case .anonymousTip:
             return Color(hex: "E5E0D0") // Rougher paper
         case .typewriterDocument:
-            return FiftiesColors.agedPaper
+            return theme.agedPaper
         case .newsClipping:
             return Color(hex: "F2EDD8") // Newsprint yellow
         }
@@ -286,16 +286,16 @@ struct DocumentStackView: View {
         VStack(spacing: 12) {
             Image(systemName: "tray")
                 .font(.system(size: 32))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.4))
+                .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.4))
 
             Text("DESK CLEAR")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .tracking(2)
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.5))
 
             Text("No pending documents")
                 .font(.system(size: 10, design: .serif))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.4))
+                .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.4))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
@@ -335,7 +335,7 @@ private struct DocumentCardPreview: View {
             }
             .padding()
         }
-        .background(FiftiesColors.leatherBrown.opacity(0.3))
+        .background(ColdWarTheme.shared.leatherBrown.opacity(0.3))
     }
 }
 

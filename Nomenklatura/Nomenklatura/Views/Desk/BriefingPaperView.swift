@@ -52,6 +52,54 @@ struct BriefingPaperView: View {
         }
     }
 
+    /// Document reference number — stable per scenario/turn so the same
+    /// briefing always reads with the same filing number.
+    private var documentNumber: String {
+        let prefix: String
+        switch scenario.category {
+        case .crisis:       prefix = "BSS"   // Bureau of State Security
+        case .character:    prefix = "CHA"   // Office of the Chairman
+        case .opportunity:  prefix = "CEC"   // Central Executive Committee
+        case .introduction: prefix = "ORG"
+        default:            prefix = "DIR"   // Directive
+        }
+        let serial = abs(scenario.templateId.hashValue) % 10000
+        let year = 1952 + (turnNumber / 24)
+        return String(format: "%@-%d-%04d", prefix, year, serial)
+    }
+
+    /// Classification tier. Shown in the formal document header — a Red
+    /// Apparatus document always wears its classification.
+    private var classificationLabel: String {
+        switch scenario.category {
+        case .character:    return "EYES ONLY"
+        case .crisis:       return "SECRET"
+        case .opportunity:  return "CONFIDENTIAL"
+        case .introduction: return "RESTRICTED"
+        default:            return "RESTRICTED"
+        }
+    }
+
+    /// Bureau-of-origin line. Derives from presenter title or category
+    /// when the scenario doesn't carry an explicit bureau.
+    private var bureauLabel: String {
+        if let title = scenario.presenterTitle, !title.isEmpty { return title.uppercased() }
+        switch scenario.category {
+        case .crisis:       return "BUREAU OF STATE SECURITY"
+        case .character:    return "OFFICE OF THE CHAIRMAN"
+        case .opportunity:  return "CENTRAL EXECUTIVE COMMITTEE"
+        case .introduction: return "BUREAU OF ORGANIZATION"
+        default:            return "DIRECTORATE"
+        }
+    }
+
+    /// Whether to close the briefing with a red wax seal "signed" motif.
+    /// Reserved for the dramatic beats (Chairman audiences, introductions)
+    /// so the seal doesn't lose its weight.
+    private var showsWaxSeal: Bool {
+        scenario.category == .character || scenario.category == .introduction
+    }
+
     /// Generate atmospheric introduction (called once on appear)
     private func generateAtmosphereIntro() -> String? {
         guard let game = game else { return nil }
@@ -133,20 +181,36 @@ struct BriefingPaperView: View {
             HStack(alignment: .top) {
                 // Red classification stripe
                 Rectangle()
-                    .fill(scenario.requiresDecision ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+                    .fill(scenario.requiresDecision ? theme.urgentRed : theme.leatherBrown)
                     .frame(width: 4)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    // Document type
-                    Text("OFFICIAL MEMORANDUM")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .tracking(2)
-                        .foregroundColor(FiftiesColors.fadedInk)
+                    // Filing number + classification (prototype-fidelity header)
+                    HStack(spacing: 10) {
+                        Text(documentNumber)
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundColor(theme.inkBlack)
+                        Rectangle()
+                            .fill(theme.inkGray.opacity(0.4))
+                            .frame(width: 0.5, height: 10)
+                        Text(classificationLabel)
+                            .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(theme.urgentRed.opacity(0.85))
+                    }
+
+                    // Bureau of origin
+                    Text(bureauLabel)
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .tracking(1.2)
+                        .foregroundColor(theme.inkGray)
+                        .lineLimit(1)
 
                     // Date line
                     Text("DATE: \(cachedDate.uppercased())")
                         .font(.system(size: 9, weight: .medium, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                 }
 
                 Spacer()
@@ -166,7 +230,7 @@ struct BriefingPaperView: View {
             // Typewriter divider
             Text(String(repeating: "=", count: 45))
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.3))
+                .foregroundColor(theme.inkGray.opacity(0.3))
                 .padding(.bottom, 12)
 
             // Atmosphere intro (if game context available)
@@ -174,7 +238,7 @@ struct BriefingPaperView: View {
                 Text(atmosphere)
                     .font(.system(size: 12, design: .serif))
                     .italic()
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(theme.inkGray)
                     .lineSpacing(4)
                     .padding(.bottom, 14)
             }
@@ -197,7 +261,7 @@ struct BriefingPaperView: View {
                     HStack(spacing: 6) {
                         Text("FROM:")
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(theme.inkGray)
 
                         // Character name (tappable if game available)
                         if let game = game {
@@ -206,7 +270,7 @@ struct BriefingPaperView: View {
                         } else {
                             Text(scenario.presenterName.uppercased())
                                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(theme.inkBlack)
                         }
                     }
 
@@ -214,7 +278,7 @@ struct BriefingPaperView: View {
                     if let title = scenario.presenterTitle {
                         Text(title.uppercased())
                             .font(.system(size: 9, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(theme.inkGray)
                     }
 
                     // Entrance description as narrative text
@@ -222,7 +286,7 @@ struct BriefingPaperView: View {
                         Text("...\(cachedEntrance).")
                             .font(.system(size: 11, design: .serif))
                             .italic()
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(theme.inkGray)
                             .padding(.top, 4)
                     }
                 }
@@ -234,7 +298,7 @@ struct BriefingPaperView: View {
             // Divider
             Text(String(repeating: "-", count: 50))
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.3))
+                .foregroundColor(theme.inkGray.opacity(0.3))
                 .padding(.bottom, 12)
 
             // Briefing text - typewriter style with clickable character names
@@ -243,20 +307,39 @@ struct BriefingPaperView: View {
                     text: scenario.briefing,
                     game: game,
                     font: .system(size: 13, design: .serif),
-                    color: FiftiesColors.typewriterInk,
+                    color: theme.inkBlack,
                     lineSpacing: 6
                 )
             } else {
                 Text(scenario.briefing)
                     .font(.system(size: 13, design: .serif))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(theme.inkBlack)
                     .lineSpacing(6)
+            }
+
+            // Signature block — wax seal reserved for dramatic beats only
+            if showsWaxSeal {
+                HStack(alignment: .bottom, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("/S/")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1.2)
+                            .foregroundColor(theme.inkGray)
+                        Text(scenario.presenterName.uppercased())
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .tracking(1.5)
+                            .foregroundColor(theme.inkBlack)
+                    }
+                    Spacer()
+                    WaxSealView(size: 48)
+                }
+                .padding(.top, 14)
             }
         }
         .padding(18)
         .background(
             ZStack {
-                FiftiesColors.agedPaper
+                theme.agedPaper
 
                 // Paper texture
                 Canvas { context, size in
@@ -267,13 +350,13 @@ struct BriefingPaperView: View {
                         var path = Path()
                         path.move(to: CGPoint(x: x, y: y))
                         path.addLine(to: CGPoint(x: x + length, y: y))
-                        context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.025)), lineWidth: 0.5)
+                        context.stroke(path, with: .color(theme.inkBlack.opacity(0.025)), lineWidth: 0.5)
                     }
                 }
 
                 // Aging gradient
                 LinearGradient(
-                    colors: [FiftiesColors.leatherBrown.opacity(0.06), Color.clear, FiftiesColors.leatherBrown.opacity(0.04)],
+                    colors: [theme.leatherBrown.opacity(0.06), Color.clear, theme.leatherBrown.opacity(0.04)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -281,18 +364,22 @@ struct BriefingPaperView: View {
         )
         .overlay(
             Rectangle()
-                .stroke(FiftiesColors.leatherBrown.opacity(0.2), lineWidth: 1)
+                .stroke(theme.leatherBrown.opacity(0.2), lineWidth: 1)
         )
         .modifier(CharacterSheetOverlayModifier(game: game))
-        // Paper clip on urgent documents
+        // Paper clip — procedural metal clip (prototype parity). Crisis
+        // briefings get a second, urgent tint so the stack reads as
+        // "this one's been marked up." Non-crisis briefings still get the
+        // clip so every document feels physically filed.
         .overlay(alignment: .topTrailing) {
-            if scenario.category == .crisis {
-                Image(systemName: "paperclip")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(hex: "6A6A6A").opacity(0.7))
-                    .rotationEffect(.degrees(-25))
-                    .offset(x: -12, y: 12)
-            }
+            PaperclipDecoration(
+                color: scenario.category == .crisis
+                    ? theme.urgentRed.opacity(0.65)
+                    : nil,
+                height: scenario.category == .crisis ? 64 : 52
+            )
+            .rotationEffect(.degrees(scenario.category == .crisis ? -8 : 4))
+            .offset(x: -24, y: -10)
         }
         .shadow(color: .black.opacity(0.12), radius: 4, x: 2, y: 3)
         // Initialize cached values ONCE when view appears

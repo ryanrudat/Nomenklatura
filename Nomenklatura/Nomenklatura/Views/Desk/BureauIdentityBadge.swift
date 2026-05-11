@@ -31,12 +31,12 @@ struct BureauIdentityBadge: View {
     }
 
     private var bureauPrimaryColor: Color {
-        guard let bureau = committedBureau else { return FiftiesColors.leatherBrown }
+        guard let bureau = committedBureau else { return ColdWarTheme.shared.leatherBrown }
         return BureauColors.primary(for: bureau)
     }
 
     private var bureauAccentColor: Color {
-        guard let bureau = committedBureau else { return FiftiesColors.brassGold }
+        guard let bureau = committedBureau else { return ColdWarTheme.shared.bronzeGold }
         return BureauColors.accent(for: bureau)
     }
 
@@ -106,12 +106,12 @@ struct BureauIdentityBadge: View {
                             // Bureau subtitle
                             Text(bureauSubtitle)
                                 .font(.system(size: 9, design: .serif))
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
 
                             // Player rank
                             Text(playerRankTitle)
                                 .font(.system(size: 8, weight: .medium, design: .monospaced))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(ColdWarTheme.shared.inkBlack)
                         }
 
                         Spacer()
@@ -127,14 +127,14 @@ struct BureauIdentityBadge: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(FiftiesColors.manillaFolder)
+                    .background(ColdWarTheme.shared.manillaFolder)
 
                     // Bottom accent stripe (thinner)
                     Rectangle()
                         .fill(bureauPrimaryColor.opacity(0.3))
                         .frame(height: 2)
                 }
-                .background(FiftiesColors.manillaFolder)
+                .background(ColdWarTheme.shared.manillaFolder)
                 .cornerRadius(4)
                 .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 2)
                 .overlay(
@@ -211,7 +211,7 @@ struct BureauIdentityBadge: View {
             Text("OFFICIAL")
                 .font(.system(size: 6, weight: .bold, design: .monospaced))
                 .tracking(0.5)
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
 
             // Clearance level
             HStack(spacing: 2) {
@@ -220,7 +220,7 @@ struct BureauIdentityBadge: View {
                 Text("\(clearanceLevel)")
                     .font(.system(size: 7, weight: .bold, design: .monospaced))
             }
-            .foregroundColor(FiftiesColors.carbonCopy)
+            .foregroundColor(ColdWarTheme.shared.carbonCopy)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -273,11 +273,11 @@ struct BureauIdentityBadgeCompact: View {
                 // Subtitle
                 Text(BureauColors.subtitle(for: bureau))
                     .font(.system(size: 9, design: .serif))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(FiftiesColors.manillaFolder)
+            .background(ColdWarTheme.shared.manillaFolder)
             .cornerRadius(3)
             .overlay(
                 RoundedRectangle(cornerRadius: 3)

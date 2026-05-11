@@ -51,7 +51,7 @@ struct VintageSparklineView: View {
         } else if currentValue > safeThreshold {
             return Color("statHigh")
         } else {
-            return FiftiesColors.typewriterInk
+            return ColdWarTheme.shared.inkBlack
         }
     }
 
@@ -70,7 +70,7 @@ struct VintageSparklineView: View {
                         .stroke(
                             style: StrokeStyle(lineWidth: 0.5, dash: [2, 2])
                         )
-                        .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                        .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.5))
                 }
 
                 // Main sparkline
@@ -117,13 +117,13 @@ struct VintageSparklineView: View {
                             if data.count > 1 {
                                 Text("T-\(data.count - 1)")
                                     .font(.system(size: 6, weight: .medium, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.fadedInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkGray)
                             }
                             Spacer()
                             // NOW label
                             Text("NOW")
                                 .font(.system(size: 6, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(ColdWarTheme.shared.inkBlack)
                         }
                         .padding(.horizontal, 2)
                     }
@@ -290,7 +290,7 @@ struct DetailedSparklineView: View {
             Text(title.uppercased())
                 .font(.system(size: 10, weight: .bold, design: .default))
                 .tracking(1)
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
 
             // Chart
             GeometryReader { geometry in
@@ -329,7 +329,7 @@ struct DetailedSparklineView: View {
                             path.addLine(to: CGPoint(x: geometry.size.width, y: y))
                         }
                         .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                        .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.5))
                     }
 
                     // Sparkline
@@ -361,11 +361,11 @@ struct DetailedSparklineView: View {
                     VStack {
                         Text("\(maxValue)")
                             .font(.system(size: 8, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
                         Spacer()
                         Text("\(minValue)")
                             .font(.system(size: 8, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
                     }
                     .frame(width: 20)
                 }
@@ -377,16 +377,16 @@ struct DetailedSparklineView: View {
                 if data.count > 1 {
                     Text("T-\(data.count - 1)")
                         .font(.system(size: 8, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
                 Spacer()
                 Text("NOW")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
             }
         }
         .padding(12)
-        .background(FiftiesColors.agedPaper)
+        .background(ColdWarTheme.shared.agedPaper)
         .overlay(
             Rectangle()
                 .stroke(Color(hex: "D4C9B0"), lineWidth: 1)
@@ -399,7 +399,7 @@ struct DetailedSparklineView: View {
         } else if value > safeThreshold {
             return Color("statHigh")
         } else {
-            return FiftiesColors.typewriterInk
+            return ColdWarTheme.shared.inkBlack
         }
     }
 }
@@ -478,7 +478,7 @@ struct DetailedSparklinePath: Shape {
         .frame(width: 80)
     }
     .padding()
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }
 
 #Preview("Detailed Chart") {

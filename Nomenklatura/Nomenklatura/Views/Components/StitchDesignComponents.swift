@@ -63,9 +63,9 @@ struct CircularStatGauge: View {
 
     private var strokeColor: Color {
         if showDanger && value < 40 {
-            return StitchColors.stampRed
+            return ColdWarTheme.shared.stampRed
         }
-        return StitchColors.ink
+        return ColdWarTheme.shared.inkBlack
     }
 
     var body: some View {
@@ -74,20 +74,20 @@ struct CircularStatGauge: View {
             Text(label.uppercased())
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1)
-                .foregroundColor(StitchColors.ink)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(StitchColors.paper)
+                .background(ColdWarTheme.shared.parchment)
                 .overlay(
                     Rectangle()
-                        .stroke(StitchColors.ink, lineWidth: 1)
+                        .stroke(ColdWarTheme.shared.inkBlack, lineWidth: 1)
                 )
 
             // Circular gauge
             ZStack {
                 // Background track
                 Circle()
-                    .stroke(StitchColors.ink.opacity(0.1), lineWidth: 4)
+                    .stroke(ColdWarTheme.shared.inkBlack.opacity(0.1), lineWidth: 4)
 
                 // Progress arc
                 Circle()
@@ -99,15 +99,15 @@ struct CircularStatGauge: View {
                 // Value text
                 Text("\(value)%")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(StitchColors.ink)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
             }
             .frame(width: 48, height: 48)
         }
         .padding(12)
-        .background(StitchColors.paperDark)
+        .background(ColdWarTheme.shared.paperGray)
         .overlay(
             Rectangle()
-                .stroke(StitchColors.ink, lineWidth: 1)
+                .stroke(ColdWarTheme.shared.inkBlack, lineWidth: 1)
         )
     }
 }
@@ -120,10 +120,10 @@ struct RedactedText: View {
     var body: some View {
         Text(text)
             .font(.system(size: 14))
-            .foregroundColor(StitchColors.ink)
+            .foregroundColor(ColdWarTheme.shared.inkBlack)
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
-            .background(StitchColors.ink.opacity(0.9))
+            .background(ColdWarTheme.shared.inkBlack.opacity(0.9))
             .cornerRadius(2)
     }
 }
@@ -132,10 +132,10 @@ struct RedactedText: View {
 struct RedactedModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .foregroundColor(StitchColors.ink)
+            .foregroundColor(ColdWarTheme.shared.inkBlack)
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
-            .background(StitchColors.ink.opacity(0.9))
+            .background(ColdWarTheme.shared.inkBlack.opacity(0.9))
             .cornerRadius(2)
     }
 }
@@ -156,9 +156,9 @@ struct ClassificationStamp: View {
 
         var color: Color {
             switch self {
-            case .confidential: return StitchColors.inkFaded
-            case .secret: return StitchColors.sovietRed
-            case .topSecret: return StitchColors.stampRed
+            case .confidential: return ColdWarTheme.shared.inkGray
+            case .secret: return ColdWarTheme.shared.sovietRed
+            case .topSecret: return ColdWarTheme.shared.stampRed
             }
         }
     }
@@ -201,7 +201,7 @@ struct PaperCard<Content: View>: View {
             if hasClip {
                 Image(systemName: "paperclip")
                     .font(.system(size: 32))
-                    .foregroundColor(StitchColors.inkLight)
+                    .foregroundColor(ColdWarTheme.shared.inkLight)
                     .rotationEffect(.degrees(15))
                     .offset(x: 80, y: -8)
             }
@@ -211,10 +211,10 @@ struct PaperCard<Content: View>: View {
                 content
             }
             .padding(16)
-            .background(StitchColors.paperWarm)
+            .background(ColdWarTheme.shared.parchmentDark)
             .overlay(
                 Rectangle()
-                    .stroke(StitchColors.ink.opacity(0.2), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.inkBlack.opacity(0.2), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
@@ -268,16 +268,16 @@ struct IndustrialButton: View {
 
     private var backgroundColor: Color {
         switch style {
-        case .primary: return StitchColors.ink
-        case .secondary: return StitchColors.paper
-        case .danger: return StitchColors.stampRed
+        case .primary: return ColdWarTheme.shared.inkBlack
+        case .secondary: return ColdWarTheme.shared.parchment
+        case .danger: return ColdWarTheme.shared.stampRed
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary: return StitchColors.lightText
-        case .secondary: return StitchColors.ink
+        case .primary: return ColdWarTheme.shared.schemeText
+        case .secondary: return ColdWarTheme.shared.inkBlack
         case .danger: return .white
         }
     }
@@ -285,7 +285,7 @@ struct IndustrialButton: View {
     private var borderColor: Color {
         switch style {
         case .primary: return .clear
-        case .secondary: return StitchColors.ink.opacity(0.3)
+        case .secondary: return ColdWarTheme.shared.inkBlack.opacity(0.3)
         case .danger: return .clear
         }
     }
@@ -307,9 +307,9 @@ struct RiskAssessmentBar: View {
 
     private var riskColor: Color {
         switch risk {
-        case 0..<0.33: return StitchColors.positive
-        case 0.33..<0.66: return StitchColors.warning
-        default: return StitchColors.danger
+        case 0..<0.33: return ColdWarTheme.shared.successGreen
+        case 0.33..<0.66: return ColdWarTheme.shared.warningAmber
+        default: return ColdWarTheme.shared.dangerRed
         }
     }
 
@@ -319,7 +319,7 @@ struct RiskAssessmentBar: View {
                 Text(label)
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
-                    .foregroundColor(StitchColors.inkFaded)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
                 Spacer()
                 Text(riskLevel)
                     .font(.system(size: 10, weight: .bold))
@@ -332,7 +332,7 @@ struct RiskAssessmentBar: View {
                 ForEach(0..<3, id: \.self) { index in
                     let isActive = Double(index) / 3.0 < risk
                     Rectangle()
-                        .fill(isActive ? segmentColor(for: index) : StitchColors.ink.opacity(0.15))
+                        .fill(isActive ? segmentColor(for: index) : ColdWarTheme.shared.inkBlack.opacity(0.15))
                         .frame(height: 8)
                         .cornerRadius(index == 0 ? 2 : (index == 2 ? 2 : 0), corners: cornerSet(for: index))
                 }
@@ -342,17 +342,17 @@ struct RiskAssessmentBar: View {
             Text("Failure probability: \(Int(risk * 100))%")
                 .font(.system(size: 10))
                 .italic()
-                .foregroundColor(StitchColors.inkLight)
+                .foregroundColor(ColdWarTheme.shared.inkLight)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
     private func segmentColor(for index: Int) -> Color {
         switch index {
-        case 0: return StitchColors.ink.opacity(0.3)
-        case 1: return StitchColors.ink.opacity(0.3)
-        case 2: return StitchColors.danger
-        default: return StitchColors.ink.opacity(0.3)
+        case 0: return ColdWarTheme.shared.inkBlack.opacity(0.3)
+        case 1: return ColdWarTheme.shared.inkBlack.opacity(0.3)
+        case 2: return ColdWarTheme.shared.dangerRed
+        default: return ColdWarTheme.shared.inkBlack.opacity(0.3)
         }
     }
 
@@ -394,11 +394,11 @@ struct SeverityBadge: View {
 
         var color: Color {
             switch self {
-            case .minor: return StitchColors.inkLight
-            case .moderate: return StitchColors.warning
-            case .significant: return StitchColors.gold
+            case .minor: return ColdWarTheme.shared.inkLight
+            case .moderate: return ColdWarTheme.shared.warningAmber
+            case .significant: return ColdWarTheme.shared.accentGold
             case .major: return Color.orange
-            case .critical: return StitchColors.stampRed
+            case .critical: return ColdWarTheme.shared.stampRed
             }
         }
     }
@@ -434,7 +434,7 @@ struct OutcomeChip: View {
             Text(text.uppercased())
                 .font(.system(size: 11, weight: .bold))
         }
-        .foregroundColor(isPositive ? StitchColors.positive : StitchColors.danger)
+        .foregroundColor(isPositive ? ColdWarTheme.shared.successGreen : ColdWarTheme.shared.dangerRed)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
@@ -458,7 +458,7 @@ struct FileHeader: View {
             Text("FILE #\(fileNumber)")
                 .font(.system(size: 16, weight: .black))
                 .tracking(2)
-                .foregroundColor(StitchColors.ink)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
 
             Spacer()
 
@@ -478,7 +478,7 @@ struct FileHeader: View {
         .padding(.bottom, 8)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(StitchColors.ink.opacity(0.2))
+                .fill(ColdWarTheme.shared.inkBlack.opacity(0.2))
                 .frame(height: 1)
         }
     }
@@ -516,7 +516,7 @@ struct DossierPhotoFrame<Content: View>: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(StitchColors.stampRed)
+                    .background(ColdWarTheme.shared.stampRed)
                     .rotationEffect(.degrees(-5))
                     .offset(x: 8, y: 8)
             }
@@ -542,11 +542,11 @@ struct StitchTabBar: View {
                         Text(tab.uppercased())
                             .font(.system(size: 11, weight: .black))
                             .tracking(1)
-                            .foregroundColor(index == selectedIndex ? StitchColors.ink : StitchColors.inkLight)
+                            .foregroundColor(index == selectedIndex ? ColdWarTheme.shared.inkBlack : ColdWarTheme.shared.inkLight)
                             .padding(.vertical, 12)
 
                         Rectangle()
-                            .fill(index == selectedIndex ? StitchColors.ink : Color.clear)
+                            .fill(index == selectedIndex ? ColdWarTheme.shared.inkBlack : Color.clear)
                             .frame(height: 3)
                     }
                     .frame(maxWidth: .infinity)
@@ -554,10 +554,10 @@ struct StitchTabBar: View {
                 .buttonStyle(.plain)
             }
         }
-        .background(StitchColors.paper)
+        .background(ColdWarTheme.shared.parchment)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(StitchColors.ink.opacity(0.15))
+                .fill(ColdWarTheme.shared.inkBlack.opacity(0.15))
                 .frame(height: 2)
         }
     }
@@ -572,7 +572,7 @@ struct StitchTabBar: View {
         CircularStatGauge(label: "Skill", value: 92, maxValue: 100)
     }
     .padding()
-    .background(StitchColors.paper)
+    .background(ColdWarTheme.shared.parchment)
 }
 
 #Preview("Classification Stamps") {
@@ -582,7 +582,7 @@ struct StitchTabBar: View {
         ClassificationStamp(level: .topSecret, rotation: 15)
     }
     .padding()
-    .background(StitchColors.paper)
+    .background(ColdWarTheme.shared.parchment)
 }
 
 #Preview("Buttons") {
@@ -592,7 +592,7 @@ struct StitchTabBar: View {
         IndustrialButton("Denounce", icon: "exclamationmark.triangle", style: .danger) {}
     }
     .padding()
-    .background(StitchColors.paper)
+    .background(ColdWarTheme.shared.parchment)
 }
 
 #Preview("Risk Bar") {
@@ -602,7 +602,7 @@ struct StitchTabBar: View {
         RiskAssessmentBar(risk: 0.75)
     }
     .padding()
-    .background(StitchColors.paper)
+    .background(ColdWarTheme.shared.parchment)
 }
 
 #Preview("Severity Badges") {
@@ -612,7 +612,7 @@ struct StitchTabBar: View {
         SeverityBadge(level: .critical)
     }
     .padding()
-    .background(StitchColors.paper)
+    .background(ColdWarTheme.shared.parchment)
 }
 
 #Preview("Outcome Chips") {
@@ -621,7 +621,7 @@ struct StitchTabBar: View {
         OutcomeChip(icon: "exclamationmark.triangle", text: "-15 Stability", isPositive: false)
     }
     .padding()
-    .background(StitchColors.paper)
+    .background(ColdWarTheme.shared.parchment)
 }
 
 #Preview("Tab Bar") {

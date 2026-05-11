@@ -579,27 +579,27 @@ struct MacroEconomicIndicatorsCard: View {
                 MacroIndicator(
                     label: "GDP Index",
                     value: "\(game.gdpIndex)",
-                    color: game.gdpIndex >= 100 ? FiftiesColors.approvedGreen : theme.sovietRed
+                    color: game.gdpIndex >= 100 ? theme.approvedGreen : theme.sovietRed
                 )
                 MacroIndicator(
                     label: "Inflation",
                     value: "\(game.inflationRate)%",
-                    color: game.inflationRate <= 10 ? FiftiesColors.approvedGreen : (game.inflationRate <= 25 ? .orange : theme.sovietRed)
+                    color: game.inflationRate <= 10 ? theme.approvedGreen : (game.inflationRate <= 25 ? .orange : theme.sovietRed)
                 )
                 MacroIndicator(
                     label: "Unemploy.",
                     value: "\(game.unemploymentRate)%",
-                    color: game.unemploymentRate <= 5 ? FiftiesColors.approvedGreen : (game.unemploymentRate <= 12 ? .orange : theme.sovietRed)
+                    color: game.unemploymentRate <= 5 ? theme.approvedGreen : (game.unemploymentRate <= 12 ? .orange : theme.sovietRed)
                 )
                 MacroIndicator(
                     label: "Trade Bal.",
                     value: "\(game.tradeBalance > 0 ? "+" : "")\(game.tradeBalance)",
-                    color: game.tradeBalance >= 0 ? FiftiesColors.approvedGreen : theme.sovietRed
+                    color: game.tradeBalance >= 0 ? theme.approvedGreen : theme.sovietRed
                 )
                 MacroIndicator(
                     label: "Gini",
                     value: "\(game.giniCoefficient)",
-                    color: game.giniCoefficient <= 30 ? FiftiesColors.approvedGreen : (game.giniCoefficient <= 45 ? .orange : theme.sovietRed)
+                    color: game.giniCoefficient <= 30 ? theme.approvedGreen : (game.giniCoefficient <= 45 ? .orange : theme.sovietRed)
                 )
             }
         }
@@ -650,7 +650,7 @@ struct FiveYearPlanCard: View {
 
     private var performanceColor: Color {
         switch game.planPerformanceScore {
-        case EconomicThresholds.excellent...: return FiftiesColors.approvedGreen
+        case EconomicThresholds.excellent...: return theme.approvedGreen
         case EconomicThresholds.stable..<EconomicThresholds.excellent: return .orange
         default: return .red
         }
@@ -779,7 +779,7 @@ struct TradePartnerRow: View {
         switch country.politicalBloc {
         case .socialist: return .red
         case .capitalist: return .blue
-        case .nonAligned: return FiftiesColors.approvedGreen
+        case .nonAligned: return theme.approvedGreen
         case .rival: return .orange
         }
     }
@@ -795,7 +795,7 @@ struct TradePartnerRow: View {
 
     private var relationshipColor: Color {
         switch country.relationshipScore {
-        case 50...: return FiftiesColors.approvedGreen
+        case 50...: return theme.approvedGreen
         case 0..<50: return theme.inkGray
         case -50..<0: return .orange
         default: return .red

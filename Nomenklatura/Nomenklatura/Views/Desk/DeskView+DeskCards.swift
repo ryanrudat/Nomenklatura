@@ -17,13 +17,13 @@ extension DeskView {
             // Section header
             HStack {
                 Rectangle()
-                    .fill(FiftiesColors.urgentRed)
+                    .fill(ColdWarTheme.shared.urgentRed)
                     .frame(width: 3, height: 14)
 
                 Text("DOCUMENTS AWAITING ACTION")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
 
                 Spacer()
 
@@ -35,7 +35,7 @@ extension DeskView {
                     .padding(.vertical, 3)
                     .background(
                         Capsule()
-                            .fill(documents.contains { $0.urgencyEnum >= .urgent } ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+                            .fill(documents.contains { $0.urgencyEnum >= .urgent } ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.leatherBrown)
                     )
             }
 
@@ -53,11 +53,11 @@ extension DeskView {
             ZStack {
                 // Desk blotter area
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(FiftiesColors.leatherBrown.opacity(0.08))
+                    .fill(ColdWarTheme.shared.leatherBrown.opacity(0.08))
 
                 // Subtle border
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(FiftiesColors.leatherBrown.opacity(0.15), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.15), lineWidth: 1)
             }
         )
     }
@@ -71,7 +71,7 @@ extension DeskView {
             ZStack {
                 // Manila folder background
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(FiftiesColors.manillaFolder)
+                    .fill(ColdWarTheme.shared.manillaFolder)
                     .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
 
                 // Paper texture overlay (using deterministic pattern to avoid re-rendering)
@@ -84,7 +84,7 @@ extension DeskView {
                         var path = Path()
                         path.move(to: CGPoint(x: x, y: y))
                         path.addLine(to: CGPoint(x: x + length, y: y))
-                        context.stroke(path, with: .color(FiftiesColors.leatherBrown.opacity(0.1)), lineWidth: 0.5)
+                        context.stroke(path, with: .color(ColdWarTheme.shared.leatherBrown.opacity(0.1)), lineWidth: 0.5)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -169,13 +169,13 @@ extension DeskView {
                         // DOSSIER header - typewriter style
                         HStack(spacing: 6) {
                             Rectangle()
-                                .fill(FiftiesColors.stampRed)
+                                .fill(ColdWarTheme.shared.sovietRed)
                                 .frame(width: 3, height: 12)
 
                             Text("DOSSIER")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .tracking(2)
-                                .foregroundColor(FiftiesColors.leatherBrown)
+                                .foregroundColor(ColdWarTheme.shared.leatherBrown)
                         }
 
                         // Loading status - typewriter style
@@ -183,19 +183,19 @@ extension DeskView {
                             HStack(spacing: 6) {
                                 ProgressView()
                                     .scaleEffect(0.6)
-                                    .tint(FiftiesColors.leatherBrown)
+                                    .tint(ColdWarTheme.shared.leatherBrown)
 
                                 Text(loadingState.loadingMessage.uppercased())
                                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                                     .tracking(0.5)
-                                    .foregroundColor(FiftiesColors.leatherBrown)
+                                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
                                     .lineLimit(2)
                             }
 
                             if Secrets.isAIEnabled && loadingState.isLoading {
                                 Text("AI-POWERED GENERATION")
                                     .font(.system(size: 8, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.fadedInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkGray)
                             }
                         }
 
@@ -253,13 +253,13 @@ extension DeskView {
                         Text(newspaper.publicationName.uppercased())
                             .font(.system(size: 18, weight: .black, design: .serif))
                             .tracking(1)
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                         Spacer()
 
                         Text(formattedDate.uppercased())
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
                     }
                     .padding(.horizontal, 14)
                     .padding(.top, 10)
@@ -267,10 +267,10 @@ extension DeskView {
                     // Decorative double line under masthead
                     VStack(spacing: 2) {
                         Rectangle()
-                            .fill(FiftiesColors.typewriterInk)
+                            .fill(ColdWarTheme.shared.inkBlack)
                             .frame(height: 2)
                         Rectangle()
-                            .fill(FiftiesColors.typewriterInk)
+                            .fill(ColdWarTheme.shared.inkBlack)
                             .frame(height: 0.5)
                     }
                     .padding(.horizontal, 10)
@@ -279,7 +279,7 @@ extension DeskView {
                     // Headline
                     Text(newspaper.headline.headline.uppercased())
                         .font(.system(size: 18, weight: .black, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                         .multilineTextAlignment(.leading)
                         .lineLimit(3)
                         .padding(.horizontal, 14)
@@ -288,7 +288,7 @@ extension DeskView {
                     // Brief text
                     Text(String(newspaper.headline.body.prefix(100)) + "...")
                         .font(.system(size: 11, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                         .lineLimit(2)
                         .lineSpacing(2)
                         .padding(.horizontal, 14)
@@ -297,7 +297,7 @@ extension DeskView {
 
                     // Fold line indicator
                     Rectangle()
-                        .fill(FiftiesColors.typewriterInk.opacity(0.08))
+                        .fill(ColdWarTheme.shared.inkBlack.opacity(0.08))
                         .frame(height: 1)
                         .padding(.horizontal, 6)
 
@@ -308,7 +308,7 @@ extension DeskView {
                 .background(
                     ZStack {
                         // Newsprint color - slightly yellowed
-                        FiftiesColors.agedPaper
+                        ColdWarTheme.shared.agedPaper
 
                         // Aged paper texture (using deterministic pattern to avoid re-rendering)
                         Canvas { context, size in
@@ -321,14 +321,14 @@ extension DeskView {
                                 var path = Path()
                                 path.move(to: CGPoint(x: x, y: y))
                                 path.addLine(to: CGPoint(x: x + length, y: y))
-                                context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.03)), lineWidth: 0.5)
+                                context.stroke(path, with: .color(ColdWarTheme.shared.inkBlack.opacity(0.03)), lineWidth: 0.5)
                             }
                         }
                         .drawingGroup() // Cache the rendered texture
 
                         // Edge aging
                         LinearGradient(
-                            colors: [FiftiesColors.leatherBrown.opacity(0.08), Color.clear],
+                            colors: [ColdWarTheme.shared.leatherBrown.opacity(0.08), Color.clear],
                             startPoint: .top,
                             endPoint: .center
                         )
@@ -356,11 +356,11 @@ extension DeskView {
                             .font(.system(size: 8, weight: .bold, design: .monospaced))
                             .tracking(1.5)
                     }
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
 
                     Text(samizdat.headline.headline)
                         .font(.system(size: 11, weight: .semibold, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                         .lineLimit(2)
                 }
                 .padding(10)
@@ -395,7 +395,7 @@ extension DeskView {
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(FiftiesColors.leatherBrown)
+                        .fill(ColdWarTheme.shared.leatherBrown)
                 )
             }
             .buttonStyle(.plain)
@@ -411,12 +411,12 @@ extension DeskView {
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                         .tracking(1)
                 }
-                .foregroundColor(FiftiesColors.leatherBrown)
+                .foregroundColor(ColdWarTheme.shared.leatherBrown)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 3)
-                        .stroke(FiftiesColors.leatherBrown, lineWidth: 1.5)
+                        .stroke(ColdWarTheme.shared.leatherBrown, lineWidth: 1.5)
                 )
             }
             .buttonStyle(.plain)
@@ -445,19 +445,19 @@ extension DeskView {
                     // Official header with red stripe
                     HStack(alignment: .top) {
                         Rectangle()
-                            .fill(scenario.requiresDecision ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+                            .fill(scenario.requiresDecision ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.leatherBrown)
                             .frame(width: 4)
 
                         VStack(alignment: .leading, spacing: 3) {
                             Text(scenario.requiresDecision ? "ACTION REQUIRED" : "FOR YOUR INFORMATION")
                                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                                 .tracking(1.5)
-                                .foregroundColor(scenario.requiresDecision ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+                                .foregroundColor(scenario.requiresDecision ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.leatherBrown)
 
                             Text(scenario.category.rawValue.uppercased())
                                 .font(.system(size: 8, weight: .medium, design: .monospaced))
                                 .tracking(1)
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
                         }
 
                         Spacer()
@@ -473,7 +473,7 @@ extension DeskView {
                     // Divider line - typewriter style
                     Text(String(repeating: "-", count: 50))
                         .font(.system(size: 8, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk.opacity(0.4))
+                        .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.4))
                         .padding(.horizontal, 12)
                         .padding(.top, 6)
 
@@ -482,12 +482,12 @@ extension DeskView {
                         HStack(spacing: 6) {
                             Text("FROM:")
                                 .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
                                 .frame(width: 40, alignment: .leading)
 
                             Text(scenario.presenterName.uppercased())
                                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(ColdWarTheme.shared.inkBlack)
                         }
 
                         if let title = scenario.presenterTitle {
@@ -496,7 +496,7 @@ extension DeskView {
                                     .frame(width: 40)
                                 Text("(\(title))")
                                     .font(.system(size: 9, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.fadedInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkGray)
                             }
                         }
                     }
@@ -506,7 +506,7 @@ extension DeskView {
                     // Briefing content preview
                     Text(String(scenario.briefing.prefix(120)) + "...")
                         .font(.system(size: 11, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                         .lineLimit(3)
                         .lineSpacing(3)
                         .multilineTextAlignment(.leading)
@@ -522,7 +522,7 @@ extension DeskView {
                                 Text("\(scenario.options.count) OPTIONS REQUIRE DECISION")
                                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                             }
-                            .foregroundColor(FiftiesColors.urgentRed.opacity(0.8))
+                            .foregroundColor(ColdWarTheme.shared.urgentRed.opacity(0.8))
                         }
 
                         Spacer()
@@ -534,7 +534,7 @@ extension DeskView {
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 8))
                         }
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                     }
                     .padding(.horizontal, 12)
                     .padding(.top, 10)
@@ -543,7 +543,7 @@ extension DeskView {
                 .background(
                     ZStack {
                         // Government memo paper
-                        FiftiesColors.agedPaper
+                        ColdWarTheme.shared.agedPaper
 
                         // Paper texture
                         Canvas { context, size in
@@ -555,7 +555,7 @@ extension DeskView {
                                 var path = Path()
                                 path.move(to: CGPoint(x: x, y: y))
                                 path.addLine(to: CGPoint(x: x + length, y: y))
-                                context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.02)), lineWidth: 0.5)
+                                context.stroke(path, with: .color(ColdWarTheme.shared.inkBlack.opacity(0.02)), lineWidth: 0.5)
                             }
                         }
                         .drawingGroup()

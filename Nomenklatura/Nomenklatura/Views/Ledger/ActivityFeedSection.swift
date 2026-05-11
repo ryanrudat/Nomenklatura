@@ -73,7 +73,7 @@ struct ActivityFeedSection: View {
             Text("RECENT ACTIVITY")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .tracking(1.2)
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
 
             Spacer()
 
@@ -103,7 +103,7 @@ struct ActivityFeedSection: View {
                 }
             }
         }
-        .background(FiftiesColors.manillaFolder)
+        .background(ColdWarTheme.shared.manillaFolder)
         .cornerRadius(4)
         .overlay(
             RoundedRectangle(cornerRadius: 4)
@@ -142,7 +142,7 @@ struct ActivityFeedRow: View {
 
     private var iconColor: Color {
         if let success = entry.wasSuccess {
-            return success ? FiftiesColors.approvedGreen : Color(hex: "8B0000")
+            return success ? ColdWarTheme.shared.approvedGreen : Color(hex: "8B0000")
         }
         return bureauColor
     }
@@ -178,7 +178,7 @@ struct ActivityFeedRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.title)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                 Text(entry.description)
                     .font(.system(size: 9, design: .serif))
@@ -202,7 +202,7 @@ struct ActivityFeedRow: View {
                 if let success = entry.wasSuccess {
                     Text(success ? "SUCCESS" : "FAILED")
                         .font(.system(size: 6, weight: .bold, design: .monospaced))
-                        .foregroundColor(success ? FiftiesColors.approvedGreen : Color(hex: "8B0000"))
+                        .foregroundColor(success ? ColdWarTheme.shared.approvedGreen : Color(hex: "8B0000"))
                 }
             }
         }

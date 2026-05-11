@@ -29,8 +29,8 @@ struct SparklineStatWidget: View {
             switch self {
             case .positive: return Color(hex: "28A745")
             case .negative: return Color(hex: "CC7000")
-            case .neutral: return FiftiesColors.fadedInk
-            case .critical: return FiftiesColors.urgentRed
+            case .neutral: return ColdWarTheme.shared.inkGray
+            case .critical: return ColdWarTheme.shared.urgentRed
             }
         }
     }
@@ -51,7 +51,7 @@ struct SparklineStatWidget: View {
                 // Icon in circle with value overlay
                 ZStack {
                     Circle()
-                        .fill(FiftiesColors.agedPaper)
+                        .fill(ColdWarTheme.shared.agedPaper)
                         .frame(width: 28, height: 28)
 
                     Circle()
@@ -60,13 +60,13 @@ struct SparklineStatWidget: View {
 
                     Image(systemName: icon)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(FiftiesColors.leatherBrown)
+                        .foregroundColor(ColdWarTheme.shared.leatherBrown)
                 }
 
                 // Value - typewriter style
                 Text(value)
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(status == .critical ? FiftiesColors.urgentRed : FiftiesColors.typewriterInk)
+                    .foregroundColor(status == .critical ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.inkBlack)
 
                 // Sparkline (optional)
                 if showSparkline {
@@ -85,12 +85,12 @@ struct SparklineStatWidget: View {
                     } else {
                         // Placeholder when no history
                         Rectangle()
-                            .fill(FiftiesColors.fadedInk.opacity(0.1))
+                            .fill(ColdWarTheme.shared.inkGray.opacity(0.1))
                             .frame(height: 16)
                             .overlay(
                                 Text("—")
                                     .font(.system(size: 8))
-                                    .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                                    .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.5))
                             )
                     }
                 }
@@ -99,14 +99,14 @@ struct SparklineStatWidget: View {
                 Text(label)
                     .font(.system(size: 7, weight: .bold, design: .monospaced))
                     .tracking(0.5)
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .padding(.horizontal, 4)
             .background(
                 ZStack {
-                    FiftiesColors.agedPaper
+                    ColdWarTheme.shared.agedPaper
 
                     // Subtle texture
                     Canvas { context, size in
@@ -117,7 +117,7 @@ struct SparklineStatWidget: View {
                             var path = Path()
                             path.move(to: CGPoint(x: x, y: y))
                             path.addLine(to: CGPoint(x: x + length, y: y))
-                            context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.02)), lineWidth: 0.5)
+                            context.stroke(path, with: .color(ColdWarTheme.shared.inkBlack.opacity(0.02)), lineWidth: 0.5)
                         }
                     }
                 }
@@ -125,7 +125,7 @@ struct SparklineStatWidget: View {
             .cornerRadius(3)
             .overlay(
                 RoundedRectangle(cornerRadius: 3)
-                    .stroke(FiftiesColors.leatherBrown.opacity(0.15), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.15), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
         }
@@ -263,7 +263,7 @@ struct StatDetailSheet: View {
                             Text(statName.uppercased())
                                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                                 .tracking(2)
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
 
                             Text("\(currentValue)")
                                 .font(.system(size: 48, weight: .bold, design: .monospaced))
@@ -280,20 +280,20 @@ struct StatDetailSheet: View {
 
                             Text(trendLabel)
                                 .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
                         }
                     }
                     .padding()
-                    .background(FiftiesColors.cardstock)
+                    .background(ColdWarTheme.shared.cardstock)
                     .overlay(
                         Rectangle()
-                            .stroke(FiftiesColors.leatherBrown.opacity(0.2), lineWidth: 1)
+                            .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.2), lineWidth: 1)
                     )
 
                     // Description
                     Text(description)
                         .font(.system(size: 13, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                         .padding(.horizontal)
 
                     // Large sparkline chart
@@ -312,7 +312,7 @@ struct StatDetailSheet: View {
                             Text("STATISTICS")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .tracking(2)
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
 
                             HStack(spacing: 16) {
                                 StatisticBox(label: "HIGHEST", value: "\(history.max() ?? 0)")
@@ -322,7 +322,7 @@ struct StatDetailSheet: View {
                             }
                         }
                         .padding()
-                        .background(FiftiesColors.agedPaper)
+                        .background(ColdWarTheme.shared.agedPaper)
                         .overlay(
                             Rectangle()
                                 .stroke(Color(hex: "D4C9B0"), lineWidth: 1)
@@ -334,7 +334,7 @@ struct StatDetailSheet: View {
                 }
                 .padding(.vertical)
             }
-            .background(FiftiesColors.freshPaper)
+            .background(ColdWarTheme.shared.freshPaper)
             .navigationTitle(statName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -342,7 +342,7 @@ struct StatDetailSheet: View {
                     Button("Done") {
                         onDismiss()
                     }
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
                 }
             }
         }
@@ -354,7 +354,7 @@ struct StatDetailSheet: View {
         } else if currentValue > safeThreshold {
             return Color("statHigh")
         } else {
-            return FiftiesColors.typewriterInk
+            return ColdWarTheme.shared.inkBlack
         }
     }
 
@@ -382,7 +382,7 @@ struct StatDetailSheet: View {
         switch trend {
         case .rising: return Color("statHigh")
         case .falling: return Color("statLow")
-        case .stable: return FiftiesColors.fadedInk
+        case .stable: return ColdWarTheme.shared.inkGray
         }
     }
 
@@ -405,11 +405,11 @@ struct StatisticBox: View {
         VStack(spacing: 2) {
             Text(label)
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
 
             Text(value)
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
         }
         .frame(maxWidth: .infinity)
     }

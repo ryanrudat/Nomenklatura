@@ -39,7 +39,7 @@ struct BureauCommandCard: View {
             }
             .buttonStyle(.plain)
         }
-        .background(FiftiesColors.agedPaper)
+        .background(theme.agedPaper)
         .cornerRadius(6)
         .overlay(
             RoundedRectangle(cornerRadius: 6)
@@ -70,14 +70,14 @@ struct BureauCommandCard: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 2)
-                                .background(FiftiesColors.stampRed)
+                                .background(theme.sovietRed)
                                 .cornerRadius(2)
                         }
                     }
 
                     Text(bureau.displayName.uppercased())
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                 }
 
                 Spacer()
@@ -88,17 +88,17 @@ struct BureauCommandCard: View {
                         StatusLight(.active, size: 5)
                         Text("\(activeOpsCount)")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.approvedGreen)
+                            .foregroundColor(theme.approvedGreen)
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(FiftiesColors.approvedGreen.opacity(0.1))
+                    .background(theme.approvedGreen.opacity(0.1))
                     .cornerRadius(3)
                 }
 
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
             }
 
             // Bureau head info row
@@ -117,11 +117,11 @@ struct BureauCommandCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(head.name)
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(theme.inkBlack)
 
                     Text(head.title)
                         .font(.system(size: 8, weight: .regular, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                 }
 
                 Spacer()
@@ -144,7 +144,7 @@ struct BureauCommandCard: View {
                 )
 
                 Rectangle()
-                    .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                    .fill(theme.carbonCopy.opacity(0.2))
                     .frame(width: 1, height: 14)
 
                 statLabel(
@@ -154,7 +154,7 @@ struct BureauCommandCard: View {
                 )
 
                 Rectangle()
-                    .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                    .fill(theme.carbonCopy.opacity(0.2))
                     .frame(width: 1, height: 14)
 
                 effectivenessIndicator
@@ -187,9 +187,9 @@ struct BureauCommandCard: View {
     }
 
     private var loyaltyColor: Color {
-        if head.loyalty >= 70 { return FiftiesColors.approvedGreen }
-        if head.loyalty >= 40 { return FiftiesColors.brassGold }
-        return FiftiesColors.stampRed
+        if head.loyalty >= 70 { return theme.approvedGreen }
+        if head.loyalty >= 40 { return theme.bronzeGold }
+        return theme.sovietRed
     }
 
     // MARK: - Effectiveness Indicator
@@ -218,13 +218,13 @@ struct BureauCommandCard: View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 7))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
             Text(value)
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(theme.inkGray)
             Text(label)
                 .font(.system(size: 7, weight: .medium, design: .monospaced))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
         }
     }
 }

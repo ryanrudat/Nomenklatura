@@ -77,7 +77,7 @@ struct TradeProposalSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("CANCEL") { dismiss() }
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
             }
             .alert(proposalAccepted ? "PROPOSAL ACCEPTED" : "PROPOSAL REJECTED",
@@ -99,18 +99,18 @@ struct TradeProposalSheet: View {
                 Text("NEGOTIATING WITH")
                     .font(.system(size: 8, weight: .semibold))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
                 Text(country.name.uppercased())
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(theme.inkBlack)
                 Text("Relations: \(country.relationshipScore > 0 ? "+" : "")\(country.relationshipScore)  |  Econ. Power: \(country.economicPower)")
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
             }
             Spacer()
         }
         .padding(14)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .overlay(
             Rectangle()
                 .stroke(theme.borderTan, lineWidth: 1)
@@ -144,15 +144,15 @@ struct TradeProposalSheet: View {
                 HStack(spacing: 8) {
                     Image(systemName: type.iconName)
                         .font(.system(size: 14))
-                        .foregroundColor(isSelected ? FiftiesColors.brassGold : FiftiesColors.typewriterInk)
+                        .foregroundColor(isSelected ? theme.bronzeGold : theme.inkBlack)
                         .frame(width: 24)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(type.displayName.uppercased())
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundColor(meetsRequirement ? FiftiesColors.typewriterInk : FiftiesColors.carbonCopy)
+                            .foregroundColor(meetsRequirement ? theme.inkBlack : theme.carbonCopy)
                         Text(type.description)
                             .font(.system(size: 9, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(theme.carbonCopy)
                             .lineLimit(2)
                     }
                     Spacer()
@@ -169,14 +169,14 @@ struct TradeProposalSheet: View {
                     Text("REQUIRES RELATIONS \(minRelationship)+")
                         .font(.system(size: 8, weight: .bold))
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
             }
             .padding(12)
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .overlay(
                 Rectangle()
-                    .stroke(isSelected ? FiftiesColors.brassGold : theme.borderTan, lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? theme.bronzeGold : theme.borderTan, lineWidth: isSelected ? 2 : 1)
             )
             .opacity(meetsRequirement ? 1.0 : 0.5)
         }
@@ -193,10 +193,10 @@ struct TradeProposalSheet: View {
                 HStack(spacing: 8) {
                     Image(systemName: type.iconName)
                         .font(.system(size: 12))
-                        .foregroundColor(FiftiesColors.brassGold)
+                        .foregroundColor(theme.bronzeGold)
                     Text(type.displayName.uppercased())
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(theme.inkBlack)
                     Spacer()
                     Button {
                         step = .chooseType
@@ -204,14 +204,14 @@ struct TradeProposalSheet: View {
                         Text("CHANGE")
                             .font(.system(size: 8, weight: .bold, design: .monospaced))
                             .tracking(0.5)
-                            .foregroundColor(FiftiesColors.stampRed)
+                            .foregroundColor(theme.sovietRed)
                     }
                 }
                 .padding(10)
-                .background(FiftiesColors.cardstock)
+                .background(theme.cardstock)
                 .overlay(
                     Rectangle()
-                        .stroke(FiftiesColors.brassGold, lineWidth: 1)
+                        .stroke(theme.bronzeGold, lineWidth: 1)
                 )
             }
 
@@ -220,23 +220,23 @@ struct TradeProposalSheet: View {
                 Text("FAVORABILITY")
                     .font(.system(size: 9, weight: .semibold))
                     .tracking(0.5)
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(theme.inkBlack)
 
                 HStack(spacing: 4) {
                     Text("FAVORS US")
                         .font(.system(size: 7, weight: .bold))
                         .tracking(0.3)
-                        .foregroundColor(FiftiesColors.approvedGreen)
+                        .foregroundColor(theme.approvedGreen)
                     Spacer()
                     Text("EQUAL")
                         .font(.system(size: 7, weight: .bold))
                         .tracking(0.3)
-                        .foregroundColor(FiftiesColors.brassGold)
+                        .foregroundColor(theme.bronzeGold)
                     Spacer()
                     Text("FAVORS THEM")
                         .font(.system(size: 7, weight: .bold))
                         .tracking(0.3)
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
 
                 Slider(value: $favorability, in: 0...1, step: 0.1)
@@ -244,10 +244,10 @@ struct TradeProposalSheet: View {
 
                 Text(favorabilityDescription)
                     .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
             }
             .padding(12)
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .overlay(
                 Rectangle()
                     .stroke(theme.borderTan, lineWidth: 1)
@@ -258,7 +258,7 @@ struct TradeProposalSheet: View {
                 Text("DURATION")
                     .font(.system(size: 9, weight: .semibold))
                     .tracking(0.5)
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(theme.inkBlack)
 
                 ForEach(DurationOption.allCases, id: \.rawValue) { option in
                     Button {
@@ -267,10 +267,10 @@ struct TradeProposalSheet: View {
                         HStack(spacing: 8) {
                             Image(systemName: selectedDuration == option ? "checkmark.circle.fill" : "circle")
                                 .font(.system(size: 12))
-                                .foregroundColor(selectedDuration == option ? FiftiesColors.brassGold : FiftiesColors.carbonCopy)
+                                .foregroundColor(selectedDuration == option ? theme.bronzeGold : theme.carbonCopy)
                             Text(option.displayName)
                                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(theme.inkBlack)
                             Spacer()
                         }
                         .padding(.vertical, 4)
@@ -279,7 +279,7 @@ struct TradeProposalSheet: View {
                 }
             }
             .padding(12)
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .overlay(
                 Rectangle()
                     .stroke(theme.borderTan, lineWidth: 1)
@@ -295,7 +295,7 @@ struct TradeProposalSheet: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
-                    .background(FiftiesColors.brassGold)
+                    .background(theme.bronzeGold)
                     .cornerRadius(3)
             }
             .buttonStyle(.plain)
@@ -317,48 +317,48 @@ struct TradeProposalSheet: View {
                     Text("PROPOSED AGREEMENT")
                         .font(.system(size: 9, weight: .semibold))
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
 
                     HStack(spacing: 8) {
                         Image(systemName: type.iconName)
                             .font(.system(size: 16))
-                            .foregroundColor(FiftiesColors.brassGold)
+                            .foregroundColor(theme.bronzeGold)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(type.displayName.uppercased())
                                 .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(theme.inkBlack)
                             Text("with \(country.name)")
                                 .font(.system(size: 10, design: .monospaced))
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(theme.carbonCopy)
                         }
                     }
 
                     Rectangle()
-                        .fill(FiftiesColors.brassGold.opacity(0.4))
+                        .fill(theme.bronzeGold.opacity(0.4))
                         .frame(height: 1)
 
                     // Duration
                     HStack {
                         Text("DURATION:")
                             .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(theme.carbonCopy)
                         Text(selectedDuration.displayName)
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(theme.inkBlack)
                     }
 
                     // Favorability
                     HStack {
                         Text("TERMS:")
                             .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(theme.carbonCopy)
                         Text(favorabilityLabel.uppercased())
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
                             .foregroundColor(favorabilityColor)
                     }
                 }
                 .padding(14)
-                .background(FiftiesColors.cardstock)
+                .background(theme.cardstock)
                 .overlay(
                     Rectangle()
                         .stroke(theme.borderTan, lineWidth: 1)
@@ -369,7 +369,7 @@ struct TradeProposalSheet: View {
                     Text("PROJECTED EFFECTS (PER TURN)")
                         .font(.system(size: 9, weight: .semibold))
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
 
                     HStack(spacing: 16) {
                         projectedStat("TREASURY", value: projected.treasury)
@@ -379,7 +379,7 @@ struct TradeProposalSheet: View {
                     }
 
                     Rectangle()
-                        .fill(FiftiesColors.brassGold.opacity(0.4))
+                        .fill(theme.bronzeGold.opacity(0.4))
                         .frame(height: 1)
 
                     HStack(spacing: 16) {
@@ -388,7 +388,7 @@ struct TradeProposalSheet: View {
                     }
                 }
                 .padding(14)
-                .background(FiftiesColors.cardstock)
+                .background(theme.cardstock)
                 .overlay(
                     Rectangle()
                         .stroke(theme.borderTan, lineWidth: 1)
@@ -399,7 +399,7 @@ struct TradeProposalSheet: View {
                     Text("ACCEPTANCE PROBABILITY")
                         .font(.system(size: 9, weight: .semibold))
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
 
                     HStack {
                         GeometryReader { geo in
@@ -423,10 +423,10 @@ struct TradeProposalSheet: View {
 
                     Text(acceptanceDescription(acceptance))
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                 }
                 .padding(14)
-                .background(FiftiesColors.cardstock)
+                .background(theme.cardstock)
                 .overlay(
                     Rectangle()
                         .stroke(theme.borderTan, lineWidth: 1)
@@ -440,10 +440,10 @@ struct TradeProposalSheet: View {
                         Text("REVISE TERMS")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .tracking(0.5)
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(theme.inkBlack)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(FiftiesColors.cardstock)
+                            .background(theme.cardstock)
                             .overlay(
                                 Rectangle()
                                     .stroke(theme.borderTan, lineWidth: 1)
@@ -460,7 +460,7 @@ struct TradeProposalSheet: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(FiftiesColors.approvedGreen)
+                            .background(theme.approvedGreen)
                             .cornerRadius(3)
                     }
                     .buttonStyle(.plain)
@@ -481,10 +481,10 @@ struct TradeProposalSheet: View {
                 Spacer()
                 Text(step)
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundColor(FiftiesColors.brassGold)
+                    .foregroundColor(theme.bronzeGold)
             }
             Rectangle()
-                .fill(FiftiesColors.brassGold)
+                .fill(theme.bronzeGold)
                 .frame(height: 2)
         }
     }
@@ -494,10 +494,10 @@ struct TradeProposalSheet: View {
             Text(label.prefix(4).uppercased())
                 .font(.system(size: 7, weight: .semibold))
                 .tracking(0.3)
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
             Text("\(value > 0 ? "+" : "")\(value)")
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .foregroundColor(value > 0 ? FiftiesColors.approvedGreen : value < 0 ? FiftiesColors.stampRed : FiftiesColors.carbonCopy)
+                .foregroundColor(value > 0 ? theme.approvedGreen : value < 0 ? theme.sovietRed : theme.carbonCopy)
         }
     }
 
@@ -506,10 +506,10 @@ struct TradeProposalSheet: View {
             Text(label)
                 .font(.system(size: 7, weight: .semibold))
                 .tracking(0.3)
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
             Text("\(value > 0 ? "+" : "")\(value)")
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
-                .foregroundColor(value > 0 ? FiftiesColors.approvedGreen : value < 0 ? FiftiesColors.stampRed : FiftiesColors.carbonCopy)
+                .foregroundColor(value > 0 ? theme.approvedGreen : value < 0 ? theme.sovietRed : theme.carbonCopy)
         }
     }
 
@@ -625,9 +625,9 @@ struct TradeProposalSheet: View {
     }
 
     private var favorabilityColor: Color {
-        if favorability < 0.3 { return FiftiesColors.approvedGreen }
-        if favorability < 0.55 { return FiftiesColors.brassGold }
-        return FiftiesColors.stampRed
+        if favorability < 0.3 { return theme.approvedGreen }
+        if favorability < 0.55 { return theme.bronzeGold }
+        return theme.sovietRed
     }
 
     private var favorabilityDescription: String {
@@ -641,9 +641,9 @@ struct TradeProposalSheet: View {
     }
 
     private func acceptanceColor(_ probability: Int) -> Color {
-        if probability >= 70 { return FiftiesColors.approvedGreen }
-        if probability >= 40 { return FiftiesColors.brassGold }
-        return FiftiesColors.stampRed
+        if probability >= 70 { return theme.approvedGreen }
+        if probability >= 40 { return theme.bronzeGold }
+        return theme.sovietRed
     }
 
     private func acceptanceDescription(_ probability: Int) -> String {

@@ -12,15 +12,35 @@ struct OptionCardView: View {
     let isSelected: Bool
     let onSelect: () -> Void
     @Environment(\.theme) var theme
+    @State private var isPressed: Bool = false
 
     var body: some View {
         Button(action: onSelect) {
             HStack(alignment: .top, spacing: 0) {
-                // Letter badge
-                OptionLetterBadge(letter: option.id, isSelected: isSelected)
-                    .offset(x: -12)
+                // Stance-colored stripe — full-height, replaces the old
+                // floating letter badge. The color signals which career
+                // track the option advances.
+                Rectangle()
+                    .fill(stanceColor)
+                    .frame(width: 4)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
+                    // Stance header: letter + archetype name. Mono + tracked
+                    // reads like the prototype's document-form affordance.
+                    HStack(spacing: 8) {
+                        Text(option.id)
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .foregroundColor(stanceColor)
+                        Rectangle()
+                            .fill(stanceColor.opacity(0.35))
+                            .frame(width: 1, height: 10)
+                        Text(option.archetype.displayName.uppercased())
+                            .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                            .tracking(2)
+                            .foregroundColor(stanceColor)
+                        Spacer()
+                    }
+
                     // Option description
                     Text(option.shortDescription)
                         .font(theme.bodyFontSmall)
@@ -42,7 +62,7 @@ struct OptionCardView: View {
                         }
                     }
                 }
-                .padding(.leading, 8)
+                .padding(.leading, 12)
                 .padding(.trailing, 12)
                 .padding(.vertical, 12)
             }
@@ -53,8 +73,39 @@ struct OptionCardView: View {
                     .stroke(isSelected ? theme.stampRed : theme.borderTan,
                            lineWidth: isSelected ? 2 : 1)
             )
+            // Press feedback: 1px down + inset shadow reads as "pressing
+            // a physical key on a bureaucratic form."
+            .offset(y: isPressed ? 1 : 0)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.black.opacity(isPressed ? 0.15 : 0), lineWidth: 2)
+                    .blur(radius: 2)
+                    .mask(Rectangle())
+            )
+            .animation(.easeOut(duration: 0.08), value: isPressed)
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+
+    /// Color mapping for the stance stripe. Tracks the prototype's
+    /// archetype → color palette (red orthodox, gold reform, teal cunning,
+    /// dark red iron fist).
+    private var stanceColor: Color {
+        switch option.archetype.associatedTrack {
+        case .securityServices: return Color(hex: "7A1818")  // Iron Fist red
+        case .militaryPolitical: return Color(hex: "7A1818")
+        case .partyApparatus:    return Color(hex: "A03030")  // Orthodox red
+        case .economicPlanning:  return Color(hex: "C89030")  // Reformist gold
+        case .foreignAffairs:    return Color(hex: "3A6A7A")  // Diplomat teal
+        case .stateMinistry:     return Color(hex: "5A5040")  // Administrator sepia
+        case .regional:          return Color(hex: "4A5A3A")  // Regional olive
+        case .shared, .none:     return theme.concreteGray
+        }
     }
 }
 

@@ -40,7 +40,7 @@ struct LoanProposalSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 40)
             }
-            .background(FiftiesColors.agedPaper)
+            .background(theme.agedPaper)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -102,7 +102,7 @@ struct LoanProposalSheet: View {
                     .foregroundColor(theme.inkLight)
                 Text("\(game.activeLoanCount) / 3")
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundColor(game.canTakeNewLoan ? theme.inkBlack : FiftiesColors.stampRed)
+                    .foregroundColor(game.canTakeNewLoan ? theme.inkBlack : theme.sovietRed)
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -126,7 +126,7 @@ struct LoanProposalSheet: View {
             }
         }
         .padding(10)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .cornerRadius(6)
         .overlay(
             RoundedRectangle(cornerRadius: 6)
@@ -186,7 +186,7 @@ struct LoanProposalSheet: View {
                                 .foregroundColor(theme.inkLight)
                             Text("\(rate)%")
                                 .font(.system(size: 18, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.stampRed)
+                                .foregroundColor(theme.sovietRed)
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Duration")
@@ -208,7 +208,7 @@ struct LoanProposalSheet: View {
                     }
                 }
                 .padding(12)
-                .background(FiftiesColors.cardstock)
+                .background(theme.cardstock)
                 .cornerRadius(8)
 
                 // Amount slider
@@ -256,7 +256,7 @@ struct LoanProposalSheet: View {
                                 .foregroundColor(theme.inkLight)
                             Text("-\(payment)")
                                 .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.stampRed)
+                                .foregroundColor(theme.sovietRed)
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Total Interest")
@@ -277,7 +277,7 @@ struct LoanProposalSheet: View {
                     }
                 }
                 .padding(10)
-                .background(FiftiesColors.cardstock.opacity(0.5))
+                .background(theme.cardstock.opacity(0.5))
                 .cornerRadius(6)
 
                 // Conditions
@@ -316,7 +316,7 @@ struct LoanProposalSheet: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(FiftiesColors.leatherBrown)
+                    .background(theme.leatherBrown)
                     .cornerRadius(8)
                 }
                 .padding(.top, 4)
@@ -375,10 +375,10 @@ private struct LoanSourceCard: View {
                         Text("UNAVAILABLE")
                             .font(.system(size: 9, weight: .bold))
                             .tracking(0.5)
-                            .foregroundColor(FiftiesColors.stampRed)
+                            .foregroundColor(theme.sovietRed)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(FiftiesColors.stampRed.opacity(0.1))
+                            .background(theme.sovietRed.opacity(0.1))
                             .cornerRadius(3)
                     }
                 }
@@ -427,7 +427,7 @@ private struct LoanSourceCard: View {
                 }
             }
             .padding(10)
-            .background(available ? FiftiesColors.cardstock : FiftiesColors.cardstock.opacity(0.4))
+            .background(available ? theme.cardstock : theme.cardstock.opacity(0.4))
             .cornerRadius(6)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
@@ -447,23 +447,23 @@ private struct LoanSourceCard: View {
 
     private var categoryColor: Color {
         switch source.category {
-        case .socialist: return FiftiesColors.stampRed
+        case .socialist: return theme.sovietRed
         case .western: return theme.steelBlue
-        case .institutional: return FiftiesColors.leatherBrown
+        case .institutional: return theme.leatherBrown
         }
     }
 
     private var rateColor: Color {
         switch rate {
-        case 0...3: return FiftiesColors.approvedGreen
+        case 0...3: return theme.approvedGreen
         case 4...5: return .orange
-        default: return FiftiesColors.stampRed
+        default: return theme.sovietRed
         }
     }
 
     private var relationshipColor: Color {
-        if relationship >= source.requiredRelationship + 20 { return FiftiesColors.approvedGreen }
+        if relationship >= source.requiredRelationship + 20 { return theme.approvedGreen }
         if relationship >= source.requiredRelationship { return .orange }
-        return FiftiesColors.stampRed
+        return theme.sovietRed
     }
 }

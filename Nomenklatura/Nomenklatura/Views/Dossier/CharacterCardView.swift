@@ -1504,7 +1504,7 @@ struct CharacterDetailView: View {
                 if !hasIntelClearance {
                     Text("PARTIAL ACCESS")
                         .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
             }
 
@@ -1544,7 +1544,7 @@ struct CharacterDetailView: View {
                         Text("CLASSIFIED")
                             .font(.system(size: 8, weight: .bold))
                     }
-                    .foregroundColor(FiftiesColors.stampRed)
+                    .foregroundColor(theme.sovietRed)
                 }
 
                 // Redacted trait grid
@@ -1580,13 +1580,13 @@ struct CharacterDetailView: View {
                     Spacer()
                     Text("[REDACTED - LEVEL \(intelClearanceRequired) CLEARANCE REQUIRED]")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
                 .padding(12)
-                .background(FiftiesColors.stampRed.opacity(0.05))
+                .background(theme.sovietRed.opacity(0.05))
                 .overlay(
                     Rectangle()
-                        .stroke(FiftiesColors.stampRed.opacity(0.3), lineWidth: 1)
+                        .stroke(theme.sovietRed.opacity(0.3), lineWidth: 1)
                 )
             }
 

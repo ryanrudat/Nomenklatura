@@ -38,10 +38,10 @@ struct ThreatLevel: Identifiable {
 
         var color: Color {
             switch self {
-            case .stable: return FiftiesColors.approvedGreen
-            case .elevated: return FiftiesColors.brassGold
+            case .stable: return ColdWarTheme.shared.approvedGreen
+            case .elevated: return ColdWarTheme.shared.bronzeGold
             case .high: return Color(hex: "CC7000")
-            case .critical: return FiftiesColors.urgentRed
+            case .critical: return ColdWarTheme.shared.urgentRed
             }
         }
     }
@@ -292,12 +292,12 @@ struct ThreatDashboardView: View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundColor(topThreat?.category.color ?? FiftiesColors.approvedGreen)
+                .foregroundColor(topThreat?.category.color ?? ColdWarTheme.shared.approvedGreen)
 
             Text("THREAT ASSESSMENT")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .tracking(2)
-                .foregroundColor(FiftiesColors.agedPaper)
+                .foregroundColor(ColdWarTheme.shared.agedPaper)
 
             Spacer()
 
@@ -316,7 +316,7 @@ struct ThreatDashboardView: View {
 
             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(FiftiesColors.agedPaper.opacity(0.6))
+                .foregroundColor(ColdWarTheme.shared.agedPaper.opacity(0.6))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -325,7 +325,7 @@ struct ThreatDashboardView: View {
     private func expandedContent(_ threats: [ThreatLevel]) -> some View {
         VStack(spacing: 6) {
             Rectangle()
-                .fill(FiftiesColors.agedPaper.opacity(0.15))
+                .fill(ColdWarTheme.shared.agedPaper.opacity(0.15))
                 .frame(height: 1)
                 .padding(.horizontal, 8)
 
@@ -336,7 +336,7 @@ struct ThreatDashboardView: View {
             Text("CLASSIFIED // EYES ONLY // GENERAL SECRETARY")
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
                 .tracking(1.5)
-                .foregroundColor(FiftiesColors.agedPaper.opacity(0.3))
+                .foregroundColor(ColdWarTheme.shared.agedPaper.opacity(0.3))
                 .padding(.top, 4)
                 .padding(.bottom, 6)
         }
@@ -353,7 +353,7 @@ struct ThreatDashboardView: View {
                 Text(threat.name)
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.agedPaper)
+                    .foregroundColor(ColdWarTheme.shared.agedPaper)
 
                 Spacer()
 
@@ -365,7 +365,7 @@ struct ThreatDashboardView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(FiftiesColors.agedPaper.opacity(0.1))
+                        .fill(ColdWarTheme.shared.agedPaper.opacity(0.1))
                         .frame(height: 4)
 
                     RoundedRectangle(cornerRadius: 2)
@@ -377,7 +377,7 @@ struct ThreatDashboardView: View {
 
             Text(threat.detail)
                 .font(.system(size: 9, weight: .regular, design: .monospaced))
-                .foregroundColor(FiftiesColors.agedPaper.opacity(0.5))
+                .foregroundColor(ColdWarTheme.shared.agedPaper.opacity(0.5))
                 .lineLimit(1)
         }
         .padding(.horizontal, 12)
@@ -394,9 +394,9 @@ struct ThreatDashboardView: View {
     }
 
     private func borderColor(for topThreat: ThreatLevel?) -> Color {
-        guard let top = topThreat else { return FiftiesColors.agedPaper.opacity(0.2) }
+        guard let top = topThreat else { return ColdWarTheme.shared.agedPaper.opacity(0.2) }
         switch top.category {
-        case .stable: return FiftiesColors.agedPaper.opacity(0.2)
+        case .stable: return ColdWarTheme.shared.agedPaper.opacity(0.2)
         case .elevated: return top.category.color.opacity(0.3)
         case .high: return top.category.color.opacity(0.4)
         case .critical: return top.category.color.opacity(0.5)

@@ -85,7 +85,7 @@ struct RedactedTextView: View {
                             if revealable {
                                 Text("TAP TO DECLASSIFY")
                                     .font(.system(size: 7, weight: .bold, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.brassGold.opacity(0.6))
+                                    .foregroundColor(ColdWarTheme.shared.bronzeGold.opacity(0.6))
                                     .tracking(1)
                             }
                         }
@@ -106,29 +106,29 @@ struct RedactedTextView: View {
         HStack(spacing: 4) {
             Image(systemName: revealable ? "lock.open.fill" : "lock.fill")
                 .font(.system(size: 9))
-                .foregroundColor(revealable ? FiftiesColors.brassGold : FiftiesColors.stampRed)
+                .foregroundColor(revealable ? ColdWarTheme.shared.bronzeGold : ColdWarTheme.shared.sovietRed)
 
             Text("[CLASSIFIED")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(revealable ? FiftiesColors.brassGold : FiftiesColors.stampRed)
+                .foregroundColor(revealable ? ColdWarTheme.shared.bronzeGold : ColdWarTheme.shared.sovietRed)
 
             if revealable {
                 Text("- TAP TO DECLASSIFY")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundColor(FiftiesColors.brassGold.opacity(0.8))
+                    .foregroundColor(ColdWarTheme.shared.bronzeGold.opacity(0.8))
             } else if requiredLevel > 0 {
                 Text("- LEVEL \(requiredLevel) CLEARANCE REQUIRED")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundColor(FiftiesColors.stampRed.opacity(0.8))
+                    .foregroundColor(ColdWarTheme.shared.sovietRed.opacity(0.8))
             }
 
             Text("]")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(revealable ? FiftiesColors.brassGold : FiftiesColors.stampRed)
+                .foregroundColor(revealable ? ColdWarTheme.shared.bronzeGold : ColdWarTheme.shared.sovietRed)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
-        .background(revealable ? FiftiesColors.brassGold.opacity(0.08) : Color.black.opacity(0.05))
+        .background(revealable ? ColdWarTheme.shared.bronzeGold.opacity(0.08) : Color.black.opacity(0.05))
         .cornerRadius(3)
         .onTapGesture(perform: handleTap)
     }
@@ -137,11 +137,11 @@ struct RedactedTextView: View {
         VStack(spacing: 4) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 16))
-                .foregroundColor(FiftiesColors.stampRed)
+                .foregroundColor(ColdWarTheme.shared.sovietRed)
 
             Text("ACCESS DENIED")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.stampRed)
+                .foregroundColor(ColdWarTheme.shared.sovietRed)
 
             if requiredLevel > 0 {
                 Text("Clearance Level \(requiredLevel) Required")
@@ -150,7 +150,7 @@ struct RedactedTextView: View {
             }
         }
         .padding(8)
-        .background(FiftiesColors.agedPaper)
+        .background(ColdWarTheme.shared.agedPaper)
         .cornerRadius(4)
         .shadow(radius: 2)
         .transition(.opacity.combined(with: .scale))
@@ -204,11 +204,11 @@ struct InlineRedactedText: View {
                         let canReveal = accessLevel >= 7
                         Text(blockText)
                             .font(Font.system(size: 14).monospaced())
-                            .foregroundColor(canReveal ? FiftiesColors.brassGold.opacity(0.8) : .black)
+                            .foregroundColor(canReveal ? ColdWarTheme.shared.bronzeGold.opacity(0.8) : .black)
                             .onTapGesture {
                                 if canReveal {
                                     withAnimation(.easeInOut(duration: 0.3)) {
-                                        revealedIndices.insert(index)
+                                        _ = revealedIndices.insert(index)
                                     }
                                 }
                             }
@@ -353,8 +353,8 @@ struct DocumentClassificationBadge: View {
             case .unclassified: return .gray
             case .restricted: return .blue
             case .confidential: return .orange
-            case .secret: return FiftiesColors.stampRed
-            case .topSecret: return FiftiesColors.stampRedDark
+            case .secret: return ColdWarTheme.shared.sovietRed
+            case .topSecret: return ColdWarTheme.shared.stampRedDark
             case .eyesOnly: return .black
             }
         }
@@ -466,5 +466,5 @@ struct DocumentClassificationBadge: View {
         }
     }
     .padding()
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }

@@ -30,12 +30,12 @@ struct BureauCredentialBadge: View {
     }
 
     private var primaryColor: Color {
-        guard let bureau = committedBureau else { return FiftiesColors.leatherBrown }
+        guard let bureau = committedBureau else { return ColdWarTheme.shared.leatherBrown }
         return BureauColors.primary(for: bureau)
     }
 
     private var accentColor: Color {
-        guard let bureau = committedBureau else { return FiftiesColors.brassGold }
+        guard let bureau = committedBureau else { return ColdWarTheme.shared.bronzeGold }
         return BureauColors.accent(for: bureau)
     }
 
@@ -164,7 +164,7 @@ struct BureauCredentialBadge: View {
                     // Subtitle
                     Text(bureauSubtitle)
                         .font(.system(size: 10, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
 
                     Spacer()
 
@@ -172,17 +172,17 @@ struct BureauCredentialBadge: View {
                     HStack {
                         Text("RANK:")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
                         Text(playerRankTitle.uppercased())
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(ColdWarTheme.shared.inkBlack)
                     }
 
                     // Clearance level visual
                     HStack {
                         Text("CLEARANCE:")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
 
                         ClearanceBadge(level: clearanceLevel, color: primaryColor)
                     }
@@ -210,7 +210,7 @@ struct BureauCredentialBadge: View {
             }
             .background(
                 LinearGradient(
-                    colors: [FiftiesColors.manillaFolder, FiftiesColors.agedPaper],
+                    colors: [ColdWarTheme.shared.manillaFolder, ColdWarTheme.shared.agedPaper],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )

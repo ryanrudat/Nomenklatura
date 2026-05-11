@@ -60,7 +60,7 @@ struct DirectivePhaseView: View {
             .ignoresSafeArea()
 
             // Subtle texture overlay
-            FiftiesColors.agedPaper.opacity(0.03)
+            theme.agedPaper.opacity(0.03)
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -174,7 +174,7 @@ struct DirectivePhaseView: View {
                     Text("ISSUE ORDERS TO YOUR GOVERNMENT APPARATUS")
                         .font(.system(size: 8, weight: .medium, design: .monospaced))
                         .tracking(1)
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                 }
 
                 Spacer()
@@ -183,11 +183,11 @@ struct DirectivePhaseView: View {
                 VStack(alignment: .trailing, spacing: 1) {
                     Text("TURN \(game.turnNumber)")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
 
                     Text(RevolutionaryCalendar.formatTurnWithMonth(game.turnNumber))
                         .font(.system(size: 8, weight: .regular, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy.opacity(0.7))
+                        .foregroundColor(theme.carbonCopy.opacity(0.7))
                 }
             }
             .padding(.horizontal, 16)
@@ -210,7 +210,7 @@ struct DirectivePhaseView: View {
                 ForEach(0..<2, id: \.self) { index in
                     Image(systemName: index < game.directivePoints ? "seal.fill" : "seal")
                         .font(.system(size: 16))
-                        .foregroundColor(index < game.directivePoints ? theme.accentGold : FiftiesColors.carbonCopy.opacity(0.3))
+                        .foregroundColor(index < game.directivePoints ? theme.accentGold : theme.carbonCopy.opacity(0.3))
                 }
             }
 
@@ -222,7 +222,7 @@ struct DirectivePhaseView: View {
 
                 Text("\(game.directivePoints) ORDER\(game.directivePoints == 1 ? "" : "S") REMAINING")
                     .font(.system(size: 8, weight: .medium, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
             }
 
             Spacer()
@@ -232,10 +232,10 @@ struct DirectivePhaseView: View {
                 Text("ALL ORDERS ISSUED")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(0.5)
-                    .foregroundColor(FiftiesColors.approvedGreen)
+                    .foregroundColor(theme.approvedGreen)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(FiftiesColors.approvedGreen.opacity(0.15))
+                    .background(theme.approvedGreen.opacity(0.15))
                     .cornerRadius(3)
             }
         }
@@ -277,7 +277,7 @@ struct DirectivePhaseView: View {
             if tasks.isEmpty {
                 Text("No directives available at this time")
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
                     .padding(.vertical, 12)
             } else {
                 ForEach(tasks, id: \.id) { task in
@@ -287,7 +287,7 @@ struct DirectivePhaseView: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .cornerRadius(0)
         .overlay(
             RoundedRectangle(cornerRadius: 0)
@@ -308,7 +308,7 @@ struct DirectivePhaseView: View {
                 // Task icon
                 Image(systemName: task.iconName)
                     .font(.system(size: 12))
-                    .foregroundColor(task.canInitiate ? bureauColor : FiftiesColors.carbonCopy.opacity(0.4))
+                    .foregroundColor(task.canInitiate ? bureauColor : theme.carbonCopy.opacity(0.4))
                     .frame(width: 24)
 
                 // Task info
@@ -316,11 +316,11 @@ struct DirectivePhaseView: View {
                     Text(task.name.uppercased())
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .tracking(0.5)
-                        .foregroundColor(task.canInitiate ? FiftiesColors.typewriterInk : FiftiesColors.carbonCopy)
+                        .foregroundColor(task.canInitiate ? theme.inkBlack : theme.carbonCopy)
 
                     Text(task.briefDescription)
                         .font(.system(size: 8, weight: .regular, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                         .lineLimit(2)
                 }
 
@@ -334,13 +334,13 @@ struct DirectivePhaseView: View {
                     if let reason = task.unavailableReason {
                         Text(reason)
                             .font(.system(size: 7, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.stampRed)
+                            .foregroundColor(theme.sovietRed)
                             .lineLimit(1)
                     }
                 } else if game.directivePoints <= 0 {
                     Text("NO POINTS")
                         .font(.system(size: 7, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 } else {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10))
@@ -386,7 +386,7 @@ struct DirectivePhaseView: View {
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .tracking(1)
             }
-            .foregroundColor(game.directivePoints < 2 ? FiftiesColors.agedPaper : FiftiesColors.carbonCopy)
+            .foregroundColor(game.directivePoints < 2 ? theme.agedPaper : theme.carbonCopy)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(
@@ -396,7 +396,7 @@ struct DirectivePhaseView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(
-                        game.directivePoints < 2 ? theme.sovietRed : FiftiesColors.carbonCopy.opacity(0.3),
+                        game.directivePoints < 2 ? theme.sovietRed : theme.carbonCopy.opacity(0.3),
                         lineWidth: 1
                     )
             )
@@ -438,29 +438,29 @@ struct DirectivePhaseView: View {
                         Text(task.name.uppercased())
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                             .tracking(1)
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(theme.inkBlack)
                     }
 
                     // Divider
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
                         .padding(.horizontal, 20)
 
                     // Description
                     Text(task.fullDescription)
                         .font(.system(size: 10, weight: .regular, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20)
 
                     // Details grid
                     VStack(spacing: 6) {
                         if task.networkCost > 0 {
-                            detailRow(label: "NETWORK COST", value: "-\(task.networkCost)", color: FiftiesColors.stampRed)
+                            detailRow(label: "NETWORK COST", value: "-\(task.networkCost)", color: theme.sovietRed)
                         }
                         if let duration = task.estimatedDuration {
-                            detailRow(label: "DURATION", value: "\(duration) TURNS", color: FiftiesColors.brassGold)
+                            detailRow(label: "DURATION", value: "\(duration) TURNS", color: theme.bronzeGold)
                         }
                         detailRow(label: "RISK", value: task.riskLevel.displayName.uppercased(), color: Color(hex: task.riskLevel.colorHex))
                     }
@@ -472,10 +472,10 @@ struct DirectivePhaseView: View {
                             ForEach(task.potentialEffects, id: \.self) { effect in
                                 Text(effect)
                                     .font(.system(size: 8, weight: .medium, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.carbonCopy)
+                                    .foregroundColor(theme.carbonCopy)
                                     .padding(.horizontal, 5)
                                     .padding(.vertical, 2)
-                                    .background(FiftiesColors.cardstock)
+                                    .background(theme.cardstock)
                                     .cornerRadius(2)
                             }
                         }
@@ -492,10 +492,10 @@ struct DirectivePhaseView: View {
                             Text("CANCEL")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .tracking(1)
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(theme.carbonCopy)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
-                                .background(FiftiesColors.cardstock)
+                                .background(theme.cardstock)
                                 .cornerRadius(4)
                         }
                         .buttonStyle(.plain)
@@ -545,23 +545,23 @@ struct DirectivePhaseView: View {
                 // Result icon
                 Image(systemName: result.succeeded ? "checkmark.seal.fill" : "xmark.seal.fill")
                     .font(.system(size: 40))
-                    .foregroundColor(result.succeeded ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                    .foregroundColor(result.succeeded ? theme.approvedGreen : theme.sovietRed)
 
                 Text(result.succeeded ? "DIRECTIVE ISSUED" : "DIRECTIVE FAILED")
                     .font(.system(size: 14, weight: .black, design: .monospaced))
                     .tracking(2)
-                    .foregroundColor(result.succeeded ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                    .foregroundColor(result.succeeded ? theme.approvedGreen : theme.sovietRed)
 
                 Text(result.description)
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(theme.inkGray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
 
                 if result.networkCostApplied > 0 {
                     Text("NETWORK: -\(result.networkCostApplied)")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
 
                 Button {
@@ -587,7 +587,7 @@ struct DirectivePhaseView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(
-                        result.succeeded ? FiftiesColors.approvedGreen.opacity(0.5) : FiftiesColors.stampRed.opacity(0.5),
+                        result.succeeded ? theme.approvedGreen.opacity(0.5) : theme.sovietRed.opacity(0.5),
                         lineWidth: 2
                     )
             )
@@ -602,7 +602,7 @@ struct DirectivePhaseView: View {
         HStack {
             Text(label)
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
             Spacer()
             Text(value)
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
@@ -989,7 +989,7 @@ struct DirectivePhaseView: View {
                     )
 
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
                         .padding(.horizontal, 12)
 
@@ -1010,11 +1010,11 @@ struct DirectivePhaseView: View {
                                             Text(country.name.uppercased())
                                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                                 .tracking(0.5)
-                                                .foregroundColor(FiftiesColors.typewriterInk)
+                                                .foregroundColor(theme.inkBlack)
 
                                             Text(country.relationshipCategory)
                                                 .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                                .foregroundColor(FiftiesColors.carbonCopy)
+                                                .foregroundColor(theme.carbonCopy)
                                         }
 
                                         Spacer()
@@ -1030,11 +1030,11 @@ struct DirectivePhaseView: View {
 
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 9))
-                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                            .foregroundColor(theme.carbonCopy.opacity(0.5))
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .background(theme.cardstock.opacity(0.3))
                                     .cornerRadius(4)
                                 }
                                 .buttonStyle(.plain)
@@ -1079,7 +1079,7 @@ struct DirectivePhaseView: View {
                     )
 
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
                         .padding(.horizontal, 12)
 
@@ -1088,7 +1088,7 @@ struct DirectivePhaseView: View {
                             if officers.isEmpty {
                                 Text("NO MILITARY OFFICERS AVAILABLE")
                                     .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.carbonCopy)
+                                    .foregroundColor(theme.carbonCopy)
                                     .padding(.vertical, 20)
                             }
                             ForEach(officers, id: \.id) { officer in
@@ -1106,11 +1106,11 @@ struct DirectivePhaseView: View {
                                             Text(officer.name.uppercased())
                                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                                 .tracking(0.5)
-                                                .foregroundColor(FiftiesColors.typewriterInk)
+                                                .foregroundColor(theme.inkBlack)
 
                                             Text(officer.title ?? "Military Officer")
                                                 .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                                .foregroundColor(FiftiesColors.carbonCopy)
+                                                .foregroundColor(theme.carbonCopy)
                                         }
 
                                         Spacer()
@@ -1121,11 +1121,11 @@ struct DirectivePhaseView: View {
 
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 9))
-                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                            .foregroundColor(theme.carbonCopy.opacity(0.5))
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .background(theme.cardstock.opacity(0.3))
                                     .cornerRadius(4)
                                 }
                                 .buttonStyle(.plain)
@@ -1165,7 +1165,7 @@ struct DirectivePhaseView: View {
                     )
 
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
                         .padding(.horizontal, 12)
 
@@ -1185,22 +1185,22 @@ struct DirectivePhaseView: View {
                                         Text(theater.displayName.uppercased())
                                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                                             .tracking(0.5)
-                                            .foregroundColor(FiftiesColors.typewriterInk)
+                                            .foregroundColor(theme.inkBlack)
 
                                         Text(theater.strategicFocus)
                                             .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                            .foregroundColor(FiftiesColors.carbonCopy)
+                                            .foregroundColor(theme.carbonCopy)
                                     }
 
                                     Spacer()
 
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 9))
-                                        .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                        .foregroundColor(theme.carbonCopy.opacity(0.5))
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
-                                .background(FiftiesColors.cardstock.opacity(0.3))
+                                .background(theme.cardstock.opacity(0.3))
                                 .cornerRadius(4)
                             }
                             .buttonStyle(.plain)
@@ -1238,7 +1238,7 @@ struct DirectivePhaseView: View {
                     )
 
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
                         .padding(.horizontal, 12)
 
@@ -1258,7 +1258,7 @@ struct DirectivePhaseView: View {
                                         Text(ministry.displayName.uppercased())
                                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                                             .tracking(0.5)
-                                            .foregroundColor(FiftiesColors.typewriterInk)
+                                            .foregroundColor(theme.inkBlack)
 
                                         Spacer()
 
@@ -1274,11 +1274,11 @@ struct DirectivePhaseView: View {
 
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 9))
-                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                            .foregroundColor(theme.carbonCopy.opacity(0.5))
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .background(theme.cardstock.opacity(0.3))
                                     .cornerRadius(4)
                                 }
                                 .buttonStyle(.plain)
@@ -1323,7 +1323,7 @@ struct DirectivePhaseView: View {
                     )
 
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
                         .padding(.horizontal, 12)
 
@@ -1332,7 +1332,7 @@ struct DirectivePhaseView: View {
                             if officials.isEmpty {
                                 Text("NO MINISTRY OFFICIALS AVAILABLE")
                                     .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.carbonCopy)
+                                    .foregroundColor(theme.carbonCopy)
                                     .padding(.vertical, 20)
                             }
                             ForEach(officials, id: \.id) { official in
@@ -1350,11 +1350,11 @@ struct DirectivePhaseView: View {
                                             Text(official.name.uppercased())
                                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                                 .tracking(0.5)
-                                                .foregroundColor(FiftiesColors.typewriterInk)
+                                                .foregroundColor(theme.inkBlack)
 
                                             Text(official.title ?? "Ministry Official")
                                                 .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                                .foregroundColor(FiftiesColors.carbonCopy)
+                                                .foregroundColor(theme.carbonCopy)
                                         }
 
                                         Spacer()
@@ -1365,11 +1365,11 @@ struct DirectivePhaseView: View {
 
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 9))
-                                            .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                                            .foregroundColor(theme.carbonCopy.opacity(0.5))
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(FiftiesColors.cardstock.opacity(0.3))
+                                    .background(theme.cardstock.opacity(0.3))
                                     .cornerRadius(4)
                                 }
                                 .buttonStyle(.plain)
@@ -1407,7 +1407,7 @@ struct DirectivePhaseView: View {
             Text(subtitle.uppercased())
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .tracking(0.5)
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(theme.inkGray)
         }
         .padding(.top, 4)
     }
@@ -1419,10 +1419,10 @@ struct DirectivePhaseView: View {
             Text("CANCEL")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(1)
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(FiftiesColors.cardstock)
+                .background(theme.cardstock)
                 .cornerRadius(4)
         }
         .buttonStyle(.plain)
@@ -1453,15 +1453,15 @@ struct DirectivePhaseView: View {
     }
 
     private func successChanceColor(_ chance: Int) -> Color {
-        if chance >= 70 { return FiftiesColors.approvedGreen }
-        if chance >= 50 { return FiftiesColors.brassGold }
-        return FiftiesColors.stampRed
+        if chance >= 70 { return theme.approvedGreen }
+        if chance >= 50 { return theme.bronzeGold }
+        return theme.sovietRed
     }
 
     private func dispositionColor(_ disposition: Int) -> Color {
-        if disposition >= 60 { return FiftiesColors.approvedGreen }
-        if disposition >= 20 { return FiftiesColors.brassGold }
-        return FiftiesColors.stampRed
+        if disposition >= 60 { return theme.approvedGreen }
+        if disposition >= 20 { return theme.bronzeGold }
+        return theme.sovietRed
     }
 
     // MARK: - Character Selection Overlay (Security Directives)
@@ -1510,32 +1510,32 @@ struct DirectivePhaseView: View {
                         Text(task.name.uppercased())
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .tracking(1)
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(theme.inkBlack)
 
                         if let maxPos = action?.maxTargetPosition {
                             Text("TARGETS POSITION \(maxPos) AND BELOW")
                                 .font(.system(size: 8, weight: .medium, design: .monospaced))
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(theme.carbonCopy)
                         }
                     }
 
                     Rectangle()
-                        .fill(FiftiesColors.carbonCopy.opacity(0.2))
+                        .fill(theme.carbonCopy.opacity(0.2))
                         .frame(height: 1)
 
                     if eligibleCharacters.isEmpty {
                         VStack(spacing: 8) {
                             Image(systemName: "person.slash")
                                 .font(.system(size: 24))
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(theme.carbonCopy)
 
                             Text("NO ELIGIBLE TARGETS")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundColor(FiftiesColors.stampRed)
+                                .foregroundColor(theme.sovietRed)
 
                             Text("No characters meet the requirements for this action.")
                                 .font(.system(size: 8, weight: .regular, design: .monospaced))
-                                .foregroundColor(FiftiesColors.carbonCopy)
+                                .foregroundColor(theme.carbonCopy)
                                 .multilineTextAlignment(.center)
                         }
                         .padding(.vertical, 12)
@@ -1560,10 +1560,10 @@ struct DirectivePhaseView: View {
                         Text("CANCEL")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .tracking(1)
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(theme.carbonCopy)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(FiftiesColors.cardstock)
+                            .background(theme.cardstock)
                             .cornerRadius(4)
                     }
                     .buttonStyle(.plain)
@@ -1594,7 +1594,7 @@ struct DirectivePhaseView: View {
                         .foregroundColor(theme.accentGold)
                     Text("POS")
                         .font(.system(size: 6, weight: .medium, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                 }
                 .frame(width: 28)
 
@@ -1602,12 +1602,12 @@ struct DirectivePhaseView: View {
                     Text(character.name.uppercased())
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(theme.inkBlack)
                         .lineLimit(1)
 
                     Text(character.title ?? "Unknown Position")
                         .font(.system(size: 8, weight: .regular, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                         .lineLimit(1)
                 }
 
@@ -1617,11 +1617,11 @@ struct DirectivePhaseView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 8))
-                    .foregroundColor(FiftiesColors.carbonCopy.opacity(0.5))
+                    .foregroundColor(theme.carbonCopy.opacity(0.5))
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 10)
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .cornerRadius(4)
         }
         .buttonStyle(.plain)
@@ -1634,13 +1634,13 @@ struct DirectivePhaseView: View {
 
         if disposition >= 70 {
             label = "LOYAL"
-            color = FiftiesColors.approvedGreen
+            color = theme.approvedGreen
         } else if disposition >= 40 {
             label = "NEUTRAL"
-            color = FiftiesColors.brassGold
+            color = theme.bronzeGold
         } else {
             label = "HOSTILE"
-            color = FiftiesColors.stampRed
+            color = theme.sovietRed
         }
 
         return Text(label)

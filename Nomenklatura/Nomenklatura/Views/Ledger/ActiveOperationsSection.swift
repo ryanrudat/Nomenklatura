@@ -69,7 +69,7 @@ struct ActiveOperationsSection: View {
             Text("ACTIVE OPERATIONS")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .tracking(1.2)
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
 
             Spacer()
 
@@ -136,9 +136,9 @@ struct OperationCard: View {
     private var statusColor: Color {
         switch operation.status {
         case .inProgress:
-            return FiftiesColors.approvedGreen
+            return ColdWarTheme.shared.approvedGreen
         case .awaitingApproval:
-            return FiftiesColors.brassGold
+            return ColdWarTheme.shared.bronzeGold
         case .awaitingResources:
             return Color(hex: "CD853F")
         case .pending:
@@ -168,7 +168,7 @@ struct OperationCard: View {
 
                     Text(operation.name)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                         .lineLimit(1)
                 }
 
@@ -195,7 +195,7 @@ struct OperationCard: View {
                         Text("\(operation.successChance)%")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
                     }
-                    .foregroundColor(operation.successChance >= 60 ? FiftiesColors.approvedGreen : ColdWarTheme.shared.inkGray)
+                    .foregroundColor(operation.successChance >= 60 ? ColdWarTheme.shared.approvedGreen : ColdWarTheme.shared.inkGray)
                 }
             }
 
@@ -215,7 +215,7 @@ struct OperationCard: View {
         .padding(10)
         .background(
             LinearGradient(
-                colors: [FiftiesColors.manillaFolder, ColdWarTheme.shared.agedPaper],
+                colors: [ColdWarTheme.shared.manillaFolder, ColdWarTheme.shared.agedPaper],
                 startPoint: .leading,
                 endPoint: .trailing
             )

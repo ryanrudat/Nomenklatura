@@ -32,9 +32,9 @@ struct TradeManagementView: View {
     }
 
     private var balanceTrendColor: Color {
-        if game.tradeBalance > 5 { return FiftiesColors.approvedGreen }
-        if game.tradeBalance < -5 { return FiftiesColors.stampRed }
-        return FiftiesColors.brassGold
+        if game.tradeBalance > 5 { return theme.approvedGreen }
+        if game.tradeBalance < -5 { return theme.sovietRed }
+        return theme.bronzeGold
     }
 
     var body: some View {
@@ -65,7 +65,7 @@ struct TradeManagementView: View {
                     Text("TARIFF LEVEL")
                         .font(.system(size: 9, weight: .semibold))
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(theme.inkBlack)
 
                     HStack(spacing: 0) {
                         ForEach(TariffLevel.allCases, id: \.rawValue) { level in
@@ -75,10 +75,10 @@ struct TradeManagementView: View {
                                 Text(level.displayName.uppercased())
                                     .font(.system(size: 7, weight: .bold, design: .monospaced))
                                     .tracking(0.3)
-                                    .foregroundColor(game.currentTariffLevel == level ? .white : FiftiesColors.typewriterInk)
+                                    .foregroundColor(game.currentTariffLevel == level ? .white : theme.inkBlack)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 6)
-                                    .background(game.currentTariffLevel == level ? FiftiesColors.brassGold : FiftiesColors.cardstock)
+                                    .background(game.currentTariffLevel == level ? theme.bronzeGold : theme.cardstock)
                                     .overlay(
                                         Rectangle()
                                             .stroke(theme.borderTan, lineWidth: 1)
@@ -90,18 +90,18 @@ struct TradeManagementView: View {
 
                     Text(game.currentTariffLevel.description)
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                 }
 
                 Rectangle()
-                    .fill(FiftiesColors.brassGold.opacity(0.3))
+                    .fill(theme.bronzeGold.opacity(0.3))
                     .frame(height: 1)
 
                 // Embargo Controls
                 embargoSection
 
                 Rectangle()
-                    .fill(FiftiesColors.brassGold.opacity(0.3))
+                    .fill(theme.bronzeGold.opacity(0.3))
                     .frame(height: 1)
 
                 // Trade Openness
@@ -110,11 +110,11 @@ struct TradeManagementView: View {
                         Text("TRADE OPENNESS")
                             .font(.system(size: 8, weight: .semibold))
                             .tracking(0.5)
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(theme.carbonCopy)
                         Spacer()
                         Text("\(tradeOpenness)%")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(theme.inkBlack)
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
@@ -122,7 +122,7 @@ struct TradeManagementView: View {
                                 .fill(theme.borderTan)
                                 .frame(height: 6)
                             Rectangle()
-                                .fill(FiftiesColors.brassGold)
+                                .fill(theme.bronzeGold)
                                 .frame(width: geo.size.width * CGFloat(tradeOpenness) / 100, height: 6)
                         }
                         .cornerRadius(3)
@@ -131,11 +131,11 @@ struct TradeManagementView: View {
 
                     Text(tradeOpennessDescription)
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(theme.carbonCopy)
                 }
             }
             .padding(14)
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .overlay(
                 Rectangle()
                     .stroke(theme.borderTan, lineWidth: 1)
@@ -148,20 +148,20 @@ struct TradeManagementView: View {
             Text("EMBARGOES")
                 .font(.system(size: 9, weight: .semibold))
                 .tracking(0.5)
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(theme.inkBlack)
 
             let embargoable = game.foreignCountries.filter { $0.relationshipScore < 0 }
             if embargoable.isEmpty {
                 Text("No hostile nations available for embargo.")
                     .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
             } else {
                 ForEach(embargoable.sorted(by: { $0.relationshipScore < $1.relationshipScore }), id: \.id) { country in
                     let isEmbargoed = game.isEmbargoed(country.countryId)
                     HStack(spacing: 8) {
                         Text(country.name.uppercased())
                             .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                            .foregroundColor(isEmbargoed ? FiftiesColors.stampRed : FiftiesColors.typewriterInk)
+                            .foregroundColor(isEmbargoed ? theme.sovietRed : theme.inkBlack)
                             .lineLimit(1)
 
                         Spacer()
@@ -173,7 +173,7 @@ struct TradeManagementView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
-                                .background(FiftiesColors.stampRed)
+                                .background(theme.sovietRed)
                                 .cornerRadius(2)
                         }
 
@@ -183,12 +183,12 @@ struct TradeManagementView: View {
                             Text(isEmbargoed ? "LIFT" : "IMPOSE")
                                 .font(.system(size: 8, weight: .bold, design: .monospaced))
                                 .tracking(0.3)
-                                .foregroundColor(isEmbargoed ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                                .foregroundColor(isEmbargoed ? theme.approvedGreen : theme.sovietRed)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
                                 .overlay(
                                     Rectangle()
-                                        .stroke(isEmbargoed ? FiftiesColors.approvedGreen : FiftiesColors.stampRed, lineWidth: 1)
+                                        .stroke(isEmbargoed ? theme.approvedGreen : theme.sovietRed, lineWidth: 1)
                                 )
                         }
                         .buttonStyle(.plain)
@@ -231,12 +231,12 @@ struct TradeManagementView: View {
                     balanceStat(
                         label: "TOTAL VOLUME",
                         value: "\(totalTradeVolume)",
-                        color: FiftiesColors.typewriterInk
+                        color: theme.inkBlack
                     )
                     balanceStat(
                         label: "TARIFF",
                         value: game.currentTariffLevel.displayName.uppercased(),
-                        color: FiftiesColors.brassGold
+                        color: theme.bronzeGold
                     )
                 }
 
@@ -245,10 +245,10 @@ struct TradeManagementView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "xmark.shield.fill")
                             .font(.system(size: 10))
-                            .foregroundColor(FiftiesColors.stampRed)
+                            .foregroundColor(theme.sovietRed)
                         Text("\(embargoCount) active embargo\(embargoCount == 1 ? "" : "es")")
                             .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(FiftiesColors.stampRed)
+                            .foregroundColor(theme.sovietRed)
                     }
                 }
 
@@ -257,15 +257,15 @@ struct TradeManagementView: View {
                     HStack(spacing: 4) {
                         Image(systemName: netImpact > 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
                             .font(.system(size: 10))
-                            .foregroundColor(netImpact > 0 ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                            .foregroundColor(netImpact > 0 ? theme.approvedGreen : theme.sovietRed)
                         Text("Net agreement impact: \(netImpact > 0 ? "+" : "")\(netImpact)/turn")
                             .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(theme.carbonCopy)
                     }
                 }
             }
             .padding(14)
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .overlay(
                 Rectangle()
                     .stroke(theme.borderTan, lineWidth: 1)
@@ -294,17 +294,17 @@ struct TradeManagementView: View {
         VStack(spacing: 8) {
             Image(systemName: "doc.text")
                 .font(.system(size: 24))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
             Text("No active trade agreements.")
                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(theme.inkBlack)
             Text("Approach a trading partner below to negotiate.")
                 .font(.system(size: 10, design: .monospaced))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
         }
         .frame(maxWidth: .infinity)
         .padding(20)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .overlay(
             Rectangle()
                 .stroke(theme.borderTan, lineWidth: 1)
@@ -315,18 +315,18 @@ struct TradeManagementView: View {
         HStack(spacing: 12) {
             Image(systemName: agreement.type.iconName)
                 .font(.system(size: 14))
-                .foregroundColor(FiftiesColors.brassGold)
+                .foregroundColor(theme.bronzeGold)
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(agreement.agreementName)
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(theme.inkBlack)
                     .lineLimit(1)
 
                 Text(agreement.effectsSummary)
                     .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
                     .lineLimit(1)
             }
 
@@ -335,7 +335,7 @@ struct TradeManagementView: View {
             statusBadge(agreement.status)
         }
         .padding(12)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .overlay(
             Rectangle()
                 .stroke(theme.borderTan, lineWidth: 1)
@@ -346,13 +346,13 @@ struct TradeManagementView: View {
         let (color, bgColor): (Color, Color) = {
             switch status {
             case .active:
-                return (FiftiesColors.approvedGreen, FiftiesColors.approvedGreen.opacity(0.15))
+                return (theme.approvedGreen, theme.approvedGreen.opacity(0.15))
             case .proposed:
-                return (FiftiesColors.brassGold, FiftiesColors.brassGold.opacity(0.15))
+                return (theme.bronzeGold, theme.bronzeGold.opacity(0.15))
             case .suspended:
                 return (.orange, Color.orange.opacity(0.15))
             case .terminated, .expired, .violated:
-                return (FiftiesColors.stampRed, FiftiesColors.stampRed.opacity(0.15))
+                return (theme.sovietRed, theme.sovietRed.opacity(0.15))
             }
         }()
 
@@ -375,10 +375,10 @@ struct TradeManagementView: View {
             if sortedPartners.isEmpty {
                 Text("No foreign countries available.")
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(theme.carbonCopy)
                     .frame(maxWidth: .infinity)
                     .padding(20)
-                    .background(FiftiesColors.cardstock)
+                    .background(theme.cardstock)
                     .overlay(
                         Rectangle()
                             .stroke(theme.borderTan, lineWidth: 1)
@@ -410,7 +410,7 @@ struct TradeManagementView: View {
                 .tracking(1)
                 .foregroundColor(theme.inkGray)
             Rectangle()
-                .fill(FiftiesColors.brassGold)
+                .fill(theme.bronzeGold)
                 .frame(height: 2)
         }
     }
@@ -420,7 +420,7 @@ struct TradeManagementView: View {
             Text(label)
                 .font(.system(size: 7, weight: .semibold))
                 .tracking(0.5)
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(theme.carbonCopy)
             Text(value)
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                 .foregroundColor(color)

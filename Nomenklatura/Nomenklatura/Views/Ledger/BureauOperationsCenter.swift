@@ -85,7 +85,7 @@ struct BureauOperationsCenter: View {
                 }
             }
         }
-        .background(FiftiesColors.agedPaper)
+        .background(ColdWarTheme.shared.agedPaper)
         .cornerRadius(6)
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         .overlay(
@@ -134,7 +134,7 @@ struct BureauOperationsCenter: View {
 
                     Text("COMMAND CENTER")
                         .font(.system(size: 9, weight: .medium, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
 
                 Spacer()
@@ -145,11 +145,11 @@ struct BureauOperationsCenter: View {
                         StatusLight(.active, size: 6)
                         Text("\(summary.activeOperations) ACTIVE")
                             .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.approvedGreen)
+                            .foregroundColor(ColdWarTheme.shared.approvedGreen)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(FiftiesColors.approvedGreen.opacity(0.1))
+                    .background(ColdWarTheme.shared.approvedGreen.opacity(0.1))
                     .cornerRadius(2)
                 }
 
@@ -157,9 +157,9 @@ struct BureauOperationsCenter: View {
                 Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(FiftiesColors.carbonCopy)
+                        .foregroundColor(ColdWarTheme.shared.carbonCopy)
                         .padding(6)
-                        .background(FiftiesColors.agedPaper)
+                        .background(ColdWarTheme.shared.agedPaper)
                         .cornerRadius(4)
                 }
             }
@@ -167,7 +167,7 @@ struct BureauOperationsCenter: View {
             .padding(.vertical, 10)
             .background(
                 LinearGradient(
-                    colors: [FiftiesColors.manillaFolder, FiftiesColors.agedPaper],
+                    colors: [ColdWarTheme.shared.manillaFolder, ColdWarTheme.shared.agedPaper],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
@@ -190,7 +190,7 @@ struct BureauOperationsCenter: View {
                 CircularGauge(
                     value: summary.successRate * 100,
                     label: "SUCCESS",
-                    color: summary.successRate >= 0.6 ? FiftiesColors.approvedGreen : FiftiesColors.brassGold,
+                    color: summary.successRate >= 0.6 ? ColdWarTheme.shared.approvedGreen : ColdWarTheme.shared.bronzeGold,
                     size: 60
                 )
 
@@ -206,10 +206,10 @@ struct BureauOperationsCenter: View {
                         StatusLight(.active, size: 8)
                         Text("\(summary.activeOperations)")
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.approvedGreen)
+                            .foregroundColor(ColdWarTheme.shared.approvedGreen)
                         Text("ACTIVE")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
                     }
 
                     // Pending approval
@@ -217,10 +217,10 @@ struct BureauOperationsCenter: View {
                         StatusLight(.warning, size: 8)
                         Text("\(summary.pendingApproval)")
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.brassGold)
+                            .foregroundColor(ColdWarTheme.shared.bronzeGold)
                         Text("PENDING")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
                     }
 
                     // Available tasks
@@ -234,7 +234,7 @@ struct BureauOperationsCenter: View {
                             .foregroundColor(bureauColor)
                         Text("AVAILABLE")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundColor(FiftiesColors.carbonCopy)
+                            .foregroundColor(ColdWarTheme.shared.carbonCopy)
                     }
                 }
 
@@ -243,7 +243,7 @@ struct BureauOperationsCenter: View {
             .padding(12)
             .background(
                 LinearGradient(
-                    colors: [FiftiesColors.manillaFolder, FiftiesColors.agedPaper.opacity(0.8)],
+                    colors: [ColdWarTheme.shared.manillaFolder, ColdWarTheme.shared.agedPaper.opacity(0.8)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -345,7 +345,7 @@ struct BureauOperationsCenterCompact: View {
                     HStack(spacing: 8) {
                         Label("\(summary.activeOperations)", systemImage: "circle.fill")
                             .font(.system(size: 9, design: .monospaced))
-                            .foregroundColor(FiftiesColors.approvedGreen)
+                            .foregroundColor(ColdWarTheme.shared.approvedGreen)
 
                         Label("\(summary.availableTaskCount)", systemImage: "list.bullet")
                             .font(.system(size: 9, design: .monospaced))
@@ -357,11 +357,11 @@ struct BureauOperationsCenterCompact: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10))
-                    .foregroundColor(FiftiesColors.carbonCopy)
+                    .foregroundColor(ColdWarTheme.shared.carbonCopy)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(FiftiesColors.manillaFolder)
+            .background(ColdWarTheme.shared.manillaFolder)
         }
         .cornerRadius(4)
         .overlay(

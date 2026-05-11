@@ -53,10 +53,10 @@ struct CareerTimelineView: View {
             filterBar
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(FiftiesColors.cardstock)
+                .background(ColdWarTheme.shared.cardstock)
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(FiftiesColors.leatherBrown.opacity(0.2))
+                        .fill(ColdWarTheme.shared.leatherBrown.opacity(0.2))
                         .frame(height: 1)
                 }
 
@@ -67,7 +67,7 @@ struct CareerTimelineView: View {
                     GraphPaperBackground(
                         cellSize: 20,
                         lineColor: Color(hex: "D4C5A9").opacity(0.3),
-                        backgroundColor: FiftiesColors.agedPaper
+                        backgroundColor: ColdWarTheme.shared.agedPaper
                     )
                     .frame(width: timelineWidth, height: 180)
 
@@ -108,10 +108,10 @@ struct CareerTimelineView: View {
                     VStack(spacing: 2) {
                         Text("NOW")
                             .font(.system(size: 8, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.stampRed)
+                            .foregroundColor(ColdWarTheme.shared.sovietRed)
 
                         Rectangle()
-                            .fill(FiftiesColors.stampRed)
+                            .fill(ColdWarTheme.shared.sovietRed)
                             .frame(width: 2, height: 100)
                     }
                     .position(x: CGFloat(currentTurn) * 60 + 30, y: 80)
@@ -125,7 +125,7 @@ struct CareerTimelineView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .background(FiftiesColors.freshPaper)
+        .background(ColdWarTheme.shared.freshPaper)
     }
 
     // MARK: - Filter Bar
@@ -135,7 +135,7 @@ struct CareerTimelineView: View {
             Text("TIMELINE")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(2)
-                .foregroundColor(FiftiesColors.leatherBrown)
+                .foregroundColor(ColdWarTheme.shared.leatherBrown)
 
             Spacer()
 
@@ -147,16 +147,16 @@ struct CareerTimelineView: View {
                 } label: {
                     Text(filter.rawValue)
                         .font(.system(size: 9, weight: selectedFilter == filter ? .bold : .medium, design: .monospaced))
-                        .foregroundColor(selectedFilter == filter ? .white : FiftiesColors.fadedInk)
+                        .foregroundColor(selectedFilter == filter ? .white : ColdWarTheme.shared.inkGray)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .background(
                             RoundedRectangle(cornerRadius: 3)
-                                .fill(selectedFilter == filter ? FiftiesColors.leatherBrown : Color.clear)
+                                .fill(selectedFilter == filter ? ColdWarTheme.shared.leatherBrown : Color.clear)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 3)
-                                .stroke(FiftiesColors.leatherBrown.opacity(0.3), lineWidth: 1)
+                                .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.3), lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -170,7 +170,7 @@ struct CareerTimelineView: View {
         ZStack(alignment: .leading) {
             // Main axis line
             Rectangle()
-                .fill(FiftiesColors.typewriterInk)
+                .fill(ColdWarTheme.shared.inkBlack)
                 .frame(width: timelineWidth, height: 2)
 
             // Turn markers
@@ -178,14 +178,14 @@ struct CareerTimelineView: View {
                 VStack(spacing: 2) {
                     // Tick mark
                     Rectangle()
-                        .fill(FiftiesColors.typewriterInk)
+                        .fill(ColdWarTheme.shared.inkBlack)
                         .frame(width: turn % 5 == 0 ? 2 : 1, height: turn % 5 == 0 ? 12 : 6)
 
                     // Label for every 5 turns
                     if turn % 5 == 0 && turn > 0 {
                         Text("T\(turn)")
                             .font(.system(size: 8, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
                     }
                 }
                 .offset(x: CGFloat(turn) * 60 + 28)
@@ -206,11 +206,11 @@ struct CareerTimelineView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(event.title)
                         .font(.system(size: 13, weight: .bold, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                     Text(event.turnLabel)
                         .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
 
                 Spacer()
@@ -223,14 +223,14 @@ struct CareerTimelineView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
                 .buttonStyle(.plain)
             }
 
             Text(event.description)
                 .font(.system(size: 12, design: .serif))
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
                 .lineLimit(3)
 
             // Stat snapshot
@@ -241,10 +241,10 @@ struct CareerTimelineView: View {
                             VStack(spacing: 1) {
                                 Text("\(value)")
                                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.typewriterInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkBlack)
                                 Text(key.uppercased().prefix(4))
                                     .font(.system(size: 7, design: .monospaced))
-                                    .foregroundColor(FiftiesColors.fadedInk)
+                                    .foregroundColor(ColdWarTheme.shared.inkGray)
                             }
                         }
                     }
@@ -253,10 +253,10 @@ struct CareerTimelineView: View {
             }
         }
         .padding(12)
-        .background(FiftiesColors.cardstock)
+        .background(ColdWarTheme.shared.cardstock)
         .overlay(
             Rectangle()
-                .stroke(FiftiesColors.leatherBrown.opacity(0.2), lineWidth: 1)
+                .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.2), lineWidth: 1)
         )
     }
 }
@@ -295,7 +295,7 @@ struct TimelineEventMarker: View {
                 Circle()
                     .fill(Color(event.type.color))
                 Circle()
-                    .stroke(FiftiesColors.typewriterInk, lineWidth: 1.5)
+                    .stroke(ColdWarTheme.shared.inkBlack, lineWidth: 1.5)
                 Image(systemName: event.type.icon)
                     .font(.system(size: markerSize * 0.4))
                     .foregroundColor(.white)
@@ -308,7 +308,7 @@ struct TimelineEventMarker: View {
                     .rotationEffect(.degrees(45))
                     .frame(width: markerSize * 0.7, height: markerSize * 0.7)
                 Rectangle()
-                    .stroke(FiftiesColors.typewriterInk, lineWidth: 1.5)
+                    .stroke(ColdWarTheme.shared.inkBlack, lineWidth: 1.5)
                     .rotationEffect(.degrees(45))
                     .frame(width: markerSize * 0.7, height: markerSize * 0.7)
                 Image(systemName: event.type.icon)
@@ -321,7 +321,7 @@ struct TimelineEventMarker: View {
                 Rectangle()
                     .fill(Color(event.type.color))
                 Rectangle()
-                    .stroke(FiftiesColors.typewriterInk, lineWidth: 1.5)
+                    .stroke(ColdWarTheme.shared.inkBlack, lineWidth: 1.5)
                 Image(systemName: event.type.icon)
                     .font(.system(size: markerSize * 0.4))
                     .foregroundColor(.white)
@@ -334,7 +334,7 @@ struct TimelineEventMarker: View {
                     .foregroundColor(Color(event.type.color))
                 Image(systemName: "cross")
                     .font(.system(size: markerSize))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
             }
 
         case .star:
@@ -344,7 +344,7 @@ struct TimelineEventMarker: View {
                     .foregroundColor(Color(event.type.color))
                 Image(systemName: "star")
                     .font(.system(size: markerSize))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
             }
         }
     }
@@ -369,7 +369,7 @@ struct TimelineSparkline: View {
                     path.addLine(to: CGPoint(x: geometry.size.width, y: y))
                 }
                 .stroke(style: StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.5))
+                .foregroundColor(ColdWarTheme.shared.inkGray.opacity(0.5))
 
                 // Sparkline path
                 if data.count >= 2 {
@@ -385,12 +385,12 @@ struct TimelineSparkline: View {
                             }
                         }
                     }
-                    .stroke(FiftiesColors.typewriterInk, style: StrokeStyle(
+                    .stroke(ColdWarTheme.shared.inkBlack, style: StrokeStyle(
                         lineWidth: 1.5,
                         lineCap: .round,
                         lineJoin: .round
                     ))
-                    .shadow(color: FiftiesColors.typewriterInk.opacity(0.2), radius: 1)
+                    .shadow(color: ColdWarTheme.shared.inkBlack.opacity(0.2), radius: 1)
                 }
             }
         }
@@ -412,15 +412,15 @@ struct CareerTimelineSheet: View {
                     Text("CAREER DOSSIER")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .tracking(2)
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
 
                     Text("Turn \(game.turnNumber) • \(game.currentPositionName)")
                         .font(.system(size: 14, weight: .medium, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(FiftiesColors.cardstock)
+                .background(ColdWarTheme.shared.cardstock)
 
                 // Timeline
                 CareerTimelineView(
@@ -432,14 +432,14 @@ struct CareerTimelineSheet: View {
                 // Career summary stats
                 careerSummary
             }
-            .background(FiftiesColors.freshPaper)
+            .background(ColdWarTheme.shared.freshPaper)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
                 }
             }
         }
@@ -453,10 +453,10 @@ struct CareerTimelineSheet: View {
             summaryBox(label: "PURGES", value: "\(countEvents(of: .purge))")
         }
         .padding()
-        .background(FiftiesColors.cardstock)
+        .background(ColdWarTheme.shared.cardstock)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(FiftiesColors.leatherBrown.opacity(0.2))
+                .fill(ColdWarTheme.shared.leatherBrown.opacity(0.2))
                 .frame(height: 1)
         }
     }
@@ -465,10 +465,10 @@ struct CareerTimelineSheet: View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.system(size: 20, weight: .bold, design: .monospaced))
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
             Text(label)
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
         }
         .frame(maxWidth: .infinity)
     }
@@ -499,7 +499,7 @@ struct CompactTimelineWidget: View {
                     Text("CAREER TIMELINE")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
                         .tracking(1)
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
 
                     Spacer()
 
@@ -509,7 +509,7 @@ struct CompactTimelineWidget: View {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 7))
                     }
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
                 }
 
                 // Mini event row
@@ -517,7 +517,7 @@ struct CompactTimelineWidget: View {
                     Text("Your career story begins...")
                         .font(.system(size: 11, design: .serif))
                         .italic()
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 } else {
                     HStack(spacing: 4) {
                         ForEach(recentEvents.reversed()) { event in
@@ -535,15 +535,15 @@ struct CompactTimelineWidget: View {
 
                         Text("T-\(currentTurn)")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(ColdWarTheme.shared.inkBlack)
                     }
                 }
             }
             .padding(12)
-            .background(FiftiesColors.agedPaper)
+            .background(ColdWarTheme.shared.agedPaper)
             .overlay(
                 Rectangle()
-                    .stroke(FiftiesColors.leatherBrown.opacity(0.15), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.15), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

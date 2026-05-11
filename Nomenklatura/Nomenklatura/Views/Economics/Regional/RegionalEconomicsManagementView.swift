@@ -59,7 +59,7 @@ struct RegionalEconomicsManagementView: View {
             summaryCell(
                 label: "CRISIS ZONES",
                 value: "\(crisisCount)",
-                valueColor: crisisCount > 0 ? FiftiesColors.stampRed : FiftiesColors.approvedGreen
+                valueColor: crisisCount > 0 ? theme.sovietRed : theme.approvedGreen
             )
 
             Divider()
@@ -72,7 +72,7 @@ struct RegionalEconomicsManagementView: View {
             )
         }
         .padding(.vertical, 10)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .cornerRadius(6)
         .overlay(
             RoundedRectangle(cornerRadius: 6)
@@ -172,7 +172,7 @@ private struct RegionEconomicCard: View {
             }
         }
         .padding(12)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -261,7 +261,7 @@ private struct RegionEconomicCard: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
-            .background(game.treasury >= 3 ? FiftiesColors.approvedGreen : theme.parchmentDark)
+            .background(game.treasury >= 3 ? theme.approvedGreen : theme.parchmentDark)
             .cornerRadius(4)
         }
         .buttonStyle(.plain)
@@ -286,7 +286,7 @@ private struct RegionEconomicCard: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity)
-                .background(FiftiesColors.stampRed)
+                .background(theme.sovietRed)
                 .cornerRadius(4)
             }
             .buttonStyle(.plain)
@@ -304,38 +304,38 @@ private struct RegionEconomicCard: View {
 
     private func barColor(for value: Int) -> Color {
         switch value {
-        case 70...: return FiftiesColors.approvedGreen
-        case 40..<70: return FiftiesColors.brassGold
+        case 70...: return theme.approvedGreen
+        case 40..<70: return theme.bronzeGold
         case 20..<40: return .orange
-        default: return FiftiesColors.stampRed
+        default: return theme.sovietRed
         }
     }
 
     private var typeBadgeColor: Color {
         switch region.type {
-        case .capital: return FiftiesColors.brassGold
-        case .industrial: return FiftiesColors.steelGray
-        case .agricultural: return FiftiesColors.approvedGreen
-        case .extractive: return FiftiesColors.leatherBrown
+        case .capital: return theme.bronzeGold
+        case .industrial: return theme.steelGray
+        case .agricultural: return theme.approvedGreen
+        case .extractive: return theme.leatherBrown
         case .coastal: return Color(hex: "4682B4")
-        case .border: return FiftiesColors.stampRed
+        case .border: return theme.sovietRed
         case .autonomous: return .purple
         }
     }
 
     private var statusColor: Color {
         switch region.status {
-        case .stable: return FiftiesColors.approvedGreen
+        case .stable: return theme.approvedGreen
         case .unrest: return .orange
-        case .crisis: return FiftiesColors.stampRed
+        case .crisis: return theme.sovietRed
         case .rebellion: return .red
         case .seceding: return .purple
-        case .seceded: return FiftiesColors.steelGray
+        case .seceded: return theme.steelGray
         case .martial: return .black
         }
     }
 
     private var statusBorderColor: Color {
-        region.isDangerous ? FiftiesColors.stampRed.opacity(0.5) : theme.borderTan
+        region.isDangerous ? theme.sovietRed.opacity(0.5) : theme.borderTan
     }
 }

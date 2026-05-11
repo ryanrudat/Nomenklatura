@@ -1,0 +1,3854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Apparatus — Nomenklatura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0a0907; }
+  body {
+    font-family: -apple-system, system-ui, sans-serif;
+    color: #e5d5b1;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 30% 20%, #2a1010 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 80%, #1a1a10 0%, transparent 60%),
+      #0a0907;
+    overflow: hidden;
+  }
+  #root { display: flex; align-items: center; justify-content: center; gap: 40px; padding: 40px; }
+  button { font-family: inherit; }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="application/json" id="speaker-notes">[]</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+// ── ios-frame.js ──
+
+// iOS.jsx — Simplified iOS 26 (Liquid Glass) device frame
+// Based on the iOS 26 UI Kit + Figma status bar spec. No assets, no deps.
+// Exports: IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard
+
+// ─────────────────────────────────────────────────────────────
+// Status bar
+// ─────────────────────────────────────────────────────────────
+function IOSStatusBar({ dark = false, time = '9:41' }) {
+  const c = dark ? '#fff' : '#000';
+  return (
+    <div style={{
+      display: 'flex', gap: 154, alignItems: 'center', justifyContent: 'center',
+      padding: '21px 24px 19px', boxSizing: 'border-box',
+      position: 'relative', zIndex: 20, width: '100%',
+    }}>
+      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 1.5 }}>
+        <span style={{
+          fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 590,
+          fontSize: 17, lineHeight: '22px', color: c,
+        }}>{time}</span>
+      </div>
+      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, paddingTop: 1, paddingRight: 1 }}>
+        <svg width="19" height="12" viewBox="0 0 19 12">
+          <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill={c}/>
+          <rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill={c}/>
+          <rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7" fill={c}/>
+          <rect x="14.4" y="0" width="3.2" height="12" rx="0.7" fill={c}/>
+        </svg>
+        <svg width="17" height="12" viewBox="0 0 17 12">
+          <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill={c}/>
+          <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill={c}/>
+          <circle cx="8.5" cy="10.5" r="1.5" fill={c}/>
+        </svg>
+        <svg width="27" height="13" viewBox="0 0 27 13">
+          <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke={c} strokeOpacity="0.35" fill="none"/>
+          <rect x="2" y="2" width="20" height="9" rx="2" fill={c}/>
+          <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill={c} fillOpacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Liquid glass pill — blur + tint + shine
+// ─────────────────────────────────────────────────────────────
+function IOSGlassPill({ children, dark = false, style = {} }) {
+  return (
+    <div style={{
+      height: 44, minWidth: 44, borderRadius: 9999,
+      position: 'relative', overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: dark
+        ? '0 2px 6px rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.2)'
+        : '0 1px 3px rgba(0,0,0,0.07), 0 3px 10px rgba(0,0,0,0.06)',
+      ...style,
+    }}>
+      {/* blur + tint */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 9999,
+        backdropFilter: 'blur(12px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        background: dark ? 'rgba(120,120,128,0.28)' : 'rgba(255,255,255,0.5)',
+      }} />
+      {/* shine */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 9999,
+        boxShadow: dark
+          ? 'inset 1.5px 1.5px 1px rgba(255,255,255,0.15), inset -1px -1px 1px rgba(255,255,255,0.08)'
+          : 'inset 1.5px 1.5px 1px rgba(255,255,255,0.7), inset -1px -1px 1px rgba(255,255,255,0.4)',
+        border: dark ? '0.5px solid rgba(255,255,255,0.15)' : '0.5px solid rgba(0,0,0,0.06)',
+      }} />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Navigation bar — glass pills + large title
+// ─────────────────────────────────────────────────────────────
+function IOSNavBar({ title = 'Title', dark = false, trailingIcon = true }) {
+  const muted = dark ? 'rgba(255,255,255,0.6)' : '#404040';
+  const text = dark ? '#fff' : '#000';
+  const pillIcon = (content) => (
+    <IOSGlassPill dark={dark}>
+      <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {content}
+      </div>
+    </IOSGlassPill>
+  );
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 10,
+      paddingTop: 62, paddingBottom: 10, position: 'relative', zIndex: 5,
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px',
+      }}>
+        {/* back chevron */}
+        {pillIcon(
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" style={{ marginLeft: -1 }}>
+            <path d="M10 2L2 10l8 8" stroke={muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+        {/* trailing ellipsis */}
+        {trailingIcon && pillIcon(
+          <svg width="22" height="6" viewBox="0 0 22 6">
+            <circle cx="3" cy="3" r="2.5" fill={muted}/>
+            <circle cx="11" cy="3" r="2.5" fill={muted}/>
+            <circle cx="19" cy="3" r="2.5" fill={muted}/>
+          </svg>
+        )}
+      </div>
+      {/* large title */}
+      <div style={{
+        padding: '0 16px',
+        fontFamily: '-apple-system, system-ui',
+        fontSize: 34, fontWeight: 700, lineHeight: '41px',
+        color: text, letterSpacing: 0.4,
+      }}>{title}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Grouped list (inset card, r:26) + row (52px)
+// ─────────────────────────────────────────────────────────────
+function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark = false }) {
+  const text = dark ? '#fff' : '#000';
+  const sec = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
+  const ter = dark ? 'rgba(235,235,245,0.3)' : 'rgba(60,60,67,0.3)';
+  const sep = dark ? 'rgba(84,84,88,0.65)' : 'rgba(60,60,67,0.12)';
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', minHeight: 52,
+      padding: '0 16px', position: 'relative',
+      fontFamily: '-apple-system, system-ui', fontSize: 17,
+      letterSpacing: -0.43,
+    }}>
+      {icon && (
+        <div style={{
+          width: 30, height: 30, borderRadius: 7, background: icon,
+          marginRight: 12, flexShrink: 0,
+        }} />
+      )}
+      <div style={{ flex: 1, color: text }}>{title}</div>
+      {detail && <span style={{ color: sec, marginRight: 6 }}>{detail}</span>}
+      {chevron && (
+        <svg width="8" height="14" viewBox="0 0 8 14" style={{ flexShrink: 0 }}>
+          <path d="M1 1l6 6-6 6" stroke={ter} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+      {!isLast && (
+        <div style={{
+          position: 'absolute', bottom: 0, right: 0,
+          left: icon ? 58 : 16, height: 0.5, background: sep,
+        }} />
+      )}
+    </div>
+  );
+}
+
+function IOSList({ header, children, dark = false }) {
+  const hc = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
+  const bg = dark ? '#1C1C1E' : '#fff';
+  return (
+    <div>
+      {header && (
+        <div style={{
+          fontFamily: '-apple-system, system-ui', fontSize: 13,
+          color: hc, textTransform: 'uppercase',
+          padding: '8px 36px 6px', letterSpacing: -0.08,
+        }}>{header}</div>
+      )}
+      <div style={{
+        background: bg, borderRadius: 26,
+        margin: '0 16px', overflow: 'hidden',
+      }}>{children}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Device frame
+// ─────────────────────────────────────────────────────────────
+function IOSDevice({
+  children, width = 402, height = 874, dark = false,
+  title, keyboard = false,
+}) {
+  return (
+    <div style={{
+      width, height, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: dark ? '#000' : '#F2F2F7',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
+      fontFamily: '-apple-system, system-ui, sans-serif',
+      WebkitFontSmoothing: 'antialiased',
+    }}>
+      {/* dynamic island */}
+      <div style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+      }} />
+      {/* status bar (absolute) */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <IOSStatusBar dark={dark} />
+      </div>
+      {/* nav + content */}
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {title !== undefined && <IOSNavBar title={title} dark={dark} />}
+        <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
+        {keyboard && <IOSKeyboard dark={dark} />}
+      </div>
+      {/* home indicator — always on top */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
+        height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+        paddingBottom: 8, pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: 139, height: 5, borderRadius: 100,
+          background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Keyboard — iOS 26 liquid glass
+// ─────────────────────────────────────────────────────────────
+function IOSKeyboard({ dark = false }) {
+  const glyph = dark ? 'rgba(255,255,255,0.7)' : '#595959';
+  const sugg = dark ? 'rgba(255,255,255,0.6)' : '#333';
+  const keyBg = dark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.85)';
+
+  // special-key icons
+  const icons = {
+    shift: <svg width="19" height="17" viewBox="0 0 19 17"><path d="M9.5 1L1 9.5h4.5V16h8V9.5H18L9.5 1z" fill={glyph}/></svg>,
+    del: <svg width="23" height="17" viewBox="0 0 23 17"><path d="M7 1h13a2 2 0 012 2v11a2 2 0 01-2 2H7l-6-7.5L7 1z" fill="none" stroke={glyph} strokeWidth="1.6" strokeLinejoin="round"/><path d="M10 5l7 7M17 5l-7 7" stroke={glyph} strokeWidth="1.6" strokeLinecap="round"/></svg>,
+    ret: <svg width="20" height="14" viewBox="0 0 20 14"><path d="M18 1v6H4m0 0l4-4M4 7l4 4" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  };
+
+  const key = (content, { w, flex, ret, fs = 25, k } = {}) => (
+    <div key={k} style={{
+      height: 42, borderRadius: 8.5,
+      flex: flex ? 1 : undefined, width: w, minWidth: 0,
+      background: ret ? '#08f' : keyBg,
+      boxShadow: '0 1px 0 rgba(0,0,0,0.075)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: '-apple-system, "SF Compact", system-ui',
+      fontSize: fs, fontWeight: 458, color: ret ? '#fff' : glyph,
+    }}>{content}</div>
+  );
+
+  const row = (keys, pad = 0) => (
+    <div style={{ display: 'flex', gap: 6.5, justifyContent: 'center', padding: `0 ${pad}px` }}>
+      {keys.map(l => key(l, { flex: true, k: l }))}
+    </div>
+  );
+
+  return (
+    <div style={{
+      position: 'relative', zIndex: 15, borderRadius: 27, overflow: 'hidden',
+      padding: '11px 0 2px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      boxShadow: dark
+        ? '0 -2px 20px rgba(0,0,0,0.09)'
+        : '0 -1px 6px rgba(0,0,0,0.018), 0 -3px 20px rgba(0,0,0,0.012)',
+    }}>
+      {/* liquid glass bg — same recipe as nav pills */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 27,
+        backdropFilter: 'blur(12px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        background: dark ? 'rgba(120,120,128,0.14)' : 'rgba(255,255,255,0.25)',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 27,
+        boxShadow: dark
+          ? 'inset 1.5px 1.5px 1px rgba(255,255,255,0.15)'
+          : 'inset 1.5px 1.5px 1px rgba(255,255,255,0.7), inset -1px -1px 1px rgba(255,255,255,0.4)',
+        border: dark ? '0.5px solid rgba(255,255,255,0.15)' : '0.5px solid rgba(0,0,0,0.06)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* autocorrect bar */}
+      <div style={{
+        display: 'flex', gap: 20, alignItems: 'center',
+        padding: '8px 22px 13px', width: '100%', boxSizing: 'border-box',
+        position: 'relative',
+      }}>
+        {['"The"', 'the', 'to'].map((w, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <div style={{ width: 1, height: 25, background: '#ccc', opacity: 0.3 }} />}
+            <div style={{
+              flex: 1, textAlign: 'center',
+              fontFamily: '-apple-system, system-ui', fontSize: 17,
+              color: sugg, letterSpacing: -0.43, lineHeight: '22px',
+            }}>{w}</div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* key layout */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 13,
+        padding: '0 6.5px', width: '100%', boxSizing: 'border-box',
+        position: 'relative',
+      }}>
+        {row(['q','w','e','r','t','y','u','i','o','p'])}
+        {row(['a','s','d','f','g','h','j','k','l'], 20)}
+        <div style={{ display: 'flex', gap: 14.25, alignItems: 'center' }}>
+          {key(icons.shift, { w: 45, k: 'shift' })}
+          <div style={{ display: 'flex', gap: 6.5, flex: 1 }}>
+            {['z','x','c','v','b','n','m'].map(l => key(l, { flex: true, k: l }))}
+          </div>
+          {key(icons.del, { w: 45, k: 'del' })}
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {key('ABC', { w: 92.25, fs: 18, k: 'abc' })}
+          {key('', { flex: true, k: 'space' })}
+          {key(icons.ret, { w: 92.25, ret: true, k: 'ret' })}
+        </div>
+      </div>
+
+      {/* bottom spacer (emoji+mic area, icons omitted) */}
+      <div style={{ height: 56, width: '100%', position: 'relative' }} />
+    </div>
+  );
+}
+
+Object.assign(window, {
+  IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard,
+});
+
+
+// ── game-state.js ──
+// game-state.jsx — shared game content for Nomenklatura prototype
+// In-universe 1952 PSRA (People's Socialist Republic of America) — Party intrigue
+// 3 turns of branching scenarios. Characters, stance options, outcomes.
+
+const CHARACTERS = {
+  volkov: {
+    id: 'volkov',
+    name: 'Dmitri Volkov',
+    rank: 'Chairman, Central Committee',
+    role: 'Patron',
+    relation: 'patron',
+    loyalty: 72,
+    portrait: '#8a2a2a',
+    initials: 'DV',
+    dossier: [
+      'Veteran of the Second Civil War (Chicago Front).',
+      'Rumored architect of the 1948 Purification.',
+      'Drinks tea. Trusts no one. Admires efficiency.',
+    ],
+  },
+  petrenko: {
+    id: 'petrenko',
+    name: 'Klara Petrenko',
+    rank: 'Commissar, Internal Security',
+    role: 'Rival',
+    relation: 'rival',
+    loyalty: 18,
+    portrait: '#2a3a5a',
+    initials: 'KP',
+    dossier: [
+      'Climbed the apparatus from the factory floor.',
+      'Has been quietly compiling a file on you since 1950.',
+      'Believes the Party is soft. She is not.',
+    ],
+  },
+  hollis: {
+    id: 'hollis',
+    name: 'Eugene Hollis',
+    rank: 'Director, Bureau of Agriculture',
+    role: 'Subordinate',
+    relation: 'subordinate',
+    loyalty: 64,
+    portrait: '#4a5a3a',
+    initials: 'EH',
+    dossier: [
+      'Former Iowa farmer, now a true believer.',
+      'Efficient, earnest, and slightly out of his depth.',
+      'Would die for the collective. Inconveniently.',
+    ],
+  },
+  ashford: {
+    id: 'ashford',
+    name: 'Margaret Ashford',
+    rank: 'Chief Editor, The People\u2019s Tribune',
+    role: 'Ally',
+    relation: 'ally',
+    loyalty: 55,
+    portrait: '#6a4a2a',
+    initials: 'MA',
+    dossier: [
+      'Writes in straight lines. Thinks in curves.',
+      'Owes you a favor from the Nebraska trial.',
+      'Keeps a shortwave radio. Claims it is broken.',
+    ],
+  },
+};
+
+const SCENARIOS = [
+  // ─────────────────────────────────────────────────────────── TURN 1
+  {
+    id: 't1-grain',
+    turn: 1,
+    classification: 'RESTRICTED',
+    bureau: 'Bureau of Agriculture',
+    from: 'hollis',
+    date: '14 March 1952',
+    docNumber: 'DIR-1952-0143',
+    title: 'Grain Requisition \u2014 Ohio Collective №7',
+    briefing: [
+      'Comrade Secretary,',
+      'Collective №7 in the Ohio District has fallen 31% short of the Five-Year quota for winter wheat. The peasant committee petitions for relief; the regional soviet demands requisition.',
+      'Commissar Petrenko has already dispatched two inspectors. Chairman Volkov awaits your directive.',
+      'The matter cannot remain open past the March session.',
+    ],
+    options: [
+      {
+        id: 'seize',
+        stance: 'Orthodox',
+        stanceColor: '#a03030',
+        label: 'Requisition the full quota',
+        body: 'Send the Internal Troops. Let the collective feed the cities first.',
+        effects: { treasury: +8, food: +12, stability: -9, popular: -14, elite: +6 },
+        patron: +3,
+        rival: -2,
+        outcomeTitle: 'The Quota Is Met',
+        outcomeBody: 'Trucks rolled into Ohio at dawn. The collective will starve quietly through April. Chairman Volkov sends a dry, approving note. The Tribune prints nothing.',
+        stamp: 'EXECUTED',
+      },
+      {
+        id: 'reform',
+        stance: 'Reformist',
+        stanceColor: '#c89030',
+        label: 'Reduce the quota, extend credit',
+        body: 'Let Hollis restructure the collective. Trust the peasant committee.',
+        effects: { treasury: -6, food: -4, stability: +8, popular: +11, elite: -5 },
+        patron: -2,
+        rival: -1,
+        outcomeTitle: 'A Quiet Concession',
+        outcomeBody: 'Hollis weeps into his report. The Ohio peasants sing your name at supper. Petrenko files a memo marked \u201cSOFT.\u201d Volkov says nothing, which is worse.',
+        stamp: 'APPROVED',
+      },
+      {
+        id: 'blame',
+        stance: 'Opportunist',
+        stanceColor: '#3a6a7a',
+        label: 'Denounce the collective chairman',
+        body: 'A saboteur, clearly. Arrest him. Problem solved, credit taken.',
+        effects: { treasury: +2, food: +4, stability: +2, popular: -6, elite: +10 },
+        patron: +1,
+        rival: +4,
+        outcomeTitle: 'A Convenient Traitor',
+        outcomeBody: 'The collective chairman confesses to wrecking on day three. Petrenko is delighted \u2014 she wanted him for other reasons. She owes you now. You are not sure that is good.',
+        stamp: 'CLASSIFIED',
+      },
+    ],
+  },
+  // ─────────────────────────────────────────────────────────── TURN 2
+  {
+    id: 't2-radio',
+    turn: 2,
+    classification: 'SECRET',
+    bureau: 'Bureau of State Security',
+    from: 'petrenko',
+    date: '21 March 1952',
+    docNumber: 'BSS-1952-0211',
+    title: 'Unauthorized Broadcast \u2014 Frequency 6.190 MHz',
+    briefing: [
+      'Secretary,',
+      'A shortwave broadcast in English, originating within the capital, transmitted for forty-three minutes last Tuesday. The operator quoted Jefferson. Twice.',
+      'Signal triangulation places the source within four city blocks of the Tribune press building.',
+      'I require your authorization to sweep.',
+    ],
+    options: [
+      {
+        id: 'sweep',
+        stance: 'Iron Fist',
+        stanceColor: '#7a1818',
+        label: 'Authorize the sweep',
+        body: 'Four blocks. Door to door. Whoever it is, we find them tonight.',
+        effects: { treasury: -4, food: 0, stability: +6, popular: -11, elite: +8 },
+        patron: +1,
+        rival: +5,
+        outcomeTitle: 'Forty-Three Arrests',
+        outcomeBody: 'Petrenko\u2019s men take the press building. Ashford is questioned for eleven hours and released. She does not speak to you for a week. The broadcasts stop. For now.',
+        stamp: 'EXECUTED',
+      },
+      {
+        id: 'infiltrate',
+        stance: 'Cunning',
+        stanceColor: '#3a6a7a',
+        label: 'Plant a listener, watch the network',
+        body: 'Do not arrest. Observe. Names are worth more than confessions.',
+        effects: { treasury: -8, food: 0, stability: +2, popular: +1, elite: +4 },
+        patron: +4,
+        rival: -3,
+        outcomeTitle: 'The Web Is Mapped',
+        outcomeBody: 'Within a month you have nineteen names. Three are junior cadres. One sits on the Central Committee. You tell Volkov the number, not the names. He smiles for the first time in memory.',
+        stamp: 'CLASSIFIED',
+      },
+      {
+        id: 'ignore',
+        stance: 'Reformist',
+        stanceColor: '#c89030',
+        label: 'Classify and shelve',
+        body: 'A minor irritation. The Party has larger concerns.',
+        effects: { treasury: 0, food: 0, stability: -4, popular: +3, elite: -8 },
+        patron: -4,
+        rival: +2,
+        outcomeTitle: 'A Loose Thread',
+        outcomeBody: 'Petrenko files the unopened order in her personal drawer. You hear the drawer close from the next room.',
+        stamp: 'FILED',
+      },
+    ],
+  },
+  // ─────────────────────────────────────────────────────────── TURN 3
+  {
+    id: 't3-volkov',
+    turn: 3,
+    classification: 'EYES ONLY',
+    bureau: 'Office of the Chairman',
+    from: 'volkov',
+    date: '28 March 1952',
+    docNumber: 'CHA-1952-0007',
+    title: 'Private Audience \u2014 Chairman Volkov',
+    briefing: [
+      'Comrade,',
+      'The Chairman requests your presence at the dacha on Sunday. No aides, no record.',
+      'He will ask you one question. He has done this three times in twenty years. Two of the three men he asked are no longer with us.',
+      'Prepare.',
+    ],
+    options: [
+      {
+        id: 'loyal',
+        stance: 'Loyal',
+        stanceColor: '#a03030',
+        label: '\u201cI serve the Party, Chairman.\u201d',
+        body: 'A clean answer. Expected. Safe, perhaps.',
+        effects: { treasury: 0, food: 0, stability: +4, popular: 0, elite: +6 },
+        patron: +6,
+        rival: 0,
+        outcomeTitle: 'The Chairman Nods',
+        outcomeBody: 'Volkov pours tea with his own hand. \u201cGood boy,\u201d he says, though you are forty-seven. A week later, your name appears on the promotion list.',
+        stamp: 'APPROVED',
+      },
+      {
+        id: 'honest',
+        stance: 'Independent',
+        stanceColor: '#c89030',
+        label: '\u201cI serve the Revolution, Chairman.\u201d',
+        body: 'A knife, wrapped in silk. He will notice the edge.',
+        effects: { treasury: 0, food: 0, stability: +2, popular: +6, elite: -2 },
+        patron: +2,
+        rival: -4,
+        outcomeTitle: 'A Long Silence',
+        outcomeBody: 'Volkov watches you over the rim of his cup for what feels like a full minute. \u201cI wondered when you would say it.\u201d He does not promote you. He does not purge you. He remembers.',
+        stamp: 'NOTED',
+      },
+      {
+        id: 'play',
+        stance: 'Ambitious',
+        stanceColor: '#7a1818',
+        label: '\u201cI serve what serves the people.\u201d',
+        body: 'An answer with three exits. He taught you this game.',
+        effects: { treasury: +2, food: 0, stability: -2, popular: +4, elite: +2 },
+        patron: -2,
+        rival: -6,
+        outcomeTitle: 'The Old Man Laughs',
+        outcomeBody: 'For the first time in years, Volkov laughs \u2014 a short, dry bark. \u201cYou will either replace me or bury me.\u201d He pours a second cup. \u201cI have not decided which I prefer.\u201d',
+        stamp: 'EYES ONLY',
+      },
+    ],
+  },
+];
+
+const INITIAL_STATS = {
+  treasury: 48,
+  food: 52,
+  stability: 60,
+  popular: 44,
+  elite: 51,
+};
+
+const STAT_META = {
+  treasury: { label: 'Treasury', icon: '₽' },
+  food: { label: 'Food Supply', icon: '✦' },
+  stability: { label: 'Stability', icon: '◈' },
+  popular: { label: 'Popular Support', icon: '☆' },
+  elite: { label: 'Elite Loyalty', icon: '◆' },
+};
+
+Object.assign(window, { CHARACTERS, SCENARIOS, INITIAL_STATS, STAT_META });
+
+
+// ── themes.js ──
+// themes.jsx — three aesthetic directions for the Desk screen
+// V1 PARCHMENT DOSSIER — vintage archival, ink stamps, carbon copy
+// V2 RED APPARATUS — brutalist socialist-realist, flat red + ink
+// V3 REDACTED FILE — classified dark archive, censor bars, paranoid
+
+const THEMES = {
+  parchment: {
+    key: 'parchment',
+    name: 'PARCHMENT DOSSIER',
+    tagline: 'The Archive',
+    // surfaces
+    bg: '#d9c9a8',
+    bgDeep: '#c5b28f',
+    paper: '#efe4c9',
+    paperDeep: '#e5d5b1',
+    ink: '#2a2216',
+    inkSoft: '#5a4a32',
+    inkFaint: '#8a7a5a',
+    accent: '#8b1818', // oxblood stamp
+    accent2: '#b08830', // gold leaf
+    rule: 'rgba(42, 34, 22, 0.28)',
+    ruleSoft: 'rgba(42, 34, 22, 0.12)',
+    // type
+    display: '"IM Fell English", "Playfair Display", Georgia, serif',
+    body: '"Source Serif 4", "Crimson Pro", Georgia, serif',
+    mono: '"Special Elite", "Courier Prime", ui-monospace, monospace',
+    // geometry
+    radius: 2,
+    cardRadius: 3,
+    // motif
+    paperNoise: true,
+    showStamps: true,
+    showPaperclip: true,
+    showWax: true,
+    carbonCopy: false,
+    censored: false,
+    dark: false,
+    // iconography
+    star: '#8b1818',
+    // status bar
+    statusDark: false,
+  },
+  red: {
+    key: 'red',
+    name: 'RED APPARATUS',
+    tagline: 'The Vanguard',
+    bg: '#f3ece0',
+    bgDeep: '#e4dac6',
+    paper: '#fbf6ec',
+    paperDeep: '#f1e8d6',
+    ink: '#1a1412',
+    inkSoft: '#3a2a26',
+    inkFaint: '#7a5a52',
+    accent: '#cc1a1a',
+    accent2: '#1a1412',
+    rule: 'rgba(26, 20, 18, 0.35)',
+    ruleSoft: 'rgba(26, 20, 18, 0.14)',
+    display: '"Oswald", "Bebas Neue", "Arial Black", sans-serif',
+    body: '"Work Sans", "Helvetica Neue", Helvetica, Arial, sans-serif',
+    mono: '"JetBrains Mono", ui-monospace, monospace',
+    radius: 0,
+    cardRadius: 0,
+    paperNoise: false,
+    showStamps: true,
+    showPaperclip: false,
+    showWax: false,
+    carbonCopy: false,
+    censored: false,
+    dark: false,
+    star: '#cc1a1a',
+    statusDark: false,
+  },
+  redacted: {
+    key: 'redacted',
+    name: 'REDACTED FILE',
+    tagline: 'Eyes Only',
+    bg: '#14120f',
+    bgDeep: '#0a0907',
+    paper: '#1e1b15',
+    paperDeep: '#15130e',
+    ink: '#ebe0c4',
+    inkSoft: '#b8ac8e',
+    inkFaint: '#8a7e64',
+    accent: '#c72828',
+    accent2: '#b08830',
+    rule: 'rgba(212, 200, 168, 0.24)',
+    ruleSoft: 'rgba(212, 200, 168, 0.10)',
+    display: '"Special Elite", "Courier Prime", ui-monospace, monospace',
+    body: '"JetBrains Mono", "Courier Prime", ui-monospace, monospace',
+    mono: '"JetBrains Mono", "Courier Prime", ui-monospace, monospace',
+    radius: 0,
+    cardRadius: 2,
+    paperNoise: true,
+    showStamps: true,
+    showPaperclip: false,
+    showWax: false,
+    carbonCopy: true,
+    censored: true,
+    dark: true,
+    star: '#c72828',
+    statusDark: true,
+  },
+};
+
+Object.assign(window, { THEMES });
+
+
+// ── desk-screen.js ──
+// desk-screen.jsx — The Desk: main gameplay view
+// Briefing paper + stance options + outcome. Themed via THEMES object.
+// Handles: option selection, outcome animation, stat meter animation, next turn, dossier hover
+
+const { useState, useEffect, useRef } = React;
+
+// ─── Original iconography: 5-point star with apparatus gear ───
+function ApparatusStar({ size = 24, color = '#8b1818', style = {} }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={style}>
+      <polygon
+        points="12,2 14.6,8.6 21.8,9 16.2,13.6 18.2,20.6 12,16.6 5.8,20.6 7.8,13.6 2.2,9 9.4,8.6"
+        fill={color}
+      />
+      <circle cx="12" cy="12" r="2.2" fill="none" stroke={color === '#fff' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.25)'} strokeWidth="1" />
+    </svg>
+  );
+}
+
+// ─── Rubber stamp (themed, rotated, semi-transparent) ───
+function Stamp({ text, color, rotate = -12, size = 1, style = {} }) {
+  return (
+    <div style={{
+      display: 'inline-block',
+      padding: `${6 * size}px ${14 * size}px`,
+      border: `${2.5 * size}px solid ${color}`,
+      color: color,
+      fontFamily: '"Oswald", "Arial Black", sans-serif',
+      fontWeight: 800,
+      fontSize: 14 * size,
+      letterSpacing: 2,
+      transform: `rotate(${rotate}deg)`,
+      opacity: 0.78,
+      textTransform: 'uppercase',
+      whiteSpace: 'nowrap',
+      boxShadow: `inset 0 0 0 1px ${color}33`,
+      ...style,
+    }}>{text}</div>
+  );
+}
+
+// ─── Paperclip (SVG) ───
+function Paperclip({ color = '#4a4a4a', style = {} }) {
+  return (
+    <svg width="28" height="70" viewBox="0 0 28 70" style={style}>
+      <path d="M14 4 C20 4, 24 8, 24 14 L24 52 C24 58, 20 62, 14 62 C8 62, 4 58, 4 52 L4 18 C4 14, 6 12, 10 12 C14 12, 16 14, 16 18 L16 48"
+        fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" opacity="0.85" />
+    </svg>
+  );
+}
+
+// ─── Red wax seal ───
+function WaxSeal({ size = 52, color = '#8b1818' }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: `radial-gradient(circle at 35% 30%, ${color}ee, ${color}cc 50%, #5a0a0a 100%)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.3)',
+      position: 'relative',
+    }}>
+      <ApparatusStar size={size * 0.55} color="rgba(255,220,200,0.7)" />
+    </div>
+  );
+}
+
+// ─── Stat meter: animated bar ───
+function StatMeter({ label, icon, value, delta, theme, showDelta }) {
+  const [display, setDisplay] = useState(value - (delta || 0));
+  useEffect(() => {
+    if (!showDelta) { setDisplay(value); return; }
+    const start = display;
+    const end = value;
+    const t0 = performance.now();
+    const dur = 900;
+    let raf;
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(Math.round(start + (end - start) * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value, showDelta]);
+
+  const pct = Math.max(0, Math.min(100, display));
+  const deltaVisible = showDelta && delta && delta !== 0;
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8,
+        fontFamily: theme.mono, fontSize: 9.5,
+        color: theme.inkSoft, letterSpacing: 1,
+        textTransform: 'uppercase', marginBottom: 6, whiteSpace: 'nowrap',
+      }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{icon} {label}</span>
+        <span style={{ color: theme.ink, fontWeight: 600 }}>
+          {display}
+          {deltaVisible && (
+            <span style={{
+              marginLeft: 6,
+              color: delta > 0 ? '#2a7a3a' : theme.accent,
+              fontWeight: 700,
+            }}>{delta > 0 ? '+' : ''}{delta}</span>
+          )}
+        </span>
+      </div>
+      <div style={{
+        height: 6, background: theme.ruleSoft,
+        border: `0.5px solid ${theme.rule}`,
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${pct}%`, height: '100%',
+          background: theme.ink,
+          transition: 'width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        }} />
+        {/* Tick marks */}
+        {[25, 50, 75].map(p => (
+          <div key={p} style={{
+            position: 'absolute', left: `${p}%`, top: 0, bottom: 0,
+            width: 0.5, background: theme.paper, opacity: 0.8,
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Character chip with hover dossier ───
+function CharacterChip({ character, theme, onHover }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => { setHover(true); onHover && onHover(character); }}
+      onMouseLeave={() => { setHover(false); onHover && onHover(null); }}
+      onClick={() => { setHover(h => !h); onHover && onHover(hover ? null : character); }}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        padding: '4px 10px 4px 4px',
+        background: theme.paperDeep,
+        border: `0.5px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        cursor: 'pointer',
+        position: 'relative',
+        fontFamily: theme.body,
+      }}
+    >
+      <div style={{
+        width: 28, height: 28, borderRadius: theme.cardRadius,
+        background: character.portrait,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#efe4c9', fontFamily: theme.display,
+        fontSize: 12, fontWeight: 700, letterSpacing: 0.5,
+      }}>{character.initials}</div>
+      <div>
+        <div style={{ fontSize: 11, color: theme.ink, fontWeight: 600, lineHeight: 1.2, whiteSpace: 'nowrap' }}>{character.name}</div>
+        <div style={{ fontSize: 8, color: theme.inkFaint, fontFamily: theme.mono, letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden' }}>{character.role}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Dossier hover card ───
+function DossierCard({ character, theme, style = {} }) {
+  if (!character) return null;
+  return (
+    <div style={{
+      position: 'absolute',
+      background: theme.paper,
+      border: `1px solid ${theme.rule}`,
+      borderLeft: `3px solid ${theme.accent}`,
+      borderRadius: theme.cardRadius,
+      padding: 12,
+      fontFamily: theme.body,
+      color: theme.ink,
+      boxShadow: theme.dark
+        ? '0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,200,168,0.1)'
+        : '0 8px 24px rgba(42, 34, 22, 0.25)',
+      zIndex: 100,
+      width: 260,
+      ...style,
+    }}>
+      <div style={{
+        fontFamily: theme.mono, fontSize: 9, letterSpacing: 1.5,
+        color: theme.accent, textTransform: 'uppercase', marginBottom: 6,
+      }}>DOSSIER — {character.role.toUpperCase()}</div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        <div style={{
+          width: 44, height: 52,
+          background: character.portrait,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#efe4c9', fontFamily: theme.display,
+          fontSize: 16, fontWeight: 700, flexShrink: 0,
+        }}>{character.initials}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}>{character.name}</div>
+          <div style={{ fontSize: 10, color: theme.inkSoft, fontStyle: 'italic', marginTop: 2 }}>{character.rank}</div>
+          <div style={{
+            marginTop: 6, fontSize: 9, fontFamily: theme.mono,
+            color: theme.inkSoft, letterSpacing: 1, textTransform: 'uppercase',
+          }}>Loyalty {character.loyalty}%</div>
+          <div style={{
+            height: 3, background: theme.ruleSoft, marginTop: 2,
+          }}>
+            <div style={{ width: `${character.loyalty}%`, height: '100%', background: theme.accent }} />
+          </div>
+        </div>
+      </div>
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+        {character.dossier.map((line, i) => (
+          <li key={i} style={{
+            fontSize: 11, lineHeight: 1.4, marginBottom: 4,
+            paddingLeft: 10, position: 'relative',
+          }}>
+            <span style={{ position: 'absolute', left: 0, color: theme.accent }}>·</span>
+            {line}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ─── Main Desk Screen ───
+function DeskScreen({ theme, onThemeCycle }) {
+  const [turnIdx, setTurnIdx] = useState(() => {
+    const saved = Number(localStorage.getItem('nomenklatura_turn') || '0');
+    return Math.max(0, Math.min(SCENARIOS.length - 1, saved));
+  });
+  const [phase, setPhase] = useState('briefing'); // briefing | outcome
+  const [selectedOpt, setSelectedOpt] = useState(null);
+  const [stats, setStats] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('nomenklatura_stats') || 'null');
+      return s || INITIAL_STATS;
+    } catch { return INITIAL_STATS; }
+  });
+  const [prevStats, setPrevStats] = useState(stats);
+  const [hoveredChar, setHoveredChar] = useState(null);
+  const [tabView, setTabView] = useState('briefing'); // briefing | actors | ledger
+  const [swipeDX, setSwipeDX] = useState(0);
+  const touchRef = useRef({ x: 0, active: false });
+
+  useEffect(() => {
+    localStorage.setItem('nomenklatura_turn', String(turnIdx));
+  }, [turnIdx]);
+  useEffect(() => {
+    localStorage.setItem('nomenklatura_stats', JSON.stringify(stats));
+  }, [stats]);
+
+  const scenario = SCENARIOS[turnIdx];
+  const fromCharacter = CHARACTERS[scenario.from];
+
+  const selectOption = (opt) => {
+    setPrevStats({ ...stats });
+    const next = { ...stats };
+    Object.entries(opt.effects).forEach(([k, v]) => {
+      if (next[k] !== undefined) next[k] = Math.max(0, Math.min(100, next[k] + v));
+    });
+    setStats(next);
+    setSelectedOpt(opt);
+    setPhase('outcome');
+  };
+
+  const nextTurn = () => {
+    const next = turnIdx + 1;
+    if (next >= SCENARIOS.length) {
+      setPhase('verdict');
+      setTabView('briefing');
+    } else {
+      setTurnIdx(next);
+      setPhase('briefing');
+      setSelectedOpt(null);
+      setTabView('briefing');
+    }
+  };
+
+  const reset = () => {
+    setTurnIdx(0);
+    setPhase('briefing');
+    setSelectedOpt(null);
+    setStats(INITIAL_STATS);
+    setPrevStats(INITIAL_STATS);
+    setTabView('briefing');
+    localStorage.removeItem('nomenklatura_turn');
+    localStorage.removeItem('nomenklatura_stats');
+  };
+
+  // Swipe to advance (only in outcome phase)
+  const onTouchStart = (e) => {
+    touchRef.current = { x: e.touches[0].clientX, active: true };
+  };
+  const onTouchMove = (e) => {
+    if (!touchRef.current.active) return;
+    setSwipeDX(e.touches[0].clientX - touchRef.current.x);
+  };
+  const onTouchEnd = () => {
+    if (swipeDX < -60 && phase === 'outcome') nextTurn();
+    setSwipeDX(0);
+    touchRef.current.active = false;
+  };
+
+  const delta = (k) => selectedOpt ? (stats[k] - prevStats[k]) : 0;
+
+  return (
+    <div
+      style={{
+        height: '100%', width: '100%',
+        background: theme.bg,
+        color: theme.ink,
+        fontFamily: theme.body,
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+      }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Paper noise overlay */}
+      {theme.paperNoise && <PaperTexture theme={theme} />}
+
+      {/* Top bureau header (replaces iOS nav) */}
+      <div style={{position:'relative', zIndex:2}}>
+      <BureauHeader theme={theme} scenario={scenario} turnIdx={turnIdx} onReset={reset} />
+
+      {/* Tab bar */}
+      <TabBar theme={theme} active={tabView} onSelect={setTabView} />
+      </div>
+
+      {/* Body */}
+      <div style={{
+        flex: 1, overflowY: 'auto', overflowX: 'hidden',
+        padding: '10px 14px 90px',
+        position: 'relative', zIndex: 2,
+        transform: phase === 'outcome' ? `translateX(${swipeDX * 0.4}px)` : 'none',
+        transition: touchRef.current.active ? 'none' : 'transform 0.3s ease',
+      }}>
+        {tabView === 'briefing' && phase === 'briefing' && (
+          <BriefingView
+            theme={theme} scenario={scenario}
+            fromCharacter={fromCharacter}
+            onSelect={selectOption}
+            onHover={setHoveredChar}
+          />
+        )}
+        {tabView === 'briefing' && phase === 'outcome' && (
+          <OutcomeView
+            theme={theme} scenario={scenario}
+            option={selectedOpt}
+            stats={stats} delta={delta}
+            onNext={nextTurn}
+          />
+        )}
+        {tabView === 'briefing' && phase === 'verdict' && (
+          <VerdictView
+            theme={theme} stats={stats}
+            onRestart={reset}
+          />
+        )}
+        {tabView === 'actors' && (
+          <ActorsView theme={theme} stats={stats} />
+        )}
+        {tabView === 'ledger' && (
+          <LedgerView theme={theme} stats={stats} prevStats={prevStats} showDelta={phase === 'outcome'} />
+        )}
+      </div>
+
+      {/* Hover dossier */}
+      {hoveredChar && (
+        <DossierCard
+          character={hoveredChar}
+          theme={theme}
+          style={{ bottom: 80, left: 14, right: 14, width: 'auto' }}
+        />
+      )}
+
+      {/* Bottom status strip with theme cycle */}
+      <BottomStrip theme={theme} onThemeCycle={onThemeCycle} turnIdx={turnIdx} phase={phase} />
+    </div>
+  );
+}
+
+// ─── Bureau header ───
+function BureauHeader({ theme, scenario, turnIdx, onReset }) {
+  return (
+    <div style={{
+      paddingTop: 54, // status bar
+      paddingBottom: 8,
+      borderBottom: `1px solid ${theme.rule}`,
+      background: theme.paperDeep,
+      position: 'relative',
+    }}>
+      <div style={{
+        padding: '0 14px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+      }}>
+        <div>
+          <div style={{
+            fontFamily: theme.mono, fontSize: 9, letterSpacing: 2,
+            color: theme.inkFaint, textTransform: 'uppercase',
+          }}>PSRA · {scenario.classification}</div>
+          <div style={{
+            fontFamily: theme.display,
+            fontSize: theme.key === 'red' ? 18 : 18,
+            fontWeight: theme.key === 'red' ? 700 : 700,
+            lineHeight: 1.05, color: theme.ink,
+            letterSpacing: theme.key === 'red' ? 1.5 : 0,
+            textTransform: theme.key === 'red' ? 'uppercase' : 'none',
+            marginTop: 2, whiteSpace: 'nowrap',
+          }}>
+            {theme.key === 'red' ? 'THE APPARATUS' : 'The Apparatus'}
+          </div>
+          <div style={{
+            fontFamily: theme.mono, fontSize: 9, color: theme.inkSoft,
+            letterSpacing: 1, marginTop: 2, whiteSpace: 'nowrap',
+          }}>
+            TURN {String(turnIdx + 1).padStart(2, '0')} / {String(SCENARIOS.length).padStart(2, '0')} · {scenario.date.toUpperCase()}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <ApparatusStar size={28} color={theme.star} />
+          <button onClick={onReset} style={{
+            background: 'transparent',
+            border: `1px solid ${theme.rule}`,
+            color: theme.inkSoft,
+            padding: '3px 8px',
+            fontFamily: theme.mono,
+            fontSize: 8,
+            letterSpacing: 1,
+            borderRadius: theme.cardRadius,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+          }}>Reset</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tabs ───
+function TabBar({ theme, active, onSelect }) {
+  const tabs = [
+    { id: 'briefing', label: 'Desk' },
+    { id: 'actors', label: 'Dossier' },
+    { id: 'ledger', label: 'Ledger' },
+  ];
+  return (
+    <div style={{
+      display: 'flex',
+      borderBottom: `1px solid ${theme.rule}`,
+      background: theme.paperDeep,
+    }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onSelect(t.id)} style={{
+          flex: 1, padding: '10px 0',
+          background: active === t.id ? theme.paper : 'transparent',
+          border: 'none',
+          borderBottom: active === t.id ? `2px solid ${theme.accent}` : '2px solid transparent',
+          color: active === t.id ? theme.ink : theme.inkFaint,
+          fontFamily: theme.mono,
+          fontSize: 10,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          fontWeight: active === t.id ? 600 : 400,
+        }}>{t.label}</button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Briefing: document card + option cards ───
+function BriefingView({ theme, scenario, fromCharacter, onSelect, onHover }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Paperclip decoration */}
+      {theme.showPaperclip && (
+        <div style={{
+          position: 'absolute', top: -6, right: 28, zIndex: 5,
+          transform: 'rotate(8deg)',
+        }}>
+          <Paperclip color="#3a3a3a" />
+        </div>
+      )}
+
+      {/* Document header */}
+      <div style={{
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        padding: '16px 16px 14px',
+        position: 'relative',
+        boxShadow: theme.dark ? 'none' : '0 1px 2px rgba(42,34,22,0.08)',
+      }}>
+        {/* Doc number strip */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          fontFamily: theme.mono, fontSize: 9,
+          color: theme.inkFaint, letterSpacing: 1.5,
+          textTransform: 'uppercase',
+          borderBottom: `0.5px solid ${theme.rule}`,
+          paddingBottom: 6, marginBottom: 10,
+        }}>
+          <span>{scenario.docNumber}</span>
+          <span>{scenario.bureau.toUpperCase()}</span>
+        </div>
+
+        {/* Classified stamp */}
+        {theme.showStamps && (
+          <div style={{
+            position: 'absolute', top: 6, right: -6,
+            pointerEvents: 'none',
+          }}>
+            <Stamp text={scenario.classification} color={theme.accent} rotate={-6} size={0.85} />
+          </div>
+        )}
+
+        {/* Censored simulation */}
+        {theme.censored && (
+          <div style={{
+            display: 'flex', gap: 4, marginBottom: 10,
+          }}>
+            <span style={{ background: theme.ink, color: theme.ink, fontFamily: theme.mono, fontSize: 10 }}>████████████</span>
+            <span style={{ background: theme.ink, color: theme.ink, fontFamily: theme.mono, fontSize: 10 }}>█████</span>
+          </div>
+        )}
+
+        {/* Title */}
+        <div style={{
+          fontFamily: theme.display,
+          fontSize: theme.key === 'red' ? 22 : 19,
+          fontWeight: theme.key === 'red' ? 600 : 700,
+          lineHeight: 1.15,
+          color: theme.ink,
+          textTransform: theme.key === 'red' ? 'uppercase' : 'none',
+          letterSpacing: theme.key === 'red' ? 0.3 : 0,
+          marginBottom: 12,
+          maxWidth: '85%',
+        }}>{scenario.title}</div>
+
+        {/* From (character chip) */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{
+            fontFamily: theme.mono, fontSize: 8, letterSpacing: 2,
+            color: theme.inkFaint, textTransform: 'uppercase', marginBottom: 4,
+          }}>TRANSMITTED FROM</div>
+          <CharacterChip character={fromCharacter} theme={theme} onHover={onHover} />
+        </div>
+
+        {/* Briefing body */}
+        <div style={{
+          fontFamily: theme.carbonCopy ? theme.mono : theme.body,
+          fontSize: theme.carbonCopy ? 12 : 14,
+          lineHeight: 1.55,
+          color: theme.ink,
+          textWrap: 'pretty',
+        }}>
+          {scenario.briefing.map((p, i) => (
+            <p key={i} style={{
+              margin: '0 0 10px', display: 'block',
+              fontStyle: i === 0 && !theme.carbonCopy ? 'italic' : 'normal',
+              color: i === 0 ? theme.inkSoft : theme.ink,
+            }}>{p}</p>
+          ))}
+        </div>
+
+        {/* Signature */}
+        <div style={{
+          marginTop: 14, paddingTop: 10,
+          borderTop: `0.5px solid ${theme.rule}`,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <div style={{
+            fontFamily: theme.display,
+            fontStyle: 'italic',
+            fontSize: 15,
+            color: theme.inkSoft,
+          }}>{fromCharacter.name}</div>
+          {theme.showWax && <WaxSeal size={38} color={theme.accent} />}
+        </div>
+      </div>
+
+      {/* Options prompt */}
+      <div style={{
+        marginTop: 18, marginBottom: 10,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <div style={{ flex: 1, height: 1, background: theme.rule }} />
+        <div style={{
+          fontFamily: theme.mono, fontSize: 9, letterSpacing: 2.5,
+          color: theme.inkSoft, textTransform: 'uppercase',
+        }}>Your Directive</div>
+        <div style={{ flex: 1, height: 1, background: theme.rule }} />
+      </div>
+
+      {/* Option cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {scenario.options.map((opt, i) => (
+          <OptionCard key={opt.id} option={opt} theme={theme} index={i} onSelect={onSelect} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Option card ───
+function OptionCard({ option, theme, index, onSelect }) {
+  const [press, setPress] = useState(false);
+  return (
+    <button
+      onMouseDown={() => setPress(true)}
+      onMouseUp={() => setPress(false)}
+      onMouseLeave={() => setPress(false)}
+      onClick={() => onSelect(option)}
+      style={{
+        textAlign: 'left',
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderLeft: `3px solid ${option.stanceColor}`,
+        borderRadius: theme.cardRadius,
+        padding: '12px 14px',
+        cursor: 'pointer',
+        fontFamily: theme.body,
+        color: theme.ink,
+        boxShadow: press
+          ? 'inset 0 2px 6px rgba(0,0,0,0.08)'
+          : (theme.dark ? 'none' : '0 1px 2px rgba(42,34,22,0.06)'),
+        transform: press ? 'translateY(1px)' : 'none',
+        transition: 'all 0.1s ease',
+        position: 'relative',
+      }}
+    >
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: 4,
+      }}>
+        <div style={{
+          fontFamily: theme.mono, fontSize: 9,
+          color: option.stanceColor, letterSpacing: 1.5,
+          textTransform: 'uppercase', fontWeight: 700, whiteSpace: 'nowrap',
+        }}>
+          {String(index + 1).padStart(2, '0')} · {option.stance}
+        </div>
+        <div style={{
+          fontFamily: theme.mono, fontSize: 10,
+          color: theme.inkFaint, letterSpacing: 0.5,
+        }}>→</div>
+      </div>
+      <div style={{
+        fontFamily: theme.display,
+        fontSize: theme.key === 'red' ? 16 : (theme.key === 'redacted' ? 17 : 15),
+        fontWeight: theme.key === 'red' ? 700 : (theme.key === 'redacted' ? 700 : 600),
+        lineHeight: 1.25, marginBottom: 3,
+        color: theme.ink,
+        textTransform: theme.key === 'red' ? 'uppercase' : 'none',
+        letterSpacing: theme.key === 'red' ? 0.2 : 0,
+      }}>{option.label}</div>
+      <div style={{
+        fontSize: 12, lineHeight: 1.4,
+        color: theme.inkSoft, fontStyle: theme.carbonCopy ? 'normal' : 'italic',
+        fontFamily: theme.carbonCopy ? theme.mono : theme.body,
+      }}>{option.body}</div>
+    </button>
+  );
+}
+
+
+// ─── Verdict view — final judgement after all turns ───
+function VerdictView({ theme, stats, onRestart }) {
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    const ts = [setTimeout(()=>setStage(1), 300), setTimeout(()=>setStage(2), 1000), setTimeout(()=>setStage(3), 1700)];
+    return () => ts.forEach(clearTimeout);
+  }, []);
+
+  // Compute verdict
+  const avg = Object.values(stats).reduce((a,b)=>a+b,0) / 5;
+  const weakest = Object.entries(stats).reduce((w, [k,v]) => v < w.v ? {k, v} : w, {k: null, v: 101});
+  const strongest = Object.entries(stats).reduce((w, [k,v]) => v > w.v ? {k, v} : w, {k: null, v: -1});
+
+  let verdict, stamp, subtitle, epitaph;
+  if (avg < 35 || stats.stability < 20) {
+    verdict = 'THE REGIME FALLS';
+    stamp = 'DISSOLVED';
+    subtitle = 'Your file closes quietly. Petrenko opens hers.';
+    epitaph = `The collapse begins with ${STAT_META[weakest.k].label.toLowerCase()}. It ends in a corridor you will not see.`;
+  } else if (avg > 70) {
+    verdict = 'THE APPARATUS ENDURES';
+    stamp = 'COMMENDED';
+    subtitle = 'The Chairman reads your summary twice. He keeps the second copy.';
+    epitaph = `${STAT_META[strongest.k].label} climbed. The Politburo took note. You remain, for now, the quiet center of the machine.`;
+  } else {
+    verdict = 'THE FILE IS CLOSED';
+    stamp = 'ARCHIVED';
+    subtitle = 'History does not call your name. It does not need to.';
+    epitaph = `Three directives. Some held. Some cost you. The Party survives, which is the only verdict that matters.`;
+  }
+
+  const verdictColor = avg > 70 ? '#2a7a3a' : (avg < 35 ? theme.accent : theme.ink);
+
+  return (
+    <div style={{ paddingTop: 8 }}>
+      {/* The final file */}
+      <div style={{
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        padding: '20px 18px',
+        position: 'relative',
+        minHeight: 320,
+      }}>
+        {/* Final stamp */}
+        <div style={{
+          position: 'absolute', top: 14, right: 10,
+          opacity: stage >= 1 ? 1 : 0,
+          transform: stage >= 1 ? 'scale(1) rotate(-6deg)' : 'scale(2) rotate(-40deg)',
+          transition: 'all 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3)',
+          pointerEvents: 'none',
+        }}>
+          <Stamp text={stamp} color={verdictColor} rotate={0} size={1.15} />
+        </div>
+
+        <div style={{
+          fontFamily: theme.mono, fontSize: 9, letterSpacing: 2.5,
+          color: theme.inkFaint, textTransform: 'uppercase', marginBottom: 10,
+        }}>FINAL DISPOSITION · PSRA 1952</div>
+
+        <div style={{
+          fontFamily: theme.display,
+          fontSize: theme.key === 'red' ? 24 : 22,
+          fontWeight: theme.key === 'red' ? 700 : 700,
+          lineHeight: 1.05, color: verdictColor,
+          textTransform: 'uppercase',
+          letterSpacing: theme.key === 'red' ? 0.5 : 0.2,
+          marginBottom: 10,
+          maxWidth: '72%',
+          opacity: stage >= 2 ? 1 : 0,
+          transform: stage >= 2 ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'all 0.5s ease',
+        }}>{verdict}</div>
+
+        <div style={{
+          fontFamily: theme.carbonCopy ? theme.mono : theme.body,
+          fontSize: 13, lineHeight: 1.5,
+          color: theme.inkSoft, fontStyle: theme.carbonCopy ? 'normal' : 'italic',
+          marginBottom: 14, textWrap: 'pretty',
+          opacity: stage >= 2 ? 1 : 0, transition: 'opacity 0.6s ease 0.1s',
+        }}>{subtitle}</div>
+
+        <div style={{
+          fontSize: 13, lineHeight: 1.55,
+          color: theme.ink, textWrap: 'pretty',
+          fontFamily: theme.carbonCopy ? theme.mono : theme.body,
+          opacity: stage >= 3 ? 1 : 0,
+          transform: stage >= 3 ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'all 0.5s ease',
+          paddingTop: 12, marginTop: 4,
+          borderTop: `0.5px solid ${theme.rule}`,
+        }}>{epitaph}</div>
+      </div>
+
+      {/* Final ledger */}
+      <div style={{
+        marginTop: 14,
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        padding: '12px 14px',
+        opacity: stage >= 3 ? 1 : 0,
+        transform: stage >= 3 ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.6s ease 0.2s',
+      }}>
+        <div style={{
+          fontFamily: theme.mono, fontSize: 9, letterSpacing: 2,
+          color: theme.inkFaint, textTransform: 'uppercase', marginBottom: 10,
+        }}>STATE LEDGER · FINAL</div>
+        {Object.entries(STAT_META).map(([k, m]) => (
+          <StatMeter
+            key={k}
+            label={m.label} icon={m.icon}
+            value={stats[k]} delta={0}
+            theme={theme} showDelta={false}
+          />
+        ))}
+      </div>
+
+      {/* Restart */}
+      <button onClick={onRestart} style={{
+        marginTop: 18, width: '100%',
+        background: 'transparent',
+        color: theme.ink,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        padding: '14px',
+        fontFamily: theme.mono,
+        fontSize: 11,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        fontWeight: 700,
+        cursor: 'pointer',
+        opacity: stage >= 3 ? 1 : 0,
+        transition: 'opacity 0.5s ease 0.4s',
+      }}>
+        ← Begin New File
+      </button>
+    </div>
+  );
+}
+
+// ─── Outcome view ───
+function OutcomeView({ theme, scenario, option, stats, delta, onNext }) {
+  const [stage, setStage] = useState(0); // 0: stamp appear, 1: text, 2: stats
+  useEffect(() => {
+    const t1 = setTimeout(() => setStage(1), 300);
+    const t2 = setTimeout(() => setStage(2), 800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  return (
+    <div>
+      {/* Stamp overlay */}
+      <div style={{
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderLeft: `3px solid ${option.stanceColor}`,
+        borderRadius: theme.cardRadius,
+        padding: '16px',
+        position: 'relative',
+        minHeight: 180,
+      }}>
+        <div style={{
+          position: 'absolute', top: 10, right: 10,
+          opacity: stage >= 0 ? 1 : 0,
+          transform: stage >= 0 ? 'scale(1)' : 'scale(1.8)',
+          transition: 'all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2)',
+        }}>
+          <Stamp text={option.stamp} color={theme.accent} rotate={-8} size={1} />
+        </div>
+
+        <div style={{
+          fontFamily: theme.mono, fontSize: 9, letterSpacing: 2,
+          color: theme.inkFaint, textTransform: 'uppercase', marginBottom: 6,
+        }}>OUTCOME · {scenario.docNumber}</div>
+
+        <div style={{
+          fontFamily: theme.display,
+          fontSize: theme.key === 'red' ? 22 : 20,
+          fontWeight: theme.key === 'red' ? 500 : 700,
+          lineHeight: 1.15,
+          textTransform: theme.key === 'red' ? 'uppercase' : 'none',
+          letterSpacing: theme.key === 'red' ? 0.3 : 0,
+          marginBottom: 10,
+          maxWidth: '75%',
+          opacity: stage >= 1 ? 1 : 0,
+          transform: stage >= 1 ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'all 0.4s ease',
+        }}>{option.outcomeTitle}</div>
+
+        <div style={{
+          fontSize: 13, lineHeight: 1.55,
+          color: theme.ink,
+          textWrap: 'pretty',
+          fontFamily: theme.carbonCopy ? theme.mono : theme.body,
+          opacity: stage >= 1 ? 1 : 0,
+          transform: stage >= 1 ? 'translateY(0)' : 'translateY(6px)',
+          transition: 'all 0.5s ease 0.1s',
+        }}>{option.outcomeBody}</div>
+      </div>
+
+      {/* Stat changes */}
+      <div style={{
+        marginTop: 14,
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        padding: '12px 14px',
+        opacity: stage >= 2 ? 1 : 0,
+        transform: stage >= 2 ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.5s ease',
+      }}>
+        <div style={{
+          fontFamily: theme.mono, fontSize: 9, letterSpacing: 2,
+          color: theme.inkFaint, textTransform: 'uppercase', marginBottom: 10,
+        }}>STATE LEDGER · REVISED</div>
+        {Object.entries(STAT_META).map(([k, m]) => (
+          <StatMeter
+            key={k}
+            label={m.label}
+            icon={m.icon}
+            value={stats[k]}
+            delta={delta(k)}
+            theme={theme}
+            showDelta={stage >= 2}
+          />
+        ))}
+      </div>
+
+      {/* Next turn button */}
+      <button onClick={onNext} style={{
+        marginTop: 18,
+        width: '100%',
+        background: theme.accent,
+        color: '#fff',
+        border: 'none',
+        borderRadius: theme.cardRadius,
+        padding: '14px',
+        fontFamily: theme.mono,
+        fontSize: 11,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        fontWeight: 700,
+        cursor: 'pointer',
+        boxShadow: theme.dark ? '0 0 0 1px rgba(199,40,40,0.3)' : '0 2px 0 rgba(0,0,0,0.15)',
+      }}>
+        {scenario.turn < SCENARIOS.length ? 'Proceed to Next Directive' : 'Begin Anew'} →
+      </button>
+
+      <div style={{
+        marginTop: 10, textAlign: 'center',
+        fontFamily: theme.mono, fontSize: 9,
+        color: theme.inkFaint, letterSpacing: 1.5,
+      }}>swipe left to advance</div>
+    </div>
+  );
+}
+
+// ─── Actors view (all characters) ───
+function ActorsView({ theme }) {
+  return (
+    <div>
+      <div style={{
+        fontFamily: theme.mono, fontSize: 10, letterSpacing: 2,
+        color: theme.inkSoft, textTransform: 'uppercase', marginBottom: 10,
+      }}>INNER CIRCLE · MARCH 1952</div>
+      {Object.values(CHARACTERS).map(char => (
+        <div key={char.id} style={{
+          background: theme.paper,
+          border: `1px solid ${theme.rule}`,
+          borderLeft: `3px solid ${theme.accent}`,
+          borderRadius: theme.cardRadius,
+          padding: 12, marginBottom: 10,
+          display: 'flex', gap: 12,
+        }}>
+          <div style={{
+            width: 52, height: 62, flexShrink: 0,
+            background: char.portrait,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#efe4c9', fontFamily: theme.display,
+            fontSize: 20, fontWeight: 700,
+          }}>{char.initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontFamily: theme.display,
+              fontSize: theme.key === 'red' ? 16 : 15, fontWeight: 700,
+              color: theme.ink, lineHeight: 1.15,
+              textTransform: theme.key === 'red' ? 'uppercase' : 'none',
+            }}>{char.name}</div>
+            <div style={{ fontSize: 11, fontStyle: 'italic', color: theme.inkSoft, marginTop: 1 }}>{char.rank}</div>
+            <div style={{
+              fontFamily: theme.mono, fontSize: 8, letterSpacing: 1.5,
+              color: char.relation === 'rival' ? theme.accent : theme.inkFaint,
+              textTransform: 'uppercase', marginTop: 4,
+            }}>{char.role} · LOYALTY {char.loyalty}%</div>
+            <div style={{
+              height: 3, background: theme.ruleSoft, marginTop: 3,
+            }}>
+              <div style={{ width: `${char.loyalty}%`, height: '100%', background: char.relation === 'rival' ? theme.accent : theme.ink }} />
+            </div>
+            <div style={{
+              fontSize: 11, color: theme.inkSoft, marginTop: 8,
+              fontStyle: 'italic', lineHeight: 1.4,
+            }}>{char.dossier[0]}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Ledger view ───
+function LedgerView({ theme, stats, prevStats, showDelta }) {
+  return (
+    <div>
+      <div style={{
+        fontFamily: theme.mono, fontSize: 10, letterSpacing: 2,
+        color: theme.inkSoft, textTransform: 'uppercase', marginBottom: 10,
+      }}>STATE OF THE REPUBLIC</div>
+      <div style={{
+        background: theme.paper,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        padding: 14, marginBottom: 14,
+      }}>
+        {Object.entries(STAT_META).map(([k, m]) => (
+          <StatMeter
+            key={k}
+            label={m.label}
+            icon={m.icon}
+            value={stats[k]}
+            delta={showDelta ? stats[k] - prevStats[k] : 0}
+            theme={theme}
+            showDelta={showDelta}
+          />
+        ))}
+      </div>
+
+      {/* Map placeholder */}
+      <div style={{
+        fontFamily: theme.mono, fontSize: 10, letterSpacing: 2,
+        color: theme.inkSoft, textTransform: 'uppercase', marginBottom: 8,
+      }}>TERRITORY · THE CONTINENT</div>
+      <div style={{
+        aspectRatio: '1 / 1.1',
+        background: theme.paperDeep,
+        border: `1px solid ${theme.rule}`,
+        borderRadius: theme.cardRadius,
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <MapPlaceholder theme={theme} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Simple map placeholder using SVG ───
+function MapPlaceholder({ theme }) {
+  // Colored nation blobs roughly following the MapDesign layout — simplified
+  return (
+    <svg viewBox="0 0 100 110" style={{ width: '100%', height: '100%', display: 'block' }}>
+      {/* Ocean */}
+      <rect width="100" height="110" fill={theme.dark ? '#1a2a3a' : '#9ab2c0'} opacity="0.5" />
+      {/* PSRA (homeland) */}
+      <polygon points="30,15 70,10 80,18 82,35 78,50 68,55 50,56 40,50 32,40 28,25"
+        fill={theme.accent} opacity="0.85" stroke={theme.ink} strokeWidth="0.5" />
+      {/* Zimograd (rival) */}
+      <polygon points="12,2 50,2 50,10 30,18 20,10" fill={theme.dark ? '#8a6a3a' : '#b49060'} stroke={theme.ink} strokeWidth="0.4" />
+      {/* Valdoria (ally) */}
+      <polygon points="50,2 82,2 82,15 70,12 50,10" fill={theme.dark ? '#8a3a3a' : '#b85c5c'} stroke={theme.ink} strokeWidth="0.4" />
+      {/* Korvath */}
+      <polygon points="12,2 12,50 28,50 28,25 20,10" fill={theme.dark ? '#4a5a78' : '#6e8098'} stroke={theme.ink} strokeWidth="0.4" />
+      {/* Brechtland */}
+      <polygon points="82,2 92,2 92,55 80,52 78,35 82,15" fill={theme.dark ? '#4a5a78' : '#6e8098'} stroke={theme.ink} strokeWidth="0.4" />
+      {/* South */}
+      <polygon points="32,60 68,60 72,75 70,95 50,105 32,95 28,78" fill={theme.dark ? '#6a6a5a' : '#9a9a80'} stroke={theme.ink} strokeWidth="0.4" />
+      {/* Islands */}
+      <ellipse cx="5" cy="40" rx="3" ry="6" fill={theme.dark ? '#4a5a78' : '#6e8098'} />
+      <ellipse cx="4" cy="58" rx="2" ry="4" fill={theme.dark ? '#4a5a78' : '#6e8098'} />
+      {/* Capital star */}
+      <polygon
+        points="55,32 56,35 59,35 56.5,37 57.5,40 55,38 52.5,40 53.5,37 51,35 54,35"
+        fill={theme.accent2}
+        stroke={theme.ink} strokeWidth="0.2"
+      />
+      {/* Labels */}
+      <text x="55" y="28" fill={theme.ink} fontSize="3.5" fontFamily={theme.display} fontWeight="700" textAnchor="middle" letterSpacing="0.3">PSRA</text>
+      <text x="30" y="8" fill={theme.ink} fontSize="2" fontFamily={theme.mono} textAnchor="middle">ZIMOGRAD</text>
+      <text x="66" y="8" fill={theme.ink} fontSize="2" fontFamily={theme.mono} textAnchor="middle">VALDORIA</text>
+      <text x="50" y="82" fill={theme.ink} fontSize="2" fontFamily={theme.mono} textAnchor="middle">CONFEDERATION</text>
+      {/* Grid lines */}
+      {[25, 50, 75].map(y => <line key={y} x1="0" y1={y * 1.1 / 100 * 100} x2="100" y2={y * 1.1 / 100 * 100} stroke={theme.ink} strokeWidth="0.15" opacity="0.2" strokeDasharray="1 2" />)}
+    </svg>
+  );
+}
+
+// ─── Paper texture overlay (SVG noise) ───
+function PaperTexture({ theme }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+      opacity: theme.dark ? 0.5 : 0.35,
+      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.${theme.dark ? '1' : '4'} 0 0 0 0 0.${theme.dark ? '09' : '35'} 0 0 0 0 0.${theme.dark ? '07' : '25'} 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+      mixBlendMode: theme.dark ? 'screen' : 'multiply',
+    }} />
+  );
+}
+
+// ─── Bottom strip ───
+function BottomStrip({ theme, onThemeCycle, turnIdx, phase }) {
+  return (
+    <div style={{
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      height: 54,
+      background: theme.paperDeep,
+      borderTop: `1px solid ${theme.rule}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 18px 12px',
+      zIndex: 40,
+      paddingBottom: 20,
+    }}>
+      <div style={{
+        fontFamily: theme.mono, fontSize: 9, letterSpacing: 1.5,
+        color: theme.inkFaint, textTransform: 'uppercase',
+      }}>
+        {phase === 'briefing' ? 'AWAITING DIRECTIVE' : 'DIRECTIVE FILED'}
+      </div>
+      <button onClick={onThemeCycle} style={{
+        background: 'transparent',
+        border: `1px solid ${theme.rule}`,
+        color: theme.inkSoft,
+        padding: '4px 10px',
+        fontFamily: theme.mono, fontSize: 9,
+        letterSpacing: 1.5,
+        borderRadius: theme.cardRadius,
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        <span style={{ width: 8, height: 8, background: theme.accent, display: 'inline-block' }} />
+        {theme.name}
+      </button>
+    </div>
+  );
+}
+
+Object.assign(window, { DeskScreen });
+
+</script>
+
+<!-- ──────────── Shared game hook ──────────── -->
+<script type="text/babel">
+// use-game.js — shared game state hook for all three screen variants.
+// Provides: scenario, stats, phase, selectOption, nextTurn, reset.
+
+const { useState, useEffect: _ue, useRef: _ur } = React;
+
+function useGame() {
+  const [turnIdx, setTurnIdx] = useState(() => {
+    const v = Number(localStorage.getItem('apparatus.turn') || 0);
+    return Math.min(Math.max(0, v), SCENARIOS.length - 1);
+  });
+  const [phase, setPhase] = useState('briefing'); // briefing | outcome | verdict
+  const [stats, setStats] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('apparatus.stats') || 'null');
+      return s && typeof s === 'object' ? s : { ...INITIAL_STATS };
+    } catch { return { ...INITIAL_STATS }; }
+  });
+  const [prevStats, setPrevStats] = useState({ ...stats });
+  const [selectedOpt, setSelectedOpt] = useState(null);
+  const [hoveredChar, setHoveredChar] = useState(null);
+
+  _ue(() => { localStorage.setItem('apparatus.turn', String(turnIdx)); }, [turnIdx]);
+  _ue(() => { localStorage.setItem('apparatus.stats', JSON.stringify(stats)); }, [stats]);
+
+  const scenario = SCENARIOS[turnIdx];
+  const fromCharacter = CHARACTERS[scenario.from];
+
+  function selectOption(opt) {
+    if (phase !== 'briefing') return;
+    setPrevStats({ ...stats });
+    setStats(s => {
+      const next = { ...s };
+      for (const k of Object.keys(opt.effects)) {
+        next[k] = Math.max(0, Math.min(100, (s[k] || 0) + opt.effects[k]));
+      }
+      return next;
+    });
+    setSelectedOpt(opt);
+    setPhase('outcome');
+  }
+
+  function nextTurn() {
+    if (turnIdx + 1 >= SCENARIOS.length) {
+      setPhase('verdict');
+      return;
+    }
+    setTurnIdx(i => i + 1);
+    setSelectedOpt(null);
+    setPhase('briefing');
+  }
+
+  function reset() {
+    setStats({ ...INITIAL_STATS });
+    setPrevStats({ ...INITIAL_STATS });
+    setTurnIdx(0);
+    setSelectedOpt(null);
+    setPhase('briefing');
+  }
+
+  const delta = (k) => selectedOpt ? (stats[k] - prevStats[k]) : 0;
+
+  return {
+    turnIdx, phase, stats, prevStats, selectedOpt, hoveredChar,
+    scenario, fromCharacter,
+    setHoveredChar, selectOption, nextTurn, reset, delta,
+  };
+}
+
+Object.assign(window, { useGame });
+
+</script>
+
+<!-- ──────────── Parchment Dossier screen ──────────── -->
+<script type="text/babel">
+// dossier-screen.jsx — PARCHMENT DOSSIER variation
+// METAPHOR: a manila file folder on a leather desk blotter. The briefing is a
+// typed memo on aged paper with handwritten margin notes, paperclipped photo of
+// the sender, wax seal, and three index-card options clipped below.
+
+const { useState: _ds_us, useEffect: _ds_ue, useRef: _ds_ur } = React;
+
+// ── Wax seal ──
+function DossierWax({ size = 60, color = '#8b1818' }) {
+  const r = size / 2;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.35))' }}>
+      <defs>
+        <radialGradient id="waxG" cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#c23a3a" />
+          <stop offset="55%" stopColor={color} />
+          <stop offset="100%" stopColor="#4a0a0a" />
+        </radialGradient>
+      </defs>
+      {/* splatter */}
+      <path d={`M ${r} ${r} m -${r*0.85} -${r*0.35} q ${r*0.25} -${r*0.55} ${r*0.9} -${r*0.3} q ${r*0.55} -${r*0.3} ${r*0.9} ${r*0.25} q ${r*0.45} ${r*0.4} ${r*0.05} ${r*0.85} q -${r*0.55} ${r*0.5} -${r*0.95} ${r*0.15} q -${r*0.5} -${r*0.3} -${r*0.85} -${r*0.35} z`} fill="url(#waxG)" />
+      {/* star emblem */}
+      <polygon points={`${r},${r-r*0.5} ${r+r*0.15},${r-r*0.15} ${r+r*0.5},${r-r*0.15} ${r+r*0.22},${r+r*0.08} ${r+r*0.32},${r+r*0.45} ${r},${r+r*0.22} ${r-r*0.32},${r+r*0.45} ${r-r*0.22},${r+r*0.08} ${r-r*0.5},${r-r*0.15} ${r-r*0.15},${r-r*0.15}`} fill="#2a0808" opacity="0.55" />
+    </svg>
+  );
+}
+
+// ── Typed stamp (rotated diagonally) ──
+function DossierStamp({ text, color = '#8b1818', rotate = -7 }) {
+  return (
+    <div style={{
+      display: 'inline-block',
+      border: `2.2px solid ${color}`,
+      color,
+      padding: '4px 12px',
+      fontFamily: '"Oswald", sans-serif',
+      fontWeight: 800,
+      fontSize: 11,
+      letterSpacing: 2,
+      transform: `rotate(${rotate}deg)`,
+      textTransform: 'uppercase',
+      opacity: 0.82,
+      whiteSpace: 'nowrap',
+    }}>{text}</div>
+  );
+}
+
+// ── Paperclip ──
+function DossierPaperclip({ angle = 8, size = 60 }) {
+  return (
+    <svg width={size * 0.4} height={size} viewBox="0 0 24 60" style={{ transform: `rotate(${angle}deg)`, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
+      <path d="M12 3 C17 3 20 6 20 11 L20 44 C20 49 17 52 12 52 C7 52 4 49 4 44 L4 15 C4 12 6 10 9 10 C12 10 14 12 14 15 L14 41" fill="none" stroke="#5a5e6a" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 3 C17 3 20 6 20 11 L20 44 C20 49 17 52 12 52 C7 52 4 49 4 44 L4 15 C4 12 6 10 9 10 C12 10 14 12 14 15 L14 41" fill="none" stroke="#aab0ba" strokeWidth="0.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ── Tape strip ──
+function TapeStrip({ width = 60, angle = -2, style = {} }) {
+  return (
+    <div style={{
+      width, height: 18,
+      background: 'linear-gradient(180deg, rgba(240,228,180,0.65), rgba(220,205,150,0.55))',
+      border: '1px solid rgba(160,140,90,0.35)',
+      transform: `rotate(${angle}deg)`,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+      ...style,
+    }} />
+  );
+}
+
+// ── Character portrait photo (polaroid-ish) ──
+function DossierPortrait({ character, size = 68 }) {
+  return (
+    <div style={{
+      width: size, height: size * 1.25,
+      background: '#f8f1dd',
+      padding: 4,
+      boxShadow: '0 2px 5px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1)',
+      position: 'relative',
+    }}>
+      <div style={{
+        width: '100%', height: size,
+        background: `linear-gradient(135deg, ${character.portrait}, ${character.portrait}aa)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <div style={{
+          fontFamily: '"IM Fell English", serif',
+          color: 'rgba(255,255,255,0.92)',
+          fontSize: 26, fontWeight: 700,
+          letterSpacing: 1,
+          textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+        }}>{character.initials}</div>
+        {/* duotone overlay to look like sepia photo */}
+        <div style={{ position:'absolute', inset: 0, background: 'radial-gradient(ellipse at 35% 25%, rgba(255,230,180,0.18), rgba(50,30,10,0.35))', mixBlendMode: 'multiply' }} />
+      </div>
+      <div style={{
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 7, letterSpacing: 0.5,
+        color: '#4a3a22',
+        textAlign: 'center',
+        marginTop: 3,
+      }}>{character.name.toUpperCase()}</div>
+    </div>
+  );
+}
+
+// ── Desk pad (leather + wood frame) ──
+function DeskBlotter({ children, theme }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      background: `
+        radial-gradient(ellipse at 50% 0%, #8a6a3a 0%, #5a3e1e 70%, #2a1a08 100%)
+      `,
+    }}>
+      {/* Wood grain */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: `repeating-linear-gradient(87deg, transparent 0, transparent 7px, rgba(30,18,8,0.22) 7px, rgba(30,18,8,0.22) 8px, transparent 8px, transparent 14px, rgba(50,30,12,0.15) 14px, rgba(50,30,12,0.15) 15px)`,
+        opacity: 0.55,
+      }} />
+      {/* Leather blotter */}
+      <div style={{
+        position: 'absolute',
+        top: 60, left: 10, right: 10, bottom: 56,
+        background: '#3a2818',
+        boxShadow: 'inset 0 0 0 2px #6a4a28, inset 0 0 0 4px #2a1a08, 0 0 18px rgba(0,0,0,0.5)',
+      }}>
+        <div style={{ position:'absolute', inset: 0, backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'l\'%3E%3CfeTurbulence baseFrequency=\'0.9\' numOctaves=\'2\'/%3E%3CfeColorMatrix values=\'0 0 0 0 0.15  0 0 0 0 0.1  0 0 0 0 0.05  0 0 0 0.35 0\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23l)\'/%3E%3C/svg%3E")', opacity: 0.6, mixBlendMode: 'multiply' }} />
+      </div>
+      {/* Children */}
+      <div style={{ position: 'relative', height: '100%', zIndex: 2 }}>{children}</div>
+    </div>
+  );
+}
+
+// ── Stat strip at bottom of desk (ink-well meters) ──
+function DossierStatStrip({ stats, prevStats, delta, phase }) {
+  const keys = ['treasury', 'food', 'stability', 'popular', 'elite'];
+  return (
+    <div style={{
+      display: 'flex',
+      gap: 6,
+      padding: '6px 10px 0',
+    }}>
+      {keys.map(k => {
+        const d = delta(k);
+        const v = stats[k];
+        return (
+          <div key={k} style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 7, letterSpacing: 0.5,
+              color: 'rgba(239,228,201,0.75)',
+              textTransform: 'uppercase',
+              marginBottom: 2,
+            }}>{STAT_META[k].label.split(' ')[0]}</div>
+            <div style={{
+              position: 'relative',
+              height: 4,
+              background: 'rgba(0,0,0,0.45)',
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', left: 0, top: 0, bottom: 0,
+                width: `${v}%`,
+                background: d > 0 ? '#b08830' : d < 0 ? '#8b1818' : '#c89a4a',
+                transition: 'width 0.6s ease-out',
+              }} />
+            </div>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 8,
+              color: '#efe4c9',
+              marginTop: 2,
+              fontWeight: 700,
+            }}>
+              {v}{phase === 'outcome' && d !== 0 && (
+                <span style={{ marginLeft: 3, color: d > 0 ? '#e9c76a' : '#e07070', fontSize: 7 }}>
+                  {d > 0 ? `+${d}` : d}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Index-card option (handwritten-feeling, paperclipped to folder) ──
+function IndexCardOption({ option, index, onSelect, rotation = 0 }) {
+  const [hover, setHover] = _ds_us(false);
+  const colorMap = {
+    Orthodox: '#8b1818',
+    Reformist: '#9a7a30',
+    Opportunist: '#3a5a6a',
+    'Iron Fist': '#8b1818',
+    Cunning: '#3a5a6a',
+    Loyal: '#8b1818',
+    Independent: '#9a7a30',
+    Ambitious: '#6a2828',
+  };
+  const c = colorMap[option.stance] || '#5a4a32';
+  return (
+    <button
+      onClick={() => onSelect(option)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        textAlign: 'left',
+        width: '100%',
+        background: `linear-gradient(176deg, #f8efd5, #ecdfbd)`,
+        border: 'none',
+        borderLeft: `2.5px solid ${c}`,
+        padding: '10px 12px 10px 14px',
+        position: 'relative',
+        cursor: 'pointer',
+        transform: `rotate(${rotation}deg) ${hover ? 'translateY(-2px)' : ''}`,
+        transformOrigin: 'top left',
+        boxShadow: hover
+          ? '0 6px 14px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.2)'
+          : '0 3px 6px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.12)',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        fontFamily: 'inherit',
+      }}
+    >
+      {/* ruled line */}
+      <div style={{
+        position: 'absolute', left: 14, right: 12, top: 32,
+        height: 1, background: 'rgba(90,70,40,0.22)',
+      }} />
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+        marginBottom: 5,
+      }}>
+        <span style={{
+          fontFamily: '"Special Elite", monospace',
+          fontSize: 9, color: c,
+          letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 700,
+        }}>№ {String(index + 1).padStart(2, '0')} — {option.stance}</span>
+        <span style={{
+          fontFamily: '"IM Fell English", serif',
+          fontSize: 10, fontStyle: 'italic',
+          color: 'rgba(90,74,50,0.7)',
+        }}>{Object.entries(option.effects).filter(([,v])=>v!==0).length} consequences</span>
+      </div>
+      <div style={{
+        fontFamily: '"IM Fell English", "Playfair Display", serif',
+        fontSize: 15, fontWeight: 500,
+        color: '#2a2216',
+        lineHeight: 1.2,
+        marginBottom: 4,
+        textWrap: 'pretty',
+      }}>{option.label}</div>
+      <div style={{
+        fontFamily: '"Source Serif 4", serif',
+        fontSize: 11, fontStyle: 'italic',
+        color: '#5a4a32',
+        lineHeight: 1.4,
+        textWrap: 'pretty',
+      }}>{option.body}</div>
+    </button>
+  );
+}
+
+// ── Margin annotation (hand-scrawled note in red ink) ──
+function MarginNote({ text, top, side = 'right' }) {
+  return (
+    <div style={{
+      position: 'absolute',
+      top,
+      [side]: -8,
+      transform: `rotate(${side === 'right' ? -4 : 3}deg)`,
+      fontFamily: '"IM Fell English", serif',
+      fontStyle: 'italic',
+      fontSize: 10,
+      color: '#8b1818',
+      maxWidth: 90,
+      lineHeight: 1.2,
+      zIndex: 3,
+      pointerEvents: 'none',
+    }}>
+      <span style={{
+        borderBottom: '1px wavy #8b1818',
+        borderBottomStyle: 'solid',
+      }}>— {text}</span>
+    </div>
+  );
+}
+
+// ── The folder (main briefing container) ──
+function Folder({ children, classification }) {
+  return (
+    <div style={{
+      position: 'relative',
+      background: '#c9a869',
+      padding: '20px 14px 30px',
+      marginTop: 8,
+      boxShadow: '0 4px 10px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(80,55,25,0.5), inset 2px 2px 0 rgba(255,240,200,0.2)',
+      borderRadius: 1,
+    }}>
+      {/* Folder tab */}
+      <div style={{
+        position: 'absolute',
+        top: -14, left: 20,
+        background: '#c9a869',
+        padding: '3px 18px 6px',
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 8,
+        color: '#3a2818',
+        fontWeight: 700,
+        letterSpacing: 1.5,
+        whiteSpace: 'nowrap',
+        clipPath: 'polygon(0 0, 100% 0, calc(100% - 10px) 100%, 10px 100%)',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+      }}>
+        {classification}
+      </div>
+      {/* inner paper */}
+      <div style={{
+        background: 'linear-gradient(180deg, #f2e6c5, #efe2bd)',
+        padding: '18px 16px 18px',
+        boxShadow: 'inset 0 0 20px rgba(120,90,40,0.22)',
+        position: 'relative',
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Briefing (typed memo) inside folder ──
+function DossierBriefing({ scenario, fromCharacter, onSelect, onHover }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Paperclip with portrait */}
+      <div style={{
+        position: 'absolute', top: -30, right: -6, zIndex: 5,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+      }}>
+        <DossierPaperclip angle={14} />
+      </div>
+
+      <div
+        onMouseEnter={() => onHover(fromCharacter)}
+        onMouseLeave={() => onHover(null)}
+        style={{
+          position: 'absolute', top: -16, right: 6, zIndex: 4,
+          transform: 'rotate(4deg)',
+          cursor: 'help',
+        }}
+      >
+        <DossierPortrait character={fromCharacter} size={58} />
+      </div>
+
+      {/* Doc header */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between',
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 8, color: '#5a4a32',
+        letterSpacing: 1.5, textTransform: 'uppercase',
+        paddingBottom: 6, marginBottom: 10,
+        borderBottom: '0.5px solid rgba(42,34,22,0.28)',
+        maxWidth: 'calc(100% - 76px)',
+      }}>
+        <span>{scenario.docNumber}</span>
+        <span>{scenario.date}</span>
+      </div>
+
+      {/* Bureau */}
+      <div style={{
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 9, color: '#8b1818',
+        letterSpacing: 2, textTransform: 'uppercase',
+        fontWeight: 700, marginBottom: 4,
+        maxWidth: 'calc(100% - 76px)',
+      }}>{scenario.bureau}</div>
+
+      {/* Title */}
+      <div style={{
+        fontFamily: '"IM Fell English", "Playfair Display", serif',
+        fontSize: 19, fontWeight: 700,
+        lineHeight: 1.15, color: '#2a2216',
+        marginBottom: 12,
+        maxWidth: 'calc(100% - 76px)',
+        textWrap: 'balance',
+      }}>{scenario.title}</div>
+
+      {/* Classification stamp */}
+      <div style={{ position: 'absolute', top: 60, right: -10, zIndex: 2 }}>
+        <DossierStamp text={scenario.classification} color="#8b1818" rotate={9} />
+      </div>
+
+      {/* Typed body — using divs to avoid <p> margin collapse quirks */}
+      <div style={{
+        fontFamily: '"Special Elite", "Courier Prime", monospace',
+        fontSize: 11.5, lineHeight: 1.5,
+        color: '#3a2a18',
+        letterSpacing: 0.1,
+        marginTop: 26,
+      }}>
+        {scenario.briefing.map((p, i) => (
+          <div key={i} style={{
+            display: 'block',
+            marginBottom: 18,
+            paddingBottom: 2,
+            fontStyle: i === 0 ? 'italic' : 'normal',
+          }}>{p}</div>
+        ))}
+      </div>
+
+      {/* Margin note */}
+      {scenario.turn === 1 && <MarginNote text="she will be watching" top={110} side="right" />}
+      {scenario.turn === 2 && <MarginNote text="who leaked?" top={100} side="right" />}
+      {scenario.turn === 3 && <MarginNote text="burn after reading" top={90} side="right" />}
+
+      {/* Signature + wax */}
+      <div style={{
+        marginTop: 18,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{
+            fontFamily: '"IM Fell English", serif',
+            fontStyle: 'italic',
+            fontSize: 17,
+            color: '#2a2216',
+            lineHeight: 1,
+            borderBottom: '0.5px solid rgba(42,34,22,0.35)',
+            paddingBottom: 2,
+            display: 'inline-block',
+          }}>{fromCharacter.name}</div>
+          <div style={{
+            fontFamily: '"Special Elite", monospace',
+            fontSize: 8,
+            color: '#5a4a32',
+            marginTop: 4,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+          }}>{fromCharacter.rank}</div>
+        </div>
+        <DossierWax size={54} color="#8b1818" />
+      </div>
+    </div>
+  );
+}
+
+// ── Outcome view ──
+function DossierOutcome({ option, onNext, stats, delta, phase }) {
+  // stamp inline at top of card, not absolute, so it never clips
+  return (
+    <div style={{ position: 'relative', paddingTop: 4 }}>
+      <div style={{
+        background: 'linear-gradient(180deg, #f2e6c5, #e8d8ae)',
+        padding: '20px 18px',
+        boxShadow: 'inset 0 0 20px rgba(120,90,40,0.2), 0 2px 6px rgba(0,0,0,0.3)',
+        position: 'relative',
+        overflow: 'visible',
+      }}>
+        <TapeStrip width={70} angle={-3} style={{ position:'absolute', top: -8, left: 30 }} />
+        <TapeStrip width={70} angle={2} style={{ position:'absolute', top: -8, right: 30 }} />
+
+        {/* Stamp — inline at top, right-aligned */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6, marginRight: 4 }}>
+          <DossierStamp text={option.stamp} color="#8b1818" rotate={-6} />
+        </div>
+
+        <div style={{
+          fontFamily: '"Special Elite", monospace',
+          fontSize: 8, color: '#8b1818',
+          letterSpacing: 2, textTransform: 'uppercase',
+          fontWeight: 700, marginBottom: 6,
+          paddingBottom: 4, borderBottom: '0.5px solid rgba(42,34,22,0.25)',
+        }}>— ADDENDUM · {option.stance.toUpperCase()}</div>
+
+        <div style={{
+          fontFamily: '"IM Fell English", serif',
+          fontSize: 20, fontWeight: 700,
+          lineHeight: 1.1,
+          color: '#2a2216',
+          marginBottom: 10,
+          textWrap: 'balance',
+        }}>{option.outcomeTitle}</div>
+
+        <div style={{
+          fontFamily: '"Source Serif 4", Georgia, serif',
+          fontSize: 12.5, lineHeight: 1.55,
+          color: '#3a2a18',
+          fontStyle: 'italic',
+          textWrap: 'pretty',
+        }}>{option.outcomeBody}</div>
+
+        {/* Effect ledger — single column, cleaner wrap behavior */}
+        <div style={{
+          marginTop: 14, paddingTop: 10,
+          borderTop: '1px dashed rgba(42,34,22,0.25)',
+          fontFamily: '"Special Elite", monospace',
+          fontSize: 10,
+          color: '#5a4a32',
+        }}>
+          <div style={{ fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: '#8b1818', marginBottom: 6, fontWeight: 700 }}>— Consequences</div>
+          {Object.entries(option.effects).filter(([,v]) => v !== 0).map(([k,v]) => (
+            <div key={k} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+              padding: '3px 0',
+              borderBottom: '1px dotted rgba(90,74,50,0.22)',
+              gap: 10,
+            }}>
+              <span style={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 10, whiteSpace: 'nowrap' }}>{STAT_META[k].label}</span>
+              <span style={{
+                color: v > 0 ? '#3a6a30' : '#8b1818',
+                fontWeight: 700, fontSize: 12,
+                fontFamily: '"IM Fell English", serif',
+                whiteSpace: 'nowrap',
+              }}>{v > 0 ? `+${v}` : v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={onNext} style={{
+        marginTop: 14, width: '100%',
+        background: 'linear-gradient(180deg, #3a2818, #261808)',
+        border: 'none',
+        borderTop: '1px solid #6a4a28',
+        color: '#efe4c9',
+        padding: '12px 14px',
+        fontFamily: '"IM Fell English", serif',
+        fontSize: 14,
+        fontStyle: 'italic',
+        cursor: 'pointer',
+        letterSpacing: 0.5,
+        boxShadow: '0 3px 8px rgba(0,0,0,0.4)',
+      }}>
+        Proceed to next directive →
+      </button>
+    </div>
+  );
+}
+
+// ── Verdict ──
+function DossierVerdict({ stats, onRestart }) {
+  const score = (stats.stability + stats.popular + stats.elite) / 3;
+  const verdict = score > 60 ? 'HERO OF THE PEOPLE' : score > 40 ? 'RELIABLE CADRE' : score > 25 ? 'UNDER REVIEW' : 'LIQUIDATED';
+  const line = score > 60 ? 'Your portrait hangs in every schoolroom.' :
+               score > 40 ? 'You will be permitted to retire to a cottage in the woods.' :
+               score > 25 ? 'A dacha in the north. Bring a coat.' :
+               'The paperwork was filed at 0400.';
+  return (
+    <div style={{
+      background: 'linear-gradient(180deg, #f2e6c5, #d9c294)',
+      padding: '26px 20px',
+      boxShadow: 'inset 0 0 24px rgba(120,90,40,0.28), 0 2px 6px rgba(0,0,0,0.3)',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
+      <DossierStamp text="FINAL JUDGMENT" color="#8b1818" rotate={-8} />
+      <div style={{
+        marginTop: 16,
+        fontFamily: '"IM Fell English", serif',
+        fontSize: 26, fontWeight: 700,
+        color: '#2a2216',
+        lineHeight: 1.1,
+        textWrap: 'balance',
+      }}>{verdict}</div>
+      <div style={{
+        fontFamily: '"IM Fell English", serif',
+        fontStyle: 'italic',
+        fontSize: 14,
+        color: '#5a4a32',
+        marginTop: 10,
+        marginBottom: 20,
+        textWrap: 'pretty',
+      }}>{line}</div>
+      <button onClick={onRestart} style={{
+        background: 'transparent',
+        border: '1px solid #2a2216',
+        color: '#2a2216',
+        padding: '8px 18px',
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 10,
+        letterSpacing: 2,
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+      }}>Begin Again</button>
+    </div>
+  );
+}
+
+// ── Main DossierScreen ──
+function DossierScreen({ onThemeCycle }) {
+  const g = useGame();
+  const { scenario, fromCharacter, phase, selectedOpt, stats, prevStats,
+    selectOption, nextTurn, reset, hoveredChar, setHoveredChar, delta } = g;
+
+  return (
+    <div style={{
+      height: '100%', width: '100%',
+      position: 'relative', overflow: 'hidden',
+      fontFamily: '"Source Serif 4", Georgia, serif',
+    }}>
+      <DeskBlotter>
+        {/* Status bar area — dark wood (below iOS status bar) */}
+        <div style={{
+          position: 'absolute', top: 54, left: 0, right: 0, height: 44,
+          padding: '4px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          zIndex: 10,
+        }}>
+          <div>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 8, color: 'rgba(239,228,201,0.55)',
+              letterSpacing: 2, textTransform: 'uppercase',
+            }}>PSRA · OFFICE OF THE SECRETARY</div>
+            <div style={{
+              fontFamily: '"IM Fell English", serif',
+              fontSize: 17, fontWeight: 700,
+              color: '#efe4c9',
+              lineHeight: 1,
+              letterSpacing: 0.3,
+            }}>The Apparatus</div>
+          </div>
+          <button onClick={reset} style={{
+            background: 'transparent',
+            border: '1px solid rgba(239,228,201,0.3)',
+            color: 'rgba(239,228,201,0.7)',
+            padding: '3px 9px',
+            fontFamily: '"Special Elite", monospace',
+            fontSize: 8,
+            letterSpacing: 1.5,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+          }}>Reset</button>
+        </div>
+
+        {/* Scrollable content area */}
+        <div style={{
+          position: 'absolute', top: 104, left: 16, right: 16, bottom: 74,
+          overflowY: 'auto', overflowX: 'hidden',
+          padding: '10px 0 20px',
+        }}>
+          {phase === 'briefing' && (
+            <>
+              <Folder classification={`TURN ${scenario.turn}/${SCENARIOS.length} · ${scenario.classification}`}>
+                <DossierBriefing
+                  scenario={scenario}
+                  fromCharacter={fromCharacter}
+                  onSelect={selectOption}
+                  onHover={setHoveredChar}
+                />
+              </Folder>
+
+              {/* Divider */}
+              <div style={{
+                margin: '18px 8px 10px',
+                textAlign: 'center',
+                fontFamily: '"Special Elite", monospace',
+                fontSize: 8,
+                color: 'rgba(239,228,201,0.55)',
+                letterSpacing: 3,
+                textTransform: 'uppercase',
+              }}>— Your Directive —</div>
+
+              {/* Index-card options */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9, padding: '0 4px' }}>
+                {scenario.options.map((opt, i) => (
+                  <IndexCardOption
+                    key={opt.id}
+                    option={opt}
+                    index={i}
+                    onSelect={selectOption}
+                    rotation={i === 0 ? -0.5 : i === 1 ? 0.3 : -0.2}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {phase === 'outcome' && selectedOpt && (
+            <DossierOutcome
+              option={selectedOpt}
+              onNext={nextTurn}
+              stats={stats}
+              delta={delta}
+              phase={phase}
+            />
+          )}
+
+          {phase === 'verdict' && (
+            <DossierVerdict stats={stats} onRestart={reset} />
+          )}
+        </div>
+
+        {/* Bottom strip — stats + theme cycler */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(180deg, #2a1a08, #1a1004)',
+          borderTop: '1px solid #5a3e1e',
+          padding: '6px 8px 22px',
+          zIndex: 10,
+        }}>
+          <DossierStatStrip stats={stats} prevStats={prevStats} delta={delta} phase={phase} />
+          <div style={{
+            marginTop: 6,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 7, letterSpacing: 2,
+              color: 'rgba(239,228,201,0.55)',
+              textTransform: 'uppercase',
+            }}>
+              {phase === 'briefing' ? 'awaiting directive' : phase === 'outcome' ? 'directive filed' : 'session closed'}
+            </div>
+            <button onClick={onThemeCycle} style={{
+              background: 'transparent',
+              border: '1px solid rgba(239,228,201,0.25)',
+              color: 'rgba(239,228,201,0.75)',
+              padding: '2px 8px',
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 7, letterSpacing: 1.5,
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+            }}>
+              ▸ Cycle theme
+            </button>
+          </div>
+        </div>
+
+        {/* Dossier hover card */}
+        {hoveredChar && (
+          <div style={{
+            position: 'absolute', bottom: 64, left: 16, right: 16,
+            background: 'linear-gradient(180deg, #f2e6c5, #e5d39b)',
+            border: '1px solid #8a6a3a',
+            padding: '10px 12px',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+            zIndex: 20,
+            fontFamily: '"Source Serif 4", serif',
+          }}>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 8, color: '#8b1818', letterSpacing: 1.5,
+              textTransform: 'uppercase', fontWeight: 700,
+            }}>DOSSIER — {hoveredChar.relation}</div>
+            <div style={{
+              fontFamily: '"IM Fell English", serif',
+              fontSize: 15, fontWeight: 700, color: '#2a2216', lineHeight: 1.1,
+              marginTop: 2,
+            }}>{hoveredChar.name}</div>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 8, color: '#5a4a32', marginTop: 2, marginBottom: 6,
+              letterSpacing: 0.5, textTransform: 'uppercase',
+            }}>{hoveredChar.rank}</div>
+            {hoveredChar.dossier.map((d, i) => (
+              <div key={i} style={{
+                fontSize: 10.5, fontStyle: 'italic',
+                color: '#3a2a18', lineHeight: 1.4, marginBottom: 3,
+              }}>— {d}</div>
+            ))}
+          </div>
+        )}
+      </DeskBlotter>
+    </div>
+  );
+}
+
+Object.assign(window, { DossierScreen });
+
+</script>
+
+<!-- ──────────── Redacted File screen ──────────── -->
+<script type="text/babel">
+// redacted-screen.jsx — REDACTED FILE variation
+// METAPHOR: a declassified intelligence document from a paranoid archive.
+// Black redaction bars over text, CLASSIFIED watermarks, typewriter type,
+// three-box "STANCE REVIEW" form at bottom, teletype header scrolling,
+// green-phosphor stat readouts. Dark. Cold. Surveillance aesthetic.
+
+const { useState: _rs_us, useEffect: _rs_ue, useRef: _rs_ur } = React;
+
+// ─────────── Redaction bar ───────────
+function RedactBar({ width = 60, height = 12, style = {} }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      width, height,
+      background: '#0a0806',
+      verticalAlign: 'middle',
+      margin: '0 2px',
+      boxShadow: 'inset 0 0 0 1px #2a2218',
+      ...style,
+    }} />
+  );
+}
+
+// ─────────── CLASSIFIED watermark (diagonal, tiled) ───────────
+function ClassifiedWatermark({ text = 'CLASSIFIED' }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      opacity: 0.035,
+      zIndex: 1,
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: '-50%', left: '-50%',
+        width: '200%', height: '200%',
+        transform: 'rotate(-32deg)',
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 26,
+        fontWeight: 700,
+        color: '#d4c8a8',
+        letterSpacing: 4,
+        lineHeight: 1.6,
+        whiteSpace: 'nowrap',
+      }}>
+        {Array.from({ length: 22 }).map((_, i) => (
+          <div key={i}>{Array.from({ length: 10 }).map((__, j) => text + '  ').join('')}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────── Teletype strip (scrolling header) ───────────
+function TeletypeStrip({ scenario }) {
+  const msg = `  ▸  PSRA SECURE WIRE  ▸  ${scenario.docNumber}  ▸  ${scenario.classification}  ▸  ${scenario.date}  ▸  ORIGIN: ${scenario.bureau.toUpperCase()}  ▸  EYES ONLY  `;
+  return (
+    <div style={{
+      background: '#0a0806',
+      borderTop: '1px solid rgba(212,200,168,0.15)',
+      borderBottom: '1px solid rgba(212,200,168,0.15)',
+      overflow: 'hidden',
+      padding: '3px 0',
+      position: 'relative',
+    }}>
+      <div style={{
+        display: 'inline-block',
+        whiteSpace: 'nowrap',
+        animation: 'redacted-teletype 42s linear infinite',
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: 9,
+        color: '#7a9a6a',
+        letterSpacing: 1.5,
+      }}>
+        {(msg + msg + msg).repeat(2)}
+      </div>
+    </div>
+  );
+}
+
+// ─────────── Stamp (red, aggressive) ───────────
+function RedactedStamp({ text, rotate = -6, size = 1 }) {
+  return (
+    <div style={{
+      display: 'inline-block',
+      border: `2.5px solid #c72828`,
+      color: '#c72828',
+      padding: `${4 * size}px ${12 * size}px`,
+      fontFamily: '"Special Elite", monospace',
+      fontWeight: 700,
+      fontSize: 11 * size,
+      letterSpacing: 2,
+      transform: `rotate(${rotate}deg)`,
+      textTransform: 'uppercase',
+      opacity: 0.78,
+      whiteSpace: 'nowrap',
+      boxShadow: 'inset 0 0 0 1px rgba(199,40,40,0.3)',
+    }}>{text}</div>
+  );
+}
+
+// ─────────── File number box (form-style) ───────────
+function FormField({ label, value, flex = 1 }) {
+  return (
+    <div style={{
+      flex,
+      borderRight: '1px solid rgba(212,200,168,0.18)',
+      padding: '6px 10px',
+      minWidth: 0,
+    }}>
+      <div style={{
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: 7, letterSpacing: 1.5,
+        color: '#6a5e48',
+        textTransform: 'uppercase',
+        marginBottom: 2,
+      }}>{label}</div>
+      <div style={{
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 11,
+        color: '#d4c8a8',
+        fontWeight: 500,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>{value}</div>
+    </div>
+  );
+}
+
+// ─────────── Stat monitor (green phosphor readout) ───────────
+function StatMonitor({ stats, delta, phase }) {
+  const keys = ['treasury', 'food', 'stability', 'popular', 'elite'];
+  return (
+    <div style={{
+      background: '#050605',
+      border: '1px solid #2a3a2a',
+      padding: '8px 10px',
+      boxShadow: 'inset 0 0 14px rgba(40,160,80,0.12)',
+      marginTop: 8,
+    }}>
+      <div style={{
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: 7, letterSpacing: 2,
+        color: '#4a7a4a',
+        textTransform: 'uppercase',
+        marginBottom: 6,
+        display: 'flex', justifyContent: 'space-between',
+      }}>
+        <span>► STATE INDICATORS</span>
+        <span style={{ color: '#7aaa7a' }}>◉ LIVE</span>
+      </div>
+      {keys.map(k => {
+        const v = stats[k];
+        const d = delta(k);
+        const cells = 20;
+        const filled = Math.round((v / 100) * cells);
+        return (
+          <div key={k} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            marginBottom: 3,
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 9,
+          }}>
+            <div style={{
+              width: 52,
+              color: '#7aaa7a',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              fontSize: 8,
+            }}>{STAT_META[k].label.split(' ')[0]}</div>
+            <div style={{ flex: 1, display: 'flex', gap: 1 }}>
+              {Array.from({ length: cells }).map((_, i) => (
+                <div key={i} style={{
+                  flex: 1, height: 9,
+                  background: i < filled
+                    ? (d > 0 ? '#7aee7a' : d < 0 && i >= filled - Math.abs(d/5) ? '#ee6a6a' : '#4a8a4a')
+                    : '#0f1a0f',
+                  boxShadow: i < filled ? '0 0 3px rgba(120,220,120,0.45)' : 'none',
+                  transition: 'background 0.4s',
+                }} />
+              ))}
+            </div>
+            <div style={{
+              width: 42,
+              textAlign: 'right',
+              color: '#aaeea0',
+              fontWeight: 700,
+            }}>
+              {String(v).padStart(3, '0')}
+              {phase === 'outcome' && d !== 0 && (
+                <span style={{
+                  marginLeft: 4,
+                  color: d > 0 ? '#aaeea0' : '#ee8080',
+                  fontSize: 8,
+                }}>{d > 0 ? `+${d}` : d}</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────── Redacted briefing (with black bars) ───────────
+function RedactedBriefing({ scenario, fromCharacter, onHover }) {
+  // Decide which words to redact based on turn
+  const redactWord = (text, pattern) => {
+    return text.split(pattern).map((part, i, arr) => (
+      <React.Fragment key={i}>
+        {part}
+        {i < arr.length - 1 && <RedactBar width={60 + Math.random() * 40} height={11} />}
+      </React.Fragment>
+    ));
+  };
+
+  // simple regex-based redaction: redact proper nouns that aren't the sender
+  const redactText = (text) => {
+    // match capitalized words that are likely names/places
+    const parts = text.split(/\b(Volkov|Petrenko|Hollis|Ashford|Ohio|Chicago|Nebraska|Iowa|Jefferson|Collective|Tribune|Central Committee|Internal Troops|Commissar|Chairman)\b/);
+    return parts.map((part, i) => {
+      if (/^(Volkov|Petrenko|Hollis|Ashford|Ohio|Chicago|Nebraska|Iowa|Jefferson|Collective|Tribune|Central Committee|Internal Troops|Commissar|Chairman)$/.test(part)) {
+        const w = part.length * 6.5 + 6;
+        return <RedactBar key={i} width={w} height={11} />;
+      }
+      return <React.Fragment key={i}>{part}</React.Fragment>;
+    });
+  };
+
+  return (
+    <div style={{
+      background: '#1a1812',
+      border: '1px solid rgba(212,200,168,0.22)',
+      position: 'relative',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+    }}>
+      <ClassifiedWatermark text={scenario.classification.replace(' ', '•')} />
+
+      {/* Form header bar */}
+      <div style={{
+        display: 'flex',
+        borderBottom: '1px solid rgba(212,200,168,0.22)',
+        background: 'linear-gradient(180deg, #23201a, #1a1812)',
+        position: 'relative', zIndex: 2,
+      }}>
+        <FormField label="FORM" value={`PSRA-${scenario.docNumber.slice(0, 3)}`} flex={0.8} />
+        <FormField label="REF NO." value={scenario.docNumber} flex={1.2} />
+        <FormField label="BUREAU" value={scenario.bureau.replace('Bureau of ', 'B.').toUpperCase()} flex={1} />
+      </div>
+
+      {/* Big classified stripe */}
+      <div style={{
+        background: '#c72828',
+        color: '#000',
+        padding: '5px 10px',
+        fontFamily: '"Special Elite", monospace',
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: 3,
+        textAlign: 'center',
+        textTransform: 'uppercase',
+        position: 'relative', zIndex: 2,
+      }}>
+        ▓▓▓  {scenario.classification}  ·  HANDLE VIA NSI CHANNELS ONLY  ▓▓▓
+      </div>
+
+      {/* Title + sender */}
+      <div style={{ padding: '14px 14px 10px', position: 'relative', zIndex: 2 }}>
+        <div style={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 8, color: '#6a5e48',
+          letterSpacing: 2, textTransform: 'uppercase',
+          marginBottom: 4,
+        }}>SUBJECT / 3.1</div>
+        <div style={{
+          fontFamily: '"Special Elite", monospace',
+          fontSize: 16, fontWeight: 700,
+          color: '#e5d9b9',
+          lineHeight: 1.2,
+          marginBottom: 12,
+          textWrap: 'balance',
+        }}>{scenario.title}</div>
+
+        {/* Sender as a mug-shot card */}
+        <div
+          onMouseEnter={() => onHover(fromCharacter)}
+          onMouseLeave={() => onHover(null)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '8px 10px',
+            background: '#0f0e0a',
+            border: '1px solid rgba(212,200,168,0.18)',
+            marginBottom: 12,
+            cursor: 'help',
+          }}>
+          <div style={{
+            width: 36, height: 42,
+            background: '#3a3a3a',
+            border: '1px solid rgba(212,200,168,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 13, fontWeight: 700,
+            color: '#d4c8a8',
+            position: 'relative',
+          }}>
+            {fromCharacter.initials}
+            <div style={{
+              position: 'absolute', bottom: -1, left: 0, right: 0,
+              fontSize: 5, textAlign: 'center',
+              color: '#6a5e48', letterSpacing: 0.5,
+              background: '#0f0e0a',
+              padding: '1px 0',
+            }}>SUBJECT</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 7, letterSpacing: 1.5,
+              color: '#6a5e48', textTransform: 'uppercase',
+            }}>ORIGIN</div>
+            <div style={{
+              fontFamily: '"Special Elite", monospace',
+              fontSize: 12, color: '#e5d9b9', fontWeight: 700,
+            }}>{fromCharacter.name}</div>
+            <div style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 8,
+              color: '#9a8e70',
+              letterSpacing: 0.5,
+            }}>{fromCharacter.rank}</div>
+          </div>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 7,
+            color: '#6a5e48',
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            textAlign: 'right',
+            lineHeight: 1.3,
+          }}>
+            REL:<br />
+            <span style={{ color: '#c72828', fontWeight: 700 }}>
+              {fromCharacter.relation.toUpperCase()}
+            </span>
+          </div>
+        </div>
+
+        {/* Briefing text with redactions */}
+        <div style={{
+          fontFamily: '"Special Elite", "Courier Prime", monospace',
+          fontSize: 11, lineHeight: 1.55,
+          color: '#d4c8a8',
+          padding: '4px 0',
+        }}>
+          {scenario.briefing.map((p, i) => (
+            <p key={i} style={{
+              margin: '0 0 14px',
+              display: 'block',
+              fontStyle: i === 0 ? 'italic' : 'normal',
+              color: i === 0 ? '#9a8e70' : '#d4c8a8',
+            }}>{redactText(p)}</p>
+          ))}
+        </div>
+
+        {/* Signature line */}
+        <div style={{
+          marginTop: 12, paddingTop: 10,
+          borderTop: '1px dashed rgba(212,200,168,0.22)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 8, color: '#6a5e48',
+          letterSpacing: 1.5, textTransform: 'uppercase',
+        }}>
+          <span>/S/ <span style={{ color: '#9a8e70' }}>{fromCharacter.name.split(' ').map(n => n[0]).join('.')}.</span></span>
+          <span>END TRANSMISSION</span>
+        </div>
+      </div>
+
+      {/* Classification stamp absolute */}
+      <div style={{
+        position: 'absolute', top: 90, right: -6, zIndex: 5,
+      }}>
+        <RedactedStamp text={scenario.classification} rotate={7} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────── Stance review form (bottom of briefing) ───────────
+function StanceReviewForm({ scenario, onSelect }) {
+  const [hover, setHover] = _rs_us(null);
+  return (
+    <div style={{
+      marginTop: 12,
+      background: '#1a1812',
+      border: '1px solid rgba(212,200,168,0.22)',
+      position: 'relative',
+    }}>
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(180deg, #2a2218, #1a1812)',
+        padding: '8px 12px',
+        borderBottom: '1px solid rgba(212,200,168,0.22)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div style={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 8, letterSpacing: 2.5,
+          color: '#c72828', textTransform: 'uppercase',
+          fontWeight: 700,
+        }}>§ 4.0 — OFFICER'S DIRECTIVE</div>
+        <div style={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 7, letterSpacing: 1,
+          color: '#6a5e48', textTransform: 'uppercase',
+        }}>SELECT ONE</div>
+      </div>
+
+      {/* Options as form rows */}
+      {scenario.options.map((opt, i) => {
+        const isHover = hover === opt.id;
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onSelect(opt)}
+            onMouseEnter={() => setHover(opt.id)}
+            onMouseLeave={() => setHover(null)}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              background: isHover ? '#2a2318' : 'transparent',
+              border: 'none',
+              borderBottom: i < scenario.options.length - 1 ? '1px solid rgba(212,200,168,0.14)' : 'none',
+              padding: '10px 12px 10px 14px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              color: '#d4c8a8',
+              position: 'relative',
+              transition: 'background 0.1s',
+            }}>
+            {/* Checkbox */}
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <div style={{
+                width: 14, height: 14,
+                border: `1px solid ${isHover ? '#c72828' : '#6a5e48'}`,
+                flexShrink: 0,
+                marginTop: 2,
+                position: 'relative',
+                background: '#0a0806',
+              }}>
+                {isHover && (
+                  <div style={{
+                    position: 'absolute', inset: 2,
+                    background: '#c72828',
+                    boxShadow: '0 0 6px #c72828',
+                  }} />
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8,
+                  marginBottom: 3,
+                }}>
+                  <div style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 8, letterSpacing: 1.5,
+                    color: '#c72828', textTransform: 'uppercase',
+                    fontWeight: 700,
+                  }}>
+                    § 4.{i + 1} — {opt.stance}
+                  </div>
+                  <div style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 7,
+                    color: '#6a5e48',
+                    letterSpacing: 1,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    PRJ. IMPACT: {Object.values(opt.effects).reduce((a, b) => Math.abs(a) + Math.abs(b), 0)}
+                  </div>
+                </div>
+                <div style={{
+                  fontFamily: '"Special Elite", monospace',
+                  fontSize: 13, fontWeight: 500,
+                  color: '#e5d9b9',
+                  lineHeight: 1.25,
+                  marginBottom: 3,
+                  textWrap: 'pretty',
+                }}>{opt.label}</div>
+                <div style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: 10,
+                  color: '#9a8e70',
+                  lineHeight: 1.4,
+                  fontStyle: 'italic',
+                  textWrap: 'pretty',
+                }}>{opt.body}</div>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────── Outcome ───────────
+function RedactedOutcome({ option, stats, delta, onNext, phase }) {
+  return (
+    <div style={{
+      position: 'relative', marginTop: 4,
+    }}>
+      {/* Big stamp */}
+      <div style={{
+        position: 'absolute', top: -8, right: 10, zIndex: 10,
+      }}>
+        <RedactedStamp text={option.stamp} rotate={-9} size={1.1} />
+      </div>
+
+      <div style={{
+        background: '#1a1812',
+        border: '1px solid rgba(212,200,168,0.22)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <ClassifiedWatermark text="ACTION TAKEN" />
+
+        {/* Header */}
+        <div style={{
+          background: '#0a0806',
+          borderBottom: '1px solid rgba(212,200,168,0.22)',
+          padding: '6px 12px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 8, letterSpacing: 2,
+            color: '#c72828', textTransform: 'uppercase',
+            fontWeight: 700,
+          }}>▼ ADDENDUM — POST-DIRECTIVE REPORT</div>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 7, color: '#6a5e48', letterSpacing: 1,
+          }}>FILED {new Date().toISOString().slice(0, 10)}</div>
+        </div>
+
+        <div style={{ padding: '14px 14px', position: 'relative', zIndex: 2 }}>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 8, letterSpacing: 1.5,
+            color: '#9a8e70',
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}>DIRECTIVE — {option.stance}</div>
+          <div style={{
+            fontFamily: '"Special Elite", monospace',
+            fontSize: 18, fontWeight: 700,
+            color: '#e5d9b9',
+            lineHeight: 1.15,
+            marginBottom: 10,
+            textWrap: 'balance',
+          }}>{option.outcomeTitle}</div>
+          <div style={{
+            fontFamily: '"Special Elite", "Courier Prime", monospace',
+            fontSize: 11.5, lineHeight: 1.55,
+            color: '#d4c8a8',
+            padding: '4px 0',
+          }}>
+            {option.outcomeBody.split('\n').map((line, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>{line}</div>
+            ))}
+          </div>
+
+          {/* Consequences table — single column, fits narrow */}
+          <div style={{
+            marginTop: 14, paddingTop: 10,
+            borderTop: '1px dashed rgba(212,200,168,0.22)',
+          }}>
+            <div style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 7, letterSpacing: 2,
+              color: '#6a5e48',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}>§ 5 — ASSESSED IMPACT</div>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 10 }}>
+              {Object.entries(option.effects).filter(([,v]) => v !== 0).map(([k,v]) => (
+                <div key={k} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '3px 0',
+                  borderBottom: '1px dotted rgba(212,200,168,0.12)',
+                  gap: 10,
+                }}>
+                  <span style={{
+                    color: '#9a8e70', textTransform: 'uppercase',
+                    letterSpacing: 0.8, fontSize: 9.5,
+                    whiteSpace: 'nowrap',
+                  }}>{STAT_META[k].label}</span>
+                  <span style={{
+                    color: v > 0 ? '#7aee7a' : '#ee6a6a',
+                    fontWeight: 700, fontSize: 11,
+                    whiteSpace: 'nowrap',
+                  }}>{v > 0 ? `+${v}` : v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button onClick={onNext} style={{
+        marginTop: 12, width: '100%',
+        background: 'linear-gradient(180deg, #c72828, #8a1818)',
+        border: 'none',
+        color: '#fff',
+        padding: '12px 14px',
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: 3,
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+        boxShadow: '0 2px 8px rgba(199,40,40,0.35)',
+      }}>
+        ▸ Request Next Directive
+      </button>
+    </div>
+  );
+}
+
+// ─────────── Verdict ───────────
+function RedactedVerdict({ stats, onRestart }) {
+  const score = (stats.stability + stats.popular + stats.elite) / 3;
+  const verdict = score > 60 ? 'HERO OF THE APPARATUS' : score > 40 ? 'IN GOOD STANDING' : score > 25 ? 'UNDER REVIEW' : 'DISAPPEARED';
+  const line = score > 60 ? 'Commendation recorded. Portrait commissioned.' :
+               score > 40 ? 'File retained. Career viable.' :
+               score > 25 ? 'Reassignment pending. Cold region likely.' :
+               'Record sealed. Next of kin not notified.';
+  return (
+    <div style={{
+      background: '#1a1812',
+      border: '1px solid rgba(212,200,168,0.22)',
+      padding: '22px 18px',
+      textAlign: 'center',
+      position: 'relative',
+    }}>
+      <ClassifiedWatermark text="FINAL" />
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <RedactedStamp text="FINAL DISPOSITION" rotate={-5} size={1.15} />
+        <div style={{
+          marginTop: 16,
+          fontFamily: '"Special Elite", monospace',
+          fontSize: 22, fontWeight: 700,
+          color: '#e5d9b9',
+          letterSpacing: 1,
+          lineHeight: 1.15,
+          textWrap: 'balance',
+        }}>{verdict}</div>
+        <div style={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 11,
+          color: '#9a8e70',
+          marginTop: 10, marginBottom: 20,
+          fontStyle: 'italic',
+          textWrap: 'pretty',
+        }}>{line}</div>
+        <button onClick={onRestart} style={{
+          background: 'transparent',
+          border: '1px solid #c72828',
+          color: '#c72828',
+          padding: '8px 18px',
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 10, fontWeight: 700,
+          letterSpacing: 2.5,
+          cursor: 'pointer',
+          textTransform: 'uppercase',
+        }}>▸ Reopen File</button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────── Main RedactedScreen ───────────
+function RedactedScreen({ onThemeCycle }) {
+  const g = useGame();
+  const { scenario, fromCharacter, phase, selectedOpt, stats, prevStats,
+    selectOption, nextTurn, reset, hoveredChar, setHoveredChar, delta } = g;
+
+  return (
+    <div style={{
+      height: '100%', width: '100%',
+      background: '#0a0806',
+      color: '#d4c8a8',
+      fontFamily: '"JetBrains Mono", monospace',
+      position: 'relative',
+      overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <style>{`
+        @keyframes redacted-teletype {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        @keyframes redacted-flicker {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.94; }
+        }
+      `}</style>
+
+      {/* CRT scanlines */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: 'repeating-linear-gradient(180deg, rgba(212,200,168,0.02) 0, rgba(212,200,168,0.02) 1px, transparent 1px, transparent 3px)',
+        zIndex: 50,
+        mixBlendMode: 'overlay',
+      }} />
+
+      {/* Status bar area */}
+      <div style={{
+        padding: '54px 12px 8px',
+        background: '#050403',
+        borderBottom: '1px solid rgba(212,200,168,0.18)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+        gap: 10,
+        position: 'relative', zIndex: 4,
+      }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 7, letterSpacing: 2,
+            color: '#6a5e48', textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+          }}>DECLASSIFIED / EYES ONLY · TURN {scenario.turn}/{SCENARIOS.length}</div>
+          <div style={{
+            fontFamily: '"Special Elite", monospace',
+            fontSize: 15, fontWeight: 700,
+            color: '#c72828',
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            lineHeight: 1,
+            marginTop: 2,
+          }}>THE APPARATUS</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 8, color: '#7aaa7a',
+            letterSpacing: 1,
+            whiteSpace: 'nowrap',
+          }}>◉</div>
+          <button onClick={reset} style={{
+            background: 'transparent',
+            border: '1px solid rgba(212,200,168,0.2)',
+            color: '#9a8e70',
+            padding: '3px 8px',
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 8, letterSpacing: 1.5,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+          }}>Reset</button>
+        </div>
+      </div>
+
+      {/* Teletype strip */}
+      <TeletypeStrip scenario={scenario} />
+
+      {/* Body */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto', overflowX: 'hidden',
+        padding: '10px 12px 90px',
+        position: 'relative',
+        zIndex: 2,
+      }}>
+        {phase === 'briefing' && (
+          <>
+            <RedactedBriefing
+              scenario={scenario}
+              fromCharacter={fromCharacter}
+              onHover={setHoveredChar}
+            />
+            <StanceReviewForm
+              scenario={scenario}
+              onSelect={selectOption}
+            />
+          </>
+        )}
+        {/* taller padding only during briefing (so it clears the stat monitor) */}
+        {phase === 'briefing' && <div style={{ height: 140 }} />}
+        {phase === 'outcome' && selectedOpt && (
+          <RedactedOutcome
+            option={selectedOpt}
+            stats={stats}
+            delta={delta}
+            onNext={nextTurn}
+            phase={phase}
+          />
+        )}
+        {phase === 'verdict' && (
+          <RedactedVerdict stats={stats} onRestart={reset} />
+        )}
+      </div>
+
+      {/* Bottom strip with stat monitor */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        background: '#0a0806',
+        borderTop: '1px solid rgba(212,200,168,0.2)',
+        padding: '4px 10px 14px',
+        zIndex: 10,
+      }}>
+        <StatMonitor stats={stats} delta={delta} phase={phase} />
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginTop: 6,
+        }}>
+          <div style={{
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 7, letterSpacing: 2,
+            color: '#6a5e48',
+            textTransform: 'uppercase',
+          }}>
+            {phase === 'briefing' ? '▸ awaiting directive' : phase === 'outcome' ? '▸ directive executed' : '▸ file closed'}
+          </div>
+          <button onClick={onThemeCycle} style={{
+            background: 'transparent',
+            border: '1px solid rgba(212,200,168,0.22)',
+            color: '#9a8e70',
+            padding: '2px 8px',
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 7, letterSpacing: 1.5,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+          }}>
+            ▸ Cycle theme
+          </button>
+        </div>
+      </div>
+
+      {/* Hovered dossier card */}
+      {hoveredChar && (
+        <div style={{
+          position: 'absolute', bottom: 54, left: 12, right: 12,
+          background: '#1a1812',
+          border: '1px solid rgba(212,200,168,0.28)',
+          borderLeft: '3px solid #c72828',
+          padding: '8px 10px',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.65)',
+          zIndex: 20,
+          fontFamily: '"JetBrains Mono", monospace',
+        }}>
+          <div style={{
+            fontSize: 7, color: '#c72828',
+            letterSpacing: 2, textTransform: 'uppercase',
+            fontWeight: 700, marginBottom: 3,
+          }}>▸ SUBJECT FILE — {hoveredChar.relation}</div>
+          <div style={{
+            fontFamily: '"Special Elite", monospace',
+            fontSize: 13, fontWeight: 700, color: '#e5d9b9', lineHeight: 1.1,
+          }}>{hoveredChar.name}</div>
+          <div style={{
+            fontSize: 8, color: '#9a8e70',
+            marginTop: 2, marginBottom: 5,
+            letterSpacing: 0.5, textTransform: 'uppercase',
+          }}>{hoveredChar.rank}</div>
+          {hoveredChar.dossier.map((d, i) => (
+            <div key={i} style={{
+              fontSize: 9.5, color: '#d4c8a8', lineHeight: 1.35, marginBottom: 2,
+              fontFamily: '"Special Elite", monospace',
+            }}>▸ {d}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { RedactedScreen });
+
+</script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Tweakable defaults — persistable via Tweaks mode
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "themeKey": "red",
+  "density": "regular",
+  "textureAmount": 1,
+  "accentOverride": "red",
+  "fontPairing": "modern"
+}/*EDITMODE-END*/;
+
+// Wait for all sibling babel scripts to finish before mounting
+function waitForGlobals(names, cb) {
+  if (names.every(n => window[n])) return cb();
+  setTimeout(() => waitForGlobals(names, cb), 30);
+}
+
+// Accent overrides
+const ACCENT_CHOICES = {
+  '': null,
+  'oxblood': '#8b1818',
+  'red': '#cc1a1a',
+  'crimson': '#c72828',
+  'gold': '#b08830',
+  'muted': '#6a4a32',
+};
+
+// Font pairing overrides (applied per theme)
+const FONT_PAIRINGS = {
+  default: null,
+  condensed: {
+    parchment: { display: '"Playfair Display", Georgia, serif', body: '"Source Serif 4", Georgia, serif' },
+    red: { display: '"Bebas Neue", "Arial Black", sans-serif', body: '"Work Sans", sans-serif' },
+    redacted: { display: '"Special Elite", ui-monospace', body: '"Courier Prime", ui-monospace' },
+  },
+  modern: {
+    parchment: { display: '"Work Sans", sans-serif', body: '"Work Sans", sans-serif' },
+    red: { display: '"Oswald", sans-serif', body: '"JetBrains Mono", monospace' },
+    redacted: { display: '"JetBrains Mono", monospace', body: '"JetBrains Mono", monospace' },
+  },
+};
+
+function App() {
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [tweakMode, setTweakMode] = useState(false);
+  const [sideTheme, setSideTheme] = useState(null); // for multi-view comparison
+
+  // Tweak protocol
+  useEffect(() => {
+    const onMsg = (e) => {
+      if (!e.data || !e.data.type) return;
+      if (e.data.type === '__activate_edit_mode') setTweakMode(true);
+      if (e.data.type === '__deactivate_edit_mode') setTweakMode(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const setKey = (key, val) => {
+    setTweaks(prev => ({ ...prev, [key]: val }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: val } }, '*');
+  };
+
+  // Build active theme from tweaks
+  const buildTheme = (themeKey) => {
+    const base = { ...THEMES[themeKey] };
+    if (tweaks.accentOverride && ACCENT_CHOICES[tweaks.accentOverride]) {
+      base.accent = ACCENT_CHOICES[tweaks.accentOverride];
+      base.star = ACCENT_CHOICES[tweaks.accentOverride];
+    }
+    if (tweaks.fontPairing !== 'default' && FONT_PAIRINGS[tweaks.fontPairing]) {
+      const fp = FONT_PAIRINGS[tweaks.fontPairing][themeKey];
+      if (fp) {
+        base.display = fp.display;
+        base.body = fp.body;
+      }
+    }
+    if (tweaks.textureAmount === 0) base.paperNoise = false;
+    return base;
+  };
+
+  const activeTheme = buildTheme(tweaks.themeKey);
+
+  const cycleTheme = () => {
+    const order = ['parchment', 'red', 'redacted'];
+    const idx = order.indexOf(tweaks.themeKey);
+    setKey('themeKey', order[(idx + 1) % order.length]);
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          textAlign: 'center',
+          fontFamily: '"Oswald", sans-serif',
+          color: '#d4c8a8',
+          fontSize: 11, letterSpacing: 4,
+          textTransform: 'uppercase',
+          opacity: 0.5,
+        }}>
+          <div style={{ fontSize: 18, letterSpacing: 6, marginBottom: 4, color: '#c72828' }}>★ NOMENKLATURA</div>
+          Desk · iPhone 15 Pro · PSRA 1952
+        </div>
+        <IOSDevice dark={activeTheme.statusDark}>
+          {tweaks.themeKey === 'parchment' && <DossierScreen onThemeCycle={cycleTheme} />}
+          {tweaks.themeKey === 'red' && <DeskScreen theme={activeTheme} onThemeCycle={cycleTheme} />}
+          {tweaks.themeKey === 'redacted' && <RedactedScreen onThemeCycle={cycleTheme} />}
+        </IOSDevice>
+        <div style={{
+          display: 'flex', gap: 10,
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase',
+        }}>
+          {['parchment', 'red', 'redacted'].map(k => (
+            <button key={k} onClick={() => setKey('themeKey', k)} style={{
+              background: tweaks.themeKey === k ? THEMES[k].accent : 'transparent',
+              border: `1px solid ${tweaks.themeKey === k ? THEMES[k].accent : 'rgba(212,200,168,0.25)'}`,
+              color: tweaks.themeKey === k ? '#fff' : '#9a8e70',
+              padding: '6px 12px',
+              cursor: 'pointer',
+              letterSpacing: 2,
+              fontFamily: 'inherit', fontSize: 9,
+            }}>{THEMES[k].name}</button>
+          ))}
+        </div>
+      </div>
+
+      {tweakMode && (
+        <TweaksPanel
+          tweaks={tweaks}
+          setKey={setKey}
+        />
+      )}
+    </>
+  );
+}
+
+function TweaksPanel({ tweaks, setKey }) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 20, right: 20, width: 280,
+      background: '#15130e',
+      border: '1px solid rgba(212,200,168,0.25)',
+      borderLeft: '3px solid #c72828',
+      padding: 16,
+      fontFamily: '"JetBrains Mono", monospace',
+      color: '#d4c8a8', fontSize: 11,
+      zIndex: 1000,
+      boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+    }}>
+      <div style={{
+        fontSize: 10, letterSpacing: 3, color: '#c72828',
+        textTransform: 'uppercase', fontWeight: 700, marginBottom: 12,
+        paddingBottom: 8, borderBottom: '1px solid rgba(212,200,168,0.15)',
+      }}>
+        ★ TWEAKS — APPARATUS
+      </div>
+
+      <TweakRow label="Theme">
+        <Select value={tweaks.themeKey} onChange={v => setKey('themeKey', v)} options={[
+          ['parchment', 'Parchment'],
+          ['red', 'Red Apparatus'],
+          ['redacted', 'Redacted'],
+        ]} />
+      </TweakRow>
+
+      <TweakRow label="Accent">
+        <Select value={tweaks.accentOverride} onChange={v => setKey('accentOverride', v)} options={[
+          ['', 'Theme default'],
+          ['oxblood', 'Oxblood'],
+          ['red', 'Soviet red'],
+          ['crimson', 'Crimson'],
+          ['gold', 'Gold'],
+          ['muted', 'Muted earth'],
+        ]} />
+      </TweakRow>
+
+      <TweakRow label="Typeface">
+        <Select value={tweaks.fontPairing} onChange={v => setKey('fontPairing', v)} options={[
+          ['default', 'Theme default'],
+          ['condensed', 'Condensed'],
+          ['modern', 'Modern sans/mono'],
+        ]} />
+      </TweakRow>
+
+      <TweakRow label="Texture">
+        <Select value={String(tweaks.textureAmount)} onChange={v => setKey('textureAmount', Number(v))} options={[
+          ['0', 'Clean'],
+          ['1', 'Aged'],
+        ]} />
+      </TweakRow>
+
+      <div style={{
+        marginTop: 12, paddingTop: 10,
+        borderTop: '1px solid rgba(212,200,168,0.1)',
+        fontSize: 9, letterSpacing: 1, color: '#6a5e48',
+        fontStyle: 'italic',
+      }}>
+        Changes persist on reload.
+      </div>
+    </div>
+  );
+}
+
+function TweakRow({ label, children }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{
+        fontSize: 9, letterSpacing: 1.5, color: '#9a8e70',
+        textTransform: 'uppercase', marginBottom: 4,
+      }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function Select({ value, onChange, options }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{
+      width: '100%',
+      background: '#0a0907',
+      border: '1px solid rgba(212,200,168,0.2)',
+      color: '#d4c8a8',
+      padding: '6px 8px',
+      fontFamily: 'inherit', fontSize: 11,
+      cursor: 'pointer',
+    }}>
+      {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+    </select>
+  );
+}
+
+waitForGlobals(['THEMES', 'SCENARIOS', 'CHARACTERS', 'INITIAL_STATS', 'STAT_META', 'DeskScreen', 'DossierScreen', 'RedactedScreen', 'useGame', 'IOSDevice'], () => {
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+</script>
+</body>
+</html>

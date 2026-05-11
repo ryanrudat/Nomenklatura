@@ -29,13 +29,13 @@ struct StitchStatusBar: View {
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
                             .tracking(0.5)
                     }
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
                     .frame(width: 48, height: 32)
-                    .background(FiftiesColors.cardstock)
+                    .background(ColdWarTheme.shared.cardstock)
                     .cornerRadius(3)
                     .overlay(
                         RoundedRectangle(cornerRadius: 3)
-                            .stroke(FiftiesColors.leatherBrown.opacity(0.3), lineWidth: 1)
+                            .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.3), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -45,11 +45,11 @@ struct StitchStatusBar: View {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
                 Text(date.uppercased())
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -62,7 +62,7 @@ struct StitchStatusBar: View {
             } label: {
                 ZStack {
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(FiftiesColors.stampRed, lineWidth: 1.5)
+                        .stroke(ColdWarTheme.shared.sovietRed, lineWidth: 1.5)
                         .frame(width: 60, height: 20)
 
                     HStack(spacing: 3) {
@@ -72,7 +72,7 @@ struct StitchStatusBar: View {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 7, weight: .bold))
                     }
-                    .foregroundColor(FiftiesColors.stampRed)
+                    .foregroundColor(ColdWarTheme.shared.sovietRed)
                 }
                 .rotationEffect(.degrees(-2))
             }
@@ -88,13 +88,13 @@ struct StitchStatusBar: View {
                             .font(.system(size: 7, weight: .bold, design: .monospaced))
                             .tracking(0.5)
                     }
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
                     .frame(width: 44, height: 32)
-                    .background(FiftiesColors.cardstock)
+                    .background(ColdWarTheme.shared.cardstock)
                     .cornerRadius(3)
                     .overlay(
                         RoundedRectangle(cornerRadius: 3)
-                            .stroke(FiftiesColors.leatherBrown.opacity(0.3), lineWidth: 1)
+                            .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.3), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -105,15 +105,15 @@ struct StitchStatusBar: View {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(FiftiesColors.leatherBrown)
+                        .foregroundColor(ColdWarTheme.shared.leatherBrown)
 
                     if hasNotifications {
                         Circle()
-                            .fill(FiftiesColors.urgentRed)
+                            .fill(ColdWarTheme.shared.urgentRed)
                             .frame(width: 7, height: 7)
                             .overlay(
                                 Circle()
-                                    .stroke(FiftiesColors.agedPaper, lineWidth: 1)
+                                    .stroke(ColdWarTheme.shared.agedPaper, lineWidth: 1)
                             )
                             .offset(x: 2, y: -2)
                     }
@@ -124,7 +124,7 @@ struct StitchStatusBar: View {
         .padding(.vertical, 10)
         .background(
             ZStack {
-                FiftiesColors.agedPaper
+                ColdWarTheme.shared.agedPaper
                 // Subtle paper grain
                 Canvas { context, size in
                     for _ in 0..<15 {
@@ -134,14 +134,14 @@ struct StitchStatusBar: View {
                         var path = Path()
                         path.move(to: CGPoint(x: x, y: y))
                         path.addLine(to: CGPoint(x: x + length, y: y))
-                        context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.03)), lineWidth: 0.5)
+                        context.stroke(path, with: .color(ColdWarTheme.shared.inkBlack.opacity(0.03)), lineWidth: 0.5)
                     }
                 }
             }
         )
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(FiftiesColors.leatherBrown.opacity(0.2))
+                .fill(ColdWarTheme.shared.leatherBrown.opacity(0.2))
                 .frame(height: 1)
         }
     }
@@ -160,7 +160,7 @@ struct PlayerIDCard: View {
             // "OFFICIAL" watermark - period style
             Text("OFFICIAL")
                 .font(.system(size: 36, weight: .black, design: .serif))
-                .foregroundColor(FiftiesColors.typewriterInk.opacity(0.04))
+                .foregroundColor(ColdWarTheme.shared.inkBlack.opacity(0.04))
                 .rotationEffect(.degrees(-15))
                 .offset(x: 50, y: 5)
 
@@ -215,12 +215,12 @@ struct PlayerIDCard: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(playerName)
                                 .font(.system(size: 18, weight: .bold, design: .serif))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                             Text(title.uppercased())
                                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                                 .tracking(1)
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
                         }
 
                         Spacer()
@@ -235,17 +235,17 @@ struct PlayerIDCard: View {
                     HStack(spacing: 8) {
                         Text("CLEARANCE:")
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
 
                         Text("LEVEL \(clearanceLevel)")
                             .font(.system(size: 10, weight: .black, design: .monospaced))
-                            .foregroundColor(FiftiesColors.typewriterInk)
+                            .foregroundColor(ColdWarTheme.shared.inkBlack)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(FiftiesColors.agedPaper)
+                            .background(ColdWarTheme.shared.agedPaper)
                             .overlay(
                                 Rectangle()
-                                    .stroke(FiftiesColors.leatherBrown.opacity(0.3), lineWidth: 1)
+                                    .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.3), lineWidth: 1)
                             )
                     }
                 }
@@ -256,7 +256,7 @@ struct PlayerIDCard: View {
         .background(
             ZStack {
                 // Manila folder color
-                FiftiesColors.manillaFolder
+                ColdWarTheme.shared.manillaFolder
 
                 // Paper texture
                 Canvas { context, size in
@@ -267,7 +267,7 @@ struct PlayerIDCard: View {
                         var path = Path()
                         path.move(to: CGPoint(x: x, y: y))
                         path.addLine(to: CGPoint(x: x + length, y: y))
-                        context.stroke(path, with: .color(FiftiesColors.leatherBrown.opacity(0.08)), lineWidth: 0.5)
+                        context.stroke(path, with: .color(ColdWarTheme.shared.leatherBrown.opacity(0.08)), lineWidth: 0.5)
                     }
                 }
             }
@@ -275,7 +275,7 @@ struct PlayerIDCard: View {
         .cornerRadius(3)
         .overlay(
             RoundedRectangle(cornerRadius: 3)
-                .stroke(FiftiesColors.leatherBrown.opacity(0.25), lineWidth: 1)
+                .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.25), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.15), radius: 5, x: 1, y: 3)
     }
@@ -402,8 +402,8 @@ struct FiftiesStatWidget: View {
             switch self {
             case .positive: return Color(hex: "28A745")
             case .negative: return Color(hex: "CC7000")
-            case .neutral: return FiftiesColors.fadedInk
-            case .critical: return FiftiesColors.urgentRed
+            case .neutral: return ColdWarTheme.shared.inkGray
+            case .critical: return ColdWarTheme.shared.urgentRed
             }
         }
     }
@@ -416,7 +416,7 @@ struct FiftiesStatWidget: View {
                 // Icon in circle
                 ZStack {
                     Circle()
-                        .fill(FiftiesColors.agedPaper)
+                        .fill(ColdWarTheme.shared.agedPaper)
                         .frame(width: 32, height: 32)
 
                     Circle()
@@ -425,19 +425,19 @@ struct FiftiesStatWidget: View {
 
                     Image(systemName: icon)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(FiftiesColors.leatherBrown)
+                        .foregroundColor(ColdWarTheme.shared.leatherBrown)
                 }
 
                 // Value - typewriter style
                 Text(value)
                     .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundColor(status == .critical ? FiftiesColors.urgentRed : FiftiesColors.typewriterInk)
+                    .foregroundColor(status == .critical ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.inkBlack)
 
                 // Label
                 Text(label)
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
 
                 // Status indicator bar
                 Rectangle()
@@ -450,7 +450,7 @@ struct FiftiesStatWidget: View {
             .padding(.horizontal, 6)
             .background(
                 ZStack {
-                    FiftiesColors.agedPaper
+                    ColdWarTheme.shared.agedPaper
 
                     // Subtle texture
                     Canvas { context, size in
@@ -461,7 +461,7 @@ struct FiftiesStatWidget: View {
                             var path = Path()
                             path.move(to: CGPoint(x: x, y: y))
                             path.addLine(to: CGPoint(x: x + length, y: y))
-                            context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.02)), lineWidth: 0.5)
+                            context.stroke(path, with: .color(ColdWarTheme.shared.inkBlack.opacity(0.02)), lineWidth: 0.5)
                         }
                     }
                 }
@@ -469,7 +469,7 @@ struct FiftiesStatWidget: View {
             .cornerRadius(3)
             .overlay(
                 RoundedRectangle(cornerRadius: 3)
-                    .stroke(FiftiesColors.leatherBrown.opacity(0.15), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.15), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
         }
@@ -493,19 +493,19 @@ struct NewspaperPreviewCard: View {
                 Text(masthead.uppercased())
                     .font(.custom("Georgia-Bold", size: 22))
                     .tracking(-1)
-                    .foregroundColor(StitchColors.ink)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                 Spacer()
 
                 Text("SPECIAL EDITION")
                     .font(.system(size: 9, weight: .bold))
                     .tracking(1)
-                    .foregroundColor(StitchColors.inkLight)
+                    .foregroundColor(ColdWarTheme.shared.inkLight)
             }
             .padding(.bottom, 8)
 
             Rectangle()
-                .fill(StitchColors.ink)
+                .fill(ColdWarTheme.shared.inkBlack)
                 .frame(height: 2)
                 .padding(.bottom, 12)
 
@@ -515,7 +515,7 @@ struct NewspaperPreviewCard: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [StitchColors.ink.opacity(0.2), StitchColors.ink.opacity(0.4)],
+                            colors: [ColdWarTheme.shared.inkBlack.opacity(0.2), ColdWarTheme.shared.inkBlack.opacity(0.4)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -529,7 +529,7 @@ struct NewspaperPreviewCard: View {
                             HStack(spacing: 2) {
                                 ForEach(0..<8, id: \.self) { _ in
                                     Capsule()
-                                        .fill(StitchColors.ink.opacity(0.5))
+                                        .fill(ColdWarTheme.shared.inkBlack.opacity(0.5))
                                         .frame(width: CGFloat.random(in: 6...10), height: CGFloat.random(in: 20...35))
                                 }
                             }
@@ -544,12 +544,12 @@ struct NewspaperPreviewCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(headline.uppercased())
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(StitchColors.ink)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                         .lineLimit(2)
 
                     Text(brief)
                         .font(.custom("Georgia", size: 12))
-                        .foregroundColor(StitchColors.inkFaded)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                         .lineLimit(3)
                         .lineSpacing(2)
 
@@ -562,7 +562,7 @@ struct NewspaperPreviewCard: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(StitchColors.ink)
+                            .background(ColdWarTheme.shared.inkBlack)
                             .cornerRadius(2)
                     }
                     .buttonStyle(.plain)
@@ -574,7 +574,7 @@ struct NewspaperPreviewCard: View {
         .cornerRadius(4)
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(StitchColors.ink.opacity(0.15), lineWidth: 1)
+                .stroke(ColdWarTheme.shared.inkBlack.opacity(0.15), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
         .rotationEffect(.degrees(1))
@@ -587,16 +587,16 @@ struct PendingActionsHeader: View {
     var body: some View {
         HStack(spacing: 12) {
             Rectangle()
-                .fill(StitchColors.ink.opacity(0.2))
+                .fill(ColdWarTheme.shared.inkBlack.opacity(0.2))
                 .frame(height: 1)
 
             Text("PENDING ACTIONS")
                 .font(.system(size: 11, weight: .bold))
                 .tracking(3)
-                .foregroundColor(StitchColors.inkLight)
+                .foregroundColor(ColdWarTheme.shared.inkLight)
 
             Rectangle()
-                .fill(StitchColors.ink.opacity(0.2))
+                .fill(ColdWarTheme.shared.inkBlack.opacity(0.2))
                 .frame(height: 1)
         }
     }
@@ -618,13 +618,13 @@ struct PendingActionCard: View {
                 Text(category.uppercased())
                     .font(.system(size: 9, weight: .bold))
                     .tracking(0.5)
-                    .foregroundColor(isUrgent ? StitchColors.stampRed : StitchColors.inkFaded)
+                    .foregroundColor(isUrgent ? ColdWarTheme.shared.stampRed : ColdWarTheme.shared.inkGray)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(isUrgent ? StitchColors.stampRed.opacity(0.1) : StitchColors.ink.opacity(0.05))
+                    .background(isUrgent ? ColdWarTheme.shared.stampRed.opacity(0.1) : ColdWarTheme.shared.inkBlack.opacity(0.05))
                     .overlay(
                         RoundedRectangle(cornerRadius: 2)
-                            .stroke(isUrgent ? StitchColors.stampRed.opacity(0.2) : StitchColors.ink.opacity(0.1), lineWidth: 1)
+                            .stroke(isUrgent ? ColdWarTheme.shared.stampRed.opacity(0.2) : ColdWarTheme.shared.inkBlack.opacity(0.1), lineWidth: 1)
                     )
 
                 Spacer()
@@ -632,7 +632,7 @@ struct PendingActionCard: View {
                 if isUrgent {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(StitchColors.inkLight)
+                        .foregroundColor(ColdWarTheme.shared.inkLight)
                 }
             }
             .padding(.bottom, 8)
@@ -640,20 +640,20 @@ struct PendingActionCard: View {
             // Title
             Text(title)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundColor(StitchColors.ink)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
                 .padding(.bottom, 4)
 
             // Description
             Text(description)
                 .font(.system(size: 12))
-                .foregroundColor(StitchColors.inkFaded)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
                 .lineSpacing(2)
                 .padding(.bottom, 12)
 
             // Actions
             if let approve = onApprove, let deny = onDeny {
                 Rectangle()
-                    .fill(StitchColors.ink.opacity(0.1))
+                    .fill(ColdWarTheme.shared.inkBlack.opacity(0.1))
                     .frame(height: 1)
                     .padding(.bottom, 12)
 
@@ -661,10 +661,10 @@ struct PendingActionCard: View {
                     Button(action: deny) {
                         Text("DENY")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(StitchColors.ink)
+                            .foregroundColor(ColdWarTheme.shared.inkBlack)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(StitchColors.ink.opacity(0.08))
+                            .background(ColdWarTheme.shared.inkBlack.opacity(0.08))
                             .cornerRadius(2)
                     }
                     .buttonStyle(.plain)
@@ -679,7 +679,7 @@ struct PendingActionCard: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(StitchColors.ink)
+                        .background(ColdWarTheme.shared.inkBlack)
                         .cornerRadius(2)
                         .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
                     }
@@ -693,22 +693,22 @@ struct PendingActionCard: View {
                         Image(systemName: "arrow.right")
                             .font(.system(size: 10, weight: .bold))
                     }
-                    .foregroundColor(StitchColors.ink)
+                    .foregroundColor(ColdWarTheme.shared.inkBlack)
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(16)
-        .background(StitchColors.paper)
+        .background(ColdWarTheme.shared.parchment)
         .cornerRadius(4)
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(StitchColors.ink.opacity(0.1), lineWidth: 1)
+                .stroke(ColdWarTheme.shared.inkBlack.opacity(0.1), lineWidth: 1)
         )
         .overlay(alignment: .leading) {
             if isUrgent {
                 Rectangle()
-                    .fill(StitchColors.stampRed)
+                    .fill(ColdWarTheme.shared.stampRed)
                     .frame(width: 4)
                     .cornerRadius(4, corners: [.topLeft, .bottomLeft])
             }
@@ -727,12 +727,12 @@ struct StickyNoteFAB: View {
             VStack(spacing: 4) {
                 Image(systemName: "note.text")
                     .font(.system(size: 22))
-                    .foregroundColor(StitchColors.ink.opacity(0.8))
+                    .foregroundColor(ColdWarTheme.shared.inkBlack.opacity(0.8))
 
                 Text("NOTES")
                     .font(.system(size: 7, weight: .bold))
                     .tracking(1)
-                    .foregroundColor(StitchColors.ink.opacity(0.6))
+                    .foregroundColor(ColdWarTheme.shared.inkBlack.opacity(0.6))
             }
             .frame(width: 52, height: 64)
             .background(
@@ -745,7 +745,7 @@ struct StickyNoteFAB: View {
             .clipShape(StickyNoteShape())
             .overlay(
                 StickyNoteShape()
-                    .stroke(StitchColors.ink.opacity(0.15), lineWidth: 1)
+                    .stroke(ColdWarTheme.shared.inkBlack.opacity(0.15), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
         }
@@ -850,18 +850,18 @@ struct StitchBottomTabBar: View {
                         ZStack {
                             if selectedTab == tab {
                                 Circle()
-                                    .fill(StitchColors.inkFaded)
+                                    .fill(ColdWarTheme.shared.inkGray)
                                     .frame(width: 40, height: 40)
                             }
 
                             Image(systemName: tab.icon)
                                 .font(.system(size: 22))
-                                .foregroundColor(selectedTab == tab ? .white : StitchColors.inkLight)
+                                .foregroundColor(selectedTab == tab ? .white : ColdWarTheme.shared.inkLight)
                         }
 
                         Text(tab.rawValue)
                             .font(.system(size: 10, weight: selectedTab == tab ? .bold : .medium))
-                            .foregroundColor(selectedTab == tab ? StitchColors.lightText : StitchColors.inkLight)
+                            .foregroundColor(selectedTab == tab ? ColdWarTheme.shared.schemeText : ColdWarTheme.shared.inkLight)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -874,7 +874,7 @@ struct StitchBottomTabBar: View {
         .background(Color(hex: "1C1917"))
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(StitchColors.ink.opacity(0.3))
+                .fill(ColdWarTheme.shared.inkBlack.opacity(0.3))
                 .frame(height: 1)
         }
         .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: -4)
@@ -905,11 +905,11 @@ struct EndTurnConfirmationSheet: View {
                     Text("END TURN \(game.turnNumber)")
                         .font(.system(size: 14, weight: .black, design: .monospaced))
                         .tracking(1)
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                     Text("Proceed to personal actions?")
                         .font(.system(size: 12, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
 
                 Spacer()
@@ -918,11 +918,11 @@ struct EndTurnConfirmationSheet: View {
                 if hasUrgentItems {
                     Image(systemName: hasCriticalItems ? "exclamationmark.triangle.fill" : "exclamationmark.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(hasCriticalItems ? FiftiesColors.urgentRed : .orange)
+                        .foregroundColor(hasCriticalItems ? ColdWarTheme.shared.urgentRed : .orange)
                 }
             }
             .padding()
-            .background(FiftiesColors.cardstock)
+            .background(ColdWarTheme.shared.cardstock)
 
             Divider()
 
@@ -932,46 +932,46 @@ struct EndTurnConfirmationSheet: View {
                     HStack(spacing: 6) {
                         Image(systemName: "doc.text.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(FiftiesColors.urgentRed)
+                            .foregroundColor(ColdWarTheme.shared.urgentRed)
                         Text("UNRESOLVED DOCUMENTS")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .tracking(1)
-                            .foregroundColor(FiftiesColors.urgentRed)
+                            .foregroundColor(ColdWarTheme.shared.urgentRed)
                     }
 
                     Text("Failing to act on these documents will have consequences:")
                         .font(.system(size: 11, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
 
                     // List pending documents
                     ForEach(pendingDocuments.prefix(4), id: \.id) { doc in
                         HStack(spacing: 8) {
                             Circle()
-                                .fill(doc.urgencyEnum >= .urgent ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+                                .fill(doc.urgencyEnum >= .urgent ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.leatherBrown)
                                 .frame(width: 6, height: 6)
 
                             Text(doc.title)
                                 .font(.system(size: 11, weight: .medium, design: .serif))
-                                .foregroundColor(FiftiesColors.typewriterInk)
+                                .foregroundColor(ColdWarTheme.shared.inkBlack)
                                 .lineLimit(1)
 
                             Spacer()
 
                             Text(doc.urgencyEnum.rawValue.uppercased())
                                 .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                .foregroundColor(doc.urgencyEnum >= .urgent ? FiftiesColors.urgentRed : FiftiesColors.fadedInk)
+                                .foregroundColor(doc.urgencyEnum >= .urgent ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.inkGray)
                         }
                     }
 
                     if pendingDocuments.count > 4 {
                         Text("...and \(pendingDocuments.count - 4) more")
                             .font(.system(size: 10, design: .serif))
-                            .foregroundColor(FiftiesColors.fadedInk)
+                            .foregroundColor(ColdWarTheme.shared.inkGray)
                             .italic()
                     }
                 }
                 .padding()
-                .background(FiftiesColors.agedPaper.opacity(0.5))
+                .background(ColdWarTheme.shared.agedPaper.opacity(0.5))
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
@@ -980,7 +980,7 @@ struct EndTurnConfirmationSheet: View {
 
                     Text("All documents processed")
                         .font(.system(size: 12, weight: .medium, design: .serif))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
                 .padding(.vertical, 24)
             }
@@ -995,12 +995,12 @@ struct EndTurnConfirmationSheet: View {
                     Text("RETURN TO DESK")
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                         .tracking(1)
-                        .foregroundColor(FiftiesColors.leatherBrown)
+                        .foregroundColor(ColdWarTheme.shared.leatherBrown)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 3)
-                                .stroke(FiftiesColors.leatherBrown, lineWidth: 1.5)
+                                .stroke(ColdWarTheme.shared.leatherBrown, lineWidth: 1.5)
                         )
                 }
                 .buttonStyle(.plain)
@@ -1020,15 +1020,15 @@ struct EndTurnConfirmationSheet: View {
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(hasUrgentItems ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+                            .fill(hasUrgentItems ? ColdWarTheme.shared.urgentRed : ColdWarTheme.shared.leatherBrown)
                     )
                 }
                 .buttonStyle(.plain)
             }
             .padding()
-            .background(FiftiesColors.cardstock)
+            .background(ColdWarTheme.shared.cardstock)
         }
-        .background(FiftiesColors.agedPaper)
+        .background(ColdWarTheme.shared.agedPaper)
     }
 }
 

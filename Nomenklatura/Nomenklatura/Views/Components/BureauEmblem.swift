@@ -336,7 +336,7 @@ struct CircularGauge: View {
             // Label
             Text(label.uppercased())
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
-                .foregroundColor(FiftiesColors.carbonCopy)
+                .foregroundColor(ColdWarTheme.shared.carbonCopy)
         }
     }
 }
@@ -376,5 +376,5 @@ struct CircularGauge: View {
         }
     }
     .padding()
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }

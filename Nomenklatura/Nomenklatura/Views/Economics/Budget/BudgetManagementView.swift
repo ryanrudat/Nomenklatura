@@ -68,19 +68,19 @@ struct BudgetManagementView: View {
                     Text("\(report.netChange > 0 ? "+" : "")\(report.netChange)")
                         .font(.system(size: 22, weight: .bold, design: .monospaced))
                 }
-                .foregroundColor(report.netChange >= 0 ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                .foregroundColor(report.netChange >= 0 ? theme.approvedGreen : theme.sovietRed)
             }
 
             HStack(spacing: 0) {
-                summaryCell(value: "\(report.totalIncome)", label: "INCOME", color: FiftiesColors.approvedGreen)
+                summaryCell(value: "\(report.totalIncome)", label: "INCOME", color: theme.approvedGreen)
                 summaryDivider
-                summaryCell(value: "\(report.totalExpenses)", label: "EXPENSES", color: FiftiesColors.stampRed)
+                summaryCell(value: "\(report.totalExpenses)", label: "EXPENSES", color: theme.sovietRed)
                 summaryDivider
                 summaryCell(value: "\(game.treasury)", label: "TREASURY", color: theme.accentGold)
             }
         }
         .padding(12)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .cornerRadius(6)
         .overlay(
             RoundedRectangle(cornerRadius: 6)
@@ -92,7 +92,7 @@ struct BudgetManagementView: View {
 
     private var incomeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("INCOME SOURCES", icon: "arrow.down.circle.fill", color: FiftiesColors.approvedGreen)
+            sectionLabel("INCOME SOURCES", icon: "arrow.down.circle.fill", color: theme.approvedGreen)
 
             VStack(spacing: 0) {
                 budgetRow(label: "Domestic Production", value: report.domesticProduction, isIncome: true)
@@ -113,12 +113,12 @@ struct BudgetManagementView: View {
                     Spacer()
                     Text("+\(report.totalIncome)")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.approvedGreen)
+                        .foregroundColor(theme.approvedGreen)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
             }
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .cornerRadius(6)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
@@ -131,7 +131,7 @@ struct BudgetManagementView: View {
 
     private var expenseSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("EXPENDITURES", icon: "arrow.up.circle.fill", color: FiftiesColors.stampRed)
+            sectionLabel("EXPENDITURES", icon: "arrow.up.circle.fill", color: theme.sovietRed)
 
             VStack(spacing: 0) {
                 budgetRow(label: "Military Spending", value: report.militarySpending, isIncome: false)
@@ -159,12 +159,12 @@ struct BudgetManagementView: View {
                     Spacer()
                     Text("-\(report.totalExpenses)")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.stampRed)
+                        .foregroundColor(theme.sovietRed)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
             }
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .cornerRadius(6)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
@@ -189,7 +189,7 @@ struct BudgetManagementView: View {
                 priorityRow(key: "infrastructure", label: "INFRASTRUCTURE", icon: "road.lanes")
                 priorityRow(key: "reserve", label: "STRATEGIC RESERVE", icon: "lock.fill")
             }
-            .background(FiftiesColors.cardstock)
+            .background(theme.cardstock)
             .cornerRadius(6)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
@@ -203,7 +203,7 @@ struct BudgetManagementView: View {
                 Text("TOTAL: \(total)%")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .tracking(0.5)
-                    .foregroundColor(total == 100 ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                    .foregroundColor(total == 100 ? theme.approvedGreen : theme.sovietRed)
             }
         }
     }
@@ -250,7 +250,7 @@ struct BudgetManagementView: View {
                 Spacer()
                 Text("\(isIncome ? "+" : "-")\(value)")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(isIncome ? FiftiesColors.approvedGreen : FiftiesColors.stampRed)
+                    .foregroundColor(isIncome ? theme.approvedGreen : theme.sovietRed)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -283,7 +283,7 @@ struct BudgetManagementView: View {
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 28, height: 28)
-                            .background(FiftiesColors.stampRed)
+                            .background(theme.sovietRed)
                             .cornerRadius(4)
                     }
                     .buttonStyle(.plain)
@@ -301,7 +301,7 @@ struct BudgetManagementView: View {
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 28, height: 28)
-                            .background(FiftiesColors.approvedGreen)
+                            .background(theme.approvedGreen)
                             .cornerRadius(4)
                     }
                     .buttonStyle(.plain)

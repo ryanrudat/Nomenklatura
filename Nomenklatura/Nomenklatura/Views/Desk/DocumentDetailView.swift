@@ -122,13 +122,13 @@ struct DocumentDetailView: View {
                         Text(classification)
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
                             .tracking(1)
-                            .foregroundColor(FiftiesColors.urgentRed)
+                            .foregroundColor(theme.urgentRed)
                     }
 
                     // Date
                     Text("DATE: \(formattedDate)")
                         .font(.system(size: 9, weight: .medium, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                 }
 
                 Spacer()
@@ -148,14 +148,14 @@ struct DocumentDetailView: View {
             // Typewriter divider
             Text(String(repeating: "=", count: 45))
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.3))
+                .foregroundColor(theme.inkGray.opacity(0.3))
                 .padding(.bottom, 12)
 
             // Header text (TO/FROM/RE format)
             if let header = document.headerText {
                 Text(header)
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(theme.inkGray)
                     .padding(.bottom, 8)
             }
 
@@ -164,7 +164,7 @@ struct DocumentDetailView: View {
                 HStack(spacing: 6) {
                     Text("FROM:")
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
 
                     TappableName(name: document.sender, game: game)
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
@@ -173,7 +173,7 @@ struct DocumentDetailView: View {
                 if let title = document.senderTitle {
                     Text(title.uppercased())
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                         .padding(.leading, 48)
                 }
             }
@@ -182,13 +182,13 @@ struct DocumentDetailView: View {
             // Divider
             Text(String(repeating: "-", count: 50))
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(FiftiesColors.fadedInk.opacity(0.3))
+                .foregroundColor(theme.inkGray.opacity(0.3))
                 .padding(.bottom, 12)
 
             // Title
             Text(document.title)
                 .font(.system(size: 14, weight: .bold, design: .serif))
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(theme.inkBlack)
                 .padding(.bottom, 10)
 
             // Body text with clickable names - apply redaction for classified docs if player lacks clearance
@@ -199,7 +199,7 @@ struct DocumentDetailView: View {
                         text: redactedBodyText,
                         game: game,
                         font: .system(size: 13, design: .serif),
-                        color: FiftiesColors.typewriterInk,
+                        color: theme.inkBlack,
                         lineSpacing: 6
                     )
 
@@ -210,7 +210,7 @@ struct DocumentDetailView: View {
                         Text("Some details redacted - higher clearance required")
                             .font(.system(size: 9, design: .monospaced))
                     }
-                    .foregroundColor(FiftiesColors.stampRed.opacity(0.7))
+                    .foregroundColor(theme.sovietRed.opacity(0.7))
                     .padding(.top, 8)
                 }
             } else {
@@ -218,7 +218,7 @@ struct DocumentDetailView: View {
                     text: document.bodyText,
                     game: game,
                     font: .system(size: 13, design: .serif),
-                    color: FiftiesColors.typewriterInk,
+                    color: theme.inkBlack,
                     lineSpacing: 6
                 )
             }
@@ -227,14 +227,14 @@ struct DocumentDetailView: View {
             if let footnote = document.footnoteText {
                 VStack(alignment: .leading, spacing: 4) {
                     Rectangle()
-                        .fill(FiftiesColors.fadedInk.opacity(0.2))
+                        .fill(theme.inkGray.opacity(0.2))
                         .frame(height: 1)
                         .padding(.vertical, 8)
 
                     Text(footnote)
                         .font(.system(size: 11, design: document.isHandwritten ? .serif : .monospaced))
                         .italic()
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                 }
             }
 
@@ -248,7 +248,7 @@ struct DocumentDetailView: View {
         .background(documentBackground)
         .overlay(
             Rectangle()
-                .stroke(FiftiesColors.leatherBrown.opacity(0.2), lineWidth: 1)
+                .stroke(theme.leatherBrown.opacity(0.2), lineWidth: 1)
         )
         .modifier(CharacterSheetOverlayModifier(game: game))
         .shadow(color: .black.opacity(0.12), radius: 4, x: 2, y: 3)
@@ -271,11 +271,11 @@ struct DocumentDetailView: View {
 
             Spacer()
         }
-        .foregroundColor(remaining == 0 ? FiftiesColors.urgentRed : FiftiesColors.leatherBrown)
+        .foregroundColor(remaining == 0 ? theme.urgentRed : theme.leatherBrown)
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(remaining == 0 ? FiftiesColors.urgentRed.opacity(0.1) : FiftiesColors.leatherBrown.opacity(0.08))
+                .fill(remaining == 0 ? theme.urgentRed.opacity(0.1) : theme.leatherBrown.opacity(0.08))
         )
         .padding(.top, 12)
     }
@@ -311,7 +311,7 @@ struct DocumentDetailView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(FiftiesColors.stampRed)
+                    .background(theme.sovietRed)
                     .cornerRadius(4)
             }
             .buttonStyle(.plain)
@@ -337,12 +337,12 @@ struct DocumentDetailView: View {
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
                             .tracking(1)
                     }
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(theme.leatherBrown)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(FiftiesColors.leatherBrown, lineWidth: 1)
+                            .stroke(theme.leatherBrown, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -362,7 +362,7 @@ struct DocumentDetailView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(FiftiesColors.leatherBrown)
+                    .background(theme.leatherBrown)
                     .cornerRadius(4)
                 }
                 .buttonStyle(.plain)
@@ -412,18 +412,18 @@ struct DocumentDetailView: View {
     private var stripeColor: Color {
         switch document.urgencyEnum {
         case .critical, .urgent:
-            return FiftiesColors.urgentRed
+            return theme.urgentRed
         case .priority:
-            return FiftiesColors.leatherBrown
+            return theme.leatherBrown
         case .routine:
-            return FiftiesColors.fadedInk
+            return theme.inkGray
         }
     }
 
     @ViewBuilder
     private var documentBackground: some View {
         ZStack {
-            FiftiesColors.agedPaper
+            theme.agedPaper
 
             // Paper texture
             Canvas { context, size in
@@ -434,13 +434,13 @@ struct DocumentDetailView: View {
                     var path = Path()
                     path.move(to: CGPoint(x: x, y: y))
                     path.addLine(to: CGPoint(x: x + length, y: y))
-                    context.stroke(path, with: .color(FiftiesColors.typewriterInk.opacity(0.025)), lineWidth: 0.5)
+                    context.stroke(path, with: .color(theme.inkBlack.opacity(0.025)), lineWidth: 0.5)
                 }
             }
 
             // Aging gradient
             LinearGradient(
-                colors: [FiftiesColors.leatherBrown.opacity(0.06), Color.clear, FiftiesColors.leatherBrown.opacity(0.04)],
+                colors: [theme.leatherBrown.opacity(0.06), Color.clear, theme.leatherBrown.opacity(0.04)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -461,12 +461,12 @@ struct DocumentOptionCardView: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? FiftiesColors.stampRed : FiftiesColors.fadedInk, lineWidth: 1.5)
+                        .stroke(isSelected ? ColdWarTheme.shared.sovietRed : ColdWarTheme.shared.inkGray, lineWidth: 1.5)
                         .frame(width: 20, height: 20)
 
                     if isSelected {
                         Circle()
-                            .fill(FiftiesColors.stampRed)
+                            .fill(ColdWarTheme.shared.sovietRed)
                             .frame(width: 12, height: 12)
                     }
                 }
@@ -475,7 +475,7 @@ struct DocumentOptionCardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(option.text)
                         .font(.system(size: 12, design: .serif))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                         .multilineTextAlignment(.leading)
 
                     // Effects preview and archetype indicator
@@ -509,11 +509,11 @@ struct DocumentOptionCardView: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(isSelected ? FiftiesColors.stampRed.opacity(0.08) : FiftiesColors.agedPaper)
+                    .fill(isSelected ? ColdWarTheme.shared.sovietRed.opacity(0.08) : ColdWarTheme.shared.agedPaper)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(isSelected ? FiftiesColors.stampRed : FiftiesColors.leatherBrown.opacity(0.2), lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? ColdWarTheme.shared.sovietRed : ColdWarTheme.shared.leatherBrown.opacity(0.2), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)

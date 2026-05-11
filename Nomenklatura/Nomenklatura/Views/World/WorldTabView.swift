@@ -580,7 +580,7 @@ struct InternationalEconomyView: View {
             HStack(spacing: 8) {
                 Image(systemName: "building.2.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(FiftiesColors.brassGold)
+                    .foregroundColor(theme.bronzeGold)
 
                 Text("GOSPLAN COMMAND CENTER")
                     .font(.system(size: 13, weight: .black, design: .monospaced))
@@ -597,15 +597,15 @@ struct InternationalEconomyView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
-        .background(FiftiesColors.cardstock)
+        .background(theme.cardstock)
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(FiftiesColors.brassGold.opacity(0.6), lineWidth: 1)
+                .stroke(theme.bronzeGold.opacity(0.6), lineWidth: 1)
         )
         .overlay(
             Rectangle()
-                .fill(FiftiesColors.brassGold)
+                .fill(theme.bronzeGold)
                 .frame(width: 4),
             alignment: .leading
         )
@@ -736,7 +736,7 @@ struct ForeignEconomyRow: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(FiftiesColors.stampRed)
+                        .background(theme.sovietRed)
                         .cornerRadius(3)
                 }
             }

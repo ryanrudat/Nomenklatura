@@ -141,7 +141,7 @@ extension DeskView {
             // Explanation
             Text("All documents processed for this turn.")
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(FiftiesColors.leatherBrown.opacity(0.7))
+                .foregroundColor(ColdWarTheme.shared.leatherBrown.opacity(0.7))
                 .multilineTextAlignment(.center)
 
             // End Turn button styled like 1950s office
@@ -160,7 +160,7 @@ extension DeskView {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(FiftiesColors.leatherBrown)
+                        .fill(ColdWarTheme.shared.leatherBrown)
                 )
                 .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
             }
@@ -170,10 +170,10 @@ extension DeskView {
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(FiftiesColors.agedPaper.opacity(0.5))
+                .fill(ColdWarTheme.shared.agedPaper.opacity(0.5))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(FiftiesColors.leatherBrown.opacity(0.2), lineWidth: 1)
+                        .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.2), lineWidth: 1)
                 )
         )
     }
@@ -189,19 +189,19 @@ extension DeskView {
                 Text("TREASURY BRIEFING")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.leatherBrown)
+                    .foregroundColor(ColdWarTheme.shared.leatherBrown)
 
                 Spacer()
 
                 Text("LAST TURN")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
                     .background(
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(FiftiesColors.manillaFolder.opacity(0.6))
+                            .fill(ColdWarTheme.shared.manillaFolder.opacity(0.6))
                     )
             }
 
@@ -210,30 +210,30 @@ extension DeskView {
                     Text("NET")
                         .font(.system(size: 8, weight: .bold, design: .monospaced))
                         .tracking(1)
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                     Text(signedValue(report.netChange))
                         .font(.system(size: 17, weight: .bold, design: .monospaced))
                         .foregroundColor(colorForDelta(report.netChange))
                 }
 
                 Rectangle()
-                    .fill(FiftiesColors.leatherBrown.opacity(0.2))
+                    .fill(ColdWarTheme.shared.leatherBrown.opacity(0.2))
                     .frame(width: 1, height: 28)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("CURRENT TREASURY")
                         .font(.system(size: 8, weight: .bold, design: .monospaced))
                         .tracking(1)
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                     Text("\(game.treasury)")
                         .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
                 }
             }
 
             if !primaryLines.isEmpty {
                 Rectangle()
-                    .fill(FiftiesColors.leatherBrown.opacity(0.15))
+                    .fill(ColdWarTheme.shared.leatherBrown.opacity(0.15))
                     .frame(height: 1)
 
                 VStack(spacing: 4) {
@@ -241,7 +241,7 @@ extension DeskView {
                         HStack(spacing: 8) {
                             Text(line.0)
                                 .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                .foregroundColor(FiftiesColors.fadedInk)
+                                .foregroundColor(ColdWarTheme.shared.inkGray)
                                 .lineLimit(1)
                             Spacer(minLength: 8)
                             Text(signedValue(line.1))
@@ -256,10 +256,10 @@ extension DeskView {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(FiftiesColors.agedPaper.opacity(0.92))
+                .fill(ColdWarTheme.shared.agedPaper.opacity(0.92))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(FiftiesColors.leatherBrown.opacity(0.22), lineWidth: 1)
+                        .stroke(ColdWarTheme.shared.leatherBrown.opacity(0.22), lineWidth: 1)
                 )
         )
     }
@@ -270,9 +270,9 @@ extension DeskView {
     }
 
     func colorForDelta(_ value: Int) -> Color {
-        if value > 0 { return FiftiesColors.approvedGreen }
-        if value < 0 { return FiftiesColors.urgentRed }
-        return FiftiesColors.fadedInk
+        if value > 0 { return ColdWarTheme.shared.approvedGreen }
+        if value < 0 { return ColdWarTheme.shared.urgentRed }
+        return ColdWarTheme.shared.inkGray
     }
 
 }

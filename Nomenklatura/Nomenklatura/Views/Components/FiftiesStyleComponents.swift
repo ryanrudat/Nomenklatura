@@ -172,15 +172,15 @@ struct RubberStamp: View {
 
         var color: Color {
             switch self {
-            case .urgent: return FiftiesColors.urgentRed
-            case .classified: return FiftiesColors.stampRed
-            case .confidential: return FiftiesColors.stampRedDark
-            case .topSecret: return FiftiesColors.stampRedDark
-            case .approved: return FiftiesColors.approvedGreen
-            case .denied: return FiftiesColors.deniedRed
-            case .executed: return FiftiesColors.stampRedDark
-            case .restricted: return FiftiesColors.stampRed
-            case .priority: return FiftiesColors.urgentRed
+            case .urgent: return ColdWarTheme.shared.urgentRed
+            case .classified: return ColdWarTheme.shared.sovietRed
+            case .confidential: return ColdWarTheme.shared.stampRedDark
+            case .topSecret: return ColdWarTheme.shared.stampRedDark
+            case .approved: return ColdWarTheme.shared.approvedGreen
+            case .denied: return ColdWarTheme.shared.stampRedDark
+            case .executed: return ColdWarTheme.shared.stampRedDark
+            case .restricted: return ColdWarTheme.shared.sovietRed
+            case .priority: return ColdWarTheme.shared.urgentRed
             case .custom(let color): return color
             }
         }
@@ -248,7 +248,7 @@ struct StampDistressOverlay: View {
                 ForEach(0..<Int(geo.size.height / 4), id: \.self) { j in
                     if Bool.random() && Bool.random() {
                         Circle()
-                            .fill(FiftiesColors.agedPaper)
+                            .fill(ColdWarTheme.shared.agedPaper)
                             .frame(width: CGFloat.random(in: 1...3), height: CGFloat.random(in: 1...3))
                             .position(
                                 x: CGFloat(i) * 8 + CGFloat.random(in: -2...2),
@@ -269,7 +269,7 @@ struct CircularSeal: View {
     let text: String
     var innerText: String? = nil
     var date: String? = nil
-    var color: Color = FiftiesColors.stampRed
+    var color: Color = ColdWarTheme.shared.sovietRed
     var size: CGFloat = 60
     var rotation: Double = -8
 
@@ -305,7 +305,7 @@ struct CircularSeal: View {
 
             // Distress overlay
             Circle()
-                .fill(FiftiesColors.agedPaper)
+                .fill(ColdWarTheme.shared.agedPaper)
                 .frame(width: size, height: size)
                 .mask(
                     StampDistressOverlay(color: color)
@@ -379,7 +379,7 @@ struct TypewriterDocument: View {
                 if let docNum = documentNumber {
                     Text(docNum)
                         .font(.custom("AmericanTypewriter", size: 10))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(theme.inkGray)
                 }
             }
             .padding(.horizontal, 20)
@@ -389,7 +389,7 @@ struct TypewriterDocument: View {
             if let date = date {
                 Text(date)
                     .font(.custom("AmericanTypewriter", size: 11))
-                    .foregroundColor(FiftiesColors.typewriterInk)
+                    .foregroundColor(theme.inkBlack)
                     .padding(.horizontal, 20)
             }
 
@@ -397,7 +397,7 @@ struct TypewriterDocument: View {
             Text(title.uppercased())
                 .font(.custom("AmericanTypewriter", size: 16))
                 .fontWeight(.bold)
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(theme.inkBlack)
                 .tracking(1)
                 .padding(.horizontal, 20)
 
@@ -405,13 +405,13 @@ struct TypewriterDocument: View {
             if let subtitle = subtitle {
                 Text(subtitle)
                     .font(.custom("AmericanTypewriter", size: 12))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(theme.inkGray)
                     .padding(.horizontal, 20)
             }
 
             // Divider line (typewriter style)
             Rectangle()
-                .fill(FiftiesColors.typewriterInk)
+                .fill(theme.inkBlack)
                 .frame(height: 1)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
@@ -424,7 +424,7 @@ struct TypewriterPaper: View {
     var body: some View {
         ZStack {
             // Base paper color
-            FiftiesColors.agedPaper
+            ColdWarTheme.shared.agedPaper
 
             // Horizontal typing guide lines (faint)
             GeometryReader { geo in
@@ -492,7 +492,7 @@ struct StatDisplayBox: View {
     let label: String
     let value: String
     var icon: String? = nil
-    var valueColor: Color = FiftiesColors.typewriterInk
+    var valueColor: Color = ColdWarTheme.shared.inkBlack
     var status: StatStatus = .neutral
 
     enum StatStatus {
@@ -503,16 +503,16 @@ struct StatDisplayBox: View {
             case .positive: return Color(hex: "D4EDDA").opacity(0.3)
             case .negative: return Color(hex: "F8D7DA").opacity(0.3)
             case .critical: return Color(hex: "F8D7DA").opacity(0.5)
-            case .neutral: return FiftiesColors.cardstock
+            case .neutral: return ColdWarTheme.shared.cardstock
             }
         }
 
         var accentColor: Color {
             switch self {
             case .positive: return Color(hex: "28A745")
-            case .negative: return FiftiesColors.stampRed
-            case .critical: return FiftiesColors.urgentRed
-            case .neutral: return FiftiesColors.typewriterInk
+            case .negative: return ColdWarTheme.shared.sovietRed
+            case .critical: return ColdWarTheme.shared.urgentRed
+            case .neutral: return ColdWarTheme.shared.inkBlack
             }
         }
     }
@@ -524,13 +524,13 @@ struct StatDisplayBox: View {
                 if let icon = icon {
                     Image(systemName: icon)
                         .font(.system(size: 10))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
                 Text(label.uppercased())
                     .font(.system(size: 9, weight: .semibold, design: .default))
                     .fontWeight(.semibold)
                     .tracking(1)
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
             }
 
             // Value
@@ -571,16 +571,16 @@ struct StatChangeBadge: View {
                 .font(.system(size: 8, weight: .semibold, design: .default))
                 .fontWeight(.semibold)
                 .tracking(0.5)
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
 
             Text(change >= 0 ? "+\(change)" : "\(change)")
                 .font(.custom("AmericanTypewriter", size: 16))
                 .fontWeight(.bold)
-                .foregroundColor(change >= 0 ? Color(hex: "28A745") : FiftiesColors.stampRed)
+                .foregroundColor(change >= 0 ? Color(hex: "28A745") : ColdWarTheme.shared.sovietRed)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(FiftiesColors.cardstock)
+        .background(ColdWarTheme.shared.cardstock)
         .overlay(
             Rectangle()
                 .stroke(Color(hex: "D4C9B0"), lineWidth: 1)
@@ -644,7 +644,7 @@ struct FiftiesDossierPhoto: View {
                 VStack {
                     HStack {
                         Triangle()
-                            .fill(FiftiesColors.agedPaper.opacity(0.3))
+                            .fill(ColdWarTheme.shared.agedPaper.opacity(0.3))
                             .frame(width: 8, height: 8)
                         Spacer()
                     }
@@ -658,7 +658,7 @@ struct FiftiesDossierPhoto: View {
             if let title = title {
                 Text(title)
                     .font(.custom("AmericanTypewriter", size: 8))
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
                     .lineLimit(1)
                     .frame(width: size)
                     .padding(.top, 4)
@@ -708,7 +708,7 @@ struct Staple: View {
         ZStack {
             // Staple body
             RoundedRectangle(cornerRadius: 1)
-                .fill(FiftiesColors.steelGray)
+                .fill(ColdWarTheme.shared.steelGray)
                 .frame(width: 12, height: 4)
 
             // Highlight
@@ -727,7 +727,7 @@ struct Staple: View {
 struct FileTab: View {
     let text: String
     var isActive: Bool = true
-    var color: Color = FiftiesColors.manillaFolder
+    var color: Color = ColdWarTheme.shared.manillaFolder
 
     var body: some View {
         ZStack {
@@ -746,7 +746,7 @@ struct FileTab: View {
                 .font(.system(size: 10, weight: .semibold, design: .default))
                 .fontWeight(.semibold)
                 .tracking(1)
-                .foregroundColor(isActive ? FiftiesColors.leatherBrown : FiftiesColors.fadedInk)
+                .foregroundColor(isActive ? ColdWarTheme.shared.leatherBrown : ColdWarTheme.shared.inkGray)
                 .padding(.horizontal, 12)
         }
         .overlay(
@@ -784,8 +784,8 @@ struct CharacterQuoteCard: View {
         var color: Color {
             switch self {
             case .positive: return Color(hex: "28A745")
-            case .negative: return FiftiesColors.stampRed
-            case .neutral: return FiftiesColors.fadedInk
+            case .negative: return ColdWarTheme.shared.sovietRed
+            case .neutral: return ColdWarTheme.shared.inkGray
             }
         }
     }
@@ -824,7 +824,7 @@ struct CharacterQuoteCard: View {
                         .font(.system(size: 11, weight: .bold, design: .default))
                         .fontWeight(.bold)
                         .tracking(0.5)
-                        .foregroundColor(FiftiesColors.typewriterInk)
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
 
                     Spacer()
 
@@ -837,12 +837,12 @@ struct CharacterQuoteCard: View {
                 Text("\"\(quote)\"")
                     .font(.custom("AmericanTypewriter", size: 12))
                     .italic()
-                    .foregroundColor(FiftiesColors.fadedInk)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
                     .lineLimit(3)
             }
         }
         .padding(12)
-        .background(FiftiesColors.cardstock)
+        .background(ColdWarTheme.shared.cardstock)
         .overlay(
             Rectangle()
                 .stroke(Color(hex: "D4C9B0"), lineWidth: 1)
@@ -881,7 +881,7 @@ struct BriefingPaperHeader: View {
                 if let docId = documentId {
                     Text(docId)
                         .font(.custom("AmericanTypewriter", size: 9))
-                        .foregroundColor(FiftiesColors.fadedInk)
+                        .foregroundColor(ColdWarTheme.shared.inkGray)
                 }
             }
             .padding(.bottom, 12)
@@ -899,25 +899,25 @@ struct BriefingPaperHeader: View {
 
             // Divider
             Rectangle()
-                .fill(FiftiesColors.typewriterInk)
+                .fill(ColdWarTheme.shared.inkBlack)
                 .frame(height: 2)
                 .padding(.top, 12)
         }
         .padding(16)
-        .background(FiftiesColors.agedPaper)
+        .background(ColdWarTheme.shared.agedPaper)
     }
 
     private func headerField(label: String, value: String, bold: Bool = false) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(label)
                 .font(.custom("AmericanTypewriter", size: 11))
-                .foregroundColor(FiftiesColors.fadedInk)
+                .foregroundColor(ColdWarTheme.shared.inkGray)
                 .frame(width: 60, alignment: .leading)
 
             Text(value)
                 .font(.custom("AmericanTypewriter", size: 11))
                 .fontWeight(bold ? .bold : .regular)
-                .foregroundColor(FiftiesColors.typewriterInk)
+                .foregroundColor(ColdWarTheme.shared.inkBlack)
         }
     }
 }
@@ -938,9 +938,9 @@ struct FiftiesButton: View {
 
         var backgroundColor: Color {
             switch self {
-            case .primary: return FiftiesColors.stampRed
-            case .secondary: return FiftiesColors.steelGray
-            case .danger: return FiftiesColors.stampRedDark
+            case .primary: return ColdWarTheme.shared.sovietRed
+            case .secondary: return ColdWarTheme.shared.steelGray
+            case .danger: return ColdWarTheme.shared.stampRedDark
             }
         }
     }
@@ -982,7 +982,7 @@ struct FiftiesButton: View {
         RubberStamp(text: "APPROVED", stampType: .approved, rotation: -5)
     }
     .padding(40)
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }
 
 #Preview("Stat Displays") {
@@ -992,7 +992,7 @@ struct FiftiesButton: View {
         StatDisplayBox(label: "Budget", value: "0", icon: "dollarsign.circle.fill", status: .neutral)
     }
     .padding()
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }
 
 #Preview("Character Quote") {
@@ -1002,7 +1002,7 @@ struct FiftiesButton: View {
         sentiment: .positive
     )
     .padding()
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }
 
 #Preview("Briefing Paper") {
@@ -1021,5 +1021,5 @@ struct FiftiesButton: View {
         FiftiesDossierPhoto(name: "Col. Edwards", title: "SECURITY", showStaple: false)
     }
     .padding()
-    .background(FiftiesColors.agedPaper)
+    .background(ColdWarTheme.shared.agedPaper)
 }
