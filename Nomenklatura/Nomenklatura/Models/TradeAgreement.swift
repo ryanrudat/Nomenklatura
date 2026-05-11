@@ -527,10 +527,17 @@ private func decodeCommodityFlow(from data: Data?) -> [StrategicResource: Int] {
         for (key, value) in raw {
             if let resource = StrategicResource(rawValue: key) {
                 result[resource] = value
+            } else {
+                #if DEBUG
+                print("[TradeAgreement] WARNING: unknown StrategicResource rawValue '\(key)' in commodity flow; dropping entry")
+                #endif
             }
         }
         return result
     } catch {
+        #if DEBUG
+        print("[TradeAgreement] WARNING: failed to decode commodity flow (\(data.count) bytes): \(error)")
+        #endif
         return [:]
     }
 }
@@ -538,7 +545,14 @@ private func decodeCommodityFlow(from data: Data?) -> [StrategicResource: Int] {
 private func encodeCommodityFlow(_ flow: [StrategicResource: Int]) -> Data? {
     guard !flow.isEmpty else { return nil }
     let raw = Dictionary(uniqueKeysWithValues: flow.map { ($0.key.rawValue, $0.value) })
-    return try? JSONEncoder().encode(raw)
+    do {
+        return try JSONEncoder().encode(raw)
+    } catch {
+        #if DEBUG
+        print("[TradeAgreement] WARNING: failed to encode commodity flow: \(error)")
+        #endif
+        return nil
+    }
 }
 
 // MARK: - Sanctions

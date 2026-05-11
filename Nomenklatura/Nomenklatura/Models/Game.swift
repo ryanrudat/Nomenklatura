@@ -1174,11 +1174,25 @@ extension Game {
     var activeAntiCorruptionCampaign: AntiCorruptionCampaign? {
         get {
             guard let data = activeAntiCorruptionCampaignData else { return nil }
-            return try? JSONDecoder().decode(AntiCorruptionCampaign.self, from: data)
+            do {
+                return try JSONDecoder().decode(AntiCorruptionCampaign.self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode activeAntiCorruptionCampaign (\(data.count) bytes): \(error)")
+                #endif
+                return nil
+            }
         }
         set {
             if let campaign = newValue {
-                activeAntiCorruptionCampaignData = try? JSONEncoder().encode(campaign)
+                do {
+                    activeAntiCorruptionCampaignData = try JSONEncoder().encode(campaign)
+                } catch {
+                    #if DEBUG
+                    print("[Game] WARNING: failed to encode activeAntiCorruptionCampaign: \(error)")
+                    #endif
+                    activeAntiCorruptionCampaignData = nil
+                }
             } else {
                 activeAntiCorruptionCampaignData = nil
             }
@@ -1219,14 +1233,27 @@ extension Game {
 
     var budgetPriorities: [String: Int] {
         get {
-            guard let data = budgetPrioritiesData,
-                  let decoded = try? JSONDecoder().decode([String: Int].self, from: data) else {
+            guard let data = budgetPrioritiesData else {
                 return Self.defaultBudgetPriorities
             }
-            return decoded
+            do {
+                return try JSONDecoder().decode([String: Int].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode budgetPriorities (\(data.count) bytes): \(error)")
+                #endif
+                return Self.defaultBudgetPriorities
+            }
         }
         set {
-            budgetPrioritiesData = try? JSONEncoder().encode(newValue)
+            do {
+                budgetPrioritiesData = try JSONEncoder().encode(newValue)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode budgetPriorities: \(error)")
+                #endif
+                budgetPrioritiesData = nil
+            }
         }
     }
 }
@@ -2140,10 +2167,24 @@ extension Game {
     var embargoedCountries: [String] {
         get {
             guard let data = embargoedCountriesData else { return [] }
-            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+            do {
+                return try JSONDecoder().decode([String].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode embargoedCountries (\(data.count) bytes): \(error)")
+                #endif
+                return []
+            }
         }
         set {
-            embargoedCountriesData = try? JSONEncoder().encode(newValue)
+            do {
+                embargoedCountriesData = try JSONEncoder().encode(newValue)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode embargoedCountries: \(error)")
+                #endif
+                embargoedCountriesData = nil
+            }
         }
     }
 
@@ -2329,12 +2370,26 @@ extension Game {
     var gdpHistory: [Int] {
         get {
             guard let data = gdpHistoryData else { return [] }
-            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+            do {
+                return try JSONDecoder().decode([Int].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode gdpHistory (\(data.count) bytes): \(error)")
+                #endif
+                return []
+            }
         }
         set {
             // Keep only last 20 entries
             let trimmed = Array(newValue.suffix(20))
-            gdpHistoryData = try? JSONEncoder().encode(trimmed)
+            do {
+                gdpHistoryData = try JSONEncoder().encode(trimmed)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode gdpHistory: \(error)")
+                #endif
+                gdpHistoryData = nil
+            }
         }
     }
 
@@ -2371,11 +2426,25 @@ extension Game {
     var inflationHistory: [Int] {
         get {
             guard let data = inflationHistoryData else { return [] }
-            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+            do {
+                return try JSONDecoder().decode([Int].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode inflationHistory (\(data.count) bytes): \(error)")
+                #endif
+                return []
+            }
         }
         set {
             let trimmed = Array(newValue.suffix(20))
-            inflationHistoryData = try? JSONEncoder().encode(trimmed)
+            do {
+                inflationHistoryData = try JSONEncoder().encode(trimmed)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode inflationHistory: \(error)")
+                #endif
+                inflationHistoryData = nil
+            }
         }
     }
 
@@ -2383,11 +2452,25 @@ extension Game {
     var unemploymentHistory: [Int] {
         get {
             guard let data = unemploymentHistoryData else { return [] }
-            return (try? JSONDecoder().decode([Int].self, from: data)) ?? []
+            do {
+                return try JSONDecoder().decode([Int].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode unemploymentHistory (\(data.count) bytes): \(error)")
+                #endif
+                return []
+            }
         }
         set {
             let trimmed = Array(newValue.suffix(20))
-            unemploymentHistoryData = try? JSONEncoder().encode(trimmed)
+            do {
+                unemploymentHistoryData = try JSONEncoder().encode(trimmed)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode unemploymentHistory: \(error)")
+                #endif
+                unemploymentHistoryData = nil
+            }
         }
     }
 
@@ -2397,10 +2480,24 @@ extension Game {
     var sectorPerformance: [String: SectorPerformance] {
         get {
             guard let data = sectorPerformanceData else { return initializeDefaultSectors() }
-            return (try? JSONDecoder().decode([String: SectorPerformance].self, from: data)) ?? initializeDefaultSectors()
+            do {
+                return try JSONDecoder().decode([String: SectorPerformance].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode sectorPerformance (\(data.count) bytes): \(error)")
+                #endif
+                return initializeDefaultSectors()
+            }
         }
         set {
-            sectorPerformanceData = try? JSONEncoder().encode(newValue)
+            do {
+                sectorPerformanceData = try JSONEncoder().encode(newValue)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode sectorPerformance: \(error)")
+                #endif
+                sectorPerformanceData = nil
+            }
         }
     }
 
@@ -2486,10 +2583,24 @@ extension Game {
     var sectorFocuses: [String: String] {
         get {
             guard let data = sectorFocusData else { return initializeDefaultFocuses() }
-            return (try? JSONDecoder().decode([String: String].self, from: data)) ?? initializeDefaultFocuses()
+            do {
+                return try JSONDecoder().decode([String: String].self, from: data)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to decode sectorFocuses (\(data.count) bytes): \(error)")
+                #endif
+                return initializeDefaultFocuses()
+            }
         }
         set {
-            sectorFocusData = try? JSONEncoder().encode(newValue)
+            do {
+                sectorFocusData = try JSONEncoder().encode(newValue)
+            } catch {
+                #if DEBUG
+                print("[Game] WARNING: failed to encode sectorFocuses: \(error)")
+                #endif
+                sectorFocusData = nil
+            }
         }
     }
 

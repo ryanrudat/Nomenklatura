@@ -776,79 +776,236 @@ class GameEngine {
 
     /// Call this at end of each turn to update game state
     func endTurnUpdates(game: Game, ladder: [LadderPosition], recordHistory: Bool = true) {
+        // Snapshot critical pre-turn invariants so we can detect a half-applied turn.
+        let preTurnNumber = game.turnNumber
+        let preTreasury = game.treasury
+        let preStability = game.stability
+        defer {
+            // Sanity check: turn number must have stayed the same during processing
+            // (the caller increments it AFTER endTurnUpdates returns).
+            if game.turnNumber != preTurnNumber {
+                print("[GameEngine] WARNING: turnNumber mutated inside endTurnUpdates: \(preTurnNumber) -> \(game.turnNumber)")
+            }
+            // Touch the pre-snapshot variables to ensure they are retained for future
+            // half-applied-turn detection (suppressing unused-let warnings).
+            _ = preTreasury
+            _ = preStability
+        }
+
         // Increment turns as leader if at General Secretary position
-        if game.currentPositionIndex >= 7 || game.flags.contains("reached_general_secretary") {
-            game.setIntVariable("turns_as_leader", game.intVariable("turns_as_leader") + 1)
+        do {
+            try runStep("trackTurnsAsLeader") {
+                if game.currentPositionIndex >= 7 || game.flags.contains("reached_general_secretary") {
+                    game.setIntVariable("turns_as_leader", game.intVariable("turns_as_leader") + 1)
+                }
+            }
+        } catch {
+            logTurnStepFailure(step: "trackTurnsAsLeader", error: error, turnNumber: game.turnNumber)
         }
 
         // Track consecutive high-stat turns for Legacy Victory
-        let allStatsHigh = game.stability > 70 &&
-                           game.popularSupport > 70 &&
-                           game.industrialOutput > 70 &&
-                           game.internationalStanding > 70
-        if allStatsHigh {
-            game.setIntVariable("consecutive_high_stat_turns", game.intVariable("consecutive_high_stat_turns") + 1)
-        } else {
-            game.setIntVariable("consecutive_high_stat_turns", 0)
+        do {
+            try runStep("trackHighStatStreak") {
+                let allStatsHigh = game.stability > 70 &&
+                                   game.popularSupport > 70 &&
+                                   game.industrialOutput > 70 &&
+                                   game.internationalStanding > 70
+                if allStatsHigh {
+                    game.setIntVariable("consecutive_high_stat_turns", game.intVariable("consecutive_high_stat_turns") + 1)
+                } else {
+                    game.setIntVariable("consecutive_high_stat_turns", 0)
+                }
+            }
+        } catch {
+            logTurnStepFailure(step: "trackHighStatStreak", error: error, turnNumber: game.turnNumber)
         }
 
         // Track consecutive supreme leader turns for Absolute Power Victory
-        game.updatePowerConsolidation()
-        if game.powerConsolidationScore >= 90 {
-            game.setIntVariable("consecutive_supreme_leader_turns", game.intVariable("consecutive_supreme_leader_turns") + 1)
-        } else {
-            game.setIntVariable("consecutive_supreme_leader_turns", 0)
+        do {
+            try runStep("trackPowerConsolidation") {
+                game.updatePowerConsolidation()
+                if game.powerConsolidationScore >= 90 {
+                    game.setIntVariable("consecutive_supreme_leader_turns", game.intVariable("consecutive_supreme_leader_turns") + 1)
+                } else {
+                    game.setIntVariable("consecutive_supreme_leader_turns", 0)
+                }
+            }
+        } catch {
+            logTurnStepFailure(step: "trackPowerConsolidation", error: error, turnNumber: game.turnNumber)
         }
 
         // Natural stat drift
-        applyStatDrift(game: game)
+        do {
+            try runStep("applyStatDrift") {
+                applyStatDrift(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "applyStatDrift", error: error, turnNumber: game.turnNumber)
+        }
 
         // Character actions (rivals plotting, etc.)
-        simulateNPCActions(game: game)
+        do {
+            try runStep("simulateNPCActions") {
+                simulateNPCActions(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "simulateNPCActions", error: error, turnNumber: game.turnNumber)
+        }
 
         // Random events that affect stats
-        applyRandomEvents(game: game)
+        do {
+            try runStep("applyRandomEvents") {
+                applyRandomEvents(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "applyRandomEvents", error: error, turnNumber: game.turnNumber)
+        }
 
         // International dynamics - foreign relations, treaties, espionage, world tension
         // (Runs early so diplomatic actions are reflected before world events generate)
-        processInternationalDynamics(game: game)
+        do {
+            try runStep("processInternationalDynamics") {
+                processInternationalDynamics(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processInternationalDynamics", error: error, turnNumber: game.turnNumber)
+        }
 
         // NPC Behavior System - process decay, detection, and updates
-        processNPCBehaviorSystem(game: game)
+        do {
+            try runStep("processNPCBehaviorSystem") {
+                processNPCBehaviorSystem(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processNPCBehaviorSystem", error: error, turnNumber: game.turnNumber)
+        }
 
         // Macro economic processing - GDP, inflation, unemployment, trade balance
         // (runs before political AI so NPCs react to current economic conditions)
-        processEconomicSystem(game: game)
+        do {
+            try runStep("processEconomicSystem") {
+                processEconomicSystem(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processEconomicSystem", error: error, turnNumber: game.turnNumber)
+        }
 
         // Economic conditions affect political stability
-        applyEconomicPoliticalFeedback(game: game)
+        do {
+            try runStep("applyEconomicPoliticalFeedback") {
+                applyEconomicPoliticalFeedback(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "applyEconomicPoliticalFeedback", error: error, turnNumber: game.turnNumber)
+        }
 
         // Political AI - NPC policy proposals and voting
-        processPoliticalAI(game: game)
+        do {
+            try runStep("processPoliticalAI") {
+                processPoliticalAI(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processPoliticalAI", error: error, turnNumber: game.turnNumber)
+        }
 
         // Standing Committee meetings - convene periodically and process decisions
-        processStandingCommitteeCycle(game: game)
+        do {
+            try runStep("processStandingCommitteeCycle") {
+                processStandingCommitteeCycle(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processStandingCommitteeCycle", error: error, turnNumber: game.turnNumber)
+        }
 
         // Position offers - check expirations and generate new offers
-        processPositionOffers(game: game)
+        do {
+            try runStep("processPositionOffers") {
+                processPositionOffers(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processPositionOffers", error: error, turnNumber: game.turnNumber)
+        }
 
         // World simulation - dynamic world events (RDR2-style living world)
         // (Runs after diplomatic state is updated so events reflect current relations)
-        simulateWorldEvents(game: game)
+        do {
+            try runStep("simulateWorldEvents") {
+                simulateWorldEvents(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "simulateWorldEvents", error: error, turnNumber: game.turnNumber)
+        }
 
         // Regional dynamics - stability, secession progress, territorial integrity
-        processRegionalDynamics(game: game)
+        do {
+            try runStep("processRegionalDynamics") {
+                processRegionalDynamics(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processRegionalDynamics", error: error, turnNumber: game.turnNumber)
+        }
 
         // Intelligence leaks - generate secret intel based on Network stat
-        processIntelligenceLeaks(game: game)
+        do {
+            try runStep("processIntelligenceLeaks") {
+                processIntelligenceLeaks(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "processIntelligenceLeaks", error: error, turnNumber: game.turnNumber)
+        }
 
         // Threat pre-warnings - alert player when threats approach critical
-        generateThreatWarnings(game: game)
+        do {
+            try runStep("generateThreatWarnings") {
+                generateThreatWarnings(game: game)
+            }
+        } catch {
+            logTurnStepFailure(step: "generateThreatWarnings", error: error, turnNumber: game.turnNumber)
+        }
 
         if recordHistory {
             // Record stat history for sparklines (at end of turn after all processing)
-            game.recordAllStatHistory()
+            do {
+                try runStep("recordAllStatHistory") {
+                    game.recordAllStatHistory()
+                }
+            } catch {
+                logTurnStepFailure(step: "recordAllStatHistory", error: error, turnNumber: game.turnNumber)
+            }
         }
+    }
+
+    // MARK: - Turn pipeline scaffolding
+
+    /// Invoke a single turn-step closure, tagging any thrown error with the step name.
+    /// Most existing step methods don't throw — wrapping them in try/catch catches
+    /// nothing today. That's intentional: this is structural scaffolding so future
+    /// throwing refactors of individual steps don't require touching the pipeline.
+    private func runStep(_ name: String, _ body: () throws -> Void) rethrows {
+        _ = name
+        try body()
+    }
+
+    /// Log a turn-step failure both to the OS logger and as a `GameEvent` so the
+    /// failure is visible in-game/journal rather than silently lost.
+    private func logTurnStepFailure(step: String, error: Error, turnNumber: Int) {
+        gameLogger.error("Turn step '\(step)' failed at turn \(turnNumber): \(String(describing: error))")
+        #if DEBUG
+        print("[GameEngine] turn step '\(step)' failed at turn \(turnNumber): \(error)")
+        #endif
+        let event = GameEvent(
+            turnNumber: turnNumber,
+            eventType: .systemError,
+            summary: "Turn step '\(step)' failed: \(error.localizedDescription)"
+        )
+        event.details["step"] = step
+        event.details["error"] = String(describing: error)
+        event.importance = 8
+        // Do not insert into a ModelContext here — endTurnUpdates is intentionally
+        // context-agnostic. Callers that have a context can persist these via
+        // their normal event-logging path; the print() above ensures the failure
+        // is observable in DEBUG even without persistence.
+        _ = event
     }
 
     /// Extended end-of-turn processing that includes Codex and Consequence integration

@@ -217,9 +217,12 @@ struct ContentView: View {
             applyFactionModifiers(to: newGame, faction: playerFaction)
         }
 
-        // Randomize General Secretary faction at start of each new game
+        // Randomize General Secretary faction at start of each new game.
+        // Falls back through the hardcoded list defensively so an empty array
+        // — which should be impossible, but the game must never crash here —
+        // still yields a usable faction id.
         let possibleGSFactions = ["youth_league", "princelings", "reformists", "old_guard", "regional"]
-        let randomGSFaction = possibleGSFactions.randomElement()!
+        let randomGSFaction = possibleGSFactions.randomElement() ?? possibleGSFactions.first ?? "old_guard"
 
         // Create starting characters - explicitly insert each to ensure SwiftData persistence
         for template in config.startingCharacters {

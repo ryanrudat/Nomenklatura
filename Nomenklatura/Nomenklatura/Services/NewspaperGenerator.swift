@@ -525,7 +525,7 @@ final class NewspaperGenerator {
         weights.append((.domestic, 15))
         weights.append((.ideological, 10))
 
-        return weightedRandomSelection(from: weights)
+        return weightedRandomSelection(from: weights) ?? .domestic
     }
 
     // MARK: - Category-Specific Headlines
@@ -1709,10 +1709,22 @@ final class NewspaperGenerator {
         .diplomaticProtest, .sabotage, .supportDissidents
     ]
 
-    private func weightedRandomSelection<T>(from items: [(T, Int)]) -> T {
+    /// Returns a weighted random selection from `items`, or nil if the input is empty
+    /// or has zero/negative total weight. Content-generation code must never crash
+    /// the app — callers are expected to nil-coalesce to a sensible default.
+    private func weightedRandomSelection<T>(from items: [(T, Int)]) -> T? {
+        guard let fallback = items.first?.0 else {
+            #if DEBUG
+            print("[NewspaperGenerator] WARNING: weightedRandomSelection called with empty items array")
+            #endif
+            return nil
+        }
         let totalWeight = items.reduce(0) { $0 + $1.1 }
-        guard totalWeight > 0, let fallback = items.first?.0 else {
-            fatalError("weightedRandomSelection called with empty items array")
+        guard totalWeight > 0 else {
+            #if DEBUG
+            print("[NewspaperGenerator] WARNING: weightedRandomSelection called with zero total weight; returning first item")
+            #endif
+            return fallback
         }
         var random = Int.random(in: 0..<totalWeight)
 

@@ -96,6 +96,7 @@ enum EventType: String, Codable, CaseIterable {
     case narrative      // Non-decision events (routine days, character moments, tension builders)
     case newspaper      // Newspaper reading events
     case standingCommitteeMeeting  // SC meeting convened
+    case systemError    // Internal engine failure (turn step throw, etc.)
 }
 
 // MARK: - Computed Properties
@@ -122,6 +123,7 @@ extension GameEvent {
         case .narrative: return "📖"
         case .newspaper: return "📰"
         case .standingCommitteeMeeting: return "🏛️"
+        case .systemError: return "⚙️"
         }
     }
 }
