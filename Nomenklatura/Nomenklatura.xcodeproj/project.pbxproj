@@ -6,13 +6,37 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3B94947FCBDAB9249FE023D6 /* SchemaLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1ECABEF799E5CFE6C10814 /* SchemaLoadTests.swift */; };
+		784B33B98FE9F81A71A85241 /* TurnPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B904559BF3E890395C9743 /* TurnPipelineTests.swift */; };
+		90CCB649A2ACCCD7199FB537 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C43C1C7FACD45262A6A5F087 /* Foundation.framework */; };
+		DAF262D294D3B9D335B64764 /* RegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70CFCFFCF3E5F45A157E099 /* RegressionTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FEFC5F4E85E1A77EBEC04672 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7EEB91FD2EE7BBBF00D0340B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7EEB92042EE7BBBF00D0340B;
+			remoteInfo = Nomenklatura;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		09B904559BF3E890395C9743 /* TurnPipelineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TurnPipelineTests.swift; sourceTree = "<group>"; };
+		6B772F8625D65C2E3655972A /* NomenklaturaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NomenklaturaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EEB92052EE7BBBF00D0340B /* Nomenklatura.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nomenklatura.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C43C1C7FACD45262A6A5F087 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		C70CFCFFCF3E5F45A157E099 /* RegressionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RegressionTests.swift; sourceTree = "<group>"; };
+		CF1ECABEF799E5CFE6C10814 /* SchemaLoadTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SchemaLoadTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7EEB92072EE7BBBF00D0340B /* Nomenklatura */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Nomenklatura;
 			sourceTree = "<group>";
 		};
@@ -26,14 +50,40 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A760657C8BD6BD053E06F3D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90CCB649A2ACCCD7199FB537 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0F76DC03517D4575755390E4 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				C43C1C7FACD45262A6A5F087 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		40A0C8C6FE9D57DD5114AD02 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0F76DC03517D4575755390E4 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		7EEB91FC2EE7BBBF00D0340B = {
 			isa = PBXGroup;
 			children = (
 				7EEB92072EE7BBBF00D0340B /* Nomenklatura */,
 				7EEB92062EE7BBBF00D0340B /* Products */,
+				40A0C8C6FE9D57DD5114AD02 /* Frameworks */,
+				8E8EBC499822B2CD4922ECA6 /* NomenklaturaTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -41,13 +91,43 @@
 			isa = PBXGroup;
 			children = (
 				7EEB92052EE7BBBF00D0340B /* Nomenklatura.app */,
+				6B772F8625D65C2E3655972A /* NomenklaturaTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8E8EBC499822B2CD4922ECA6 /* NomenklaturaTests */ = {
+			isa = PBXGroup;
+			children = (
+				09B904559BF3E890395C9743 /* TurnPipelineTests.swift */,
+				C70CFCFFCF3E5F45A157E099 /* RegressionTests.swift */,
+				CF1ECABEF799E5CFE6C10814 /* SchemaLoadTests.swift */,
+			);
+			name = NomenklaturaTests;
+			path = NomenklaturaTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		299DA7F58B0E82710E0B2947 /* NomenklaturaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DCBA1274902155576252EA3D /* Build configuration list for PBXNativeTarget "NomenklaturaTests" */;
+			buildPhases = (
+				E6EA0E4EBF1075E175207E3A /* Sources */,
+				A760657C8BD6BD053E06F3D3 /* Frameworks */,
+				721A3CAF70472CA78F57056C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1CB3145C4836D6532A048295 /* PBXTargetDependency */,
+			);
+			name = NomenklaturaTests;
+			productName = NomenklaturaTests;
+			productReference = 6B772F8625D65C2E3655972A /* NomenklaturaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		7EEB92042EE7BBBF00D0340B /* Nomenklatura */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7EEB92122EE7BBC000D0340B /* Build configuration list for PBXNativeTarget "Nomenklatura" */;
@@ -64,8 +144,6 @@
 				7EEB92072EE7BBBF00D0340B /* Nomenklatura */,
 			);
 			name = Nomenklatura;
-			packageProductDependencies = (
-			);
 			productName = Nomenklatura;
 			productReference = 7EEB92052EE7BBBF00D0340B /* Nomenklatura.app */;
 			productType = "com.apple.product-type.application";
@@ -100,11 +178,19 @@
 			projectRoot = "";
 			targets = (
 				7EEB92042EE7BBBF00D0340B /* Nomenklatura */,
+				299DA7F58B0E82710E0B2947 /* NomenklaturaTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		721A3CAF70472CA78F57056C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7EEB92032EE7BBBF00D0340B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -122,7 +208,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E6EA0E4EBF1075E175207E3A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				784B33B98FE9F81A71A85241 /* TurnPipelineTests.swift in Sources */,
+				DAF262D294D3B9D335B64764 /* RegressionTests.swift in Sources */,
+				3B94947FCBDAB9249FE023D6 /* SchemaLoadTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1CB3145C4836D6532A048295 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Nomenklatura;
+			target = 7EEB92042EE7BBBF00D0340B /* Nomenklatura */;
+			targetProxy = FEFC5F4E85E1A77EBEC04672 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7EEB92102EE7BBC000D0340B /* Debug */ = {
@@ -314,6 +419,60 @@
 			};
 			name = Release;
 		};
+		891EB49C4CED5A471D11076C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 65ZCZ462VW;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryanrudat.NomenklaturaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nomenklatura.app/Nomenklatura";
+			};
+			name = Debug;
+		};
+		A08F5B334F2C594853877E8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 65ZCZ462VW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryanrudat.NomenklaturaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nomenklatura.app/Nomenklatura";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -331,6 +490,15 @@
 			buildConfigurations = (
 				7EEB92132EE7BBC000D0340B /* Debug */,
 				7EEB92142EE7BBC000D0340B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DCBA1274902155576252EA3D /* Build configuration list for PBXNativeTarget "NomenklaturaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A08F5B334F2C594853877E8C /* Release */,
+				891EB49C4CED5A471D11076C /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
