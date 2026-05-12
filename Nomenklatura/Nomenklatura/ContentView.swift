@@ -25,13 +25,6 @@ struct ContentView: View {
     @State private var setupState: GameSetupState = .campaignSelect
     @State private var selectedTab: NavTab = .desk
 
-    // ============================================================================
-    // DEBUG/DEVELOPMENT CODE - REMOVE BEFORE APP STORE RELEASE
-    // ============================================================================
-    #if DEBUG
-    @State private var showTestScenarioPicker = false
-    #endif
-
     private var activeGame: Game? {
         games.first { $0.currentStatus == .active }
     }
@@ -40,46 +33,13 @@ struct ContentView: View {
         Group {
             switch setupState {
             case .campaignSelect:
-                ZStack {
-                    CampaignSelectView { campaignId in
-                        // Set theme for campaign
-                        themeManager.setTheme(for: campaignId)
-                        // Move to faction selection
-                        withAnimation {
-                            setupState = .factionSelect(campaignId: campaignId)
-                        }
+                CampaignSelectView { campaignId in
+                    // Set theme for campaign
+                    themeManager.setTheme(for: campaignId)
+                    // Move to faction selection
+                    withAnimation {
+                        setupState = .factionSelect(campaignId: campaignId)
                     }
-
-                    // ============================================================================
-                    // DEBUG/DEVELOPMENT CODE - REMOVE BEFORE APP STORE RELEASE
-                    // Debug button overlay for test scenario picker
-                    // ============================================================================
-                    #if DEBUG
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Button {
-                                showTestScenarioPicker = true
-                            } label: {
-                                Image(systemName: "hammer.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.orange)
-                                    .padding(12)
-                                    .background(Color.black.opacity(0.6))
-                                    .clipShape(Circle())
-                            }
-                            .padding(.trailing, 20)
-                            .padding(.top, 60)
-                        }
-                        Spacer()
-                    }
-                    .sheet(isPresented: $showTestScenarioPicker) {
-                        TestScenarioPickerView { game in
-                            themeManager.setTheme(for: game.campaignId)
-                            setupState = .playing
-                        }
-                    }
-                    #endif
                 }
 
             case .factionSelect(let campaignId):
