@@ -1244,27 +1244,27 @@ class DynamicEventTriggerService {
 
         case .deliberating:
             session.status = CongressStatus.voting.rawValue
-            session.processVotes()
+            // Congress is ceremonial — generate the broadcast payload, not a vote tally.
+            session.generateCeremonialBroadcast(game: game)
             return DynamicEvent(
                 eventType: .worldNews,
                 priority: .normal,
-                title: "Congress Voting Underway",
-                briefText: "The People's Congress is voting on key measures. Early indications suggest overwhelming support for all Party-backed proposals.",
+                title: "Congress In Session",
+                briefText: "The People's Congress convenes in the Great Hall. Speeches extol the Plan and the Party's leadership.",
                 turnGenerated: game.turnNumber,
                 isUrgent: false,
                 responseOptions: nil,
-                iconName: "hand.raised.fill",
+                iconName: "building.columns.fill",
                 accentColor: "sovietRed"
             )
 
         case .voting:
             session.conclude(turn: game.turnNumber)
-            let unanimousCount = session.votingResults.filter { $0.wasUnanimous }.count
             return DynamicEvent(
                 eventType: .worldNews,
                 priority: .elevated,
                 title: session.conclusionHeadline,
-                briefText: "The People's Congress has concluded its session. All measures passed with overwhelming majorities. \(unanimousCount) votes were unanimous.\n\nThe session has granted \(session.legitimacyGranted) legitimacy points to state policies.",
+                briefText: "The People's Congress has concluded its ceremonial session. The proceedings have been broadcast and recorded in the Politburo archives.",
                 turnGenerated: game.turnNumber,
                 isUrgent: false,
                 responseOptions: nil,

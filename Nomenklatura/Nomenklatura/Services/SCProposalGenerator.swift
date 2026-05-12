@@ -101,9 +101,14 @@ struct SCProposalGenerator {
         // Low base chance per turn (5%) - these are dramatic events
         guard Int.random(in: 1...100) <= 8 else { return [] }
 
+        // Exclude ceremonial-role members from initiating dramatic moves.
+        // A sidelined character isn't going to start coalition fights or
+        // backroom deals — that's exactly the power we just stripped from
+        // them. They can still appear as `target` (others can attack them)
+        // but never as `initiator`.
         let members = committee.memberIds.compactMap { memberId in
             game.characters.first(where: { $0.templateId == memberId && $0.isActive })
-        }
+        }.filter { !$0.hasCeremonialRole(in: game) }
 
         guard members.count >= 2 else { return [] }
 
@@ -308,10 +313,13 @@ struct SCProposalGenerator {
 
     /// Generate a guaranteed proposal when no NPC proposed this turn
     private static func generateGuaranteedProposal(committee: StandingCommittee, game: Game, excludeTitles: Set<String>) -> SCProposalResult? {
-        // Pick a random SC member to generate a routine proposal
+        // Pick a random SC member to generate a routine proposal.
+        // Filter out ceremonial-role members (Co-opt Rival "Promote Sideways"
+        // path) — falling back to them here would let a sidelined character
+        // keep proposing once per turn and defeat the velvet-coffin effect.
         let eligibleMembers = committee.memberIds.compactMap { memberId in
             game.characters.first(where: { $0.templateId == memberId && $0.isAlive })
-        }
+        }.filter { !$0.hasCeremonialRole(in: game) }
 
         guard let member = eligibleMembers.randomElement() else { return nil }
 
@@ -452,6 +460,17 @@ struct SCProposalGenerator {
         let pendingCount = committee.pendingAgenda.count
         if pendingCount >= 6 {
             chance -= (pendingCount - 5) * 5
+        }
+
+        // CEREMONIAL ROLE: A character co-opted via "Promote Sideways"
+        // is functionally sidelined — they should rarely propose anything
+        // of substance. Apply a 0.2× multiplier to their proposal chance.
+        // Floor of 1 (not the usual 5) so they can still occasionally
+        // submit something for flavor, but the corridor mostly forgets
+        // them.
+        if member.hasCeremonialRole(in: game) {
+            chance = Int((Double(chance) * 0.2).rounded())
+            return Int.random(in: 1...100) <= max(chance, 1)
         }
 
         return Int.random(in: 1...100) <= max(chance, 5)

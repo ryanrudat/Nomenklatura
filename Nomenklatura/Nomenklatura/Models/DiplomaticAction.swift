@@ -270,34 +270,6 @@ extension DiplomaticAction {
         // === TIER 1-2: OBSERVER/ANALYST ===
 
         DiplomaticAction(
-            id: "request_briefing",
-            name: "Request Country Briefing",
-            description: "Request a detailed briefing on a specific country's situation.",
-            category: .observer,
-            targetType: .country,
-            cooldownTurns: 0,
-            baseSuccessChance: 100,
-            riskLevel: .minimal,
-            successEffects: DiplomaticEffects(standingChange: 1),
-            iconName: "doc.text.magnifyingglass",
-            actionVerb: "Request"
-        ),
-
-        DiplomaticAction(
-            id: "attend_reception",
-            name: "Attend Embassy Reception",
-            description: "Attend a diplomatic reception to gather information and make contacts.",
-            category: .observer,
-            targetType: .country,
-            cooldownTurns: 2,
-            baseSuccessChance: 90,
-            riskLevel: .minimal,
-            successEffects: DiplomaticEffects(relationshipChange: 1, networkChange: 1),
-            iconName: "person.3.fill",
-            actionVerb: "Attend"
-        ),
-
-        DiplomaticAction(
             id: "draft_cable",
             name: "Draft Diplomatic Cable",
             description: "Draft a diplomatic cable recommending a course of action to superiors.",

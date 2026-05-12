@@ -1271,47 +1271,30 @@ final class NewspaperGenerator {
     }
 
     private func generateCongressConclusionHeadline(session: CongressSession, game: Game) -> HeadlineStory {
-        let unanimousCount = session.votingResults.filter { $0.wasUnanimous }.count
-        let totalVotes = session.votingResults.count
-        let delegateCount = session.delegatesPresent
-
-        // Check if there was any dissent (rare but possible)
-        let totalAgainst = session.votingResults.reduce(0) { $0 + $1.votesAgainst }
-        _ = session.votingResults.reduce(0) { $0 + $1.abstentions }  // Reserved for future dissent reporting
-
-        if unanimousCount == totalVotes && totalVotes > 0 {
-            // Perfect unanimity
-            let headlines = [
-                HeadlineStory(
-                    headline: "CONGRESS CONCLUDES IN COMPLETE UNANIMITY",
-                    subheadline: "All \(totalVotes) Measures Pass Without Dissent",
-                    body: "In a powerful demonstration of socialist democracy, the People's Congress concluded with unanimous approval of all measures. Not a single vote was cast against. Not a single delegate abstained. This perfect unity reflects the moral-political cohesion of American socialist society and the correctness of the Party's line.",
-                    category: .political
-                ),
-                HeadlineStory(
-                    headline: "UNANIMOUS VOTES CROWN HISTORIC SESSION",
-                    subheadline: "Delegates Depart in Spirit of Revolutionary Unity",
-                    body: "The \(session.sessionNumber.ordinalString) session of the People's Congress ended today with all votes unanimous. Delegates departed the Great Hall singing revolutionary songs, their spirits lifted by three days of constructive deliberation. They return to their provinces to explain the Congress's decisions to the masses.",
-                    category: .political
-                )
-            ]
-            return headlines.randomElement() ?? headlines[0]
-        } else if totalAgainst > 0 {
-            // Some dissent (extremely rare)
-            return HeadlineStory(
-                headline: "CONGRESS APPROVES ALL MEASURES",
-                subheadline: "Overwhelming Majorities on All Votes",
-                body: "The People's Congress concluded with approval of all agenda items by overwhelming majorities. While \(totalAgainst) votes were cast against certain measures, representing \(String(format: "%.2f", Double(totalAgainst) / Double(delegateCount * totalVotes) * 100))% of all ballots, the vast majority of delegates demonstrated their confidence in Party leadership.",
-                category: .political
-            )
-        } else {
-            return HeadlineStory(
+        // Congress is a ceremonial broadcast — no vote tallies, no "unanimous"
+        // counts. Surface a small rotation of propaganda-press conclusions
+        // varied by session number.
+        let headlines: [HeadlineStory] = [
+            HeadlineStory(
                 headline: session.conclusionHeadline,
-                subheadline: "\(unanimousCount) of \(totalVotes) Measures Pass Unanimously",
-                body: "The People's Congress has concluded its historic session, approving all measures presented by the Party leadership. The overwhelming votes demonstrate the unshakeable unity between the Party and the people. Delegates departed expressing renewed commitment to socialist construction.",
+                subheadline: "Delegates Depart in Spirit of Revolutionary Unity",
+                body: "The \(session.sessionNumber.ordinalString) session of the People's Congress has concluded. The Report of the Central Committee was read into the record and received with sustained applause. Delegates return to their provinces to carry word of the session.",
+                category: .political
+            ),
+            HeadlineStory(
+                headline: "PEOPLE'S CONGRESS ADJOURNS",
+                subheadline: "Proceedings Filed Into the Politburo Archives",
+                body: "The People's Congress has adjourned its ceremonial session. The proceedings were broadcast in full and have been entered into the Politburo archives. The Chairman's closing address was interrupted repeatedly by ovations.",
+                category: .political
+            ),
+            HeadlineStory(
+                headline: "GREAT HALL DARKENS AS CONGRESS CLOSES",
+                subheadline: "Delegates Carry the Party Line to the Provinces",
+                body: "The Great Hall of the People stands empty tonight after the close of the \(session.sessionNumber.ordinalString) Congress. The orchestra played the anthem. The newsreel cameras stopped. Delegates board trains for their provinces, the Party line in their luggage.",
                 category: .political
             )
-        }
+        ]
+        return headlines[session.sessionNumber % headlines.count]
     }
 
     private func generateCongressScheduledHeadline(session: CongressSession, game: Game) -> HeadlineStory {

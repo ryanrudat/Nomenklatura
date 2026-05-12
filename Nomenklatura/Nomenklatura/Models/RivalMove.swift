@@ -27,7 +27,7 @@ struct RivalMove: Codable, Identifiable, Equatable {
     let headline: String               // "Minister Volkov is scheduling private meetings"
     let body: String                   // 2-3 sentence narrative
     let createdTurn: Int
-    let deadlineTurn: Int              // Player has until this turn (inclusive) to counter
+    var deadlineTurn: Int              // Player has until this turn (inclusive) to counter. Mutable so the Crisis Response Panel's "REQUEST EXTENSION" decree can bump it +2 turns.
     let pendingEffect: PendingEffect   // Applied if no counter chosen by deadline
     let counterOptions: [RivalCounterOption]
     var resolution: RivalMoveResolution // .pending, .countered(by:), .expired, .ignored

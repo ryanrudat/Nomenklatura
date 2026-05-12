@@ -21,6 +21,10 @@ struct DossierView: View {
     @Bindable var game: Game
     var onWorldTap: (() -> Void)? = nil
     var onCongressTap: (() -> Void)? = nil
+    /// Cross-tab jump used by the Known Threats panel's "RESPOND" button.
+    /// Parent flips selectedTab back to .desk so the player lands on the
+    /// pending RivalMove card needing an answer.
+    var onDeskTap: (() -> Void)? = nil
     var initialTab: DossierTab? = nil
     var highlightedEntryId: String? = nil
     @State private var selectedTab: DossierTab = .profile
@@ -182,6 +186,11 @@ struct DossierView: View {
         let active = activeCharacters
         let fallen = fallenCharacters
         let filtered = filteredCharacters
+
+        // Known Threats panel — rivals + hostile/grudging characters + anyone
+        // with a pending RivalMove. Surfaces threats before the search bar so
+        // the player sees them on tab open (audit fix: rivals were invisible).
+        RivalThreatPanel(game: game, onRespondTap: onDeskTap)
 
         if !active.isEmpty {
             VStack(alignment: .leading, spacing: 8) {

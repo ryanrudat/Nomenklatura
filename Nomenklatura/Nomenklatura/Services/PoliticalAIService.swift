@@ -167,6 +167,16 @@ class PoliticalAIService {
             return nil
         }
 
+        // CEREMONIAL ROLE: A character already kicked upstairs to a
+        // toothless ceremonial post isn't a threat worth investigating.
+        // The GS wouldn't waste apparatus on someone they've already
+        // neutralized — and re-targeting them creates obvious narrative
+        // dissonance ("we already promoted them to a velvet coffin").
+        if target.hasCeremonialRole(in: game) {
+            politicalLogger.info("Target \(target.name) is in ceremonial role - GS skipping (already neutralized)")
+            return nil
+        }
+
         // DEDUPLICATION: Check cooldown - prevent targeting same person within 3 turns
         let cooldownKey = "gs_investigation_\(targetId)_turn"
         if let lastTurnStr = game.variables[cooldownKey],
@@ -754,6 +764,14 @@ class PoliticalAIService {
             // Lower chance if already pending proposals
             if game.policySlots.contains(where: { $0.hasPendingProposal && $0.pendingProposalCharacterId == official.templateId }) {
                 proposeChance = 0  // Don't propose if they already have one pending
+            }
+
+            // CEREMONIAL ROLE: A character co-opted via "Promote Sideways"
+            // operates at ~0.25× normal activity. They can still propose
+            // (allowing big-crisis exceptions when ambition spikes the
+            // baseline) but most routine ticks they're quiet.
+            if official.hasCeremonialRole(in: game) {
+                proposeChance = Int((Double(proposeChance) * 0.25).rounded())
             }
 
             guard Int.random(in: 1...100, using: &rng) <= proposeChance else { continue }

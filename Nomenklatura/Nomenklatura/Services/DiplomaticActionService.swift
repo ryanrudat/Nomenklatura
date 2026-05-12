@@ -250,9 +250,11 @@ class DiplomaticActionService {
     ) -> ActionExecutionResult {
         var rng = game.rng
         defer { game.rng = rng }
-        // Roll for success
+        // Roll for success — bureau chief's competence scales the chance.
+        let chiefModifier = bureauChief(for: "foreignAffairs", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Determine effects to apply
         let effects = succeeded ? action.successEffects : action.failureEffects

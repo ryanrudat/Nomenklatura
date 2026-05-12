@@ -484,21 +484,6 @@ extension SecurityAction {
         ),
 
         SecurityAction(
-            id: "gather_informant_tips",
-            name: "Gather Informant Tips",
-            description: "Collect rumors and gossip from network",
-            detailedDescription: "Activate your network of informants to gather intelligence on suspicious activities within the Party.",
-            iconName: "person.wave.2.fill",
-            actionVerb: "Gather",
-            category: .operative,
-            targetType: .none,
-            cooldownTurns: 1,
-            baseSuccessChance: 80,
-            riskLevel: .minimal,
-            successEffects: SecurityEffects(networkChange: 3)
-        ),
-
-        SecurityAction(
             id: "file_suspicious_activity",
             name: "File Suspicious Activity Report",
             description: "Report concerns to superiors",
@@ -740,23 +725,6 @@ extension SecurityAction {
             riskLevel: .moderate,
             successEffects: SecurityEffects(standingChange: 10, initiatesTrial: true),
             failureEffects: SecurityEffects(standingChange: -10)
-        ),
-
-        SecurityAction(
-            id: "dispatch_supervision_team",
-            name: "Dispatch Supervision Team",
-            description: "Send inspectors to lower levels",
-            detailedDescription: "Deploy central discipline inspection team to provincial/municipal level. CCP 'vertical management' in action.",
-            iconName: "arrow.down.circle.fill",
-            actionVerb: "Dispatch",
-            category: .directorate,
-            targetType: .department,
-            cooldownTurns: 4,
-            executionTurns: 2,
-            baseSuccessChance: 85,
-            riskLevel: .low,
-            successEffects: SecurityEffects(evidenceGathered: 20, networkChange: 10, stabilityChange: 3),
-            failureEffects: SecurityEffects(standingChange: -5)
         ),
 
         SecurityAction(

@@ -40,6 +40,20 @@ final class ShowTrialService {
         // Store the trial
         game.initiateShowTrial(trial)
 
+        // Prosecution pipeline coordination: advance the canonical stage to
+        // .trial. If the prosecution wasn't pre-registered (e.g., trial was
+        // started directly by NPC AI or a legacy code path), open one
+        // retroactively so subsequent entry-point checks see it.
+        if ProsecutionPipelineService.shared.activeProsecution(for: character.id, in: game) == nil {
+            _ = ProsecutionPipelineService.shared.initiate(kind: .deskDocument, target: character, in: game)
+        }
+        ProsecutionPipelineService.shared.updateStage(
+            for: character.id,
+            stage: .trial,
+            evidenceLevel: min(100, charges.reduce(0) { $0 + $1.severity * 5 }),
+            in: game
+        )
+
         return trial
     }
 
@@ -239,6 +253,12 @@ final class ShowTrialService {
         case .execution:
             defendant.status = CharacterStatus.executed.rawValue
             defendant.fateNarrative = "Executed by firing squad following conviction for \(formatCharges(trial.charges))."
+            // vacancy fix: position must clear so successor mechanics see the slot as open
+            if defendant.positionIndex != nil {
+                defendant.previousPositionIndex = defendant.positionIndex
+            }
+            defendant.positionIndex = nil
+            defendant.positionTrack = nil
 
         case .imprisonment25, .imprisonment15, .imprisonment10:
             defendant.status = CharacterStatus.imprisoned.rawValue
@@ -246,12 +266,24 @@ final class ShowTrialService {
             defendant.fateNarrative = "Sentenced to \(years) years in labor camp for \(formatCharges(trial.charges))."
             defendant.canReturnFlag = trial.sentence == .imprisonment10  // Only 10-year sentences might return
             defendant.returnProbability = trial.sentence == .imprisonment10 ? 20 : 0
+            // vacancy fix: position must clear so successor mechanics see the slot as open
+            if defendant.positionIndex != nil {
+                defendant.previousPositionIndex = defendant.positionIndex
+            }
+            defendant.positionIndex = nil
+            defendant.positionTrack = nil
 
         case .exile:
             defendant.status = CharacterStatus.exiled.rawValue
             defendant.fateNarrative = "Exiled to remote region following conviction for \(formatCharges(trial.charges))."
             defendant.canReturnFlag = true
             defendant.returnProbability = 30
+            // vacancy fix: position must clear so successor mechanics see the slot as open
+            if defendant.positionIndex != nil {
+                defendant.previousPositionIndex = defendant.positionIndex
+            }
+            defendant.positionIndex = nil
+            defendant.positionTrack = nil
 
         case .demotion:
             defendant.status = CharacterStatus.active.rawValue
@@ -285,6 +317,11 @@ final class ShowTrialService {
 
         // Mark trial as completed
         game.completeShowTrial(id: trial.id)
+
+        // Prosecution pipeline: close the canonical record — this prosecution
+        // is fully resolved. Future actions against this same character
+        // (rehabilitated returnees, exiled returns) can open a fresh one.
+        ProsecutionPipelineService.shared.close(target: trial.defendantId, in: game)
     }
 
     // MARK: - Event Generation

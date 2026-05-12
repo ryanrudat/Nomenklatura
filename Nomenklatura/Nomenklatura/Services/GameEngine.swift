@@ -17,6 +17,16 @@ private let gameLogger = Logger(subsystem: "com.ryanrudat.Nomenklatura", categor
 class GameEngine {
     static let shared = GameEngine()
 
+    /// Personal action IDs that open a prosecution pipeline lane against the
+    /// primary rival. Mirrors the .purgeEnemies category in PersonalActionGenerator
+    /// — kept in lockstep with that file.
+    fileprivate static let purgeStartingActionIds: Set<String> = [
+        "order_show_trial",
+        "authorize_detention",
+        "launch_anticorruption",
+        "purge_bureau"
+    ]
+
     // MARK: - Personal Action Execution
 
     /// Execute a personal action and return the result
@@ -44,6 +54,17 @@ class GameEngine {
                 success: false,
                 outcomeText: "You have already performed this action this turn."
             )
+        }
+
+        // Prosecution pipeline registration: purge-style personal actions
+        // (order_show_trial, authorize_detention, launch_anticorruption,
+        // purge_bureau) all open a prosecution lane. The target is the
+        // player's current primary rival (this category targets rivals by
+        // design). If a prosecution already exists, the UI is responsible
+        // for having surfaced the Reinforce / Cancel prompt; this call is
+        // a soft-no-op when conflict exists and escalate wasn't requested.
+        if Self.purgeStartingActionIds.contains(action.id), let rival = game.primaryRival {
+            _ = ProsecutionPipelineService.shared.initiate(kind: .personalAction, target: rival, in: game)
         }
 
         // Deduct AP and track action as used
@@ -147,6 +168,147 @@ class GameEngine {
             discoveredBy: discoveryResult.discoveredBy,
             newFlags: newFlags,
             removedFlags: removedFlags
+        )
+    }
+
+    // MARK: - Appoint Successor
+
+    /// Execute the `appoint_successor` personal action. Unlike the generic
+    /// `executeAction` path, this requires a pre-selected target character
+    /// (the candidate the player picked in the target-selection sheet) and
+    /// a vacant slot index. It applies AP cost, mutates the candidate's
+    /// `positionIndex`, applies faction-aware ripple effects, sets the
+    /// per-turn cooldown flag, logs a narrative GameEvent, and returns an
+    /// ActionResult the view can render.
+    func executeAppointSuccessor(
+        action: PersonalAction,
+        candidate: GameCharacter,
+        vacancySlot: Int,
+        game: Game,
+        ladder: [LadderPosition]
+    ) -> ActionResult {
+        // Sanity-check availability the same way the generic path does.
+        let availability = action.isAvailable(game: game)
+        guard availability.available else {
+            return ActionResult(
+                success: false,
+                outcomeText: availability.reason ?? "This appointment is not available."
+            )
+        }
+
+        guard game.actionPoints >= action.costAP else {
+            return ActionResult(success: false, outcomeText: "Not enough action points.")
+        }
+
+        guard !game.usedActionsThisTurn.contains(action.id) else {
+            return ActionResult(success: false, outcomeText: "You have already appointed someone this turn.")
+        }
+
+        // Re-validate that the slot is still vacant in case state shifted
+        // mid-turn (e.g., another system filled it). Cheap defensive check.
+        let stillVacant = !game.characters.contains { c in
+            c.isActive && c.positionIndex == vacancySlot
+        }
+        guard stillVacant else {
+            return ActionResult(success: false, outcomeText: "The seat is no longer vacant.")
+        }
+
+        // Lookup the slot title for narrative text.
+        let slotTitle = ladder.first(where: { $0.index == vacancySlot })?.title ?? "Position \(vacancySlot)"
+
+        // Spend AP and mark used.
+        game.actionPoints -= action.costAP
+        game.usedActionsThisTurn.append(action.id)
+
+        // Move the candidate into the slot. Use the matching ladder position
+        // to set the track string so display code keeps working.
+        let ladderForSlot = ladder.first { $0.index == vacancySlot }
+        candidate.positionIndex = vacancySlot
+        candidate.positionTrack = ladderForSlot?.expandedTrack.rawValue ?? candidate.positionTrack
+
+        // Candidate's gratitude (+20 disposition toward the player).
+        candidate.disposition = max(-100, min(100, candidate.disposition + 20))
+
+        // Direct stat ripple from the action definition (network -15, eliteLoyalty +5).
+        var statChanges = action.effects
+        for (key, value) in statChanges {
+            game.applyStat(key, change: value)
+        }
+
+        // Faction ripple: same faction = +3 disposition to other members,
+        // different faction = -5 disposition to the player's faction (perceived
+        // betrayal). The player's faction is `game.playerFactionId`; the
+        // appointment is compared to that.
+        let playerFaction = game.playerFactionId
+        let sameFactionAsPlayer: Bool = {
+            guard let pf = playerFaction, let cf = candidate.factionId else { return false }
+            return pf == cf
+        }()
+
+        if let pf = playerFaction {
+            if sameFactionAsPlayer {
+                // Reward signal: other player-faction members appreciate it.
+                for other in game.characters where other.isActive
+                    && other.id != candidate.id
+                    && other.factionId == pf {
+                    other.disposition = max(-100, min(100, other.disposition + 3))
+                }
+            } else if candidate.factionId != nil {
+                // Betrayal signal: player-faction members feel passed-over.
+                for other in game.characters where other.isActive
+                    && other.factionId == pf {
+                    other.disposition = max(-100, min(100, other.disposition - 5))
+                }
+                statChanges["factionBetrayal"] = -5
+            }
+        }
+
+        // Cooldown flag, scoped to this turn so the generator can detect it.
+        let cooldownFlag = "last_appointment_turn_\(game.turnNumber)"
+        if !game.flags.contains(cooldownFlag) {
+            game.flags.append(cooldownFlag)
+        }
+
+        // Narrative event for the Ledger / history.
+        let factionClause: String = {
+            guard let cf = candidate.factionId else { return "" }
+            if sameFactionAsPlayer {
+                return " The \(cf) bloc takes note of the favor."
+            } else if playerFaction != nil {
+                return " Your own faction grumbles at the choice."
+            }
+            return ""
+        }()
+        let summary = "Appointed \(candidate.name) to \(slotTitle).\(factionClause)"
+
+        let event = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .narrative,
+            summary: summary
+        )
+        event.importance = 6
+        // Tag with a "kind" marker so PersonalityDriftService.scanPromotions
+        // can corroborate the positionIndex delta and apply +loyal drift to
+        // the appointee. The marker is part of
+        // `PersonalityDriftService.appointmentKindMarkers`.
+        event.details = [
+            "kind": "appointment_made",
+            "candidateId": candidate.id.uuidString,
+            "slotIndex": String(vacancySlot)
+        ]
+        event.game = game
+        game.events.append(event)
+
+        let outcomeText = "You raise \(candidate.name) into the vacant seat of \(slotTitle). The apparatus acknowledges your decision; \(candidate.name) owes you their advancement.\(factionClause)"
+
+        return ActionResult(
+            success: true,
+            outcomeText: outcomeText,
+            statChanges: statChanges,
+            wasDiscovered: false,
+            discoveredBy: nil,
+            newFlags: [cooldownFlag],
+            removedFlags: []
         )
     }
 
@@ -801,6 +963,16 @@ class GameEngine {
             }
         }
 
+        // Chairman's Decree pool regen — +1 charge every 50 turns since last regen,
+        // capped at 3 stockpiled. Default seeded pool is 3 at game start.
+        runStep("regenerateDecreeCharges") {
+            let turnsSinceLastRegen = game.turnNumber - game.lastDecreeRegenTurn
+            if turnsSinceLastRegen >= 50 && game.decreeChargesRemaining < 3 {
+                game.decreeChargesRemaining = min(3, game.decreeChargesRemaining + 1)
+                game.lastDecreeRegenTurn = game.turnNumber
+            }
+        }
+
         // Track consecutive high-stat turns for Legacy Victory
         runStep("trackHighStatStreak") {
             let allStatsHigh = game.stability > 70 &&
@@ -859,6 +1031,24 @@ class GameEngine {
             processNPCBehaviorSystem(game: game)
         }
 
+        // Bureau-chief agency: chiefs notice when they've been ignored for too
+        // many consecutive turns and act on their own initiative. Runs AFTER
+        // directive-phase issuance (which completed before endTurnUpdates was
+        // called) and BEFORE economic processing — chiefs act before the books
+        // close. See BureauChiefAgencyService for the full mechanic.
+        runStep("processBureauChiefAgency") {
+            BureauChiefAgencyService.shared.processNeglect(for: game)
+        }
+
+        // Personality drift: scan recent personnel events and apply modest
+        // trait shifts (demotion → ambition+resentment, promotion → loyalty,
+        // witnessed purge → paranoia, sustained patron protection → loyalty).
+        // Self-contained; reads game.events + character state, writes only
+        // personality fields + dedupe flags. See PersonalityDriftService.
+        runStep("processPersonalityDrift") {
+            PersonalityDriftService.shared.processDrift(for: game)
+        }
+
         // Macro economic processing - GDP, inflation, unemployment, trade balance
         // (runs before political AI so NPCs react to current economic conditions)
         runStep("processEconomicSystem") {
@@ -904,6 +1094,17 @@ class GameEngine {
         // Threat pre-warnings - alert player when threats approach critical
         runStep("generateThreatWarnings") {
             generateThreatWarnings(game: game)
+        }
+
+        // Achievement checks — evaluate predicates against final post-turn state
+        // and award any newly-earned badges. Placed late so all stat-mutating
+        // systems above have settled before predicates evaluate.
+        runStep("processAchievementChecks") {
+            let unlockedIds = Set(game.earnedBadges.map { $0.badgeId })
+            let newlyEarned = AchievementService.shared.checkAchievements(game: game, unlockedIds: unlockedIds)
+            for id in newlyEarned {
+                game.awardBadge(id, circumstance: "Achievement earned end of turn \(game.turnNumber)")
+            }
         }
 
         if recordHistory {

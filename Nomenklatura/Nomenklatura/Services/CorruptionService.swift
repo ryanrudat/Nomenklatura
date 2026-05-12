@@ -529,6 +529,10 @@ extension CorruptionService {
 
         case .executed:
             target.status = CharacterStatus.dead.rawValue
+            // vacancy fix: position must clear so successor mechanics see the slot as open
+            if target.positionIndex != nil {
+                target.previousPositionIndex = target.positionIndex
+            }
             target.positionIndex = nil
             target.positionTrack = nil
 

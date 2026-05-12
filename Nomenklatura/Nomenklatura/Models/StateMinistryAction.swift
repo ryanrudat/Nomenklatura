@@ -246,28 +246,6 @@ struct StateMinistryAction: Identifiable, Codable {
     static let allActions: [StateMinistryAction] = [
         // TIER 1-2: Clerk Actions (Ministry Staff Level)
         StateMinistryAction(
-            id: "process_documents",
-            name: "Process Official Documents",
-            description: "Handle routine administrative paperwork",
-            detailedDescription: "Process the daily flow of official documents, memoranda, and correspondence that keeps the state machinery running. Build familiarity with bureaucratic procedures.",
-            iconName: "doc.text.fill",
-            actionVerb: "Process",
-            category: .clerk,
-            minimumPositionIndex: 1,
-            targetType: .none,
-            department: .generalOffice,
-            requiredTrack: nil,
-            cooldownTurns: 1,
-            executionTurns: 1,
-            baseSuccessChance: 95,
-            riskLevel: .routine,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: MinistryEffects(standingChange: 1, networkChange: 1),
-            failureEffects: MinistryEffects(standingChange: -1)
-        ),
-
-        StateMinistryAction(
             id: "compile_statistics",
             name: "Compile Ministry Statistics",
             description: "Gather and organize departmental data",

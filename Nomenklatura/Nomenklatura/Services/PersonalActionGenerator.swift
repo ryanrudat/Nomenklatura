@@ -45,7 +45,91 @@ final class PersonalActionGenerator {
         actions.append(contentsOf: generateInformationControlActions(game: game))
         actions.append(contentsOf: generateConsolidationActions(game: game))
 
+        // 7. Appointment to vacant slots (gated by real vacancy detection)
+        actions.append(contentsOf: generateAppointmentActions(game: game, ladder: ladder))
+
         return actions
+    }
+
+    // MARK: - Appointment Actions
+
+    /// Cooldown window (in turns) between successive `appoint_successor` plays
+    private static let appointmentCooldownTurns = 4
+
+    /// Returns the indices on the player's ladder that exist (1-8) but are
+    /// currently unoccupied. A slot is considered vacant when no active
+    /// character holds that `positionIndex` AND at least one character on the
+    /// ladder previously held it (via `previousPositionIndex`).
+    static func detectVacantSlots(game: Game, ladder: [LadderPosition]) -> [Int] {
+        let occupied: Set<Int> = Set(
+            game.characters
+                .filter { $0.isActive }
+                .compactMap { $0.positionIndex }
+        )
+        let everHeld: Set<Int> = Set(
+            game.characters.compactMap { $0.previousPositionIndex }
+        )
+        let validSlots: Set<Int> = Set(ladder.map { $0.index }.filter { $0 >= 1 && $0 <= 8 })
+        return validSlots
+            .filter { !occupied.contains($0) && everHeld.contains($0) }
+            .sorted()
+    }
+
+    /// Whether the player has recently used the appointment action and is
+    /// still inside the cooldown window.
+    static func isAppointmentOnCooldown(game: Game) -> Bool {
+        let cooldown = appointmentCooldownTurns
+        for n in 1...cooldown {
+            let pastTurn = game.turnNumber - n
+            if pastTurn < 0 { break }
+            if game.flags.contains("last_appointment_turn_\(pastTurn)") {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func generateAppointmentActions(game: Game, ladder: [LadderPosition]) -> [PersonalAction] {
+        // Surface the action only when there's a real vacancy to fill, the
+        // player has the required authority/patronage, and the cooldown has
+        // elapsed. Stat thresholds match the catalog definition.
+        let vacancies = PersonalActionGenerator.detectVacantSlots(game: game, ladder: ladder)
+        guard !vacancies.isEmpty else { return [] }
+        guard !PersonalActionGenerator.isAppointmentOnCooldown(game: game) else { return [] }
+
+        // Build a per-vacancy summary the player can read on the card.
+        let vacancyTitles: [String] = vacancies.compactMap { slot in
+            ladder.first { $0.index == slot }?.title
+        }
+        let vacancySummary: String
+        if vacancyTitles.count == 1 {
+            vacancySummary = "Vacancy: \(vacancyTitles[0])."
+        } else if !vacancyTitles.isEmpty {
+            vacancySummary = "Vacancies: \(vacancyTitles.joined(separator: ", "))."
+        } else {
+            vacancySummary = "\(vacancies.count) vacancy slot(s) await an appointment."
+        }
+
+        return [
+            PersonalAction(
+                id: "appoint_successor",
+                category: .consolidatePower,
+                title: "Appoint successor to vacant seat",
+                description: "\(vacancySummary) Promote a trusted official into the empty office. Patronage flows; favors are remembered.",
+                costAP: 1,
+                riskLevel: .low,
+                requirements: ActionRequirements(minStanding: 50, minNetwork: 15),
+                effects: ["network": -15, "eliteLoyalty": 5],
+                isLocked: false,
+                lockReason: nil,
+                flavorText: "An empty office is an invitation. Fill it before someone else does.",
+                successNarratives: [
+                    "Your hand-picked official accepts the appointment. Their gratitude is on the record.",
+                    "The vacant seat is filled. The apparatus reads the message: the Chairman decides.",
+                    "Another loyalist takes their place in the hierarchy. The web tightens."
+                ]
+            )
+        ]
     }
 
     // MARK: - Core Actions (Always Available)

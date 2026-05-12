@@ -12,6 +12,7 @@ struct ActionValidationResult {
     let requiresApproval: Bool
     let treasuryCost: Int
     let targetTooSenior: Bool
+    let viaDecree: Bool
 
     init(
         canExecute: Bool,
@@ -19,7 +20,8 @@ struct ActionValidationResult {
         successChance: Int = 0,
         requiresApproval: Bool = false,
         treasuryCost: Int = 0,
-        targetTooSenior: Bool = false
+        targetTooSenior: Bool = false,
+        viaDecree: Bool = false
     ) {
         self.canExecute = canExecute
         self.reason = reason
@@ -27,6 +29,7 @@ struct ActionValidationResult {
         self.requiresApproval = requiresApproval
         self.treasuryCost = treasuryCost
         self.targetTooSenior = targetTooSenior
+        self.viaDecree = viaDecree
     }
 
     static func success(chance: Int) -> ActionValidationResult {

@@ -20,6 +20,12 @@ import SwiftData
 /// placeholder — wiring it to actually short-circuit AIScenarioGenerator
 /// is out of scope for this release; see the TODO below.
 struct SettingsView: View {
+    // Game lifecycle callbacks injected from ContentView via DeskView. Optional
+    // so the view can still be previewed standalone; when nil the row is hidden.
+    var onRestart: (() -> Void)?
+    var onMainMenu: (() -> Void)?
+    var onDeleteAllData: (() -> Void)?
+
     @Environment(\.theme) var theme
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -43,10 +49,10 @@ struct SettingsView: View {
 
     // MARK: Local UI state
 
-    @State private var showResetConfirmation = false
-    @State private var showResetCompletedAlert = false
     @State private var showPlaceholderLegalAlert = false
     @State private var placeholderLegalTitle = ""
+    @State private var showMainMenuConfirmation = false   // bound by New Run button
+    @State private var showDeleteAllConfirmation = false  // bound by Wipe All Data button
 
     private var versionLabel: String {
         // Bundle.appVersion returns "1.4 (1)" — reformat to "v1.4 (build 1)"
@@ -58,166 +64,226 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Section 1 — Audio & Haptics
-                    SettingsSection(title: "Audio & Haptics") {
-                        SettingsToggleRow(
-                            icon: "speaker.slash.fill",
-                            title: "Mute Audio",
-                            subtitle: "Silence all in-game sound",
-                            isOn: $audioMuted
-                        )
-                        SettingsDivider()
-                        SettingsToggleRow(
-                            icon: "hand.tap.fill",
-                            title: "Haptic Feedback",
-                            subtitle: "Tactile response on interactions",
-                            isOn: $hapticsEnabled
-                        )
+            mainScroll
+                .background(theme.parchment)
+                .navigationTitle("SETTINGS")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Close") { dismiss() }
+                            .foregroundColor(theme.stampRed)
                     }
-
-                    // Section 2 — AI Features
-                    SettingsSection(title: "AI Features") {
-                        SettingsToggleRow(
-                            icon: "sparkles",
-                            title: "Use AI-Generated Scenarios",
-                            subtitle: "When disabled, the game uses local fallback content. Disables network calls to the AI proxy.",
-                            isOn: $aiEnabled
-                        )
-                    }
-
-                    // Section 3 — Save Game
-                    SettingsSection(title: "Save Game") {
-                        Button {
-                            showResetConfirmation = true
-                        } label: {
-                            HStack(spacing: 16) {
-                                Image(systemName: "trash.fill")
-                                    .font(.system(size: 22))
-                                    .foregroundColor(.red)
-                                    .frame(width: 40)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Reset Save")
-                                        .font(theme.labelFont)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(theme.inkBlack)
-
-                                    Text("Permanently deletes your current save")
-                                        .font(theme.tagFont)
-                                        .foregroundColor(theme.inkGray)
-                                        .multilineTextAlignment(.leading)
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(theme.inkLight)
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(theme.parchmentDark)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // Section 4 — About
-                    SettingsSection(title: "About") {
-                        SettingsInfoRow(
-                            icon: "info.circle.fill",
-                            title: "Version",
-                            value: versionLabel
-                        )
-                        SettingsDivider()
-                        SettingsInfoRow(
-                            icon: "person.fill",
-                            title: "Credits",
-                            value: "Designed and developed by Ryan Rudat. Built with AI-assisted narrative."
-                        )
-                        SettingsDivider()
-                        // Placeholder Privacy + Terms rows.
-                        // TODO: Before App Store submission these need to point
-                        // at real hosted URLs (privacy policy + terms of
-                        // service). For now the rows are tappable but show a
-                        // placeholder alert so reviewers/users see they exist.
-                        SettingsLinkRow(
-                            icon: "lock.shield.fill",
-                            title: "Privacy Policy"
-                        ) {
-                            placeholderLegalTitle = "Privacy Policy"
-                            showPlaceholderLegalAlert = true
-                        }
-                        SettingsDivider()
-                        SettingsLinkRow(
-                            icon: "doc.text.fill",
-                            title: "Terms of Service"
-                        ) {
-                            placeholderLegalTitle = "Terms of Service"
-                            showPlaceholderLegalAlert = true
-                        }
-                    }
-
-                    // Footer padding
-                    Spacer(minLength: 30)
-
-                    Text("THE APPARATUS REMEMBERS.")
-                        .font(theme.tagFont)
-                        .tracking(2)
-                        .foregroundColor(theme.inkLight.opacity(0.5))
-                        .padding(.bottom, 30)
                 }
-            }
-            .background(theme.parchment)
-            .navigationTitle("SETTINGS")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                    .foregroundColor(theme.stampRed)
-                }
-            }
         }
-        .confirmationDialog(
-            "This will permanently delete your current save. Continue?",
-            isPresented: $showResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Save", role: .destructive) {
-                performResetSave()
+        .modifier(SettingsConfirmationDialogs(
+            showPlaceholderLegalAlert: $showPlaceholderLegalAlert,
+            showMainMenuConfirmation: $showMainMenuConfirmation,
+            showDeleteAllConfirmation: $showDeleteAllConfirmation,
+            placeholderLegalTitle: placeholderLegalTitle,
+            onMainMenu: onMainMenu,
+            onDeleteAllData: onDeleteAllData,
+            dismiss: dismiss
+        ))
+    }
+
+    @ViewBuilder
+    private var mainScroll: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                gameMenuSection
+                audioHapticsSection
+                aiFeaturesSection
+                aboutSection
+                Spacer(minLength: 30)
+                Text("THE APPARATUS REMEMBERS.")
+                    .font(theme.tagFont)
+                    .tracking(2)
+                    .foregroundColor(theme.inkLight.opacity(0.5))
+                    .padding(.bottom, 30)
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("All progress on your current run will be lost. This action cannot be undone.")
-        }
-        .alert("Save Reset", isPresented: $showResetCompletedAlert) {
-            Button("OK") {
-                dismiss()
-            }
-        } message: {
-            Text("Your save has been deleted. Please restart the app to begin a new game.")
-        }
-        .alert(placeholderLegalTitle, isPresented: $showPlaceholderLegalAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("This document will be linked here before the App Store release.")
         }
     }
 
-    /// Wipe all Game entities via SwiftData. Mirrors ContentView.deleteAllGameData()
-    /// but doesn't try to navigate — the sheet just dismisses and the user
-    /// is told to restart. Cleanly resetting setupState back to .campaignSelect
-    /// from inside a sheet is awkward (sheet doesn't own the setupState binding);
-    /// the user-facing alert documents that limitation.
-    private func performResetSave() {
-        for game in games {
-            modelContext.delete(game)
+    @ViewBuilder
+    private var audioHapticsSection: some View {
+        SettingsSection(title: "Audio & Haptics") {
+            SettingsToggleRow(
+                icon: "speaker.slash.fill",
+                title: "Mute Audio",
+                subtitle: "Silence all in-game sound",
+                isOn: $audioMuted
+            )
+            SettingsDivider()
+            SettingsToggleRow(
+                icon: "hand.tap.fill",
+                title: "Haptic Feedback",
+                subtitle: "Tactile response on interactions",
+                isOn: $hapticsEnabled
+            )
         }
-        try? modelContext.save()
-        showResetCompletedAlert = true
+    }
+
+    @ViewBuilder
+    private var aiFeaturesSection: some View {
+        SettingsSection(title: "AI Features") {
+            SettingsToggleRow(
+                icon: "sparkles",
+                title: "Use AI-Generated Scenarios",
+                subtitle: "When disabled, the game uses local fallback content. Disables network calls to the AI proxy.",
+                isOn: $aiEnabled
+            )
+        }
+    }
+
+/// About section — version, credits, legal links. Placeholder alerts
+    /// for Privacy/Terms remain in place until hosted URLs are finalized.
+    @ViewBuilder
+    private var aboutSection: some View {
+        SettingsSection(title: "About") {
+            SettingsInfoRow(
+                icon: "info.circle.fill",
+                title: "Version",
+                value: versionLabel
+            )
+            SettingsDivider()
+            SettingsInfoRow(
+                icon: "person.fill",
+                title: "Credits",
+                value: "Designed and developed by Ryan Rudat. Built with AI-assisted narrative."
+            )
+            SettingsDivider()
+            SettingsLinkRow(
+                icon: "lock.shield.fill",
+                title: "Privacy Policy"
+            ) {
+                placeholderLegalTitle = "Privacy Policy"
+                showPlaceholderLegalAlert = true
+            }
+            SettingsDivider()
+            SettingsLinkRow(
+                icon: "doc.text.fill",
+                title: "Terms of Service"
+            ) {
+                placeholderLegalTitle = "Terms of Service"
+                showPlaceholderLegalAlert = true
+            }
+        }
+    }
+
+    /// Game Menu section — consolidated 2-button reset model.
+    ///
+    /// "New Run" ends the current game and returns to campaign select; from
+    /// there the player picks any campaign/faction (re-picking the same
+    /// faction trivially handles the old "restart with same faction" intent).
+    /// "Wipe All Data" is the niche power-user option below an Advanced
+    /// divider — corrupted save / fresh-install testing / privacy.
+    ///
+    /// The legacy `onRestart` callback param is retained on the SettingsView
+    /// API for back-compat with callers that haven't migrated; it's no longer
+    /// surfaced as a button. The legacy `Reset Save` section is gone too.
+    @ViewBuilder
+    private var gameMenuSection: some View {
+        if onMainMenu != nil || onDeleteAllData != nil {
+            SettingsSection(title: "Game Menu") {
+                if onMainMenu != nil {
+                    SettingsActionRow(
+                        icon: "arrow.clockwise",
+                        title: "New Run",
+                        subtitle: "End the current game and return to campaign select",
+                        tint: theme.accentGold
+                    ) {
+                        showMainMenuConfirmation = true
+                    }
+                }
+                if onMainMenu != nil && onDeleteAllData != nil {
+                    advancedDivider
+                }
+                if onDeleteAllData != nil {
+                    SettingsActionRow(
+                        icon: "trash.fill",
+                        title: "Wipe All Data",
+                        subtitle: "Completely reset the app — removes all saved games",
+                        tint: .red
+                    ) {
+                        showDeleteAllConfirmation = true
+                    }
+                }
+            }
+        }
+    }
+
+    /// Subtle "ADVANCED" divider between the safe New Run button and the
+    /// nuclear Wipe All Data button. Helps the player see Wipe as the
+    /// destructive escape hatch, not a peer option.
+    @ViewBuilder
+    private var advancedDivider: some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(theme.inkLight.opacity(0.3))
+                .frame(height: 1)
+            Text("ADVANCED")
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .tracking(2)
+                .foregroundColor(theme.inkLight.opacity(0.5))
+            Rectangle()
+                .fill(theme.inkLight.opacity(0.3))
+                .frame(height: 1)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+
+}
+
+// MARK: - Confirmation dialog bundle
+
+/// All six confirmation/alert dialogs hoisted into a single ViewModifier so
+/// SettingsView.body stays small enough for Swift's view-builder type checker.
+/// After the reset-model consolidation (2026-05-12), only 3 dialogs remain:
+/// New Run, Wipe All Data, and the placeholder legal alert. The legacy
+/// Reset Save + Save-Reset-completed + Restart-Game dialogs are gone.
+private struct SettingsConfirmationDialogs: ViewModifier {
+    @Binding var showPlaceholderLegalAlert: Bool
+    @Binding var showMainMenuConfirmation: Bool
+    @Binding var showDeleteAllConfirmation: Bool
+    let placeholderLegalTitle: String
+    let onMainMenu: (() -> Void)?
+    let onDeleteAllData: (() -> Void)?
+    let dismiss: DismissAction
+
+    func body(content: Content) -> some View {
+        content
+            .alert(placeholderLegalTitle, isPresented: $showPlaceholderLegalAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("This document will be linked here before the App Store release.")
+            }
+            .confirmationDialog(
+                "Start a New Run?",
+                isPresented: $showMainMenuConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("End Game", role: .destructive) {
+                    dismiss()
+                    onMainMenu?()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Your current game will end. You'll return to campaign select.")
+            }
+            .confirmationDialog(
+                "Wipe All Data?",
+                isPresented: $showDeleteAllConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Wipe Everything", role: .destructive) {
+                    dismiss()
+                    onDeleteAllData?()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will permanently delete all saved games and settings. The app will reset to initial state.")
+            }
     }
 }
 
@@ -349,6 +415,49 @@ private struct SettingsLinkRow: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
+            .background(theme.parchmentDark)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SettingsActionRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let tint: Color
+    let action: () -> Void
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(tint)
+                    .frame(width: 40)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(theme.labelFont)
+                        .fontWeight(.semibold)
+                        .foregroundColor(theme.inkBlack)
+
+                    Text(subtitle)
+                        .font(theme.tagFont)
+                        .foregroundColor(theme.inkGray)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(theme.inkLight)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .background(theme.parchmentDark)
         }
         .buttonStyle(.plain)

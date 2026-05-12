@@ -18,6 +18,11 @@ struct DeskView: View {
     var onLedgerTap: (() -> Void)? = nil
     var onLadderTap: (() -> Void)? = nil
     var onEndTurn: (() -> Void)? = nil  // Callback to properly end turn through game phases
+    // Game lifecycle hooks forwarded into SettingsView's new Game Menu section.
+    // ContentView passes the same closures it previously gave to GameMenuSheet.
+    var onRestart: (() -> Void)? = nil
+    var onMainMenu: (() -> Void)? = nil
+    var onDeleteAllData: (() -> Void)? = nil
 
     @State var selectedOptionId: String?
     @State var currentScenario: Scenario?
@@ -52,6 +57,10 @@ struct DeskView: View {
 
     // Settings sheet (gear icon in status bar)
     @State var showSettingsSheet = false
+
+    // Crisis Response Panel — sheet binding flipped by CrisisResponseBanner tap.
+    // Banner renders nothing when no active crises, so this stays false in calm turns.
+    @State var showCrisisPanel: Bool = false
 
     // Rival move counter sheet — set when the player taps a counter
     // option on a RivalMoveCard. The optional sheet binding is driven
@@ -114,6 +123,14 @@ struct DeskView: View {
                 // Support/Military Loyalty/AP always visible during scrolling
                 // so the Chairman can read the room without leaving the Desk
                 PersistentStatBar(game: game)
+
+                // Crisis Response banner — sits directly under PersistentStatBar
+                // so it stays visible while the player scrolls Desk content.
+                // Renders an EmptyView when no active crises (zero height,
+                // no padding side-effects), so calm turns look unchanged.
+                CrisisResponseBanner(game: game) {
+                    showCrisisPanel = true
+                }
 
                 // Scrollable desk content
                 ScrollViewReader { proxy in
@@ -270,8 +287,19 @@ struct DeskView: View {
             .presentationDetents([.large])
         }
         // Settings sheet — opened from the gear icon in StitchStatusBar.
+        // Now also hosts Game Menu actions (Restart / Main Menu / Delete) that
+        // previously lived in the separate GameMenuSheet.
         .sheet(isPresented: $showSettingsSheet) {
-            SettingsView()
+            SettingsView(
+                onRestart: onRestart,
+                onMainMenu: onMainMenu,
+                onDeleteAllData: onDeleteAllData
+            )
+        }
+        // Crisis Response Panel — opened from CrisisResponseBanner tap.
+        // The panel itself surfaces every active crisis + response option.
+        .sheet(isPresented: $showCrisisPanel) {
+            CrisisResponsePanel(game: game)
         }
     }
 

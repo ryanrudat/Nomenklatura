@@ -21,6 +21,15 @@ class DocumentQueueService: ObservableObject {
 
     static let shared = DocumentQueueService()
 
+    /// Option IDs on arrest-style documents that authorize the apparatus to
+    /// proceed with arrest/raid/escalation. Used by `selectOption` to register
+    /// the prosecution pipeline lane against the named suspect.
+    fileprivate static let prosecutionAuthorizingOptionIds: Set<String> = [
+        "authorize",            // generateArrestAuthorization's primary authorize option
+        "raid",                 // generateArrestAuthorization's immediate-raid option
+        "escalate_to_arrest"    // surveillance update's escalate option
+    ]
+
     // MARK: - Configuration
 
     /// Maximum documents visible on desk at once
@@ -31,6 +40,22 @@ class DocumentQueueService: ObservableObject {
 
     /// Chance of generating a new document each turn (base rate)
     let baseDocumentChance: Double = 0.7
+
+    // MARK: - Template cooldowns
+
+    /// 4-tuple describing one template entry inside a category generator.
+    /// The `key` is a stable string per template (NOT a UUID-suffixed id);
+    /// `cooldown` is the minimum turns between consecutive firings of that
+    /// template. Used by `pickAvailableTemplate(...)` and
+    /// `markTemplateFired(...)` to enforce the cooldown.
+    typealias DocTemplateEntry = (key: String, minClearance: Int, cooldown: Int, generator: (Game) -> DeskDocument)
+
+    /// Per-template "last fired" turn. Survives only for the lifetime of the
+    /// singleton service (in-memory), which is fine because the bug is
+    /// "same template fires on consecutive turns" — a process restart already
+    /// breaks the loop. If we ever want longer-than-session cooldowns we'd
+    /// move this into `game.flags` like the world-state docs already do.
+    private var templateLastFiredTurn: [String: Int] = [:]
 
     // MARK: - Published State
 
@@ -400,6 +425,42 @@ class DocumentQueueService: ObservableObject {
         }
 
         return min(count, maxNew)
+    }
+
+    // MARK: - Per-template cooldown helpers
+
+    /// Pick a template that satisfies the player's clearance AND is not on
+    /// cooldown. Weighted by clearance proximity so higher-tier templates
+    /// the player has unlocked fire more often than lower-tier ones, which
+    /// preserves the prior selection feel. Returns nil if every template
+    /// is either over-clearance or on cooldown; callers should fall back
+    /// to a stable default template in that case (so the player still gets
+    /// a doc — the cooldown just trims repetition, not the queue).
+    private func pickAvailableTemplate(
+        from templates: [DocTemplateEntry],
+        clearanceLevel: Int,
+        currentTurn: Int
+    ) -> DocTemplateEntry? {
+        let available = templates.filter { template in
+            guard template.minClearance <= clearanceLevel else { return false }
+            if let lastFired = templateLastFiredTurn[template.key] {
+                return (currentTurn - lastFired) >= template.cooldown
+            }
+            return true
+        }
+        guard !available.isEmpty else { return nil }
+        let weighted: [DocTemplateEntry] = available.flatMap { template -> [DocTemplateEntry] in
+            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
+            return Array(repeating: template, count: weight)
+        }
+        return weighted.randomElement()
+    }
+
+    /// Record that `key` fired on `turn` so its cooldown applies to future
+    /// `pickAvailableTemplate` calls. Always called immediately after a
+    /// template's generator returns a DeskDocument.
+    private func markTemplateFired(key: String, on turn: Int) {
+        templateLastFiredTurn[key] = turn
     }
 
     /// Generate a single document appropriate for the game state
@@ -995,31 +1056,17 @@ class DocumentQueueService: ObservableObject {
     private func generateSecurityDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Templates with minimum clearance requirements
-        // As General Secretary, the player receives high-level security briefings:
-        // - Denunciations are forwarded from BPS with recommendations
-        // - Surveillance reports require General Secretary authorization
-        // - Arrest warrants need the leader's signature
-        // - Intelligence operations report directly to the top
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateDenunciationLetter),      // Forwarded from BPS with recommendation
-            (2, generateSecurityConcernReport),   // Security concern requiring attention
-            (3, generateSurveillanceReport),      // Surveillance authorization request
-            (4, generateArrestAuthorization),     // Arrest warrant for signature
-            (5, generateIntelligenceHandlerReport) // Intelligence operation briefing
+        let templates: [DocTemplateEntry] = [
+            ("denunciation",            1, 4, generateDenunciationLetter),
+            ("security_concern",        2, 5, generateSecurityConcernReport),
+            ("surveillance",            3, 6, generateSurveillanceReport),
+            ("arrest_authorization",    4, 7, generateArrestAuthorization),
+            ("intelligence_handler",    5, 8, generateIntelligenceHandlerReport)
         ]
 
-        // Filter templates available at current clearance
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // Weighted selection preferring appropriate challenge level
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
-            return generator(game)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            return selected.generator(game)
         }
 
         return generateDenunciationLetter(for: game)
@@ -1417,154 +1464,19 @@ class DocumentQueueService: ObservableObject {
     private func generateMilitaryDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Military templates for General Secretary level:
-        // - Requisitions come from division commanders seeking authorization
-        // - Discipline cases escalated to highest authority
-        // - Border incidents require immediate strategic decisions
-        // - Readiness assessments are strategic intelligence
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (2, generateRequisitionRequest),        // Division commander requests
-            (3, generateDisciplineCase),            // Courts-martial requiring approval
-            (4, generateBorderIncidentReport),      // Border crises needing orders
-            (5, generateMilitaryReadinessAssessment) // Strategic readiness briefings
+        let templates: [DocTemplateEntry] = [
+            ("requisition_request",     2, 5, generateRequisitionRequest),
+            ("discipline_case",         3, 6, generateDisciplineCase),
+            ("border_incident",         4, 7, generateBorderIncidentReport),
+            ("military_readiness",      5, 8, generateMilitaryReadinessAssessment)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // Weighted selection preferring appropriate challenge level
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
-            return generator(game)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            return selected.generator(game)
         }
 
         return generateRequisitionRequest(for: game)
-    }
-
-    /// Level 1+: Basic administrative filing (legacy — retained for follow-up chains)
-    private func generateSupplyFilingRequest(for game: Game) -> DeskDocument {
-        let items = [
-            ("Winter boots", "23rd Infantry", "47 pairs"),
-            ("Uniform buttons", "Quartermaster Depot", "2,400 units"),
-            ("Typewriter ribbons", "Administrative Pool", "36 spools"),
-            ("Blankets", "Training Barracks", "85 units")
-        ]
-
-        let (item, unit, quantity) = items.randomElement()!
-
-        let body = """
-        SUPPLY REQUEST - FILING CONFIRMATION
-
-        Request ID: SR-\(Int.random(in: 10000...99999))
-        Requesting Unit: \(unit)
-        Item: \(item)
-        Quantity: \(quantity)
-
-        This request has been logged in the central supply system. Please verify the quantities match the attached requisition form and file according to standard procedure.
-
-        Note: Any discrepancies should be noted on Form 27-B and forwarded to the Supply Audit Office.
-
-        REQUIRES YOUR SIGNATURE FOR FILING.
-        """
-
-        return DeskDocument.builder()
-            .withTemplateId("supply_filing_\(UUID().uuidString.prefix(6))")
-            .ofType(.requisition)
-            .titled("Supply Filing: \(item)")
-            .from("Central Supply Office", title: "Logistics Division")
-            .receivedOnTurn(game.turnNumber)
-            .withUrgency(.routine)
-            .inCategory(.military)
-            .withBody(body)
-            .requiresDecision(true)
-            .addOption(
-                id: "approve",
-                text: "APPROVE - Quantities verified",
-                shortDescription: "Approved filing",
-                effects: [:],
-                archetype: .loyalty  // Military-Political: supporting the troops
-            )
-            .addOption(
-                id: "flag_discrepancy",
-                text: "FLAG DISCREPANCY - Request audit",
-                shortDescription: "Flagged for audit",
-                effects: ["security": 2],
-                archetype: .investigate
-            )
-            .addOption(
-                id: "expedite",
-                text: "EXPEDITE - Mark as priority supply",
-                shortDescription: "Expedited supply request",
-                effects: ["military": 3],
-                archetype: .military  // Military-Political: enhancing readiness
-            )
-            .build()
-    }
-
-    /// Level 1+: Basic maintenance review
-    private func generateMaintenanceLogReview(for game: Game) -> DeskDocument {
-        let vehicles = [
-            ("Transport Truck #147", "3rd Transport Battalion"),
-            ("Staff Car #23", "Regional Command Pool"),
-            ("Maintenance Vehicle #89", "Repair Depot")
-        ]
-
-        let (vehicle, unit) = vehicles.randomElement()!
-        let hoursLogged = Int.random(in: 200...450)
-
-        let body = """
-        MONTHLY MAINTENANCE LOG REVIEW
-
-        Vehicle: \(vehicle)
-        Assigned Unit: \(unit)
-        Hours Logged This Month: \(hoursLogged)
-
-        The attached maintenance log has been submitted for monthly review. Standard procedure requires verification that:
-
-        1. Oil changes performed on schedule
-        2. Tire inspections documented
-        3. Fuel consumption within normal parameters
-
-        Chief Mechanic notes: "All appears in order, but the fuel consumption seems slightly high. Could be nothing."
-
-        SIGN TO CONFIRM REVIEW COMPLETE.
-        """
-
-        return DeskDocument.builder()
-            .withTemplateId("maintenance_\(UUID().uuidString.prefix(6))")
-            .ofType(.report)
-            .titled("Maintenance Review: \(vehicle)")
-            .from("Motor Pool", title: "Vehicle Maintenance")
-            .receivedOnTurn(game.turnNumber)
-            .withUrgency(.routine)
-            .inCategory(.military)
-            .withBody(body)
-            .requiresDecision(true)
-            .addOption(
-                id: "approve",
-                text: "APPROVE - Log satisfactory",
-                shortDescription: "Approved maintenance log",
-                effects: [:],
-                archetype: .loyalty  // Military-Political: trusting the unit
-            )
-            .addOption(
-                id: "investigate_fuel",
-                text: "INVESTIGATE - Check fuel records",
-                shortDescription: "Investigated fuel usage",
-                effects: ["security": 3],
-                archetype: .investigate
-            )
-            .addOption(
-                id: "commend_unit",
-                text: "COMMEND UNIT - Note excellent maintenance",
-                shortDescription: "Commended maintenance crew",
-                effects: ["military": 2],
-                archetype: .loyalty  // Military-Political: building morale
-            )
-            .build()
     }
 
     /// Level 5+: Strategic military readiness assessment
@@ -1847,37 +1759,28 @@ class DocumentQueueService: ObservableObject {
     private func generateEconomicDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Economic templates for General Secretary level:
-        // - Budget reports summarize national economic performance
-        // - Supply shortages require strategic allocation decisions
-        // - Quota adjustments from Planning Commission
-        // - Factory directors appeal to the highest authority
-        // - Production discrepancies may indicate sabotage or corruption
-        // - Resource allocation requires General Secretary authorization
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateRoutineBudgetReport),       // National budget summary
-            (1, generateSupplyShortageNotice),     // Critical shortage alert
-            (2, generateQuotaAdjustmentRequest),   // Planning Commission request
-            (3, generateFactoryDirectorAppeal),    // Director appeals to the top
-            (4, generateProductionDiscrepancy),    // Possible sabotage/corruption
-            (5, generateResourceAllocationRequest) // Strategic resource decisions
+        // Economic templates with stable keys + per-template cooldowns.
+        // `resource_allocation` has the longest cooldown (8) because that's
+        // the coal-distribution prompt playtest flagged as re-firing every
+        // turn; `routine_budget` has the shortest (3) because routine
+        // budget reports SHOULD recur relatively often.
+        let templates: [DocTemplateEntry] = [
+            ("routine_budget",          1, 3, generateRoutineBudgetReport),
+            ("supply_shortage",         1, 4, generateSupplyShortageNotice),
+            ("quota_adjustment",        2, 5, generateQuotaAdjustmentRequest),
+            ("factory_appeal",          3, 6, generateFactoryDirectorAppeal),
+            ("production_discrepancy",  4, 8, generateProductionDiscrepancy),
+            ("resource_allocation",     5, 8, generateResourceAllocationRequest)
         ]
 
-        // Filter templates available at current clearance
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // Prefer templates closer to player's level for appropriate challenge
-        let weighted = available.flatMap { template -> [(Int, (Game) -> DeskDocument)] in
-            // Weight higher-level documents more heavily if player can handle them
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: (template.minClearance, template.generator), count: weight)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            return selected.generator(game)
         }
 
-        if let selected = weighted.randomElement() {
-            return selected.1(game)
-        }
-
-        // Fallback to simplest
+        // Fallback when every template is on cooldown — use the shortest
+        // cooldown template anyway, but don't re-mark it (we already gave
+        // up on cooldown, so don't extend it further).
         return generateRoutineBudgetReport(for: game)
     }
 
@@ -2284,27 +2187,16 @@ class DocumentQueueService: ObservableObject {
     private func generatePoliticalDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Political templates for General Secretary level:
-        // - Meeting notices are Standing Committee agendas
-        // - Slogan updates are propaganda strategy decisions
-        // - Loyalty matters affect factional balance
-        // - Propaganda directives shape national messaging
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (1, generateMeetingAttendanceNotice),     // Standing Committee agendas
-            (1, generateSloganUpdateMemo),            // Propaganda strategy
-            (2, generateLoyaltyPledgeReminder),       // Factional loyalty matters
-            (3, generatePropagandaDirective),         // National messaging directive
+        let templates: [DocTemplateEntry] = [
+            ("meeting_attendance",      1, 3, generateMeetingAttendanceNotice),
+            ("slogan_update",           1, 4, generateSloganUpdateMemo),
+            ("loyalty_pledge",          2, 5, generateLoyaltyPledgeReminder),
+            ("propaganda_directive",    3, 6, generatePropagandaDirective)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
-            return generator(game)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            return selected.generator(game)
         }
 
         return generateMeetingAttendanceNotice(for: game)
@@ -2501,27 +2393,16 @@ class DocumentQueueService: ObservableObject {
     private func generateDiplomaticDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // Diplomatic templates for General Secretary level:
-        // - Embassy cables from ambassadors reporting to the leader
-        // - Cultural exchange requests requiring authorization
-        // - Diplomatic incidents demanding strategic response
-        // - Visa issues only when politically sensitive
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (3, generateVisaApplicationReview),      // Politically sensitive visa cases
-            (4, generateCulturalExchangeCoordination), // Inter-ministry diplomatic coordination
-            (5, generateEmbassyCable),               // Ambassador cables — eyes only
-            (6, generateDiplomaticIncidentReport)    // International incidents requiring response
+        let templates: [DocTemplateEntry] = [
+            ("visa_review",             3, 5, generateVisaApplicationReview),
+            ("cultural_exchange",       4, 6, generateCulturalExchangeCoordination),
+            ("embassy_cable",           5, 7, generateEmbassyCable),
+            ("diplomatic_incident",     6, 8, generateDiplomaticIncidentReport)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
-            return generator(game)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            return selected.generator(game)
         }
 
         return generateTranslationFiling(for: game)
@@ -2574,58 +2455,6 @@ class DocumentQueueService: ObservableObject {
                 text: "FLAG FOR REVIEW - Request original",
                 shortDescription: "Flagged for review",
                 effects: ["security": 1],
-                archetype: .investigate
-            )
-            .build()
-    }
-
-    /// Level 2+: Visitor log verification
-    private func generateVisitorLogReview(for game: Game) -> DeskDocument {
-        let visitors = [
-            ("Dr. Hans Mueller", "Austrian Trade Delegation", "3 days"),
-            ("Mr. James Crawford", "British Cultural Attaché Office", "1 week"),
-            ("Mme. Isabelle Dupont", "French Academic Exchange", "5 days")
-        ]
-
-        let (name, affiliation, duration) = visitors.randomElement()!
-
-        let body = """
-        FOREIGN VISITOR LOG - VERIFICATION REQUIRED
-
-        Visitor: \(name)
-        Affiliation: \(affiliation)
-        Duration of Visit: \(duration)
-        Host Department: Cultural Affairs
-
-        The visitor access log requires your verification signature before archiving. Standard security notation indicates no unusual activity during the visit.
-
-        Building Security notes: "Visitor adhered to designated areas. No protocol violations observed."
-
-        VERIFY AND SIGN FOR RECORDS.
-        """
-
-        return DeskDocument.builder()
-            .withTemplateId("visitor_log_\(UUID().uuidString.prefix(6))")
-            .ofType(.report)
-            .titled("Visitor Log: \(name)")
-            .from("Building Security", title: "Foreign Ministry")
-            .receivedOnTurn(game.turnNumber)
-            .withUrgency(.routine)
-            .inCategory(.diplomatic)
-            .withBody(body)
-            .requiresDecision(true)
-            .addOption(
-                id: "verify",
-                text: "VERIFY - Sign for archiving",
-                shortDescription: "Verified visitor log",
-                effects: [:],
-                archetype: .administrative
-            )
-            .addOption(
-                id: "request_detail",
-                text: "REQUEST DETAIL - Who approved extended access?",
-                shortDescription: "Questioned access",
-                effects: ["security": 2],
                 archetype: .investigate
             )
             .build()
@@ -2920,176 +2749,23 @@ class DocumentQueueService: ObservableObject {
     private func generatePersonnelDocument(for game: Game) -> DeskDocument {
         let clearanceLevel = min(game.currentPositionIndex + 1, 8)
 
-        // DEBUG: Log clearance level
         documentLog.info("📋 [Personnel] Position Index: \(game.currentPositionIndex), Clearance Level: \(clearanceLevel)")
 
-        // Personnel templates for General Secretary level:
-        // - Training assignments for senior cadre development
-        // - Transfer requests for key positions requiring approval
-        // - Senior appointments with political implications
-        // - Nepotism/patronage requests from powerful figures
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (2, generateTrainingAssignment),         // Cadre development decisions
-            (3, generateMinorTransferRequest),       // Ministerial transfers
-            (4, generateSeniorTransferRequest),      // Politically sensitive appointments
-            (5, generateNepotismTransferRequest)     // Patronage and nepotism dilemmas
+        let templates: [DocTemplateEntry] = [
+            ("training_assignment",     2, 4, generateTrainingAssignment),
+            ("minor_transfer",          3, 5, generateMinorTransferRequest),
+            ("senior_transfer",         4, 7, generateSeniorTransferRequest),
+            ("nepotism_transfer",       5, 8, generateNepotismTransferRequest)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        // DEBUG: Log available templates with their clearance requirements
-        let availableClearances = available.map { $0.minClearance }
-        documentLog.info("📋 [Personnel] Available templates: \(availableClearances.count) with clearances: \(availableClearances)")
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
-            let doc = generator(game)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            let doc = selected.generator(game)
             documentLog.info("📋 [Personnel] Generated document: \(doc.title)")
             return doc
         }
 
         return generateTrainingAssignment(for: game)
-    }
-
-    /// Level 1+: Basic leave request filing
-    private func generateLeaveRequestFiling(for game: Game) -> DeskDocument {
-        let employees = [
-            ("Comrade Petrov", "Filing Clerk", "2 days"),
-            ("Comrade Ivanova", "Typist Pool", "1 week"),
-            ("Comrade Sokolov", "Mail Room", "3 days")
-        ]
-
-        let (name, department, duration) = employees.randomElement()!
-        let reason = ["family matter", "medical appointment", "personal business"].randomElement()!
-
-        let body = """
-        LEAVE REQUEST - ADMINISTRATIVE FILING
-
-        Employee: \(name)
-        Department: \(department)
-        Requested Duration: \(duration)
-        Reason: \(reason.capitalized)
-
-        Supervisor has approved this request. Your signature is required for central records.
-
-        Note: Employee has sufficient leave balance.
-
-        SIGN TO FILE IN CENTRAL RECORDS.
-        """
-
-        return DeskDocument.builder()
-            .withTemplateId("leave_\(UUID().uuidString.prefix(6))")
-            .ofType(.memo)
-            .titled("Leave Request: \(name)")
-            .from("Personnel Records", title: "Central Administration")
-            .receivedOnTurn(game.turnNumber)
-            .withUrgency(.routine)
-            .inCategory(.personnel)
-            .withBody(body)
-            .requiresDecision(true)
-            .addOption(
-                id: "file",
-                text: "FILE - Process normally",
-                shortDescription: "Filed leave request",
-                effects: [:],
-                archetype: .administrative
-            )
-            .addOption(
-                id: "verify",
-                text: "VERIFY - Check leave balance first",
-                shortDescription: "Requested verification",
-                effects: [:],
-                triggersDocument: "verification_leave_\(name.lowercased().replacingOccurrences(of: " ", with: "_"))",
-                archetype: .regulate
-            )
-            .build()
-    }
-
-    /// Level 1+: Timesheet verification
-    private func generateTimesheetVerification(for game: Game) -> DeskDocument {
-        let departments = [
-            ("Records Division", 47, 2115),
-            ("Typing Pool", 23, 1035),
-            ("Mail Services", 12, 540)
-        ]
-
-        let (dept, employeeCount, totalHours) = departments.randomElement()!
-
-        // Generate employee timesheet summary
-        let employeeNames = generateNameList(count: min(employeeCount, 15), includeUnits: false) // Show up to 15 for readability
-        var timesheetEntries: [String] = []
-        var runningTotal = 0
-
-        for (index, name) in employeeNames.enumerated() {
-            let standardHours = 45
-            let overtime = index % 4 == 0 ? Int.random(in: 2...8) : 0 // Some have overtime
-            let hours = standardHours + overtime
-            runningTotal += hours
-            let overtimeNote = overtime > 0 ? " (+\(overtime) OT)" : ""
-            timesheetEntries.append("\(String(format: "%2d", index + 1)). \(name): \(hours) hrs\(overtimeNote)")
-        }
-
-        let timesheetSummary = """
-
-        ═══════════════════════════════════════════
-        ATTACHMENT: TIMESHEET SUMMARY (SAMPLE)
-        ═══════════════════════════════════════════
-
-        \(timesheetEntries.joined(separator: "\n"))
-        \(employeeCount > 15 ? "\n        ... and \(employeeCount - 15) additional employees" : "")
-
-        ───────────────────────────────────────────
-        Sample Total: \(runningTotal) hrs | Full Dept: \(totalHours) hrs
-        """
-
-        let body = """
-        MONTHLY TIMESHEET VERIFICATION
-
-        Department: \(dept)
-        Employees: \(employeeCount) employees
-        Total Hours Logged: \(totalHours) hours
-
-        The attached timesheet summary requires your verification before payroll processing. Standard procedure requires checking that:
-
-        1. Total hours match expected work days
-        2. Overtime is properly authorized
-        3. Absences are documented
-
-        Payroll Office notes: "All figures appear in order."
-
-        SIGN TO APPROVE FOR PAYROLL.
-        \(timesheetSummary)
-        """
-
-        return DeskDocument.builder()
-            .withTemplateId("timesheet_\(UUID().uuidString.prefix(6))")
-            .ofType(.report)
-            .titled("Timesheet: \(dept)")
-            .from("Payroll Office", title: "Central Administration")
-            .receivedOnTurn(game.turnNumber)
-            .withUrgency(.routine)
-            .inCategory(.personnel)
-            .withBody(body)
-            .requiresDecision(true)
-            .addOption(
-                id: "approve",
-                text: "APPROVE - Forward to payroll",
-                shortDescription: "Approved timesheets",
-                effects: [:],
-                archetype: .administrative
-            )
-            .addOption(
-                id: "audit",
-                text: "REQUEST AUDIT - Check overtime hours",
-                shortDescription: "Requested overtime audit",
-                effects: ["security": 1],
-                archetype: .regulate
-            )
-            .build()
     }
 
     /// Level 2+: Training program assignment
@@ -3417,23 +3093,17 @@ class DocumentQueueService: ObservableObject {
         // - Level 3: Minor incidents (equipment failures, supply issues)
         // - Level 4: Local disturbances (small protests, workplace disputes)
         // - Level 5+: Major crises (strikes, regional unrest, sabotage)
-        let templates: [(minClearance: Int, generator: (Game) -> DeskDocument)] = [
-            (3, generateEquipmentFailureCrisis),     // Level 3+ (facility incident)
-            (3, generateSupplyDisruptionCrisis),     // Level 3+ (logistical crisis)
-            (4, generateLocalDisturbanceCrisis),     // Level 4+ (minor unrest)
-            (5, generateWorkerStrikeCrisis),         // Level 5+ (major labor crisis)
-            (6, generateRegionalUnrestCrisis)        // Level 6+ (widespread unrest)
+        let templates: [DocTemplateEntry] = [
+            ("equipment_failure",       3, 4, generateEquipmentFailureCrisis),
+            ("supply_disruption",       3, 4, generateSupplyDisruptionCrisis),
+            ("local_disturbance",       4, 5, generateLocalDisturbanceCrisis),
+            ("worker_strike",           5, 6, generateWorkerStrikeCrisis),
+            ("regional_unrest",         6, 8, generateRegionalUnrestCrisis)
         ]
 
-        let available = templates.filter { $0.minClearance <= clearanceLevel }
-
-        let weighted = available.flatMap { template -> [(Game) -> DeskDocument] in
-            let weight = max(1, 3 - (clearanceLevel - template.minClearance))
-            return Array(repeating: template.generator, count: weight)
-        }
-
-        if let generator = weighted.randomElement() {
-            return generator(game)
+        if let selected = pickAvailableTemplate(from: templates, clearanceLevel: clearanceLevel, currentTurn: game.turnNumber) {
+            markTemplateFired(key: selected.key, on: game.turnNumber)
+            return selected.generator(game)
         }
 
         return generateEquipmentFailureCrisis(for: game)
@@ -3903,6 +3573,38 @@ class DocumentQueueService: ObservableObject {
     func selectOption(document: DeskDocument, optionId: String, game: Game) -> DocumentOption? {
         guard let option = document.options.first(where: { $0.id == optionId }) else {
             return nil
+        }
+
+        // Prosecution pipeline registration: when the player authorizes an
+        // arrest / raid / escalation on an arrest-style document, claim the
+        // prosecution lane against the named suspect. We resolve the target
+        // by parsing the setsFlag prefix `arrested_<lowercase_underscored_name>`
+        // — the generator embeds the target's name in that flag. The arrest
+        // document is generated with a hardcoded suspect list (not a real
+        // GameCharacter), so when we can't match by name we fall back to
+        // recording the prosecution under the document's chain ID. This
+        // matches the "feel" requirement: the apparatus brought this to
+        // the player, so .deskDocument is the initiator regardless of
+        // downstream mechanical disposition.
+        if Self.prosecutionAuthorizingOptionIds.contains(optionId),
+           let flag = option.setsFlag,
+           flag.hasPrefix("arrested_") {
+            let suspectKey = String(flag.dropFirst("arrested_".count))
+            // Find a character whose name normalises to the same key.
+            // (Suspects in generateArrestAuthorization are hardcoded NPCs, so
+            // this only matches when the lookup happens to coincide with an
+            // existing GameCharacter — defensive lookup either way.)
+            if let target = game.characters.first(where: { character in
+                character.name
+                    .lowercased()
+                    .replacingOccurrences(of: " ", with: "_") == suspectKey
+            }) {
+                _ = ProsecutionPipelineService.shared.initiate(
+                    kind: .deskDocument,
+                    target: target,
+                    in: game
+                )
+            }
         }
 
         // Apply effects

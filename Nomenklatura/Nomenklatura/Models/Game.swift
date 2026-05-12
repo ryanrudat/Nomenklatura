@@ -74,6 +74,15 @@ final class Game {
     var actionPoints: Int
     var directivePoints: Int  // Points available for issuing bureau directives (default 2 per turn)
 
+    // Bureau neglect tracking — how many consecutive turns each bureau has been
+    // ignored, keyed by ExpandedCareerTrack.rawValue. Incremented each turn a
+    // bureau receives no directive; reset to 0 when a directive is issued OR
+    // after the chief acts on accumulated neglect. See BureauChiefAgencyService.
+    // Stored as encoded Data blob (matching the convention for [String: Int]
+    // properties on this @Model) and accessed via the `bureauNeglectTurns`
+    // computed property below.
+    var bureauNeglectTurnsData: Data?
+
     // Policy/Resistance system
     var resistanceAccumulation: Int  // 0-100, danger of backlash from forced policies
     var policiesForced: Int          // Count of decrees issued
@@ -92,6 +101,13 @@ final class Game {
     var consecutiveDecisionEvents: Int  // Tracks how many decisions in a row
     var lastNewspaperTurn: Int          // Last turn newspaper appeared
     var recentScenarioCategories: [String]  // Recent categories for variety
+
+    // Achievement streak counters (incremented in recordAllStatHistory).
+    // History arrays are capped at 20 entries, so sustained-stat achievements
+    // beyond that window (Father of the Nation = 50, Supreme Commander = 30)
+    // need dedicated counters. Reset to 0 whenever the stat drops below threshold.
+    var consecutiveTurnsStabilityHigh: Int = 0           // stability >= 90 streak
+    var consecutiveTurnsMilitaryLoyaltyHigh: Int = 0     // militaryLoyalty >= 90 streak
 
     // Dynamic events system
     var pendingDynamicEventsData: Data?  // Encoded [DynamicEvent]
@@ -226,6 +242,11 @@ final class Game {
     var turnsInCurrentPosition: Int       // Turns in current position
     var turnsAsGeneralSecretary: Int      // Total turns as General Secretary
 
+    // Chairman's Decree pool — unilateral power that bypasses Standing Committee at steep political cost.
+    // Regenerates 1 charge every 50 turns, capped at 3 stockpiled.
+    var decreeChargesRemaining: Int = 3
+    var lastDecreeRegenTurn: Int = 0
+
     // Pending position offers (encoded)
     var pendingPositionOffersData: Data?
 
@@ -310,6 +331,7 @@ final class Game {
         self.currentExpandedTrack = ExpandedCareerTrack.shared.rawValue  // Gen Sec is on shared track
         self.actionPoints = BalanceConfig.actionPointsPerTurn
         self.directivePoints = 2
+        self.bureauNeglectTurnsData = nil
 
         // Policy/Resistance system
         self.resistanceAccumulation = 0
@@ -388,6 +410,10 @@ final class Game {
         self.termsServed = 0
         self.turnsInCurrentPosition = 0
         self.turnsAsGeneralSecretary = 0
+
+        // Chairman's Decree pool — start with 3 charges; regen every 50 turns, capped at 3.
+        self.decreeChargesRemaining = 3
+        self.lastDecreeRegenTurn = 0
 
         // Position offers
         self.pendingPositionOffersData = nil
@@ -1208,6 +1234,28 @@ extension Game {
     func endAntiCorruptionCampaign() {
         activeAntiCorruptionCampaign = nil
     }
+
+    // MARK: - Prosecution Pipeline (Unified Coordination Layer)
+
+    /// Convenience accessor for the prosecution registry written by
+    /// `ProsecutionPipelineService`. The underlying blob lives in
+    /// `variables["prosecution_pipeline"]` (matches the existing
+    /// SecurityActionService / BureauChiefAgencyService encoding pattern,
+    /// avoiding a schema migration). See `ProsecutionPipelineService` for
+    /// the canonical mutation API — direct callers should NOT write through
+    /// this accessor; use the service so conflict resolution stays correct.
+    var prosecutionPipelineData: Data? {
+        get {
+            return variables["prosecution_pipeline"]?.data(using: .utf8)
+        }
+        set {
+            if let data = newValue, let string = String(data: data, encoding: .utf8) {
+                variables["prosecution_pipeline"] = string
+            } else {
+                variables.removeValue(forKey: "prosecution_pipeline")
+            }
+        }
+    }
 }
 
 // MARK: - Stat Level
@@ -1822,6 +1870,19 @@ extension Game {
     /// Write an integer into the string-typed variables dictionary.
     func setIntVariable(_ key: String, _ value: Int) {
         variables[key] = "\(value)"
+    }
+
+    /// Per-bureau neglect counters — decoded from `bureauNeglectTurnsData`.
+    /// Keyed by `ExpandedCareerTrack.rawValue`. See `BureauChiefAgencyService`
+    /// for the mechanic that drives these.
+    var bureauNeglectTurns: [String: Int] {
+        get {
+            guard let data = bureauNeglectTurnsData else { return [:] }
+            return (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
+        }
+        set {
+            bureauNeglectTurnsData = newValue.isEmpty ? nil : (try? JSONEncoder().encode(newValue))
+        }
     }
 }
 
@@ -2996,6 +3057,22 @@ extension Game {
         var internationalStanding = internationalStandingHistory
         internationalStanding.append(self.internationalStanding)
         internationalStandingHistory = internationalStanding
+
+        // Achievement streak counters — increment when threshold is held, reset
+        // to 0 the moment the stat drops below. Drives sustained-stat badges
+        // that exceed the 20-turn history window (Father of the Nation,
+        // Supreme Commander). Champion of the People uses popularSupportHistory
+        // directly since its 20-turn window fits within the rolling history.
+        if self.stability >= 90 {
+            consecutiveTurnsStabilityHigh += 1
+        } else {
+            consecutiveTurnsStabilityHigh = 0
+        }
+        if self.militaryLoyalty >= 90 {
+            consecutiveTurnsMilitaryLoyaltyHigh += 1
+        } else {
+            consecutiveTurnsMilitaryLoyaltyHigh = 0
+        }
 
         // Also record economic history
         recordEconomicHistory()

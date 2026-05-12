@@ -26,6 +26,13 @@ final class GameCharacter {
     var canReturnFlag: Bool          // For disappeared characters
     var returnProbability: Int       // Chance to resurface (0-100)
 
+    /// Frozen snapshot of the slot this character occupied at the moment they
+    /// were removed from active service. Set by `markRemovedFromPosition(...)`
+    /// (or any equivalent removal path) before `positionIndex` is cleared so
+    /// that history/display code can still show "Former Position: 6" even
+    /// though the slot itself is now considered vacant.
+    var previousPositionIndex: Int?
+
     // Relationship to player (-100 to 100)
     var disposition: Int
     var isPatron: Bool
@@ -525,10 +532,45 @@ extension GameCharacter {
         return false
     }
 
-    /// Update relationship status based on disposition thresholds
-    func updateRelationshipStatus(currentTurn: Int) -> String? {
+    /// Centralized removal-from-position helper. Sets `status`,
+    /// `statusChangedTurn`, snapshots the current `positionIndex` into
+    /// `previousPositionIndex`, then clears `positionIndex` (and
+    /// `positionTrack`) so the slot is visible as vacant to any successor /
+    /// appointment mechanic. Existing call sites are not migrated by this
+    /// change — they continue to set the fields directly — but new code
+    /// should prefer this helper to do the right thing in one step.
+    ///
+    /// Only call with a "removal" status (`.dead`, `.executed`, `.imprisoned`,
+    /// `.exiled`). For temporary / pending statuses (`.detained`,
+    /// `.underInvestigation`, `.disappeared`, `.rehabilitated`), the character
+    /// is still nominally in role and `positionIndex` must NOT be cleared.
+    func markRemovedFromPosition(reason: CharacterStatus, turn: Int) {
+        // Snapshot the slot we're vacating so display code can still surface
+        // "Former Position: N" even after we nil out positionIndex.
+        if let current = positionIndex {
+            previousPositionIndex = current
+        }
+        status = reason.rawValue
+        statusChangedTurn = turn
+        // vacancy fix: position must clear so successor mechanics see the slot as open
+        positionIndex = nil
+        positionTrack = nil
+    }
+
+    /// Update relationship status based on disposition thresholds. Pass
+    /// `game` (optional for back-compat) so the function can check the
+    /// `bound_ally_until_turn_<N>_target_<UUID>` flag — a co-opted character
+    /// must NOT auto-flip back to `.rival` during their lock-in period,
+    /// even if their disposition crashes below -30 from other pressures.
+    func updateRelationshipStatus(currentTurn: Int, game: Game? = nil) -> String? {
+        // Bound-ally suppression: if the player Co-opted this character via
+        // the "Promote Sideways"/"Bribe"/"Safety"/"Ideology" path within the
+        // last 20 turns, skip the disposition→rival auto-flip. They may grow
+        // colder, but their public alignment is held by the bargain.
+        let isBoundLockedIn = game.map { self.isBoundAlly(in: $0) } ?? false
+
         // If disposition drops below -30 and character was neutral/ally, they become hostile
-        if disposition <= -30 && !isRival && currentRole != .rival {
+        if disposition <= -30 && !isRival && currentRole != .rival && !isBoundLockedIn {
             role = CharacterRole.rival.rawValue
             return "\(name) has become openly hostile to you"
         }

@@ -2165,6 +2165,309 @@ class CharacterInteractionSystem {
             characterName: character.name
         )
     }
+
+    // MARK: - Co-opt Rival
+
+    /// Get all co-opt leverage paths currently available against a rival.
+    /// Returns paths in priority order (specific personality matches first, default last).
+    /// Empty array if the rival is not eligible (not a rival, inactive, recent failure, etc.).
+    func getAvailableCooptPaths(for character: GameCharacter, game: Game) -> [CooptPath] {
+        // Gating: must be an active rival
+        guard character.isRival, character.currentStatus == .active else {
+            return []
+        }
+
+        // Gating: player standing >= 60
+        guard game.standing >= 60 else {
+            return []
+        }
+
+        // Gating: no recent failure against this target (within 5 turns)
+        if cooptFailedRecently(targetId: character.id, game: game) {
+            return []
+        }
+
+        var paths: [CooptPath] = []
+
+        if CooptPath.bribe.isAvailable(for: character, game: game) {
+            paths.append(.bribe)
+        }
+        if CooptPath.promoteSideways.isAvailable(for: character, game: game) {
+            paths.append(.promoteSideways)
+        }
+        if CooptPath.guaranteeSafety.isAvailable(for: character, game: game) {
+            paths.append(.guaranteeSafety)
+        }
+        if CooptPath.ideologicalAppeal.isAvailable(for: character, game: game) {
+            paths.append(.ideologicalAppeal)
+        }
+
+        // Default leverage is always available if no other path qualifies
+        if paths.isEmpty {
+            paths.append(.defaultLeverage)
+        }
+
+        return paths
+    }
+
+    /// Check whether the player has failed a co-opt attempt against this target within the last 5 turns.
+    func cooptFailedRecently(targetId: UUID, game: Game) -> Bool {
+        let targetSuffix = "_target_\(targetId.uuidString)"
+        let cutoff = game.turnNumber - 5
+        for flag in game.flags where flag.hasSuffix(targetSuffix) && flag.hasPrefix("coopt_failed_turn_") {
+            // Parse "coopt_failed_turn_<N>_target_<UUID>"
+            let middle = flag.dropFirst("coopt_failed_turn_".count).prefix { $0 != "_" }
+            if let turn = Int(middle), turn > cutoff {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Execute a co-opt attempt against a rival via a specific leverage path.
+    /// Pays the path's costs, rolls for success, applies conversion-on-success or penalties-on-failure,
+    /// fires a narrative GameEvent, and records the interaction on the target.
+    /// Returns the structured result for UI display.
+    func cooptRival(targetId: UUID, path: CooptPath, in game: Game) -> CooptResult {
+        // Find the target character
+        guard let character = game.characters.first(where: { $0.id == targetId }) else {
+            return CooptResult(
+                success: false,
+                path: path,
+                narrative: "The target could not be found.",
+                targetName: "Unknown",
+                repercussions: [:],
+                converted: false,
+                lockInUntilTurn: nil,
+                ceremonialFlag: nil
+            )
+        }
+
+        let targetName = character.name
+
+        // Pay path costs (these are paid whether attempt succeeds or fails — you committed to the play)
+        let costs = path.cost
+        for (key, value) in costs {
+            game.applyStat(key, change: value)
+        }
+
+        // Roll for success. Paranoid targets are harder to flip — they
+        // smell the bribe coming, distrust the safety guarantee, doubt the
+        // ideological appeal. Divide by their resistance multiplier:
+        // paranoid=100 → 1.4x harder, paranoid=0 → 1.67x easier.
+        let baseChance = path.baseSuccessChance
+        let resistance = character.paranoidResistanceMultiplier
+        let successChance = min(1.0, max(0.05, baseChance / resistance))
+        let success = Double.random(in: 0...1) < successChance
+
+        var repercussions: [String: Int] = costs
+        var ceremonialFlag: String? = nil
+        var lockInUntilTurn: Int? = nil
+        var narrative: String
+
+        if success {
+            // ---- Conversion (common to all paths) ----
+            // grudge → +20 (toward neutral), gratitude +30
+            character.grudgeLevel = min(100, character.grudgeLevel + 20)
+            character.gratitudeLevel = min(100, character.gratitudeLevel + 30)
+            // Disposition warms substantially
+            character.disposition = min(100, character.disposition + 25)
+            // Clear rival flag and set bound-ally flag
+            character.isRival = false
+            game.invalidateCharacterRoleCaches()
+
+            let lockTurn = game.turnNumber + 20
+            lockInUntilTurn = lockTurn
+            let boundFlag = "bound_ally_until_turn_\(lockTurn)_target_\(targetId.uuidString)"
+            if !game.flags.contains(boundFlag) {
+                game.flags.append(boundFlag)
+            }
+
+            // ---- Path-specific success effects ----
+            switch path {
+            case .bribe:
+                narrative = "You arranged a private meeting with \(targetName). A discreet envelope changed hands. \(targetName) pocketed it without comment, then smiled. 'We understand each other now, Comrade.' The bribe was accepted."
+
+            case .promoteSideways:
+                // Bump positionIndex by 1 (ceremonial elevation)
+                if let current = character.positionIndex {
+                    character.positionIndex = current + 1
+                }
+                let flag = "ceremonial_role_\(targetId.uuidString)"
+                ceremonialFlag = flag
+                if !game.flags.contains(flag) {
+                    game.flags.append(flag)
+                }
+                narrative = "You arranged a private meeting with \(targetName). 'A more dignified role suits you,' you said, sliding a portfolio across the desk. \(targetName) read it slowly. The title was prestigious; the actual authority, less so. 'I... accept,' \(targetName) said, understanding the trade."
+
+            case .guaranteeSafety:
+                character.fearLevel = max(0, character.fearLevel - 30)
+                narrative = "You arranged a private meeting with \(targetName). 'I give you my word — your family, your dacha, your position. All safe.' \(targetName)'s shoulders unclenched for the first time in years. 'Then we have nothing to fight about, Comrade.'"
+
+            case .ideologicalAppeal:
+                // One-time loyalty bump (rival has been converted)
+                character.personalityLoyal = min(100, character.personalityLoyal + 10)
+                narrative = "You arranged a private meeting with \(targetName). You spoke of the Revolution, of historical necessity, of what the Party demanded. \(targetName) listened, then nodded slowly. 'Perhaps I have lost sight of why we began.' A conversion, of sorts."
+
+            case .defaultLeverage:
+                narrative = "You arranged a private meeting with \(targetName). The conversation was long, the leverage subtle. By the end, \(targetName) had agreed — not warmly, but firmly — to stand with you, for now."
+            }
+
+            // Mark the conversion as a positive disposition swing for history
+            repercussions["targetDisposition"] = 25
+
+        } else {
+            // ---- Failure consequences (any path) ----
+            game.applyStat("standing", change: -10)
+            character.disposition = max(-100, character.disposition - 10)
+            character.grudgeLevel = max(-100, character.grudgeLevel - 15)
+            repercussions["standing", default: 0] -= 10
+            repercussions["targetDisposition"] = -10
+            repercussions["targetGrudge"] = -15
+
+            // Failure flag prevents retry for 5 turns
+            let failFlag = "coopt_failed_turn_\(game.turnNumber)_target_\(targetId.uuidString)"
+            if !game.flags.contains(failFlag) {
+                game.flags.append(failFlag)
+            }
+
+            switch path {
+            case .bribe:
+                narrative = "You arranged a private meeting with \(targetName). The envelope was refused — or worse, accepted and then reported. By morning, the corridors hummed with rumor. \(targetName) had exposed the attempt."
+            case .promoteSideways:
+                narrative = "You arranged a private meeting with \(targetName). You laid out the new role; \(targetName) saw through it immediately. 'A cage with gold bars is still a cage, Comrade.' Word of the offer leaked within hours."
+            case .guaranteeSafety:
+                narrative = "You arranged a private meeting with \(targetName). 'Your guarantees,' \(targetName) said quietly, 'are worth precisely as much as the next purge demands.' The conversation ended badly. The rumors began the same evening."
+            case .ideologicalAppeal:
+                narrative = "You arranged a private meeting with \(targetName). You spoke of the Revolution. \(targetName) laughed — a short, dry laugh — and said, 'Save the sermons for the believers, Comrade.' The story spread through the Politburo by lunch."
+            case .defaultLeverage:
+                narrative = "You arranged a private meeting with \(targetName). The leverage failed to land. \(targetName) is now even more wary — and others will hear of your clumsy approach."
+            }
+        }
+
+        // Record interaction on the character history
+        character.recordInteraction(
+            turn: game.turnNumber,
+            scenario: "Co-opt attempt: \(path.displayName)",
+            choice: "coopt_\(path.rawValue)",
+            outcome: success ? "converted" : "exposed",
+            dispositionChange: success ? 25 : -10
+        )
+
+        // Fire a narrative GameEvent
+        let event = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .narrative,
+            summary: narrative
+        )
+        event.importance = 7
+        event.details["characterId"] = character.id.uuidString
+        event.details["characterName"] = targetName
+        event.details["cooptPath"] = path.rawValue
+        event.details["cooptSuccess"] = success ? "true" : "false"
+        event.charactersInvolved = [targetName]
+        event.game = game
+        game.events.append(event)
+
+        return CooptResult(
+            success: success,
+            path: path,
+            narrative: narrative,
+            targetName: targetName,
+            repercussions: repercussions,
+            converted: success,
+            lockInUntilTurn: lockInUntilTurn,
+            ceremonialFlag: ceremonialFlag
+        )
+    }
+
+    // MARK: - Unified Negotiation Front Door
+    //
+    // The three relationship-improvement mechanics (Cultivate / Truce / Co-opt)
+    // overlap heavily from the player's POV — they all "make this character
+    // friendlier." This front door surfaces them as tiered choices on a single
+    // NEGOTIATE button so the player picks the *risk level* explicitly, rather
+    // than guessing which legacy mechanic applies.
+    //
+    // The underlying methods (getCultivateInteractions, getAvailableCooptPaths,
+    // getRivalInteractions, executeCultivation, cooptRival, executeInteraction)
+    // are unchanged — this just routes the picker UI through one entry point.
+
+    /// Return the subset of negotiation tiers that are valid for this character.
+    /// - Cultivate is offered when at least one cultivation flavor is available
+    ///   (the existing `getCultivateInteractions` gate — non-leader, active,
+    ///   non-self, etc.).
+    /// - Truce is offered only when the target is an active rival. The
+    ///   underlying `CharacterInteraction` is the `"offer_truce_rival"` entry
+    ///   from `getRivalInteractions` — pulled out by id so the UI can present
+    ///   it as a single-shot tier rather than buried in a long list.
+    /// - Co-opt is offered when `getAvailableCooptPaths` returns a non-empty
+    ///   list (rival + standing >= 60 + no recent failure + at least one path
+    ///   personality-qualifies).
+    func availableNegotiationTiers(for character: GameCharacter, in game: Game) -> [NegotiationTier] {
+        var tiers: [NegotiationTier] = []
+
+        // Cultivate — works on everyone except leader/dead/self
+        let cultivateOptions = getCultivateInteractions(for: character, game: game)
+        if !cultivateOptions.isEmpty {
+            tiers.append(.cultivate(cultivateOptions))
+        }
+
+        // Truce — rivals only. Pull the canonical truce interaction out of the
+        // rival interaction list. (Truce always exists in getRivalInteractions
+        // for any active rival; no position/standing gate beyond rival status.)
+        if character.isRival && character.currentStatus == .active {
+            let rivalInteractions = getRivalInteractions(character: character, game: game)
+            if let truce = rivalInteractions.first(where: { $0.id == "offer_truce_rival" }) {
+                tiers.append(.truce(truce))
+            }
+        }
+
+        // Co-opt — gated by standing >= 60, no recent failure, at least one
+        // qualifying personality path. getAvailableCooptPaths handles all this.
+        let cooptPaths = getAvailableCooptPaths(for: character, game: game)
+        if !cooptPaths.isEmpty {
+            tiers.append(.coopt(cooptPaths))
+        }
+
+        return tiers
+    }
+
+    /// Execute a negotiation tier. Routes internally to the per-tier executor
+    /// (executeCultivation / executeInteraction / cooptRival) and returns a
+    /// unified result envelope the UI can render.
+    ///
+    /// AP / character-interaction budgeting is NOT touched here — the caller
+    /// is expected to charge AP and (for Co-opt) call `useCharacterInteraction()`
+    /// exactly as the legacy executors did, so existing behavior is preserved.
+    ///
+    /// For `.cultivate` the caller must pre-pick the cultivation flavor; for
+    /// `.coopt` the caller must pre-pick the leverage path. Both arrive as the
+    /// `selection` argument carried inside the corresponding case.
+    func executeNegotiation(
+        tier: NegotiationTier,
+        selection: NegotiationSelection,
+        target character: GameCharacter,
+        in game: Game
+    ) -> NegotiationResult {
+        switch (tier, selection) {
+        case (.cultivate, .cultivate(let interaction)):
+            let result = executeCultivation(interaction, target: character, game: game)
+            return .cultivate(result)
+
+        case (.truce(let interaction), .truce):
+            let result = executeInteraction(interaction, with: character, game: game)
+            return .truce(result)
+
+        case (.coopt, .coopt(let path)):
+            let result = cooptRival(targetId: character.id, path: path, in: game)
+            return .coopt(result)
+
+        default:
+            // Mismatched tier/selection — return a benign failure narrative.
+            return .invalid
+        }
+    }
 }
 
 // MARK: - Supporting Types
@@ -2427,6 +2730,267 @@ struct SecretLeverageResult {
     }
 }
 
+// MARK: - Co-opt Rival Types
+
+/// Leverage path for co-opting a rival into a bound ally.
+/// Each path is gated by a personality trait of the target; the player picks
+/// the path tailored to the rival's exploitable weakness.
+enum CooptPath: String, CaseIterable, Identifiable {
+    case bribe
+    case promoteSideways
+    case guaranteeSafety
+    case ideologicalAppeal
+    case defaultLeverage
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .bribe: return "Bribe"
+        case .promoteSideways: return "Promote Sideways"
+        case .guaranteeSafety: return "Guarantee Safety"
+        case .ideologicalAppeal: return "Ideological Appeal"
+        case .defaultLeverage: return "Default Leverage"
+        }
+    }
+
+    var shortDescription: String {
+        switch self {
+        case .bribe:
+            return "A discreet envelope. They have a price; you pay it."
+        case .promoteSideways:
+            return "A prestigious title with no real power. They take it because they're ambitious."
+        case .guaranteeSafety:
+            return "Your word on their security. Calms a paranoid rival into submission."
+        case .ideologicalAppeal:
+            return "Appeal to the Revolution. Works on cynical opportunists who can be re-radicalized."
+        case .defaultLeverage:
+            return "General leverage — no specific personality hook. Long odds, but better than nothing."
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .bribe: return "dollarsign.circle.fill"
+        case .promoteSideways: return "arrow.up.right.circle.fill"
+        case .guaranteeSafety: return "shield.lefthalf.filled"
+        case .ideologicalAppeal: return "book.closed.fill"
+        case .defaultLeverage: return "link.circle.fill"
+        }
+    }
+
+    /// AP cost for the path. Promote Sideways is the only 2-AP path.
+    var costAP: Int {
+        switch self {
+        case .promoteSideways: return 2
+        default: return 1
+        }
+    }
+
+    /// Base success chance for the path's roll (no modifiers applied).
+    var baseSuccessChance: Double {
+        switch self {
+        case .bribe: return 0.75
+        case .promoteSideways: return 0.65
+        case .guaranteeSafety: return 0.70
+        case .ideologicalAppeal: return 0.55
+        case .defaultLeverage: return 0.40
+        }
+    }
+
+    /// Stat costs paid up-front (whether the roll succeeds or fails).
+    /// Keys are Game.applyStat keys; values are signed (negative = cost).
+    var cost: [String: Int] {
+        switch self {
+        case .bribe:
+            return ["treasury": -30]
+        case .promoteSideways:
+            return ["network": -25]
+        case .guaranteeSafety:
+            return ["standing": -10, "network": -15]
+        case .ideologicalAppeal:
+            return ["standing": -5, "patronFavor": -5]
+        case .defaultLeverage:
+            return ["standing": -15, "network": -10]
+        }
+    }
+
+    /// Human-readable cost line for UI ("Treasury -30 · 1 AP").
+    var costSummary: String {
+        var parts: [String] = []
+        for (key, value) in cost {
+            let label: String
+            switch key {
+            case "treasury": label = "Treasury"
+            case "network": label = "Network"
+            case "standing": label = "Standing"
+            case "patronFavor": label = "Patron Favor"
+            default: label = key.capitalized
+            }
+            parts.append("\(label) \(value)")
+        }
+        parts.sort()
+        parts.append("\(costAP) AP")
+        return parts.joined(separator: " · ")
+    }
+
+    /// Whether this path is available against the given rival given their personality.
+    /// Note: does NOT check global gating (isRival/standing/cooldown/AP) — see
+    /// `CharacterInteractionSystem.getAvailableCooptPaths(for:game:)` for the full check.
+    func isAvailable(for character: GameCharacter, game: Game) -> Bool {
+        switch self {
+        case .bribe:
+            return character.personalityCorrupt >= 60
+        case .promoteSideways:
+            return character.personalityAmbitious >= 60
+                && (character.positionIndex ?? 0) >= 4
+        case .guaranteeSafety:
+            return character.personalityParanoid >= 60
+        case .ideologicalAppeal:
+            // Cynic without strong loyalty: low loyalty AND non-trivial ambition
+            return character.personalityLoyal < 30
+                && character.personalityAmbitious >= 50
+        case .defaultLeverage:
+            // Always "structurally available"; getAvailableCooptPaths only surfaces
+            // it when no other path qualifies.
+            return true
+        }
+    }
+}
+
+/// Result of a co-opt attempt.
+struct CooptResult {
+    let success: Bool
+    let path: CooptPath
+    let narrative: String
+    let targetName: String
+    /// Stat deltas already applied to the game (for UI display).
+    let repercussions: [String: Int]
+    /// True iff the rival was converted to a bound ally on this attempt.
+    let converted: Bool
+    /// Turn through which the bound-ally lock-in holds (nil on failure).
+    let lockInUntilTurn: Int?
+    /// Ceremonial-role flag set on the game (only set by .promoteSideways success).
+    let ceremonialFlag: String?
+
+    var outcomeIcon: String {
+        success ? "link.circle.fill" : "xmark.octagon.fill"
+    }
+
+    var summaryText: String {
+        if success {
+            if let lock = lockInUntilTurn {
+                return "\(targetName) is now a bound ally (locked through turn \(lock))."
+            }
+            return "\(targetName) has been co-opted."
+        } else {
+            return "Your co-opt attempt failed. \(targetName) is more wary now."
+        }
+    }
+}
+
+// MARK: - Unified Negotiation Types
+
+/// A tier of the unified NEGOTIATE interaction. Each tier corresponds to one
+/// of the three legacy mechanics; the associated value carries the data the
+/// UI needs to render the next layer of choices (flavor list, leverage paths,
+/// or the single truce interaction).
+enum NegotiationTier: Identifiable {
+    /// Low-risk relationship building. Works on neutrals, allies, and even
+    /// rivals (though harder). Carries the list of cultivation flavors the
+    /// UI presents in its sub-picker.
+    case cultivate([CharacterInteraction])
+
+    /// Medium-risk temporary peace. Rivals only. Carries the single truce
+    /// interaction; no sub-picker needed — confirmation is single-shot.
+    case truce(CharacterInteraction)
+
+    /// High-risk permanent conversion. Rivals only, gated by standing/cooldown
+    /// /personality. Carries the qualifying leverage paths the UI presents in
+    /// its sub-picker.
+    case coopt([CooptPath])
+
+    var id: String {
+        switch self {
+        case .cultivate: return "negotiation_cultivate"
+        case .truce: return "negotiation_truce"
+        case .coopt: return "negotiation_coopt"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .cultivate: return "Cultivate"
+        case .truce: return "Truce"
+        case .coopt: return "Co-opt"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .cultivate: return "Strengthen the relationship"
+        case .truce: return "Buy temporary peace"
+        case .coopt: return "Convert into a bound ally"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .cultivate: return "heart.fill"
+        case .truce: return "hand.raised.fill"
+        case .coopt: return "link.circle.fill"
+        }
+    }
+
+    /// Risk level used for color coding the tier card.
+    var riskLevel: RiskLevel {
+        switch self {
+        case .cultivate: return .low
+        case .truce: return .medium
+        case .coopt: return .high
+        }
+    }
+
+    /// Approximate success chance to surface on the tier card before the
+    /// player drills in. For cultivate this is the modal "fairly likely" band;
+    /// for truce the underlying executeInteraction base; for co-opt the
+    /// best-of-the-available-paths estimate.
+    var successChanceHint: Double {
+        switch self {
+        case .cultivate: return 0.9   // base 60% + disposition/network modifiers usually land ~70-90%
+        case .truce: return 0.7       // executeInteraction base 70% (low risk +0.1, medium 0, high -0.15)
+        case .coopt(let paths): return paths.map(\.baseSuccessChance).max() ?? 0.4
+        }
+    }
+}
+
+/// The player's specific sub-choice within a tier. Cultivate and Co-opt
+/// require a sub-pick (which flavor / which path); Truce is single-shot.
+enum NegotiationSelection {
+    case cultivate(CharacterInteraction)
+    case truce
+    case coopt(CooptPath)
+}
+
+/// Unified result envelope returned by `executeNegotiation`. Wraps the legacy
+/// result type so the UI has one switch site instead of three.
+enum NegotiationResult {
+    case cultivate(CultivateResult)
+    case truce(InteractionResult)
+    case coopt(CooptResult)
+    case invalid
+
+    /// True if the underlying mechanic reported success.
+    var success: Bool {
+        switch self {
+        case .cultivate(let r): return r.success
+        case .truce(let r): return r.success
+        case .coopt(let r): return r.success
+        case .invalid: return false
+        }
+    }
+}
+
 // MARK: - Show Trial System Extension
 //
 // Uses existing ShowTrial, ShowTrialPhase, ConfessionType, and TrialSentence from HistoricalMechanics.swift
@@ -2684,17 +3248,11 @@ extension CharacterInteractionSystem {
         // Update defendant status based on sentence
         switch trial.sentence {
         case .execution:
-            defendant.status = CharacterStatus.executed.rawValue
-            defendant.positionIndex = nil
-            defendant.positionTrack = nil
+            defendant.markRemovedFromPosition(reason: .executed, turn: game.turnNumber)
         case .imprisonment25, .imprisonment15, .imprisonment10:
-            defendant.status = CharacterStatus.imprisoned.rawValue
-            defendant.positionIndex = nil
-            defendant.positionTrack = nil
+            defendant.markRemovedFromPosition(reason: .imprisoned, turn: game.turnNumber)
         case .exile:
-            defendant.status = CharacterStatus.exiled.rawValue
-            defendant.positionIndex = nil
-            defendant.positionTrack = nil
+            defendant.markRemovedFromPosition(reason: .exiled, turn: game.turnNumber)
         case .demotion:
             // Demotion keeps them active but at lower position
             defendant.status = CharacterStatus.active.rawValue

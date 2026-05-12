@@ -227,6 +227,21 @@ struct CharacterDetailView: View {
     @State private var lastCultivateResult: CultivateResult?
     @State private var availableCultivateOptions: [CharacterInteraction] = []
 
+    // Co-opt rival system state
+    @State private var showingCooptOptions = false
+    @State private var showingCooptResult = false
+    @State private var lastCooptResult: CooptResult?
+    @State private var availableCooptPaths: [CooptPath] = []
+
+    // Unified Negotiation system state
+    // Tier picker is the new "front door" — replaces the separate
+    // CULTIVATE / TRUCE / CO-OPT buttons in the action bar with a single
+    // NEGOTIATE button that opens this picker. Once the player chooses a
+    // tier we either dispatch to the existing cultivate/coopt sub-picker
+    // sheets, or (for Truce) execute single-shot.
+    @State private var showingNegotiationTiers = false
+    @State private var availableNegotiationTiers: [NegotiationTier] = []
+
     enum DossierTab: String, CaseIterable {
         case bio = "BIO"
         case intel = "INTEL"
@@ -308,6 +323,16 @@ struct CharacterDetailView: View {
         .sheet(isPresented: $showingCultivateOptions) {
             if let game = game {
                 cultivateOptionsSheet(game: game)
+            }
+        }
+        .sheet(isPresented: $showingCooptOptions) {
+            if let game = game {
+                cooptOptionsSheet(game: game)
+            }
+        }
+        .sheet(isPresented: $showingNegotiationTiers) {
+            if let game = game {
+                negotiationTierSheet(game: game)
             }
         }
         .fullScreenCover(isPresented: $showingClassifiedOperation) {
@@ -1761,6 +1786,12 @@ struct CharacterDetailView: View {
                     .padding(.bottom, 8)
             }
 
+            if showingCooptResult, let result = lastCooptResult {
+                cooptResultCard(result: result)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
+
             // Action buttons
             HStack(spacing: 16) {
                 // INVESTIGATE
@@ -1776,17 +1807,26 @@ struct CharacterDetailView: View {
                     showingInvestigateOptions = true
                 }
 
-                // CULTIVATE
-                actionButton(
-                    icon: "heart.fill",
-                    label: "CULTIVATE",
-                    color: theme.inkGray
-                ) {
-                    availableCultivateOptions = CharacterInteractionSystem.shared.getCultivateInteractions(
-                        for: character,
-                        game: game
-                    )
-                    showingCultivateOptions = true
+                // NEGOTIATE — unified front door for the three legacy
+                // relationship-improvement mechanics. The tier sheet shows
+                // only the tiers valid for this character (cultivate is
+                // always shown when at least one flavor exists; truce only
+                // for rivals; co-opt only when standing/personality qualify).
+                let tiers = CharacterInteractionSystem.shared.availableNegotiationTiers(
+                    for: character,
+                    in: game
+                )
+                if !tiers.isEmpty {
+                    actionButton(
+                        icon: "bubble.left.and.bubble.right.fill",
+                        label: "NEGOTIATE",
+                        color: tiers.contains(where: { if case .coopt = $0 { return true } else { return false } })
+                            ? theme.accentGold
+                            : theme.inkGray
+                    ) {
+                        availableNegotiationTiers = tiers
+                        showingNegotiationTiers = true
+                    }
                 }
 
                 // DENOUNCE
@@ -1809,6 +1849,18 @@ struct CharacterDetailView: View {
             .background(Color.white)
             .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: -4)
         }
+    }
+
+    /// Whether the CO-OPT button should surface in the action bar.
+    /// True only when the character is a rival, has at least one available leverage path,
+    /// player has the AP for at least one available path, and gating (standing, cooldown) passes.
+    private func cooptIsAvailable(game: Game) -> Bool {
+        guard character.isRival, character.currentStatus == .active else { return false }
+        let paths = CharacterInteractionSystem.shared.getAvailableCooptPaths(for: character, game: game)
+        guard !paths.isEmpty else { return false }
+        // At least one path must be affordable in AP
+        let minAP = paths.map(\.costAP).min() ?? 1
+        return game.actionPoints >= minAP
     }
 
     private func actionButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
@@ -2931,6 +2983,536 @@ struct CharacterDetailView: View {
         )
     }
 
+    // MARK: - Co-opt Rival (Convert rival to bound ally)
+
+    private func cooptOptionsSheet(game: Game) -> some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "link.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(theme.accentGold)
+
+                    Text("CO-OPT \(character.name.uppercased())")
+                        .font(.system(size: 16, weight: .bold))
+                        .tracking(1)
+                        .foregroundColor(theme.inkBlack)
+
+                    Text("Exploit their weaknesses. Convert them into a bound ally.")
+                        .font(.system(size: 11))
+                        .foregroundColor(theme.inkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+
+                    // Lock-in length hint
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                        Text("On success: bound ally for 20 turns")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundColor(theme.accentGold)
+                    .padding(.top, 4)
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity)
+                .background(theme.parchmentDark)
+
+                Divider()
+
+                // Path list
+                ScrollView {
+                    VStack(spacing: 12) {
+                        if availableCooptPaths.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(theme.inkLight)
+
+                                Text("No leverage paths available")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(theme.inkGray)
+
+                                Text("You may need to investigate further, or wait — recent failures lock retries.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(theme.inkLight)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(40)
+                        } else {
+                            ForEach(availableCooptPaths) { path in
+                                cooptOptionCard(path: path, game: game)
+                            }
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .background(theme.parchment)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") {
+                        showingCooptOptions = false
+                    }
+                    .foregroundColor(theme.inkGray)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func cooptOptionCard(path: CooptPath, game: Game) -> some View {
+        let canAfford = game.actionPoints >= path.costAP
+        let chancePct = Int(path.baseSuccessChance * 100)
+
+        return Button {
+            executeCoopt(path: path, game: game)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: path.icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(theme.accentGold)
+                        .frame(width: 24)
+
+                    Text(path.displayName.uppercased())
+                        .font(.system(size: 14, weight: .bold))
+                        .tracking(0.5)
+                        .foregroundColor(theme.inkBlack)
+
+                    Spacer()
+
+                    // Success chance pill
+                    Text("\(chancePct)%")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(successChanceColor(for: path.baseSuccessChance))
+                        .clipShape(Capsule())
+                }
+
+                Text(path.shortDescription)
+                    .font(.system(size: 12))
+                    .foregroundColor(theme.inkGray)
+                    .multilineTextAlignment(.leading)
+
+                // Cost line
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 10))
+                    Text(path.costSummary)
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .foregroundColor(canAfford ? theme.accentGold : theme.stampRed)
+                .padding(.top, 2)
+
+                if !canAfford {
+                    Text("Insufficient AP (need \(path.costAP), have \(game.actionPoints))")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(theme.stampRed)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white.opacity(canAfford ? 0.5 : 0.25))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(theme.accentGold.opacity(canAfford ? 0.4 : 0.15), lineWidth: 1)
+            )
+            .opacity(canAfford ? 1.0 : 0.55)
+        }
+        .buttonStyle(.plain)
+        .disabled(!canAfford)
+    }
+
+    private func successChanceColor(for chance: Double) -> Color {
+        switch chance {
+        case 0.7...: return Color.green.opacity(0.85)
+        case 0.5..<0.7: return Color(hex: "FF9800")
+        default: return theme.stampRed
+        }
+    }
+
+    private func executeCoopt(path: CooptPath, game: Game) {
+        // Charge the AP up-front (cost is a real commitment for both success and failure)
+        game.actionPoints -= path.costAP
+
+        // Record the character-interaction usage (turn-limit budget)
+        game.useCharacterInteraction()
+
+        // Run the co-opt — pays stat costs, rolls, applies effects, fires GameEvent
+        let result = CharacterInteractionSystem.shared.cooptRival(
+            targetId: character.id,
+            path: path,
+            in: game
+        )
+
+        // Dismiss picker, present result
+        lastCooptResult = result
+        showingCooptOptions = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation {
+                showingCooptResult = true
+            }
+        }
+    }
+
+    // MARK: - Negotiation Tier Sheet (Unified Front Door)
+    //
+    // Brutalist parchment card per available tier. Picking a tier dismisses
+    // this sheet and then either (a) opens the existing cultivate sub-picker,
+    // (b) opens the existing co-opt sub-picker, or (c) for Truce, executes
+    // single-shot via the generic interaction executor.
+
+    private func negotiationTierSheet(game: Game) -> some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(theme.inkBlack)
+
+                    Text("NEGOTIATE WITH \(character.name.uppercased())")
+                        .font(.system(size: 16, weight: .bold))
+                        .tracking(1)
+                        .foregroundColor(theme.inkBlack)
+
+                    Text("Pick the risk level. Higher tiers commit more, but reshape the relationship more permanently.")
+                        .font(.system(size: 11, design: .serif))
+                        .italic()
+                        .foregroundColor(theme.inkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+
+                    // Current disposition indicator (reused from cultivate sheet)
+                    HStack(spacing: 8) {
+                        Text("Current Relationship:")
+                            .font(.system(size: 11))
+                            .foregroundColor(theme.inkGray)
+
+                        dispositionBar
+
+                        Text(dispositionLevelText)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(dispositionLevelColor)
+                    }
+                    .padding(.top, 4)
+
+                    // Relationship status hint
+                    if character.isPatron {
+                        HStack(spacing: 6) {
+                            Image(systemName: "hand.raised.fill")
+                                .font(.system(size: 12))
+                            Text("This is your patron")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(theme.accentGold)
+                        .padding(.top, 4)
+                    } else if character.isRival {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 12))
+                            Text("This is your rival")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(theme.stampRed)
+                        .padding(.top, 4)
+                    }
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity)
+                .background(theme.parchmentDark)
+
+                Divider()
+
+                // Tier cards
+                ScrollView {
+                    VStack(spacing: 12) {
+                        if availableNegotiationTiers.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(theme.inkLight)
+                                Text("No negotiation options available")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(theme.inkGray)
+                                Text("This character cannot be negotiated with at this time.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(theme.inkLight)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(40)
+                        } else {
+                            ForEach(availableNegotiationTiers) { tier in
+                                negotiationTierCard(tier: tier, game: game)
+                            }
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .background(theme.parchment)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") {
+                        showingNegotiationTiers = false
+                    }
+                    .foregroundColor(theme.inkGray)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    /// One card per tier. Risk color (green/orange/red) on the left stripe,
+    /// success chance pill, short use-case description, and a "TAP TO PROCEED"
+    /// affordance. Tapping routes to the next-step picker or executor.
+    private func negotiationTierCard(tier: NegotiationTier, game: Game) -> some View {
+        let (riskColor, riskLabel) = riskInfo(for: tier.riskLevel)
+        let chancePct = Int(tier.successChanceHint * 100)
+
+        return Button {
+            handleTierSelection(tier: tier, game: game)
+        } label: {
+            HStack(spacing: 0) {
+                // Left risk stripe
+                Rectangle()
+                    .fill(riskColor)
+                    .frame(width: 4)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: tier.icon)
+                            .font(.system(size: 16))
+                            .foregroundColor(riskColor)
+                            .frame(width: 24)
+
+                        Text(tier.displayName.uppercased())
+                            .font(.system(size: 14, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundColor(theme.inkBlack)
+
+                        Spacer()
+
+                        // Risk badge
+                        Text(riskLabel)
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(riskColor)
+                            .clipShape(Capsule())
+                    }
+
+                    Text(tier.subtitle)
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.inkGray)
+
+                    Text(tierUseCase(tier: tier))
+                        .font(.system(size: 11, design: .serif))
+                        .italic()
+                        .foregroundColor(theme.inkLight)
+                        .multilineTextAlignment(.leading)
+
+                    // Cost / chance line
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 10))
+                            Text("~\(chancePct)% success")
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundColor(riskColor)
+
+                        Spacer()
+
+                        Text(tierCostHint(tier: tier))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(theme.inkGray)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.white.opacity(0.5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(riskColor.opacity(0.4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Per-tier short use-case copy shown on the picker card.
+    private func tierUseCase(tier: NegotiationTier) -> String {
+        switch tier {
+        case .cultivate:
+            return "Warm them up. Builds disposition, slowly. Cheap and safe — useful for neutrals, allies, or a slow thaw with a rival."
+        case .truce:
+            return "Buy a ceasefire. Rival threat drops; no permanent commitment, no lock-in. Good when you need them off your back this turn."
+        case .coopt:
+            return "Convert them outright. Permanent flip from rival to bound ally for 20 turns. Costly, gated, and devastating if it fails publicly."
+        }
+    }
+
+    /// Per-tier cost-hint line on the picker card (the granular AP/treasury
+    /// costs surface inside the sub-picker once the player drills in).
+    private func tierCostHint(tier: NegotiationTier) -> String {
+        switch tier {
+        case .cultivate(let options):
+            let minAP = options.map(\.costAP).min() ?? 1
+            return "\(minAP)+ AP"
+        case .truce(let interaction):
+            return "\(interaction.costAP) AP"
+        case .coopt(let paths):
+            let minAP = paths.map(\.costAP).min() ?? 1
+            return "\(minAP)+ AP · costs vary by path"
+        }
+    }
+
+    /// Route a tier selection to the next step: cultivate sub-picker,
+    /// co-opt sub-picker, or (for Truce) execute single-shot.
+    private func handleTierSelection(tier: NegotiationTier, game: Game) {
+        showingNegotiationTiers = false
+
+        // Small delay so the tier sheet finishes dismissing before the
+        // sub-picker / result card appears (matches the existing flow's
+        // 0.3s pattern in executeCultivate / cooptOptionsSheet).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            switch tier {
+            case .cultivate(let options):
+                availableCultivateOptions = options
+                showingCultivateOptions = true
+
+            case .coopt(let paths):
+                availableCooptPaths = paths
+                showingCooptOptions = true
+
+            case .truce(let interaction):
+                executeTruce(interaction: interaction, game: game)
+            }
+        }
+    }
+
+    /// Single-shot truce execution. Mirrors the cultivate executor pattern —
+    /// charges AP, runs the generic interaction executor, applies effects,
+    /// and surfaces the result via the same `showingInteractionResult` card
+    /// that the inline AVAILABLE ACTIONS list uses.
+    private func executeTruce(interaction: CharacterInteraction, game: Game) {
+        // Charge AP up-front (Truce costs 1 AP per getRivalInteractions).
+        guard game.actionPoints >= interaction.costAP else { return }
+        game.actionPoints -= interaction.costAP
+        game.useCharacterInteraction()
+
+        let result = CharacterInteractionSystem.shared.executeInteraction(
+            interaction,
+            with: character,
+            game: game
+        )
+
+        // Apply stat effects from the truce (rivalThreat -5 on success).
+        for (key, value) in result.effects {
+            game.applyStat(key, change: value)
+        }
+
+        // Adjust target disposition like executeInteraction's internal logic
+        // suggests (it returns dispositionChange but the caller must apply it).
+        character.disposition = max(-100, min(100, character.disposition + result.dispositionChange))
+
+        // Surface via the existing inline-interaction result card.
+        lastInteractionResult = result
+        lastLeaderResult = nil
+        withAnimation {
+            showingInteractionResult = true
+        }
+    }
+
+    private func cooptResultCard(result: CooptResult) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: result.outcomeIcon)
+                    .font(.system(size: 16))
+                    .foregroundColor(result.success ? theme.accentGold : theme.stampRed)
+
+                Text(result.success ? "RIVAL CO-OPTED" : "CO-OPT FAILED")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(1)
+                    .foregroundColor(result.success ? theme.accentGold : theme.stampRed)
+
+                Spacer()
+
+                Button {
+                    withAnimation {
+                        showingCooptResult = false
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12))
+                        .foregroundColor(theme.inkGray)
+                }
+            }
+
+            // Path used
+            HStack(spacing: 6) {
+                Image(systemName: result.path.icon)
+                    .font(.system(size: 10))
+                Text("Path: \(result.path.displayName)")
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundColor(theme.inkGray)
+
+            if let game = game {
+                ClickableNarrativeText(
+                    text: result.narrative,
+                    game: game,
+                    font: .system(size: 12, design: .serif),
+                    color: theme.inkBlack
+                )
+                .italic()
+            } else {
+                Text(result.narrative)
+                    .font(.system(size: 12, design: .serif))
+                    .foregroundColor(theme.inkBlack)
+                    .italic()
+            }
+
+            Text(result.summaryText)
+                .font(.system(size: 11))
+                .foregroundColor(theme.inkGray)
+
+            // Show consequences
+            if !result.repercussions.isEmpty {
+                HStack(spacing: 12) {
+                    ForEach(Array(result.repercussions.keys.prefix(4)), id: \.self) { key in
+                        if let value = result.repercussions[key], value != 0 {
+                            HStack(spacing: 2) {
+                                Text(statDisplayName(key))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(theme.inkGray)
+                                Text(value > 0 ? "+\(value)" : "\(value)")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(value > 0 ? Color.green.opacity(0.8) : theme.stampRed)
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(12)
+        .background(result.success ? theme.accentGold.opacity(0.05) : theme.stampRed.opacity(0.05))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(result.success ? theme.accentGold.opacity(0.4) : theme.stampRed.opacity(0.3), lineWidth: 1)
+        )
+    }
+
     // MARK: - Classified Operation Overlay (BPS Operations)
 
     private func classifiedOperationOverlay(operation: CharacterInteraction, game: Game, opType: ClassifiedOpType) -> some View {
@@ -3102,6 +3684,9 @@ struct CharacterDetailView: View {
         case "patronFavor": return "Patron Favor"
         case "reputationCunning": return "Cunning"
         case "reputationLoyal": return "Loyalty Rep"
+        case "treasury": return "Treasury"
+        case "targetDisposition": return "Their View"
+        case "targetGrudge": return "Their Grudge"
         default: return key.capitalized
         }
     }

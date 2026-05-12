@@ -34,8 +34,43 @@ final class EmergencyDecreeService {
     /// logged event. Caller is responsible for verifying availability
     /// (the UI greys out unavailable decrees, but applying still
     /// no-ops if the decree isn't reachable to be safe).
-    func apply(_ decree: EmergencyDecree, to game: Game) {
-        guard decree.isAvailable(in: game) else { return }
+    ///
+    /// Pass `force: true` when the caller has already gated on a
+    /// broader crisis condition (e.g. Crisis Response's
+    /// `.resourceCatastrophe`, which fires on 3+ deficits but doesn't
+    /// guarantee grain specifically is depleted). Forcing skips the
+    /// per-decree availability check but still runs the full effect
+    /// chain so both UI entry points produce identical state changes.
+    ///
+    /// Emergency decrees consume one charge from the Chairman's shared
+    /// decree pool (`game.decreeChargesRemaining`, regen 1/50 turns) —
+    /// same pool spent by Security executions and Crisis Response
+    /// `requiresDecreeCharge` options. `force: true` bypasses the
+    /// per-decree availability gate but does NOT bypass the charge
+    /// requirement; an out-of-charges Chairman cannot decree, period.
+    ///
+    /// Pass `viaChargeAlreadyPaid: true` from call sites that have
+    /// ALREADY deducted a charge upstream (currently: Crisis Response's
+    /// `requisition_decree` option, which sets `requiresDecreeCharge: true`
+    /// on the option itself and so `CrisisResponseService.executeOption`
+    /// has already paid before reaching `applyOptionSideEffects`). This
+    /// prevents the charge from being double-counted while still letting
+    /// both surfaces converge on the same effect chain.
+    ///
+    /// Returns `true` when the decree was actually applied; `false`
+    /// when refused (no charges, unavailable and not forced).
+    @discardableResult
+    func apply(_ decree: EmergencyDecree, to game: Game, force: Bool = false, viaChargeAlreadyPaid: Bool = false) -> Bool {
+        // Charge gate FIRST. Even forced decrees consume a charge — the
+        // only exception is when the upstream caller already paid.
+        if !viaChargeAlreadyPaid {
+            guard game.decreeChargesRemaining > 0 else { return false }
+        }
+
+        // Availability gate (skipped under `force`).
+        if !force {
+            guard decree.isAvailable(in: game) else { return false }
+        }
 
         // Treasury
         if decree.treasuryCost != 0 {
@@ -67,5 +102,13 @@ final class EmergencyDecreeService {
         ]
         event.game = game
         game.events.append(event)
+
+        // Deduct the charge AFTER successful application (skip when an
+        // upstream caller, e.g. Crisis Response, already paid).
+        if !viaChargeAlreadyPaid {
+            game.decreeChargesRemaining = max(0, game.decreeChargesRemaining - 1)
+        }
+
+        return true
     }
 }

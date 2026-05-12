@@ -113,6 +113,15 @@ struct UpcomingSessionsContent: View {
     let nextPartyCongress: Int
     let nextAnnualSession: Int
     @Environment(\.theme) var theme
+    @State private var showingBroadcast = false
+
+    /// The most recent People's Congress session that has been broadcast.
+    /// Used to expose the ceremonial "open the broadcast" tap target.
+    private var latestBroadcastSession: CongressSession? {
+        game.congressSessions
+            .filter { !$0.broadcastText.isEmpty }
+            .max(by: { $0.sessionNumber < $1.sessionNumber })
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -127,16 +136,26 @@ struct UpcomingSessionsContent: View {
                 isHighPriority: (nextPartyCongress - game.turnNumber) <= 2
             )
 
-            // People's Congress (every 4 turns = 1 year)
+            // People's Congress — ceremonial broadcast (every 4 turns = 1 year)
             UpcomingSessionCard(
                 title: "PEOPLE'S CONGRESS",
-                description: "The nominal highest organ of state power meets to approve budgets, plans, and legislation.",
+                description: "Ceremonial state-of-the-nation broadcast. Speeches, ovations, and the Party line — no vote is taken.",
                 icon: "person.3.fill",
                 accentColor: theme.sovietRed,
                 turnsUntil: nextAnnualSession - game.turnNumber,
                 turnNumber: nextAnnualSession,
                 isHighPriority: (nextAnnualSession - game.turnNumber) <= 1
             )
+
+            // If a session has already produced a broadcast, surface it.
+            if let session = latestBroadcastSession {
+                Button {
+                    showingBroadcast = true
+                } label: {
+                    LatestBroadcastCard(session: session)
+                }
+                .buttonStyle(.plain)
+            }
 
             // Standing Committee meeting (every 4 turns)
             let lastMeeting = game.standingCommittee?.lastMeetingTurn ?? 0
@@ -154,6 +173,172 @@ struct UpcomingSessionsContent: View {
             // Current turn info
             CurrentTurnCard(game: game)
         }
+        .sheet(isPresented: $showingBroadcast) {
+            if let session = latestBroadcastSession {
+                CongressBroadcastSheet(session: session)
+            }
+        }
+    }
+}
+
+// MARK: - Latest Broadcast Card (tap target)
+
+/// Compact card surfaced when a Congress session has been broadcast.
+/// Tapping opens the full ceremonial read-out.
+struct LatestBroadcastCard: View {
+    let session: CongressSession
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(theme.sovietRed.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                Image(systemName: "radio.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(theme.sovietRed)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("LATEST BROADCAST")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(0.5)
+                    .foregroundColor(theme.inkLight)
+
+                Text("\(session.sessionNumber.ordinalString) Session — Turn \(session.turnConvened)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(theme.inkBlack)
+
+                Text("Tap to read the proceedings")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.inkGray)
+                    .italic()
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12))
+                .foregroundColor(theme.inkLight)
+        }
+        .padding(12)
+        .background(theme.parchmentDark)
+        .overlay(
+            Rectangle()
+                .stroke(theme.borderTan, lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Congress Broadcast Sheet
+
+/// Ceremonial broadcast read-out. Replaces the old fake-vote view.
+/// No tallies, no agency — a propaganda spectacle with a "RECORDED IN
+/// POLITBURO ARCHIVES" stamp and a single FILE action.
+struct CongressBroadcastSheet: View {
+    let session: CongressSession
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        ZStack {
+            theme.parchment.ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Masthead
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("STATE BROADCAST")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(2)
+                            .foregroundColor(theme.inkLight)
+
+                        Text("THE PEOPLE'S CONGRESS")
+                            .font(.system(size: 22, weight: .black))
+                            .tracking(2)
+                            .foregroundColor(theme.inkBlack)
+
+                        HStack(spacing: 6) {
+                            Text("\(session.sessionNumber.ordinalString) SESSION")
+                            Text("•")
+                            Text("TURN \(session.turnConvened)")
+                            Text("•")
+                            Text(session.currentType.displayName.uppercased())
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .tracking(0.5)
+                        .foregroundColor(theme.inkGray)
+                    }
+
+                    Rectangle()
+                        .fill(theme.inkBlack.opacity(0.4))
+                        .frame(height: 1)
+
+                    // Broadcast body — the narrative payload generated at session time.
+                    Text(session.broadcastText.isEmpty
+                         ? "The session was held. The proceedings have been filed."
+                         : session.broadcastText)
+                        .font(.system(size: 14))
+                        .foregroundColor(theme.inkBlack)
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    // Archive stamp — rubber-stamp aesthetic, no real mechanic.
+                    HStack {
+                        Spacer()
+                        ArchiveStamp()
+                        Spacer()
+                    }
+                    .padding(.top, 10)
+
+                    Spacer(minLength: 20)
+
+                    // Single dismissive action — "FILE" the broadcast.
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("FILE")
+                            .font(.system(size: 14, weight: .bold))
+                            .tracking(2)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(theme.sovietRed)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(theme.inkBlack.opacity(0.4), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(20)
+            }
+        }
+    }
+}
+
+/// Rotated rubber-stamp aesthetic for "RECORDED IN POLITBURO ARCHIVES".
+struct ArchiveStamp: View {
+    @Environment(\.theme) var theme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("RECORDED IN")
+                .font(.system(size: 10, weight: .black))
+                .tracking(1.5)
+            Text("POLITBURO ARCHIVES")
+                .font(.system(size: 14, weight: .black))
+                .tracking(2)
+        }
+        .foregroundColor(theme.sovietRed.opacity(0.75))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .overlay(
+            Rectangle()
+                .stroke(theme.sovietRed.opacity(0.7), lineWidth: 2.5)
+        )
+        .rotationEffect(.degrees(-7))
     }
 }
 

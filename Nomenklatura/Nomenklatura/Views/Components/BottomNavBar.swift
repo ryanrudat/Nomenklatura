@@ -68,7 +68,10 @@ struct BottomNavBar: View {
                 }
             }
 
-            // Menu button (if callback provided)
+            // Memorial button — "The Removed". Lists executed, imprisoned,
+            // exiled, deceased, and disappeared characters. Replaces the
+            // former Game Menu hamburger (those actions now live inside
+            // SettingsView, opened from the Desk gear icon).
             if let onMenuTap = onMenuTap {
                 Button(action: onMenuTap) {
                     VStack(spacing: 4) {
@@ -76,10 +79,10 @@ struct BottomNavBar: View {
                             .fill(Color.clear)
                             .frame(width: 30, height: 2)
 
-                        Image(systemName: "gearshape.fill")
+                        Image(systemName: "person.crop.rectangle.stack.fill")
                             .font(.system(size: 20))
 
-                        Text("MENU")
+                        Text("REMOVED")
                             .font(theme.tagFont)
                             .tracking(1)
                     }

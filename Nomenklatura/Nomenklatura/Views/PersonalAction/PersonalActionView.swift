@@ -20,6 +20,10 @@ struct PersonalActionView: View {
     @State private var showingResult = false
     @State private var showNextTurnButton = false
 
+    // Appoint-successor target picker
+    @State private var pendingAppointAction: PersonalAction? = nil
+    @State private var showingAppointSheet: Bool = false
+
     private var groupedActions: [PersonalActionCategory: [PersonalAction]] {
         Dictionary(grouping: actions) { $0.category }
     }
@@ -143,10 +147,34 @@ struct PersonalActionView: View {
         .onAppear {
             remainingAP = game.actionPoints
         }
+        .sheet(isPresented: $showingAppointSheet) {
+            AppointSuccessorSheet(
+                game: game,
+                ladder: ladder,
+                onSelect: { candidate, vacancySlot in
+                    showingAppointSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        applyAppointSuccessor(candidate: candidate, vacancySlot: vacancySlot)
+                    }
+                },
+                onCancel: {
+                    showingAppointSheet = false
+                    pendingAppointAction = nil
+                }
+            )
+        }
     }
 
     private func performAction(_ action: PersonalAction) {
         guard remainingAP >= action.costAP else { return }
+
+        // Special-case: appoint_successor needs a target selection sheet
+        // BEFORE we commit to AP / effects. Intercept here.
+        if action.id == "appoint_successor" {
+            pendingAppointAction = action
+            showingAppointSheet = true
+            return
+        }
 
         // Use GameEngine to execute action
         let result = GameEngine.shared.executeAction(action, game: game, ladder: ladder)
@@ -166,6 +194,29 @@ struct PersonalActionView: View {
                 showNextTurnButton = true
             }
         }
+    }
+
+    /// Apply the result of a confirmed appointment selection.
+    private func applyAppointSuccessor(candidate: GameCharacter, vacancySlot: Int) {
+        guard let action = pendingAppointAction else { return }
+        let result = GameEngine.shared.executeAppointSuccessor(
+            action: action,
+            candidate: candidate,
+            vacancySlot: vacancySlot,
+            game: game,
+            ladder: ladder
+        )
+        remainingAP = game.actionPoints
+        withAnimation(.easeOut(duration: 0.3)) {
+            lastActionResult = result
+            showingResult = true
+        }
+        if remainingAP <= 0 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showNextTurnButton = true
+            }
+        }
+        pendingAppointAction = nil
     }
 }
 
@@ -448,6 +499,281 @@ struct PassTurnButton: View {
                 Rectangle()
                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
                     .foregroundColor(theme.schemeBorder)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Appoint Successor Sheet
+
+/// Target-selection sheet for the `appoint_successor` action. Lists vacant
+/// slots and, per slot, the top-5 viable candidates (active characters with
+/// `positionIndex` either nil or up to 2 below the vacant slot). Candidates
+/// are scored by faction alignment + disposition + competence + loyalty.
+struct AppointSuccessorSheet: View {
+    let game: Game
+    let ladder: [LadderPosition]
+    let onSelect: (GameCharacter, Int) -> Void
+    let onCancel: () -> Void
+    @Environment(\.theme) var theme
+
+    @State private var selectedSlot: Int?
+
+    /// All currently vacant slots (1-8) that the player can fill.
+    private var vacantSlots: [Int] {
+        PersonalActionGenerator.detectVacantSlots(game: game, ladder: ladder)
+    }
+
+    /// Default the selected slot to the first vacancy on appear.
+    private var resolvedSelectedSlot: Int? {
+        selectedSlot ?? vacantSlots.first
+    }
+
+    /// Compute candidates for a given vacancy. A candidate is any active
+    /// character whose `positionIndex` is nil (unranked) or within 2 of the
+    /// vacant slot (promotion only, never demotion). Returns up to 5,
+    /// sorted by faction alignment + disposition + competence + loyalty.
+    private func candidates(for slot: Int) -> [GameCharacter] {
+        let playerFaction = game.playerFactionId
+
+        let pool: [GameCharacter] = game.characters.filter { c in
+            guard c.isActive else { return false }
+            // Promotion-only: nil position (unranked) OR 1-2 below the vacancy
+            if let pi = c.positionIndex {
+                return pi < slot && pi >= slot - 2
+            }
+            return true
+        }
+
+        let scored: [(GameCharacter, Int)] = pool.map { c in
+            var score = 0
+            if let pf = playerFaction, c.factionId == pf {
+                score += 30
+            }
+            // disposition above 50 boosts (5 per 10 above 50)
+            if c.disposition > 50 {
+                score += ((c.disposition - 50) / 10) * 5
+            } else {
+                // mild penalty for hostile candidates
+                score += (c.disposition - 50) / 10
+            }
+            score += c.personalityCompetent
+            score += c.personalityLoyal
+            return (c, score)
+        }
+
+        return scored
+            .sorted { $0.1 > $1.1 }
+            .prefix(5)
+            .map { $0.0 }
+    }
+
+    private func title(for slot: Int) -> String {
+        ladder.first(where: { $0.index == slot })?.title ?? "Position \(slot)"
+    }
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                theme.schemeDark.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    // Header
+                    VStack(spacing: 4) {
+                        Text("APPOINT SUCCESSOR")
+                            .font(theme.labelFont)
+                            .tracking(2)
+                            .foregroundColor(theme.accentGold)
+                        Text("Select a candidate to fill a vacant seat.")
+                            .font(theme.tagFont)
+                            .foregroundColor(theme.schemeText.opacity(0.7))
+                    }
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+                    .background(theme.schemeCard)
+
+                    if vacantSlots.isEmpty {
+                        // Defensive empty state (shouldn't usually appear since
+                        // the action is gated on having vacancies, but state
+                        // could shift mid-turn).
+                        VStack(spacing: 10) {
+                            Image(systemName: "person.crop.circle.badge.questionmark")
+                                .font(.system(size: 36))
+                                .foregroundColor(theme.schemeText.opacity(0.4))
+                            Text("No vacant seats")
+                                .font(theme.bodyFont)
+                                .foregroundColor(theme.schemeText)
+                            Text("The hierarchy is currently full.")
+                                .font(theme.tagFont)
+                                .foregroundColor(theme.schemeText.opacity(0.6))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        // Vacancy picker (if more than one) + candidate list
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                if vacantSlots.count > 1 {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("VACANT SEATS")
+                                            .font(theme.tagFont)
+                                            .tracking(1)
+                                            .foregroundColor(theme.schemeText.opacity(0.6))
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 8) {
+                                                ForEach(vacantSlots, id: \.self) { slot in
+                                                    Button {
+                                                        selectedSlot = slot
+                                                    } label: {
+                                                        Text(title(for: slot))
+                                                            .font(theme.tagFont)
+                                                            .padding(.horizontal, 10)
+                                                            .padding(.vertical, 6)
+                                                            .background(
+                                                                (resolvedSelectedSlot == slot)
+                                                                    ? theme.accentGold.opacity(0.25)
+                                                                    : theme.schemeCard
+                                                            )
+                                                            .foregroundColor(
+                                                                (resolvedSelectedSlot == slot)
+                                                                    ? theme.accentGold
+                                                                    : theme.schemeText
+                                                            )
+                                                            .overlay(
+                                                                Rectangle().stroke(
+                                                                    (resolvedSelectedSlot == slot)
+                                                                        ? theme.accentGold
+                                                                        : theme.schemeBorder,
+                                                                    lineWidth: 1
+                                                                )
+                                                            )
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                }
+                                            }
+                                            .padding(.horizontal, 12)
+                                        }
+                                    }
+                                    .padding(.top, 10)
+                                }
+
+                                if let slot = resolvedSelectedSlot {
+                                    candidateList(for: slot)
+                                }
+                            }
+                            .padding(.bottom, 24)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(resolvedSelectedSlot.map { "Fill: \(title(for: $0))" } ?? "Appoint Successor")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                        .foregroundColor(theme.schemeText)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func candidateList(for slot: Int) -> some View {
+        let cands = candidates(for: slot)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("CANDIDATES")
+                .font(theme.tagFont)
+                .tracking(1)
+                .foregroundColor(theme.schemeText.opacity(0.6))
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+
+            if cands.isEmpty {
+                Text("No eligible candidates. Cultivate junior officials first.")
+                    .font(theme.bodyFontSmall)
+                    .foregroundColor(theme.schemeText.opacity(0.5))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity)
+            } else {
+                ForEach(cands, id: \.id) { c in
+                    AppointSuccessorCandidateRow(
+                        candidate: c,
+                        sameFactionAsPlayer: (game.playerFactionId != nil
+                            && c.factionId == game.playerFactionId),
+                        onSelect: { onSelect(c, slot) }
+                    )
+                    .padding(.horizontal, 12)
+                }
+            }
+        }
+    }
+}
+
+private struct AppointSuccessorCandidateRow: View {
+    let candidate: GameCharacter
+    let sameFactionAsPlayer: Bool
+    let onSelect: () -> Void
+    @Environment(\.theme) var theme
+
+    private var dispositionColor: Color {
+        if candidate.disposition >= 60 { return .statHigh }
+        if candidate.disposition <= 30 { return .statLow }
+        return .statMedium
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(candidate.name)
+                        .font(theme.bodyFontSmall)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.schemeText)
+                    if sameFactionAsPlayer {
+                        Text("ALIGNED")
+                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                            .tracking(0.8)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(theme.accentGold.opacity(0.2))
+                            .foregroundColor(theme.accentGold)
+                    }
+                    Spacer()
+                    Text("DISP \(candidate.disposition)")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(dispositionColor)
+                }
+
+                if let factionId = candidate.factionId {
+                    Text("Faction: \(factionId)")
+                        .font(theme.tagFont)
+                        .foregroundColor(theme.schemeText.opacity(0.6))
+                }
+
+                HStack(spacing: 10) {
+                    Text("CMP \(candidate.personalityCompetent)")
+                    Text("LOY \(candidate.personalityLoyal)")
+                    Text("AMB \(candidate.personalityAmbitious)")
+                }
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundColor(theme.schemeText.opacity(0.7))
+
+                if let pi = candidate.positionIndex {
+                    Text("Currently: Position \(pi)")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(theme.schemeText.opacity(0.5))
+                } else {
+                    Text("Unranked candidate")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(theme.schemeText.opacity(0.5))
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.schemeCard)
+            .overlay(
+                Rectangle().stroke(theme.schemeBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

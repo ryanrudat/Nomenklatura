@@ -21,6 +21,11 @@ struct CodexThreadView: View {
     @State private var showingValidationError: Bool = false
     @State private var validationErrorMessage: String = ""
 
+    // Stat-change toast state (shown after sending a response)
+    @State private var toastDeltas: [CodexStatDelta] = []
+    @State private var toastArchetype: String?
+    @State private var showingStatToast: Bool = false
+
     private var threadMessages: [CodexMessage] {
         game.codexThread(for: threadId)
     }
@@ -125,6 +130,20 @@ struct CodexThreadView: View {
                         Image(systemName: "archivebox")
                             .foregroundColor(theme.inkGray)
                     }
+                }
+            }
+            .overlay {
+                if showingStatToast {
+                    CodexStatChangeToast(
+                        deltas: toastDeltas,
+                        archetypeLabel: toastArchetype,
+                        onDismiss: {
+                            showingStatToast = false
+                            toastDeltas = []
+                            toastArchetype = nil
+                        }
+                    )
+                    .transition(.opacity)
                 }
             }
         }
@@ -251,6 +270,28 @@ struct CodexThreadView: View {
                                 .background(theme.stampRed)
                                 .cornerRadius(3)
                         }
+                    }
+
+                    // Trigger badge — surfaces *why* this message exists
+                    // (especially useful for follow-ups so the player
+                    // connects this message to their earlier stance)
+                    if !isPlayerMessage, let badge = message.triggerBadgeText {
+                        HStack(spacing: 4) {
+                            Image(systemName: "link")
+                                .font(.system(size: 8, weight: .bold))
+                            Text(badge)
+                                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                .tracking(0.6)
+                        }
+                        .foregroundColor(theme.stampRed)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(theme.stampRed.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3)
+                                .stroke(theme.stampRed.opacity(0.4), lineWidth: 0.5)
+                        )
+                        .cornerRadius(3)
                     }
 
                     // Sender
@@ -488,7 +529,7 @@ struct CodexThreadView: View {
             }
         }
 
-        CodexService.shared.respondToMessage(
+        let outcome = CodexService.shared.respondToMessage(
             message,
             optionId: optionId,
             customText: customResponseText.isEmpty ? nil : customResponseText,
@@ -496,9 +537,49 @@ struct CodexThreadView: View {
             context: modelContext
         )
 
-        // Reset state
+        // Reset response state
         selectedOptionId = nil
         customResponseText = ""
+
+        // Present the stat-change toast so the player feels the impact.
+        if let outcome = outcome {
+            presentStatToast(outcome: outcome)
+        }
+    }
+
+    /// Build delta rows from the response outcome and trigger the toast.
+    /// "isPositive" is the player-facing valence: -2 RIVAL THREAT is a
+    /// *good* result (rival respects strength), so the arrow points up.
+    private func presentStatToast(outcome: CodexService.ResponseOutcome) {
+        var deltas: [CodexStatDelta] = []
+
+        let e = outcome.effects
+        if e.dispositionChange != 0 {
+            deltas.append(CodexStatDelta(
+                label: "DISPOSITION",
+                amount: e.dispositionChange,
+                isPositive: e.dispositionChange > 0
+            ))
+        }
+        if e.patronFavorChange != 0 {
+            deltas.append(CodexStatDelta(
+                label: "PATRON FAVOR",
+                amount: e.patronFavorChange,
+                isPositive: e.patronFavorChange > 0
+            ))
+        }
+        if e.rivalThreatChange != 0 {
+            // Lower threat is good for the player.
+            deltas.append(CodexStatDelta(
+                label: "RIVAL THREAT",
+                amount: e.rivalThreatChange,
+                isPositive: e.rivalThreatChange < 0
+            ))
+        }
+
+        toastDeltas = deltas
+        toastArchetype = outcome.archetype.rawValue
+        withAnimation { showingStatToast = true }
     }
 
     private func archiveThread() {

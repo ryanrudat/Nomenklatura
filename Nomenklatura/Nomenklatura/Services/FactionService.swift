@@ -6,10 +6,17 @@
 //
 
 import Foundation
+import os.log
+
+private let factionLogger = Logger(subsystem: "com.ryanrudat.Nomenklatura", category: "FactionService")
 
 /// Service for applying faction abilities and vulnerabilities during gameplay
 final class FactionService {
     static let shared = FactionService()
+
+    /// Flag set on `Game.flags` once starting disposition bias has been applied.
+    /// Used to make `applyFactionStartingDisposition(game:)` idempotent.
+    static let startingDispositionSeededFlag = "faction_disposition_seeded"
 
     private init() {}
 
@@ -139,6 +146,72 @@ final class FactionService {
     /// Check if player has any faction (for backward compatibility)
     func hasPlayerFaction(game: Game) -> Bool {
         game.playerFactionId != nil
+    }
+
+    // MARK: - Starting Disposition Bias
+
+    /// One-time pass applied at game start. Biases every NPC's starting `disposition`
+    /// based on whether their faction is the same as, opposing to, or unrelated to
+    /// the player's faction.
+    ///
+    /// Faction relationships come from `PlayerFactionConfig.factionRelationshipModifiers`:
+    ///   - `standingModifier > 0` → ally faction (same-side ish, but we ONLY apply
+    ///     the +15 bonus to characters whose `factionId` literally matches the player's,
+    ///     not to ally factions; allies stay neutral per the design)
+    ///   - `standingModifier < 0` → explicitly opposing faction → characters there take -10
+    ///
+    /// Idempotent via `Game.flags` (see `startingDispositionSeededFlag`).
+    /// Safe to call multiple times — second call is a no-op.
+    func applyFactionStartingDisposition(game: Game) {
+        // Idempotency guard — never apply twice for a given Game
+        if game.flags.contains(Self.startingDispositionSeededFlag) {
+            return
+        }
+
+        guard let playerFactionId = game.playerFactionId else {
+            factionLogger.notice("applyFactionStartingDisposition skipped: no playerFactionId set")
+            return
+        }
+
+        // Build the set of explicitly opposing faction ids from the player's config.
+        // If the player chose a faction without a config entry (shouldn't happen in
+        // production but defensively guarded), we proceed with an empty opposing set
+        // — same-faction bonus still applies.
+        var opposingFactionIds: Set<String> = []
+        if let playerFactionConfig = PlayerFactionConfig.faction(withId: playerFactionId) {
+            for modifier in playerFactionConfig.factionRelationshipModifiers where modifier.standingModifier < 0 {
+                opposingFactionIds.insert(modifier.targetFactionId)
+            }
+        }
+
+        var sameFactionCount = 0
+        var opposingFactionCount = 0
+        var neutralCount = 0
+
+        for character in game.characters {
+            guard let charFactionId = character.factionId, !charFactionId.isEmpty else {
+                // Independent / unaffiliated — leave alone
+                neutralCount += 1
+                continue
+            }
+
+            if charFactionId == playerFactionId {
+                character.disposition = min(100, character.disposition + 15)
+                sameFactionCount += 1
+            } else if opposingFactionIds.contains(charFactionId) {
+                character.disposition = max(0, character.disposition - 10)
+                opposingFactionCount += 1
+            } else {
+                neutralCount += 1
+            }
+        }
+
+        // Mark seeded so the pass can't run twice
+        game.flags.append(Self.startingDispositionSeededFlag)
+
+        factionLogger.notice(
+            "Seeded faction disposition: \(sameFactionCount) +15, \(opposingFactionCount) -10, \(neutralCount) unchanged"
+        )
     }
 }
 

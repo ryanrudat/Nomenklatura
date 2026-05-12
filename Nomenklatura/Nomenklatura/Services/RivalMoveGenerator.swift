@@ -33,6 +33,13 @@ final class RivalMoveGenerator {
     /// triggers `pendingEffect`. `deadlineTurn = createdTurn + this`.
     private static let deadlineTurnsAhead: Int = 2
 
+    /// Minimum turns that must elapse after a rival's last move (measured
+    /// from `createdTurn`) before that rival can generate another. Without
+    /// this gate the most-threatening rival was deterministically re-picked
+    /// every turn the queue was empty, producing the "same rival again"
+    /// repetition reported by playtest.
+    private static let rivalReuseCooldownTurns: Int = 5
+
     // MARK: - Public API
 
     /// Per-turn entry point called from GameEngine.endTurnUpdates.
@@ -152,10 +159,19 @@ final class RivalMoveGenerator {
 
         // Candidate rivals: active characters at sufficient position who
         // are flagged hostile (isRival) or whose role is .rival. Exclude
-        // anyone with an unresolved active move.
+        // anyone with an unresolved active move OR anyone whose previous
+        // move was made within the reuse cooldown window — that's the
+        // gate that stops the same rival from re-spawning every turn.
         let activeRivalIds: Set<UUID> = Set(
             game.activeRivalMoves
                 .filter { !$0.resolution.isResolved }
+                .map { $0.rivalCharacterId }
+        )
+
+        let recentlyMovedRivalIds: Set<UUID> = Set(
+            game.activeRivalMoves
+                .filter { $0.resolution.isResolved }
+                .filter { (game.turnNumber - $0.createdTurn) < Self.rivalReuseCooldownTurns }
                 .map { $0.rivalCharacterId }
         )
 
@@ -164,31 +180,47 @@ final class RivalMoveGenerator {
                 && (char.isRival || char.currentRole == .rival)
                 && (char.positionIndex ?? 0) >= Self.minimumRivalPosition
                 && !activeRivalIds.contains(char.id)
+                && !recentlyMovedRivalIds.contains(char.id)
+                // Belt-and-suspenders: a character co-opted via "Promote
+                // Sideways" should never schedule new rival moves, even if
+                // isRival flips back to true (e.g., disposition crashes).
+                // The Co-opt Rival path already clears isRival at success
+                // time, but a later drift could re-flag them — this stops
+                // ceremonial members from re-entering the rival pool.
+                && !char.hasCeremonialRole(in: game)
         }
 
         guard !candidates.isEmpty else {
-            rivalMoveLogger.debug("RivalMove suppressed: no eligible rival candidates")
+            rivalMoveLogger.debug("RivalMove suppressed: no eligible rival candidates (active: \(activeRivalIds.count), on cooldown: \(recentlyMovedRivalIds.count))")
             return nil
         }
 
         // Score each candidate by ambition × ruthlessness × inverse loyalty.
-        // Higher score = more likely to mount a named scheme.
-        let scored = candidates.map { char -> (GameCharacter, Double) in
-            (char, scoreCandidate(char))
-        }
+        // Higher score = more likely to mount a named scheme. Pick via a
+        // weighted roll over the top three (or fewer) so even a clear
+        // dominant rival doesn't always go first — adds variety without
+        // sacrificing the "biggest threat usually acts" intuition.
+        let scored = candidates
+            .map { char -> (GameCharacter, Double) in (char, scoreCandidate(char)) }
+            .sorted { $0.1 > $1.1 }
 
-        guard let (rival, _) = scored.max(by: { $0.1 < $1.1 }) else {
+        let topPool = Array(scored.prefix(3))
+        guard let (rival, _) = weightedPick(topPool, using: &rng) else {
             return nil
         }
 
-        // Pick a kind biased by the rival's personality / role.
-        let kind = pickKind(for: rival, game: game, using: &rng)
+        // Pick a kind biased by the rival's personality / role, rotated
+        // away from this rival's last kind so the same threat archetype
+        // (e.g., "whisper campaign") doesn't repeat on every appearance.
+        let lastKindForRival = mostRecentResolvedKind(forRival: rival.id, in: game)
+        let kind = pickKind(for: rival, game: game, avoiding: lastKindForRival, using: &rng)
 
         // Pick a template for the chosen kind.
         let template = pickTemplate(for: kind, rivalName: rival.name, using: &rng)
 
-        // Pending effect: kind drives stat; magnitude scaled by threat.
-        let magnitude = pendingEffectMagnitude(for: game)
+        // Pending effect: kind drives stat; magnitude scaled by threat
+        // and the rival's ruthlessness.
+        let magnitude = pendingEffectMagnitude(for: game, rival: rival)
         let pending = PendingEffect(stat: kind.defaultStat, magnitude: magnitude)
 
         // Counter options: 3-4 sensible choices, costs and chances vary.
@@ -287,47 +319,77 @@ final class RivalMoveGenerator {
         return score
     }
 
+    // MARK: - Candidate / kind helpers
+
+    /// Weighted pick over a small ranked pool. Top entry gets the most
+    /// weight but lower-ranked candidates still have a real chance, so
+    /// the same dominant rival doesn't go every single time.
+    private func weightedPick(_ pool: [(GameCharacter, Double)], using rng: inout SeededRNG) -> (GameCharacter, Double)? {
+        guard !pool.isEmpty else { return nil }
+        if pool.count == 1 { return pool[0] }
+        // Weights: 60% / 30% / 10% for top-three, normalized for shorter pools.
+        let baseWeights: [Double] = [0.60, 0.30, 0.10]
+        let weights = Array(baseWeights.prefix(pool.count))
+        let total = weights.reduce(0, +)
+        let roll = Double.random(in: 0..<total, using: &rng)
+        var cursor: Double = 0
+        for (i, w) in weights.enumerated() {
+            cursor += w
+            if roll < cursor { return pool[i] }
+        }
+        return pool.last
+    }
+
+    /// Last move kind this rival made, looking only at resolved moves on
+    /// the game's history. Returns nil if this rival has never moved
+    /// before. Used to bias `pickKind` away from immediate repetition.
+    private func mostRecentResolvedKind(forRival rivalId: UUID, in game: Game) -> RivalMoveKind? {
+        return game.activeRivalMoves
+            .filter { $0.rivalCharacterId == rivalId && $0.resolution.isResolved }
+            .sorted { $0.createdTurn > $1.createdTurn }
+            .first?.kind
+    }
+
     // MARK: - Kind selection
 
-    private func pickKind(for rival: GameCharacter, game: Game, using rng: inout SeededRNG) -> RivalMoveKind {
-        // Personality-driven biases. Falls through to a default if
-        // nothing matches.
+    private func pickKind(for rival: GameCharacter, game: Game, avoiding: RivalMoveKind? = nil, using rng: inout SeededRNG) -> RivalMoveKind {
+        // Personality-driven biases. Each branch produces a "primary"
+        // pick; if that matches `avoiding` we fall through to the next
+        // best fit so the same rival rotates schemes between appearances.
         let amb = rival.personalityAmbitious
         let ruth = rival.personalityRuthless
         let corrupt = rival.personalityCorrupt
 
-        // Heavy military-track rivals lean on the army.
+        var candidates: [RivalMoveKind] = []
+
         if rival.positionTrack == "military" || rival.positionTrack == "armedForces" {
-            return .militaryCircleApproach
+            candidates.append(.militaryCircleApproach)
         }
-
-        // Faction-loyal but ambitious rivals run whisper campaigns.
         if rival.factionId != nil && amb >= 60 {
-            return .factionWhisperCampaign
+            candidates.append(.factionWhisperCampaign)
         }
-
-        // Foreign-leaning corruption / espionage angle.
         if rival.foreignAgentStatus.isForeignAgent || corrupt >= 70 {
-            return .foreignContact
+            candidates.append(.foreignContact)
         }
-
-        // Ruthless types push for outright consolidation.
         if ruth >= 70 && amb >= 60 {
-            return .rivalConsolidation
+            candidates.append(.rivalConsolidation)
         }
-
-        // If player has a struggling patron, undermine that pillar.
         if game.patronFavor <= 45 && amb >= 50 {
-            return .patronUnderminding
+            candidates.append(.patronUnderminding)
         }
-
-        // Populist personality → public criticism.
         if amb >= 50 && rival.personalityLoyal <= 40 {
-            return .publicCriticism
+            candidates.append(.publicCriticism)
         }
+        // Always-available fallback.
+        candidates.append(.factionWhisperCampaign)
 
-        // Default to a whisper campaign — common and survivable.
-        return .factionWhisperCampaign
+        // Prefer the first candidate that isn't the rival's last move.
+        if let avoiding {
+            if let rotated = candidates.first(where: { $0 != avoiding }) {
+                return rotated
+            }
+        }
+        return candidates.first ?? .factionWhisperCampaign
     }
 
     // MARK: - Templates
@@ -442,12 +504,14 @@ final class RivalMoveGenerator {
 
     /// Scale the pending damage by overall rival threat: a quiet
     /// political layer produces -3 to -5; a violent one produces -8 to -10.
-    private func pendingEffectMagnitude(for game: Game) -> Double {
+    /// The rival's `ruthlessDamageMultiplier` further scales the base by
+    /// 0.7x...1.3x — merciful rivals hit softer, ruthless ones hit harder.
+    private func pendingEffectMagnitude(for game: Game, rival: GameCharacter) -> Double {
         let threat = Double(game.rivalThreat)
         // Linear map from rivalThreat 30...100 onto magnitude 3...10.
         let clamped = max(30.0, min(100.0, threat))
-        let scaled = 3.0 + ((clamped - 30.0) / 70.0) * 7.0
-        return -scaled
+        let baseScale = 3.0 + ((clamped - 30.0) / 70.0) * 7.0
+        return -(baseScale * rival.ruthlessDamageMultiplier)
     }
 
     // MARK: - Counter options

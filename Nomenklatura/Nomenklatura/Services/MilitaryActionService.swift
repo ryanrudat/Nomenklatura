@@ -258,9 +258,11 @@ final class MilitaryActionService {
     ) -> ExecutionResult {
         var rng = game.rng
         defer { game.rng = rng }
-        // Roll for success
+        // Roll for success — bureau chief's competence scales the chance.
+        let chiefModifier = bureauChief(for: "militaryPolitical", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Determine effects
         let effects = succeeded ? action.successEffects : action.failureEffects
@@ -585,12 +587,14 @@ final class MilitaryActionService {
             targetOfficer = game.characters.first { $0.id.uuidString == targetId }
         }
 
-        // Calculate success
+        // Calculate success — bureau chief's competence scales the chance.
         let successChance = calculateSuccessChance(action, targetOfficer: targetOfficer, for: game)
+        let chiefModifier = bureauChief(for: "militaryPolitical", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         var rng = game.rng
         defer { game.rng = rng }
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Apply effects if succeeded
         if succeeded {

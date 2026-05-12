@@ -2,8 +2,18 @@
 //  PeoplesCongress.swift
 //  Nomenklatura
 //
-//  People's Congress rubber-stamp mechanic
-//  Represents the nominal "highest organ of state power" that affirms Party policies
+//  People's Congress — a ceremonial state-of-the-nation broadcast.
+//
+//  Historical note: legislative bodies of this type were not vote engines;
+//  they were propaganda spectacles. The system used to fabricate vote tallies
+//  (always "passed: true" with 0-2 % symbolic opposition) which gave the
+//  illusion of mechanics where none existed. That has been removed. The
+//  session now produces a narrative broadcast payload only — no fake votes,
+//  no player agency, no misleading "legitimacy" arithmetic.
+//
+//  CongressVote and the agenda-item vote fields remain as types because
+//  other archived data may still decode against them, but they are no longer
+//  populated. processVotes() is a no-op alias for generateCeremonialBroadcast.
 //
 
 import Foundation
@@ -29,8 +39,17 @@ final class CongressSession {
     // Agenda items (encoded as Data)
     var agendaItemsData: Data?       // [CongressAgendaItem]
 
-    // Voting results (encoded as Data)
-    var votingResultsData: Data?     // [CongressVote]
+    // Voting results (encoded as Data) — REPURPOSED.
+    //
+    // Originally `[CongressVote]` encoded as JSON. The rubber-stamp vote loop
+    // has been removed (Congress is now ceremonial) so we no longer write
+    // CongressVote arrays here. Instead, we reuse this @Model field to store
+    // the UTF-8 bytes of the ceremonial broadcast text (see `broadcastText`).
+    //
+    // This avoids a SwiftData schema bump: the field already exists in V1.
+    // Old [CongressVote] payloads from prior saves are detected and treated
+    // as empty by `broadcastText`'s getter.
+    var votingResultsData: Data?
 
     // Player involvement
     var playerAttended: Bool         // Did player attend session
@@ -38,8 +57,10 @@ final class CongressSession {
     var playerProposedPolicy: Bool   // Did player propose agenda items
 
     // Political effects
-    var legitimacyGranted: Int       // Legitimacy points awarded to policies
-    var stabilityEffect: Int         // Effect on national stability
+    // NOTE: legitimacyGranted is no longer derived from fake unanimity counts.
+    // It's kept at 0 by default; callers should not rely on it as a signal.
+    var legitimacyGranted: Int       // Vestigial — left at 0 by ceremonial flow
+    var stabilityEffect: Int         // Vestigial — left at 0 by ceremonial flow
 
     // Game reference
     var game: Game?
@@ -179,13 +200,29 @@ extension CongressSession {
         }
     }
 
-    var votingResults: [CongressVote] {
+    /// Vestigial: Congress is ceremonial — there are no votes.
+    ///
+    /// The underlying `votingResultsData` field has been repurposed to store
+    /// `broadcastText` (UTF-8 bytes). We return an empty array here so any
+    /// external caller that still reads `votingResults` gets a benign empty
+    /// result instead of crashing. NO LONGER SETTABLE — see `broadcastText`.
+    var votingResults: [CongressVote] { [] }
+
+    /// Ceremonial broadcast text generated at session time.
+    ///
+    /// Stored as UTF-8 in the (formerly vote-tally) `votingResultsData` field
+    /// so we avoid a SwiftData schema bump. Old `[CongressVote]` JSON payloads
+    /// from prior saves are detected (they begin with `[{` or `[]`) and surface
+    /// as empty here, ensuring the UI never shows stale fake-vote bytes as text.
+    var broadcastText: String {
         get {
-            guard let data = votingResultsData else { return [] }
-            return (try? JSONDecoder().decode([CongressVote].self, from: data)) ?? []
+            guard let data = votingResultsData,
+                  let s = String(data: data, encoding: .utf8) else { return "" }
+            if s.hasPrefix("[{") || s.hasPrefix("[]") { return "" }
+            return s
         }
         set {
-            votingResultsData = try? JSONEncoder().encode(newValue)
+            votingResultsData = newValue.data(using: .utf8)
         }
     }
 
@@ -208,12 +245,15 @@ extension CongressSession {
         }
     }
 
+    /// Headline read out at the close of the ceremonial session.
+    /// No longer derived from fabricated vote tallies.
     var conclusionHeadline: String {
-        let unanimousCount = votingResults.filter { $0.wasUnanimous }.count
-        if unanimousCount == votingResults.count && !votingResults.isEmpty {
-            return "PEOPLE'S CONGRESS UNANIMOUSLY APPROVES ALL MEASURES"
+        switch currentType {
+        case .annual:        return "PEOPLE'S CONGRESS CONCLUDES IN UNITY"
+        case .emergency:     return "EMERGENCY SESSION ADJOURNS"
+        case .constitutional:return "CONSTITUTIONAL SESSION ADJOURNS"
+        case .succession:    return "SUCCESSION SESSION ADJOURNS"
         }
-        return "PEOPLE'S CONGRESS CONCLUDES HISTORIC SESSION"
     }
 }
 
@@ -269,34 +309,66 @@ extension CongressSession {
         agendaItems = items
     }
 
-    /// Process votes (rubber-stamp all items)
-    func processVotes() {
-        var results: [CongressVote] = []
-
-        for item in agendaItems where item.requiresVote {
-            // Almost always unanimous with tiny symbolic opposition
-            let against = Int.random(in: 0...5)
-            let abstentions = Int.random(in: 0...15)
-            let forVotes = delegatesPresent - against - abstentions
-
-            results.append(CongressVote(
-                agendaItemId: item.id,
-                votesFor: forVotes,
-                votesAgainst: against,
-                abstentions: abstentions,
-                passed: true,
-                wasUnanimous: against == 0 && abstentions == 0
-            ))
+    /// Generate the ceremonial broadcast payload for this session.
+    ///
+    /// Replaces the prior `processVotes()` rubber-stamp loop. There is no vote.
+    /// Output is 1-2 paragraphs of propaganda-spectacle prose, varied by a few
+    /// in-game state references (turn, current Five-Year Plan number, stability
+    /// bracket) so successive sessions read differently.
+    ///
+    /// The text is stored on `broadcastText`. No stats are mutated.
+    func generateCeremonialBroadcast(game: Game) {
+        let turn = game.turnNumber
+        let planNumber = game.currentFiveYearPlan
+        let stabilityBracket: String
+        switch game.stability {
+        case 70...:  stabilityBracket = "in a climate of perfect social cohesion"
+        case 50..<70:stabilityBracket = "amid the steady march of socialist construction"
+        case 30..<50:stabilityBracket = "against a backdrop of vigilant defense of revolutionary gains"
+        default:     stabilityBracket = "during a period demanding heightened revolutionary discipline"
         }
 
-        votingResults = results
+        // Pick a varied opening line so consecutive sessions read differently.
+        let openings: [String] = [
+            "Comrade Chairman addresses the Assembly. The Great Hall stands. The orchestra plays the anthem.",
+            "The session opens with the singing of the International. Delegates rise as one.",
+            "Standing ovations greet the Chairman's entry. The People's Congress is in session.",
+            "The doors of the Great Hall are closed. The Presidium takes its place. Silence falls."
+        ]
+        let opening = openings[turn % openings.count]
 
-        // Calculate legitimacy granted
-        let unanimousCount = results.filter { $0.wasUnanimous }.count
-        legitimacyGranted = 10 + (unanimousCount * 5)
+        // Pick a varied closing beat.
+        let closings: [String] = [
+            "No dissent is recorded. The session is filed into the archives.",
+            "The vote is taken by acclamation. The minutes are sealed.",
+            "The hall rises a final time. The broadcast cuts to the anthem.",
+            "Delegates depart to their provinces to carry word of the session."
+        ]
+        let closing = closings[(turn / 2) % closings.count]
 
-        // Stability effect (Congress sessions reinforce system legitimacy)
-        stabilityEffect = 3
+        let body =
+            "\(opening) The Report of the Central Committee is read into the record. " +
+            "Progress on the \(planNumber.ordinalString) Five-Year Plan is recited section by section, " +
+            "each milestone punctuated by sustained applause. The state budget is presented and received. " +
+            "The session unfolds \(stabilityBracket).\n\n" +
+            "Foreign delegations observe from the gallery. The newsreel cameras run. " +
+            "The Chairman's closing address is interrupted seventeen times by ovations. " +
+            "\(closing)"
+
+        broadcastText = body
+    }
+
+    /// Backwards-compatible shim. The vote engine has been removed; this
+    /// now produces a ceremonial broadcast instead. Old callers continue to
+    /// compile and trigger the right end-of-session beat.
+    func processVotes() {
+        // We do not have a Game reference here. Callers that still invoke
+        // processVotes() without a Game (none currently) will leave the
+        // broadcast text blank — callers should prefer generateCeremonialBroadcast(game:).
+        if broadcastText.isEmpty {
+            broadcastText = "The People's Congress is in session. The Report of the Central Committee is read into the record. Standing ovations punctuate each section. No dissent is recorded."
+        }
+        // Vote tallies are intentionally NOT populated. votingResultsData stays nil.
     }
 
     /// Conclude the session
@@ -359,9 +431,10 @@ extension CongressSession {
             }
         }
 
-        if !votingResults.isEmpty {
-            let unanimous = votingResults.filter { $0.wasUnanimous }.count
-            context += "Votes: \(unanimous) of \(votingResults.count) passed unanimously\n"
+        // Vote tallies removed — Congress is now ceremonial. Surface the
+        // broadcast text instead so AI prompts can reference its tone.
+        if !broadcastText.isEmpty {
+            context += "Broadcast: \(broadcastText.prefix(160))…\n"
         }
 
         return context

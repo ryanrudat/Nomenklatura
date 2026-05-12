@@ -224,16 +224,31 @@ class InternationalEventService {
 
     // MARK: - Event Triggers
 
+    /// Minimum turns between consecutive proxy-war opportunity flags for the
+    /// same country. Without this, a non-aligned country with diplomaticTension
+    /// > 50 could repeatedly overwrite its flag on consecutive turns when the
+    /// 5% RNG roll lands, blurring the "fresh opportunity" signal.
+    private static let proxyOpportunityCooldownTurns: Int = 6
+
+    /// Minimum turns between diplomatic crises for the same country. At
+    /// tension=100 the crisis roll is 25% per turn — without a cooldown
+    /// you can chain "diplomatic crisis with China" three turns in a row,
+    /// which feels like broken AI rather than escalating tension.
+    private static let diplomaticCrisisCooldownTurns: Int = 4
+
     private func checkProxyWarOpportunities(game: Game) {
         var rng = game.rng
         defer { game.rng = rng }
-        // Check for countries where we could get involved
         for country in game.foreignCountries {
-            if country.politicalBloc == .nonAligned && country.diplomaticTension > 50 {
-                // Opportunity to support one side in a developing conflict
-                if Int.random(in: 1...20, using: &rng) == 1 {
-                    game.variables["proxy_opportunity_\(country.countryId)"] = String(game.turnNumber)
-                }
+            guard country.politicalBloc == .nonAligned, country.diplomaticTension > 50 else { continue }
+            let flagKey = "proxy_opportunity_\(country.countryId)"
+            if let lastFlag = game.variables[flagKey],
+               let lastTurn = Int(lastFlag),
+               game.turnNumber - lastTurn < Self.proxyOpportunityCooldownTurns {
+                continue
+            }
+            if Int.random(in: 1...20, using: &rng) == 1 {
+                game.variables[flagKey] = String(game.turnNumber)
             }
         }
     }
@@ -242,20 +257,25 @@ class InternationalEventService {
         var rng = game.rng
         defer { game.rng = rng }
         for country in game.foreignCountries {
-            // High tension can trigger crises
             if country.diplomaticTension > 80 {
-                let crisisRoll = Int.random(in: 1...100, using: &rng)
-                if crisisRoll <= country.diplomaticTension / 4 {
-                    // Diplomatic crisis triggered
-                    game.variables["diplomatic_crisis_\(country.countryId)"] = String(game.turnNumber)
-                    game.applyStat("worldTension", change: 10)
+                let flagKey = "diplomatic_crisis_\(country.countryId)"
+                let onCooldown: Bool = {
+                    guard let lastFlag = game.variables[flagKey],
+                          let lastTurn = Int(lastFlag) else { return false }
+                    return game.turnNumber - lastTurn < Self.diplomaticCrisisCooldownTurns
+                }()
+
+                if !onCooldown {
+                    let crisisRoll = Int.random(in: 1...100, using: &rng)
+                    if crisisRoll <= country.diplomaticTension / 4 {
+                        game.variables[flagKey] = String(game.turnNumber)
+                        game.applyStat("worldTension", change: 10)
+                    }
                 }
             }
 
-            // Border tensions with neighboring regions
             if let borderingRegionId = country.borderingRegionId {
                 if country.diplomaticTension > 60 {
-                    // Find the region and increase military alert
                     if let region = game.regions.first(where: { $0.regionId == borderingRegionId }) {
                         region.militaryPresence = min(100, region.militaryPresence + 5)
                     }

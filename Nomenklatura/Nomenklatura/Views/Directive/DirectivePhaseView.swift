@@ -35,6 +35,15 @@ struct DirectivePhaseView: View {
     @State private var showCharacterSelection = false
     @State private var pendingSecurityTask: BureauTask?
 
+    // Chairman's Decree state — mirrors SecurityPortalView's decree flow but for the
+    // directive phase. When a player taps "EXECUTE BY DECREE" on a canBeDecree security
+    // directive, we go directly to character selection (bypasses normal "AUTHORIZE"
+    // confirmation overlay) and then prompt the same political-cost alert before
+    // routing through BureauOperationsService.executeTask(..., viaDecree: true).
+    @State private var showDecreeConfirmAlert = false
+    @State private var pendingDecreeTask: BureauTask?
+    @State private var pendingDecreeTarget: GameCharacter?
+
     // The 6 bureaus available for directives
     private let bureaus: [ExpandedCareerTrack] = [
         .securityServices,
@@ -149,6 +158,23 @@ struct DirectivePhaseView: View {
                 characterSelectionOverlay(task: task)
             }
         }
+        // Chairman's Decree confirmation — fired after a decree-flow target is chosen.
+        // Mirrors SecurityPortalView.SecurityActionCard's "Issue Chairman's Decree?" alert.
+        .alert("Issue Chairman's Decree?", isPresented: $showDecreeConfirmAlert) {
+            Button("CANCEL", role: .cancel) {
+                pendingDecreeTask = nil
+                pendingDecreeTarget = nil
+                pendingSecurityTask = nil
+                selectedTask = nil
+            }
+            Button("ISSUE DECREE", role: .destructive) {
+                if let task = pendingDecreeTask, let target = pendingDecreeTarget {
+                    finalizeSecurityDirective(task: task, target: target, viaDecree: true)
+                }
+            }
+        } message: {
+            Text(decreeAlertMessage)
+        }
     }
 
     // MARK: - Header
@@ -227,6 +253,11 @@ struct DirectivePhaseView: View {
 
             Spacer()
 
+            // Shared decree-charge counter — placed alongside the directive
+            // points display so the player sees BOTH costs of a decree
+            // (1 directive point + 1 charge) in the same row.
+            DecreeChargesCounter(game: game)
+
             // Status
             if game.directivePoints == 0 {
                 Text("ALL ORDERS ISSUED")
@@ -298,66 +329,146 @@ struct DirectivePhaseView: View {
     // MARK: - Task Row
 
     private func taskRow(task: BureauTask, bureauColor: Color) -> some View {
-        Button {
-            if task.canInitiate && game.directivePoints > 0 {
-                selectedTask = task
-                showTaskConfirmation = true
+        VStack(spacing: 4) {
+            Button {
+                if task.canInitiate && game.directivePoints > 0 {
+                    selectedTask = task
+                    showTaskConfirmation = true
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    // Task icon
+                    Image(systemName: task.iconName)
+                        .font(.system(size: 12))
+                        .foregroundColor(task.canInitiate ? bureauColor : theme.carbonCopy.opacity(0.4))
+                        .frame(width: 24)
+
+                    // Task info
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(task.name.uppercased())
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(0.5)
+                            .foregroundColor(task.canInitiate ? theme.inkBlack : theme.carbonCopy)
+
+                        Text(task.briefDescription)
+                            .font(.system(size: 8, weight: .regular, design: .monospaced))
+                            .foregroundColor(theme.carbonCopy)
+                            .lineLimit(2)
+                    }
+
+                    Spacer()
+
+                    // Risk level indicator
+                    riskBadge(task.riskLevel)
+
+                    // Availability
+                    if !task.canInitiate {
+                        if let reason = task.unavailableReason {
+                            Text(reason)
+                                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                                .foregroundColor(theme.sovietRed)
+                                .lineLimit(1)
+                        }
+                    } else if game.directivePoints <= 0 {
+                        Text("NO POINTS")
+                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                            .foregroundColor(theme.sovietRed)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                            .foregroundColor(bureauColor)
+                    }
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 8)
+                .background(
+                    task.canInitiate && game.directivePoints > 0
+                        ? bureauColor.opacity(0.04)
+                        : Color.clear
+                )
+                .cornerRadius(4)
+            }
+            .buttonStyle(.plain)
+            .disabled(!task.canInitiate || game.directivePoints <= 0)
+
+            // Chairman's Decree affordance — parallel to the normal AUTHORIZE flow.
+            // Surfaces only on security directives whose underlying action is flagged
+            // canBeDecree (currently investigate_politburo_member, execute_without_trial,
+            // and a few other high-position actions). Mirrors SecurityPortalView's
+            // EXECUTE BY DECREE button so the player can bypass committee approval
+            // from the directive phase too.
+            if decreeEligibleSecurityAction(for: task) != nil {
+                decreeButton(task: task)
+            }
+        }
+    }
+
+    // MARK: - Decree Button (Directive Phase)
+
+    /// Returns the SecurityAction backing this task IF the action is flagged canBeDecree.
+    /// Used to gate the visibility of the EXECUTE BY DECREE button.
+    private func decreeEligibleSecurityAction(for task: BureauTask) -> SecurityAction? {
+        guard task.actionCategory == "security" else { return nil }
+        guard let action = SecurityAction.allActions.first(where: { $0.id == task.actionId }) else {
+            return nil
+        }
+        return action.canBeDecree ? action : nil
+    }
+
+    /// Whether the player can currently issue a decree: must have at least one charge
+    /// remaining and a directive point to spend, and the underlying task must be initiable.
+    private func decreeAvailable(for task: BureauTask) -> Bool {
+        game.decreeChargesRemaining > 0 && game.directivePoints > 0 && task.canInitiate
+    }
+
+    /// The red EXECUTE BY DECREE pill mirrors SecurityPortalView.SecurityActionCard's
+    /// secondary button: same color, same n/3 charges badge, same heavy tracking.
+    /// Tapping opens character selection in decree mode (maxTargetPosition bypassed),
+    /// then prompts the political-cost alert before routing through
+    /// BureauOperationsService.executeTask(..., viaDecree: true).
+    private func decreeButton(task: BureauTask) -> some View {
+        let isAvailable = decreeAvailable(for: task)
+        return Button {
+            guard isAvailable else { return }
+            // Mark this as a decree flow BEFORE opening character selection.
+            // characterSelectionOverlay will widen its eligibility filter when
+            // pendingDecreeTask is set, and finalizeSecurityDirective will route
+            // through BureauOperationsService with viaDecree: true.
+            pendingDecreeTask = task
+            pendingSecurityTask = task
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showCharacterSelection = true
             }
         } label: {
-            HStack(spacing: 10) {
-                // Task icon
-                Image(systemName: task.iconName)
-                    .font(.system(size: 12))
-                    .foregroundColor(task.canInitiate ? bureauColor : theme.carbonCopy.opacity(0.4))
-                    .frame(width: 24)
-
-                // Task info
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(task.name.uppercased())
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .tracking(0.5)
-                        .foregroundColor(task.canInitiate ? theme.inkBlack : theme.carbonCopy)
-
-                    Text(task.briefDescription)
-                        .font(.system(size: 8, weight: .regular, design: .monospaced))
-                        .foregroundColor(theme.carbonCopy)
-                        .lineLimit(2)
-                }
-
+            HStack(spacing: 8) {
+                Image(systemName: "seal.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text("EXECUTE BY DECREE")
+                    .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                    .tracking(1.2)
                 Spacer()
-
-                // Risk level indicator
-                riskBadge(task.riskLevel)
-
-                // Availability
-                if !task.canInitiate {
-                    if let reason = task.unavailableReason {
-                        Text(reason)
-                            .font(.system(size: 7, weight: .medium, design: .monospaced))
-                            .foregroundColor(theme.sovietRed)
-                            .lineLimit(1)
-                    }
-                } else if game.directivePoints <= 0 {
-                    Text("NO POINTS")
-                        .font(.system(size: 7, weight: .bold, design: .monospaced))
-                        .foregroundColor(theme.sovietRed)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10))
-                        .foregroundColor(bureauColor)
-                }
+                Text("\(game.decreeChargesRemaining)/3")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .opacity(0.85)
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 8)
-            .background(
-                task.canInitiate && game.directivePoints > 0
-                    ? bureauColor.opacity(0.04)
-                    : Color.clear
-            )
+            .foregroundColor(isAvailable ? .white : theme.carbonCopy)
+            .padding(.vertical, 7)
+            .padding(.horizontal, 10)
+            .background(isAvailable ? theme.sovietRed : theme.cardstock.opacity(0.4))
             .cornerRadius(4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(isAvailable ? theme.inkBlack.opacity(0.6) : theme.carbonCopy.opacity(0.2), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
-        .disabled(!task.canInitiate || game.directivePoints <= 0)
+        .disabled(!isAvailable)
+        .padding(.horizontal, 8)
+        .accessibilityHint(isAvailable
+            ? "Bypass Standing Committee approval at a steep political cost. \(game.decreeChargesRemaining) of 3 charges remaining."
+            : (game.decreeChargesRemaining == 0
+                ? "No decree charges remaining. Charges regenerate slowly."
+                : "Insufficient directive points."))
     }
 
     // MARK: - Risk Badge
@@ -1439,6 +1550,8 @@ struct DirectivePhaseView: View {
             showCharacterSelection = false
             pendingDirectiveTask = nil
             pendingSecurityTask = nil
+            pendingDecreeTask = nil
+            pendingDecreeTarget = nil
             pendingTargetType = ""
         }
     }
@@ -1468,7 +1581,11 @@ struct DirectivePhaseView: View {
 
     private func characterSelectionOverlay(task: BureauTask) -> some View {
         let action = SecurityAction.allActions.first(where: { $0.id == task.actionId })
-        let maxPosition = action?.maxTargetPosition ?? Int.max
+        // Under Chairman's Decree, the maxTargetPosition gate is waived — Chairman
+        // can reach anyone at or below his rank (Position 8 → everyone). Matches
+        // the bypass logic in SecurityActionService.validateAction(viaDecree: true).
+        let isDecreeFlow = pendingDecreeTask?.id == task.id
+        let maxPosition = isDecreeFlow ? Int.max : (action?.maxTargetPosition ?? Int.max)
         let eligibleCharacters = game.characters.filter { character in
             guard character.isAlive && character.isActive else { return false }
             let position = character.positionIndex ?? 0
@@ -1486,6 +1603,8 @@ struct DirectivePhaseView: View {
                     withAnimation(.easeOut(duration: 0.2)) {
                         showCharacterSelection = false
                         pendingSecurityTask = nil
+                        pendingDecreeTask = nil
+                        pendingDecreeTarget = nil
                         selectedTask = nil
                     }
                 }
@@ -1500,19 +1619,23 @@ struct DirectivePhaseView: View {
                     VStack(spacing: 6) {
                         Image(systemName: task.iconName)
                             .font(.system(size: 24))
-                            .foregroundColor(theme.accentGold)
+                            .foregroundColor(isDecreeFlow ? theme.sovietRed : theme.accentGold)
 
-                        Text("SELECT TARGET")
+                        Text(isDecreeFlow ? "DECREE TARGET" : "SELECT TARGET")
                             .font(.system(size: 14, weight: .black, design: .monospaced))
                             .tracking(2)
-                            .foregroundColor(theme.accentGold)
+                            .foregroundColor(isDecreeFlow ? theme.sovietRed : theme.accentGold)
 
                         Text(task.name.uppercased())
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .tracking(1)
                             .foregroundColor(theme.inkBlack)
 
-                        if let maxPos = action?.maxTargetPosition {
+                        if isDecreeFlow {
+                            Text("COMMITTEE GATES BYPASSED")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .foregroundColor(theme.sovietRed)
+                        } else if let maxPos = action?.maxTargetPosition {
                             Text("TARGETS POSITION \(maxPos) AND BELOW")
                                 .font(.system(size: 8, weight: .medium, design: .monospaced))
                                 .foregroundColor(theme.carbonCopy)
@@ -1554,6 +1677,8 @@ struct DirectivePhaseView: View {
                         withAnimation(.easeOut(duration: 0.2)) {
                             showCharacterSelection = false
                             pendingSecurityTask = nil
+                            pendingDecreeTask = nil
+                            pendingDecreeTarget = nil
                             selectedTask = nil
                         }
                     } label: {
@@ -1585,7 +1710,14 @@ struct DirectivePhaseView: View {
             withAnimation(.easeOut(duration: 0.2)) {
                 showCharacterSelection = false
             }
-            finalizeSecurityDirective(task: task, target: character)
+            // Decree flow stages the target and prompts the political-cost alert;
+            // normal flow executes immediately as before.
+            if pendingDecreeTask?.id == task.id {
+                pendingDecreeTarget = character
+                showDecreeConfirmAlert = true
+            } else {
+                finalizeSecurityDirective(task: task, target: character)
+            }
         } label: {
             HStack(spacing: 10) {
                 VStack(spacing: 1) {
@@ -1652,14 +1784,18 @@ struct DirectivePhaseView: View {
             .cornerRadius(2)
     }
 
-    private func finalizeSecurityDirective(task: BureauTask, target: GameCharacter) {
+    private func finalizeSecurityDirective(task: BureauTask, target: GameCharacter, viaDecree: Bool = false) {
         guard game.directivePoints > 0 else { return }
+        // Decree path requires a charge — SecurityActionService also enforces this,
+        // but guard here to avoid spending a directive point on a no-op execution.
+        if viaDecree && game.decreeChargesRemaining <= 0 { return }
 
         let result = BureauOperationsService.shared.executeTask(
             task,
             for: game,
             modelContext: modelContext,
-            targetCharacter: target
+            targetCharacter: target,
+            viaDecree: viaDecree
         )
 
         if result.operationInitiated {
@@ -1670,15 +1806,51 @@ struct DirectivePhaseView: View {
                 track: .securityServices,
                 amount: 3,
                 source: .personalAction,
-                description: "Issued directive: \(task.name)"
+                description: viaDecree ? "Decreed: \(task.name)" : "Issued directive: \(task.name)"
             )
         }
 
         pendingSecurityTask = nil
+        pendingDecreeTask = nil
+        pendingDecreeTarget = nil
         lastResult = result
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
             showResult = true
             selectedTask = nil
         }
+    }
+
+    // MARK: - Decree Confirmation Alert
+
+    /// The political-cost wording mirrors SecurityPortalView.SecurityActionCard.decreeAlertMessage
+    /// verbatim so the player sees identical disclosure regardless of where they invoke decree.
+    private var decreeAlertMessage: String {
+        let actionName = pendingDecreeTask?.name ?? "Security action"
+        let targetClause: String
+        if let target = pendingDecreeTarget {
+            targetClause = "Target: \(target.name)"
+        } else {
+            targetClause = "No specific target."
+        }
+        var message = """
+        \(actionName) — bypassing Standing Committee approval.
+
+        \(targetClause)
+
+        POLITICAL COST:
+        \u{2022} \u{2212}20 Elite Loyalty
+        \u{2022} \u{2212}10 Stability
+        \u{2022} +20 Rival Threat
+        \u{2022} \u{2212}15 International Standing
+
+        This will consume 1 of \(game.decreeChargesRemaining) decree charges. The apparatus will not forget.
+        """
+        // Last-charge nudge — see DecreeChargesCounter.swift for shared phrasing.
+        // The decree pool is shared with SecurityPortal, Crisis, and Emergency
+        // surfaces, so the player should know before they spend their final charge.
+        if let warning = decreeLastChargeWarning(for: game) {
+            message += "\n\n" + warning
+        }
+        return message
     }
 }

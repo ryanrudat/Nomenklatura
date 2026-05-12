@@ -123,14 +123,28 @@ struct ContentView: View {
                             setupState = .campaignSelect
                         },
                         onRestartWithSameFaction: {
-                            // Capture current game's campaign and faction before restarting
+                            // Capture current game's campaign and faction before restarting.
+                            // Unmount GameView FIRST (setupState change) so no descendant
+                            // view holds a stale @Bindable reference to the soon-to-be-
+                            // deleted Game when its `variables` attribute is read during
+                            // re-render. Then start the new game on the next runloop.
                             let campaignId = game.campaignId
                             let factionId = game.playerFactionId ?? "youth_league"
-                            startNewGame(campaignId: campaignId, factionId: factionId)
+                            setupState = .preparing(campaignId: campaignId, factionId: factionId)
+                            DispatchQueue.main.async {
+                                startNewGame(campaignId: campaignId, factionId: factionId)
+                            }
                         },
                         onDeleteAllData: {
-                            deleteAllGameData()
+                            // Order matters: setupState change unmounts GameView before
+                            // modelContext.delete(game) marks the Game faulted. Without
+                            // this ordering, a descendant view (Ledger / BureauOperations)
+                            // can re-render with a deleted Game and crash on the next
+                            // `game.variables[...]` read with a detached-fault error.
                             setupState = .campaignSelect
+                            DispatchQueue.main.async {
+                                deleteAllGameData()
+                            }
                         }
                     )
                 } else {
@@ -267,6 +281,11 @@ struct ContentView: View {
             character.game = newGame
             newGame.characters.append(character)
         }
+
+        // One-time disposition bias so the player's own faction starts warmer and
+        // opposing factions start cooler. Idempotent via Game.flags — safe even if
+        // start-of-game seeding is ever re-invoked.
+        FactionService.shared.applyFactionStartingDisposition(game: newGame)
 
         // Create factions and apply player faction relationship modifiers
         let playerFaction = PlayerFactionConfig.faction(withId: factionId)
@@ -419,7 +438,7 @@ struct ContentView: View {
 /// Single-source-of-truth replacement for the 8 separate sheet bools that
 /// could previously race each other when triggered close together.
 enum ActiveSheet: String, Identifiable {
-    case menu
+    case memorial   // Replaces former .menu — bottom-nav button now opens "The Removed"
     case world
     case congress
     case security
@@ -502,6 +521,7 @@ struct GameView: View {
                             game: game,
                             onWorldTap: { activeSheet = .world },
                             onCongressTap: { activeSheet = .congress },
+                            onDeskTap: { selectedTab = .desk },
                             initialTab: navigateToJournalEntry != nil ? .journal : nil,
                             highlightedEntryId: navigateToJournalEntry?.id.uuidString
                         )
@@ -525,7 +545,7 @@ struct GameView: View {
                     VStack {
                         Spacer()
                         BottomNavBar(selectedTab: $selectedTab) {
-                            activeSheet = .menu
+                            activeSheet = .memorial
                         }
                     }
                 }
@@ -533,13 +553,9 @@ struct GameView: View {
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
-            case .menu:
-                GameMenuSheet(
-                    onRestart: { startNewGame() },
-                    onMainMenu: { onReturnToMenu() },
-                    onDeleteAllData: onDeleteAllData
-                )
-                .presentationDetents([.medium])
+            case .memorial:
+                MemorialSheetView(game: game)
+                    .presentationDetents([.large])
             case .world:
                 WorldTabView(game: game)
             case .congress:
@@ -615,7 +631,10 @@ struct GameView: View {
                 onDossierTap: { selectedTab = .dossier },  // Navigate to Dossier from memo tray
                 onLedgerTap: { selectedTab = .ledger },    // Navigate to Ledger from stats
                 onLadderTap: { selectedTab = .economy },   // Navigate to Economy tab
-                onEndTurn: { transitionToStandingCommitteeOrDirective() }  // SC check → directives → personal action
+                onEndTurn: { transitionToStandingCommitteeOrDirective() },  // SC check → directives → personal action
+                onRestart: { startNewGame() },
+                onMainMenu: { onReturnToMenu() },
+                onDeleteAllData: onDeleteAllData
             )
 
         case .standingCommittee:
@@ -684,7 +703,10 @@ struct GameView: View {
 
     private func transitionToDirectivePhase() {
         withAnimation(.easeInOut(duration: 0.3)) {
-            game.directivePoints = 2
+            // audit-tuning: directives now feel like a resource, not a free 2-per-turn.
+            // Regenerate +1/turn capped at 2. Stockpile by skipping, but spend both
+            // and you only have 1 next turn — forces real prioritization between bureaus.
+            game.directivePoints = min(game.directivePoints + 1, 2)
             game.phase = GamePhase.directive.rawValue
         }
     }

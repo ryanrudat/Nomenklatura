@@ -533,9 +533,155 @@ final class AchievementService {
             }
         }
 
-        // Additional state-based checks (Champion of the People, Father of the Nation,
-        // Supreme Commander) require sustained-stat tracking — those will be added when
-        // the stat-history infrastructure lands in Phase 2/3.
+        // STATE EXCELLENCE — sustained-stat checks
+        // Champion of the People — 20 consecutive turns at popular support ≥ 80.
+        // popularSupportHistory is a rolling 20-turn window (suffix-capped on
+        // write in Game.swift), so all-20-≥80 IS 20 consecutive turns ≥80.
+        if !unlockedIds.contains("champion_of_people") {
+            let history = game.popularSupportHistory
+            if history.count >= 20 && history.allSatisfy({ $0 >= 80 }) {
+                newlyUnlocked.append("champion_of_people")
+            }
+        }
+
+        // Supreme Commander — 30 consecutive turns at military loyalty ≥ 90.
+        // History arrays are capped at 20 entries, so this uses the dedicated
+        // streak counter recorded in Game.recordAllStatHistory().
+        if !unlockedIds.contains("supreme_commander")
+            && game.consecutiveTurnsMilitaryLoyaltyHigh >= 30 {
+            newlyUnlocked.append("supreme_commander")
+        }
+
+        // Father of the Nation — 50 consecutive turns at stability ≥ 90.
+        // Uses dedicated streak counter (history window is too short).
+        if !unlockedIds.contains("father_of_nation")
+            && game.consecutiveTurnsStabilityHigh >= 50 {
+            newlyUnlocked.append("father_of_nation")
+        }
+
+        // EXCELLENCE — law/reform counts
+        // lawsModifiedCount is incremented in StandingCommitteeService,
+        // ConsequenceEngine, and PolicyService when a law actually changes state.
+        if !unlockedIds.contains("architect_of_law") && game.lawsModifiedCount >= 5 {
+            newlyUnlocked.append("architect_of_law")
+        }
+        if !unlockedIds.contains("architect_of_state") && game.lawsModifiedCount >= 10 {
+            newlyUnlocked.append("architect_of_state")
+        }
+
+        // EXCELLENCE — five-year plan ratings
+        // stakhanovitePlanCount increments in Game.completeFiveYearPlan() when
+        // the plan finishes with all 6 sectors at target.
+        if !unlockedIds.contains("stakhanovite_standard")
+            && game.stakhanovitePlanCount >= 1 {
+            newlyUnlocked.append("stakhanovite_standard")
+        }
+
+        // CONSOLIDATION — purge/show-trial outcomes
+        // The Purger — 5+ characters with status "fallen" (executed / imprisoned /
+        // disappeared / exiled / etc.) AND a rival role at time of fall.
+        // We can't perfectly recover "was a rival when purged" since role can
+        // flip back to .neutral after they're dispatched, so we check current
+        // role + fallen status as a proxy.
+        if !unlockedIds.contains("the_purger") {
+            let purgedRivals = game.characters.filter {
+                $0.currentStatus.isFallen && $0.currentRole == .rival
+            }
+            if purgedRivals.count >= 5 {
+                newlyUnlocked.append("the_purger")
+            }
+        }
+
+        // Banner of Victory — at least one character has been executed
+        // (proxy for "won a major show trial"; ShowTrialService sets .executed
+        // on conviction).
+        if !unlockedIds.contains("banner_of_victory") {
+            let hasExecution = game.characters.contains { $0.currentStatus == .executed }
+            if hasExecution {
+                newlyUnlocked.append("banner_of_victory")
+            }
+        }
+
+        // Blood on Your Hands (secret) — same trigger as Banner of Victory but
+        // catalogued under .dark. checkEventAchievement also catches the
+        // "ordered_execution" event for the moment-of-act unlock; this check
+        // serves as the late-bind path so the badge fires even if the event
+        // hook isn't wired by the calling site.
+        if !unlockedIds.contains("blood_on_hands") {
+            let hasExecution = game.characters.contains { $0.currentStatus == .executed }
+            if hasExecution {
+                newlyUnlocked.append("blood_on_hands")
+            }
+        }
+
+        // The Disappeared (secret) — 3+ characters with status .disappeared.
+        if !unlockedIds.contains("the_disappeared") {
+            let disappearedCount = game.characters.filter { $0.currentStatus == .disappeared }.count
+            if disappearedCount >= 3 {
+                newlyUnlocked.append("the_disappeared")
+            }
+        }
+
+        // CONSOLIDATION — eliminate a faction
+        // Factional Victor — a faction has power == 0.
+        if !unlockedIds.contains("factional_victor") {
+            let destroyed = game.factions.contains { $0.power == 0 }
+            if destroyed {
+                newlyUnlocked.append("factional_victor")
+            }
+        }
+
+        // LEGACY / SURVIVAL — heir/dynasty checks
+        // The Mentor — at least one active (non-rival) succession relationship
+        // has been alive for 20+ turns. Note: requires SuccessionRelationship.
+        // processTurn() to be called per-turn for turnsActive to increment,
+        // which is a separate dormant wiring concern.
+        if !unlockedIds.contains("the_mentor") {
+            let veteranHeir = game.successorRelationships.contains {
+                $0.isActive && !$0.becameRival && $0.turnsActive >= 20
+            }
+            if veteranHeir {
+                newlyUnlocked.append("the_mentor")
+            }
+        }
+
+        // Political Dynasty — 3 heir successions completed.
+        if !unlockedIds.contains("political_dynasty") && game.dynastySuccessions >= 3 {
+            newlyUnlocked.append("political_dynasty")
+        }
+
+        // Kingmaker — at least one heir succession has occurred (the player's
+        // heir has taken the chairmanship at least once). Note: Game.swift
+        // already explicitly awards "dynasty_founder" at the first succession;
+        // kingmaker is the same threshold but a distinct badge.
+        if !unlockedIds.contains("kingmaker") && game.dynastySuccessions >= 1 {
+            newlyUnlocked.append("kingmaker")
+        }
+
+        // LEGACY — rehabilitation
+        // The Rehabilitator — at least one character has status .rehabilitated
+        // (CharacterInteractionSystem handles the rehab path).
+        if !unlockedIds.contains("the_rehabilitator") {
+            let hasRehab = game.characters.contains { $0.currentStatus == .rehabilitated }
+            if hasRehab {
+                newlyUnlocked.append("the_rehabilitator")
+            }
+        }
+
+        // Additional achievements remain dormant pending infrastructure:
+        // - cult_of_personality (needs propaganda-intensity field)
+        // - master_of_politburo (needs player-appointed-SC tracking)
+        // - defender_of_revolution (needs coup-attempt events)
+        // - the_hardliner / the_reformer (needs ideology axis + win state)
+        // - phoenix_rising / revenge_is_sweet (needs player imprisonment flow)
+        // - betrayer / two_faced (needs patron-betrayal / faction-switch)
+        // - collective_wisdom (needs removal-vote system)
+        // - self_criticism_master (needs counter in PartyAction execution path)
+        // - history_remembers (needs posthumous rehabilitation system)
+        // - show_trial_master / iron_hand (needs completedShowTrialCount counter
+        //   in ShowTrialService — out of scope for this pass)
+        // - nine_lives / survivor_of_purge — defined in checkEventAchievement
+        //   but no call site invokes the event hook yet
 
         return newlyUnlocked
     }

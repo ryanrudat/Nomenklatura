@@ -797,13 +797,23 @@ final class CodexService: ObservableObject {
     // MARK: - Player Response Handling
 
     /// Record player's response to a message with optional custom text
+    /// Outcome of a response send, returned so the calling view can
+    /// surface deltas in a toast (and so other systems can react to
+    /// the same numbers we just applied).
+    struct ResponseOutcome {
+        let effects: CodexResponseEffects
+        let archetype: CodexResponseArchetype
+        let senderName: String
+    }
+
+    @discardableResult
     func respondToMessage(
         _ message: CodexMessage,
         optionId: String,
         customText: String?,
         game: Game,
         context: ModelContext
-    ) {
+    ) -> ResponseOutcome? {
         // Validate custom text if provided
         if let text = customText {
             let validation = TypedResponseValidator.validate(text)
@@ -819,10 +829,10 @@ final class CodexService: ObservableObject {
         message.isRead = true
 
         // Find the selected option
-        guard let option = message.responseOptions.first(where: { $0.id == optionId }) else { return }
+        guard let option = message.responseOptions.first(where: { $0.id == optionId }) else { return nil }
 
         // Get archetype
-        guard let archetype = CodexResponseArchetype(rawValue: option.archetype) else { return }
+        guard let archetype = CodexResponseArchetype(rawValue: option.archetype) else { return nil }
 
         // Find sender character
         let senderCharacter = game.characters.first(where: { $0.templateId == message.senderId })
@@ -874,6 +884,76 @@ final class CodexService: ObservableObject {
                 game.flags.append(flag)
             }
         }
+
+        // Record the exchange in the GameEvent log so the choice shows up
+        // in the Journal/Ledger trail. Importance is moderate (5) — these
+        // are routine consequential choices, not crises.
+        logResponseEvent(
+            message: message,
+            archetype: archetype,
+            effects: effects,
+            sender: senderCharacter,
+            game: game
+        )
+
+        return ResponseOutcome(
+            effects: effects,
+            archetype: archetype,
+            senderName: senderCharacter?.name ?? message.senderName
+        )
+    }
+
+    /// Emit a moderate-importance GameEvent summarizing the response,
+    /// so it shows up in the Journal/Ledger and AI-prompt history.
+    private func logResponseEvent(
+        message: CodexMessage,
+        archetype: CodexResponseArchetype,
+        effects: CodexResponseEffects,
+        sender: GameCharacter?,
+        game: Game
+    ) {
+        // Compose a brief, human-readable delta summary
+        var deltaParts: [String] = []
+        if effects.dispositionChange != 0 {
+            deltaParts.append("\(signed(effects.dispositionChange)) disposition")
+        }
+        if effects.patronFavorChange != 0 {
+            deltaParts.append("\(signed(effects.patronFavorChange)) patron favor")
+        }
+        if effects.rivalThreatChange != 0 {
+            deltaParts.append("\(signed(effects.rivalThreatChange)) rival threat")
+        }
+        let deltaSummary = deltaParts.isEmpty ? "no measurable effect" : deltaParts.joined(separator: ", ")
+
+        let senderLabel = sender?.name ?? message.senderName
+        let summary = "Replied to \(senderLabel) with a \(archetype.rawValue) stance — \(deltaSummary)."
+
+        let event = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .decision,
+            summary: summary
+        )
+        event.importance = 5
+        event.decisionContext = message.subject ?? "Codex exchange"
+        event.optionChosen = archetype.rawValue
+        event.optionArchetype = archetype.rawValue
+        event.charactersInvolved = [senderLabel]
+        event.details = [
+            "kind": "codex_response",
+            "sender": senderLabel,
+            "senderId": message.senderId,
+            "archetype": archetype.rawValue,
+            "dispositionChange": String(effects.dispositionChange),
+            "patronFavorChange": String(effects.patronFavorChange),
+            "rivalThreatChange": String(effects.rivalThreatChange),
+            "messageId": message.id.uuidString
+        ]
+        event.game = game
+        game.events.append(event)
+    }
+
+    private func signed(_ n: Int) -> String {
+        n > 0 ? "+\(n)" : "\(n)"
     }
 
     private func applyResponseEffects(_ effects: CodexResponseEffects, sender: GameCharacter?, game: Game) {

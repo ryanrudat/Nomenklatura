@@ -35,7 +35,7 @@ extension DeskView {
 
             character.disposition = max(-100, min(100, character.disposition + dispChange))
 
-            if let statusChange = character.updateRelationshipStatus(currentTurn: game.turnNumber) {
+            if let statusChange = character.updateRelationshipStatus(currentTurn: game.turnNumber, game: game) {
                 let relationEvent = GameEvent(
                     turnNumber: game.turnNumber,
                     eventType: .narrative,

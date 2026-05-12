@@ -35,6 +35,16 @@ struct SecurityPortalView: View {
             .padding(.horizontal, 15)
             .padding(.top, 10)
 
+            // Shared decree-charge counter — visible from the Actions tab so the
+            // player can see at a glance how many EXECUTE BY DECREE invocations
+            // remain across Security, Directives, Crisis, and Emergency surfaces.
+            HStack {
+                Spacer()
+                DecreeChargesCounter(game: game)
+            }
+            .padding(.horizontal, 15)
+            .padding(.top, 6)
+
             // Section tabs
             PortalSectionBar(
                 selectedSection: $selectedSection,
@@ -982,15 +992,23 @@ struct SecurityActionCard: View {
     @Environment(\.theme) var theme
     @State private var showingConfirmation = false
     @State private var showingTargetSheet = false
+    @State private var showingDecreeConfirm = false
+    @State private var decreeTargetSheet = false
+    @State private var pendingViaDecree = false
     @State private var selectedTarget: GameCharacter?
     @State private var lastResult: SecurityActionService.ExecutionResult?
 
     private let actionService = SecurityActionService.shared
 
+    private var decreeAvailable: Bool {
+        action.canBeDecree && game.decreeChargesRemaining > 0 && !isOnCooldown
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button(action: {
                 if !isOnCooldown {
+                    pendingViaDecree = false
                     if action.targetType == .character {
                         showingTargetSheet = true
                     } else {
@@ -1064,6 +1082,44 @@ struct SecurityActionCard: View {
             .buttonStyle(.plain)
             .disabled(isOnCooldown)
 
+            // Secondary Chairman's Decree button — bypass Standing Committee at steep cost.
+            // Only surfaces on actions flagged canBeDecree AND when player has charges.
+            if action.canBeDecree {
+                Button(action: {
+                    guard decreeAvailable else { return }
+                    pendingViaDecree = true
+                    if action.targetType == .character {
+                        decreeTargetSheet = true
+                    } else {
+                        showingDecreeConfirm = true
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "seal.fill")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("EXECUTE BY DECREE")
+                            .font(.system(size: 11, weight: .heavy))
+                            .tracking(1.2)
+                        Spacer()
+                        Text("\(game.decreeChargesRemaining)/3")
+                            .font(.system(size: 10, weight: .bold))
+                            .opacity(0.85)
+                    }
+                    .foregroundColor(decreeAvailable ? .white : theme.inkLight)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(decreeAvailable ? theme.sovietRed : theme.parchmentDark.opacity(0.4))
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(decreeAvailable ? theme.inkBlack : theme.borderTan, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(!decreeAvailable)
+                .padding(.horizontal, 12)
+            }
+
             // Inline result display
             if let result = lastResult {
                 Text(result.description)
@@ -1088,6 +1144,26 @@ struct SecurityActionCard: View {
                 }
             )
         }
+        .sheet(isPresented: $decreeTargetSheet) {
+            // Decree picker bypasses the action's maxTargetPosition — Chairman can reach
+            // anyone at or below his rank (Position 8 → everyone).
+            TargetSelectionSheet(
+                action: action,
+                game: game,
+                onSelect: { target in
+                    selectedTarget = target
+                    decreeTargetSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showingDecreeConfirm = true
+                    }
+                },
+                onCancel: {
+                    decreeTargetSheet = false
+                    pendingViaDecree = false
+                },
+                viaDecree: true
+            )
+        }
         .sheet(isPresented: $showingConfirmation) {
             ActionConfirmationSheet(
                 title: action.name,
@@ -1110,6 +1186,46 @@ struct SecurityActionCard: View {
             .presentationDragIndicator(.hidden)
             .presentationBackground(Color.clear)
         }
+        .alert("Issue Chairman's Decree?", isPresented: $showingDecreeConfirm) {
+            Button("CANCEL", role: .cancel) {
+                pendingViaDecree = false
+                selectedTarget = nil
+            }
+            Button("ISSUE DECREE", role: .destructive) {
+                executeAction()
+            }
+        } message: {
+            Text(decreeAlertMessage)
+        }
+    }
+
+    private var decreeAlertMessage: String {
+        let targetClause: String
+        if let target = selectedTarget {
+            targetClause = "Target: \(target.name)"
+        } else {
+            targetClause = "No specific target."
+        }
+        var message = """
+        \(action.name) — bypassing Standing Committee approval.
+
+        \(targetClause)
+
+        POLITICAL COST:
+        • −20 Elite Loyalty
+        • −10 Stability
+        • +20 Rival Threat
+        • −15 International Standing
+
+        This will consume 1 of \(game.decreeChargesRemaining) decree charges. The apparatus will not forget.
+        """
+        // Last-charge nudge — the pool is shared with Directives, Crisis, and
+        // Emergency surfaces, so the player should know before they strand
+        // themselves with no decrees left.
+        if let warning = decreeLastChargeWarning(for: game) {
+            message += "\n\n" + warning
+        }
+        return message
     }
 
     private func executeAction() {
@@ -1118,9 +1234,11 @@ struct SecurityActionCard: View {
             targetCharacter: selectedTarget,
             targetFaction: nil,
             for: game,
-            modelContext: modelContext
+            modelContext: modelContext,
+            viaDecree: pendingViaDecree
         )
         selectedTarget = nil
+        pendingViaDecree = false
     }
 
     private func riskColor(_ risk: SecurityRiskLevel) -> Color {
@@ -1184,11 +1302,13 @@ struct TargetSelectionSheet: View {
     let game: Game
     let onSelect: (GameCharacter) -> Void
     let onCancel: () -> Void
+    // When true (Chairman's Decree), maxTargetPosition is bypassed — Chairman can reach anyone.
+    var viaDecree: Bool = false
     @Environment(\.theme) var theme
 
     private var eligibleTargets: [GameCharacter] {
         let playerPosition = game.currentPositionIndex
-        let maxTargetPosition = action.maxTargetPosition ?? 10
+        let maxTargetPosition = viaDecree ? 10 : (action.maxTargetPosition ?? 10)
 
         return game.characters.filter { character in
             character.isAlive &&

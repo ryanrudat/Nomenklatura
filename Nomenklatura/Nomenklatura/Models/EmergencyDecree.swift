@@ -34,7 +34,7 @@ enum EmergencyDecree: String, CaseIterable, Codable, Identifiable {
     var description: String {
         switch self {
         case .requisitionGrain:
-            return "Seize grain from peasant smallholdings. The harvest fills the granaries; the countryside seethes."
+            return "Seize grain and materials from the regions. Granaries and stockpiles fill at gunpoint; the countryside seethes."
         case .emergencyCoalImports:
             return "Pay above-market rates for coal from any willing exporter. Treasury bleeds; the furnaces stay lit."
         case .industrialConscription:
@@ -83,7 +83,7 @@ enum EmergencyDecree: String, CaseIterable, Codable, Identifiable {
     /// to reserves; negative = drawn from reserves.
     var resourceEffects: [StrategicResource: Int] {
         switch self {
-        case .requisitionGrain:           return [.grain: 20]
+        case .requisitionGrain:           return [.grain: 30, .coal: 20, .steel: 15]
         case .emergencyCoalImports:       return [.coal: 20]
         case .industrialConscription:     return [.steel: 8, .iron: 6]
         case .strategicReserveLiquidation: return [.coal: 15, .oil: 10, .iron: 10, .steel: 8, .grain: 10]

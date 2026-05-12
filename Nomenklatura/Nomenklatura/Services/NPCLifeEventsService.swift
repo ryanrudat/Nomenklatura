@@ -545,14 +545,40 @@ class NPCLifeEventsService {
             switch newStatus {
             case .dead, .executed:
                 character.canReturnFlag = false
+                // vacancy fix: position must clear so successor mechanics see the slot as open
+                if character.positionIndex != nil {
+                    character.previousPositionIndex = character.positionIndex
+                }
+                character.positionIndex = nil
+                character.positionTrack = nil
                 game.invalidateCharacterRoleCaches()
-            case .detained, .imprisoned:
+            case .detained:
+                // Short-term holding — character is still nominally in role; do
+                // NOT clear positionIndex.
                 character.canReturnFlag = true
                 character.returnProbability = Int.random(in: 15...40, using: &rng)
+            case .imprisoned:
+                character.canReturnFlag = true
+                character.returnProbability = Int.random(in: 15...40, using: &rng)
+                // vacancy fix: position must clear so successor mechanics see the slot as open
+                if character.positionIndex != nil {
+                    character.previousPositionIndex = character.positionIndex
+                }
+                character.positionIndex = nil
+                character.positionTrack = nil
+                game.invalidateCharacterRoleCaches()
             case .exiled:
                 character.canReturnFlag = true
                 character.returnProbability = Int.random(in: 5...20, using: &rng)
+                // vacancy fix: position must clear so successor mechanics see the slot as open
+                if character.positionIndex != nil {
+                    character.previousPositionIndex = character.positionIndex
+                }
+                character.positionIndex = nil
+                character.positionTrack = nil
+                game.invalidateCharacterRoleCaches()
             case .underInvestigation:
+                // Still in role pending verdict; do NOT clear positionIndex.
                 character.canReturnFlag = true
                 character.returnProbability = Int.random(in: 40...70, using: &rng)
             default:

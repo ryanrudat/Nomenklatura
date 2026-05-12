@@ -259,9 +259,11 @@ final class EconomicActionService {
     ) -> ExecutionResult {
         var rng = game.rng
         defer { game.rng = rng }
-        // Roll for success
+        // Roll for success — bureau chief's competence scales the chance.
+        let chiefModifier = bureauChief(for: "economicPlanning", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Determine effects
         let effects = succeeded ? action.successEffects : action.failureEffects
@@ -540,12 +542,14 @@ final class EconomicActionService {
             )
         }
 
-        // Calculate success
+        // Calculate success — bureau chief's competence scales the chance.
         let successChance = calculateSuccessChance(action, targetSector: plan.targetSector, for: game)
+        let chiefModifier = bureauChief(for: "economicPlanning", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         var rng = game.rng
         defer { game.rng = rng }
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Apply effects if succeeded
         if succeeded {

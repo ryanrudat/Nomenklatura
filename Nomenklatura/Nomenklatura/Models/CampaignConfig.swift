@@ -57,7 +57,8 @@ struct LeadershipConfig: Codable {
     var generalSecretaryPower: Double = 0.5
 
     /// GS vote weight in SC decisions (1 = normal, 2 = double, 3 = triple)
-    var gsVoteWeight: Int = 1
+    // audit-tuning: GS should genuinely matter on the committee, not be one vote among seven
+    var gsVoteWeight: Int = 2
 
     /// Can GS issue decrees without SC vote?
     var gsCanDecree: Bool = true
@@ -109,7 +110,11 @@ struct LeadershipConfig: Codable {
     static var firstAmongEquals: LeadershipConfig {
         LeadershipConfig(
             generalSecretaryPower: 0.5,
-            gsVoteWeight: 1,
+            // audit-tuning: bumped from 1 to 2 alongside the default change.
+            // This is the typical starting preset (campaignConfig.leadership at
+            // CampaignConfig.swift:489), so leaving it at 1 would mean the
+            // new default never took effect at game start.
+            gsVoteWeight: 2,
             gsCanDecree: true,
             decreeCostMultiplier: 1.5,
             meetingFrequency: 5,
@@ -499,9 +504,12 @@ class CampaignLoader {
             PersonalAction(id: "private_meeting_secretary", category: .securePosition, title: "Private audience with key ally", description: "Meet privately with your most important political ally to reinforce the relationship.", costAP: 1, riskLevel: .low, requirements: ActionRequirements(minStanding: 40), effects: ["patronFavor": 5, "reputationLoyal": 5], isLocked: false, lockReason: nil),
             PersonalAction(id: "public_praise_patron", category: .securePosition, title: "Publicly acknowledge your ally", description: "Give a speech crediting your key supporter for their contributions to the state.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["patronFavor": 8, "standing": -3], isLocked: false, lockReason: nil),
             PersonalAction(id: "prepare_dossier", category: .securePosition, title: "Prepare defensive dossier", description: "Compile intelligence on potential threats to your leadership.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["network": 2], isLocked: false, lockReason: nil),
-            PersonalAction(id: "propose_promotion", category: .makeYourPlay, title: "Appoint loyalist to key position", description: "Place a trusted official in a strategic bureau role.", costAP: 2, riskLevel: .medium, requirements: ActionRequirements(minStanding: 65, minPatronFavor: 60, vacancyRequired: true), effects: ["standing": 10], isLocked: true, lockReason: "Requires Standing 65+, Ally Support 60+, and a vacancy"),
-            PersonalAction(id: "challenge_rival", category: .makeYourPlay, title: "Confront rival at Standing Committee", description: "Publicly expose their failures and demand their removal from the Committee.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 70, minNetwork: 50, requiredFlags: ["kovacs_weakness_known"]), effects: ["rivalThreat": -30, "standing": 15, "reputationRuthless": 10], isLocked: true, lockReason: "Requires Standing 70+, Network 50+, and intelligence on rival"),
-            PersonalAction(id: "begin_coup", category: .makeYourPlay, title: "Preemptive strike against plotters", description: "Move decisively against those conspiring to remove you before they can act.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 85, minNetwork: 70, requiredFactionSupport: ["princelings": 70]), effects: ["network": -20], isLocked: true, lockReason: "Requires Standing 85+, Network 70+, Princeling support 70+")
+            // NOTE: Removed 4 ladder-climbing/vacancy-gated entries (propose_promotion,
+            // appoint_successor, challenge_rival, begin_coup). Player starts at
+            // Position 8 (General Secretary) so vacancyRequired:true never fires;
+            // the dynamic equivalents (`leadership_challenge`, `denounce_rival`,
+            // `appoint_successor`, `expose_rival_crisis`) are generated at runtime
+            // by PersonalActionGenerator with proper game-state gating.
         ]
     }
 

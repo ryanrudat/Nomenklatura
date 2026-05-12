@@ -195,15 +195,32 @@ final class StandingCommitteeMeetingService {
         var votesAgainst: [SCMemberVote] = []
         var abstentions: [SCMemberVote] = []
 
+        // RNG snapshot for ceremonial-vote roll. Threaded through game.rng
+        // so seeded reproductions stay deterministic.
+        var rng = game.rng
+        defer { game.rng = rng }
+
         // Determine each member's vote
         for member in members {
-            let vote = determineMemberVote(
+            var vote = determineMemberVote(
                 member: member,
                 item: item,
                 playerVote: playerVote,
                 committee: committee,
                 game: game
             )
+
+            // CEREMONIAL ROLE: A character co-opted via "Promote Sideways"
+            // still attends meetings but their vote barely counts. Multiplier
+            // is 0.3 — modeled as a 70% chance their actual preference is
+            // downgraded to an abstention ("going through the motions").
+            // The remaining 30% of the time their vote registers normally.
+            // Net effect: ceremonial members contribute ~0.3 vote weight.
+            if member.hasCeremonialRole(in: game) && vote != .abstain {
+                if Double.random(in: 0..<1, using: &rng) >= 0.3 {
+                    vote = .abstain
+                }
+            }
 
             let memberVote = SCMemberVote(
                 characterId: member.templateId,
@@ -467,7 +484,8 @@ final class StandingCommitteeMeetingService {
         }
 
         // Ambitious members may oppose to position themselves as alternatives
-        if member.personalityAmbitious > 65 && member.disposition < 60 {
+        // audit-tuning: ambitious members should be pragmatic, not reflexively against the chair
+        if member.personalityAmbitious > 65 && member.disposition < 30 {
             voteScore -= 12
         }
 
@@ -497,7 +515,8 @@ final class StandingCommitteeMeetingService {
         }
 
         // Random variance — wider for early game uncertainty
-        let variance = game.turnNumber < 5 ? Int.random(in: -18...18, using: &rng) : Int.random(in: -12...12, using: &rng)
+        // audit-tuning: prior variance was so wide outcomes felt chaotic rather than strategic
+        let variance = game.turnNumber < 5 ? Int.random(in: -8...8, using: &rng) : Int.random(in: -6...6, using: &rng)
         voteScore += variance
 
         if voteScore > 55 {

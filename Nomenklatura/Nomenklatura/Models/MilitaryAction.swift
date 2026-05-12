@@ -292,27 +292,6 @@ extension MilitaryAction {
         ),
 
         MilitaryAction(
-            id: "organize_morale_activity",
-            name: "Organize Morale Activity",
-            description: "Plan cultural/recreational activities",
-            detailedDescription: "Organize approved cultural activities, revolutionary songs, or recreational programs to maintain troop morale. The Political Work Department oversees all cultural activities in the PLA.",
-            iconName: "music.note.list",
-            actionVerb: "Organize",
-            category: .politicalEducation,
-            minimumPositionIndex: 1,
-            targetType: .none,
-            requiredTrack: nil,
-            cooldownTurns: 2,
-            executionTurns: 1,
-            baseSuccessChance: 80,
-            riskLevel: .routine,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: MilitaryEffects(militaryLoyaltyChange: 3, popularSupportChange: 2),
-            failureEffects: MilitaryEffects(standingChange: -2)
-        ),
-
-        MilitaryAction(
             id: "flag_suspicious_behavior",
             name: "Flag Suspicious Behavior",
             description: "Report potential disloyalty to superiors",
@@ -396,27 +375,6 @@ extension MilitaryAction {
             canBeDecree: false,
             successEffects: MilitaryEffects(standingChange: 5, networkChange: 8, targetDispositionChange: 30, initiatesPromotion: true),
             failureEffects: MilitaryEffects(standingChange: -5, networkChange: -3)
-        ),
-
-        MilitaryAction(
-            id: "convene_party_committee",
-            name: "Convene Party Committee",
-            description: "Call unit Party committee meeting",
-            detailedDescription: "Convene a meeting of the unit's Party committee to discuss personnel matters, discipline issues, or political work priorities. The Party committee system is the 'fundamental system' of Party leadership over the military.",
-            iconName: "person.3.fill",
-            actionVerb: "Convene",
-            category: .unitCommissar,
-            minimumPositionIndex: 3,
-            targetType: .none,
-            requiredTrack: nil,
-            cooldownTurns: 3,
-            executionTurns: 1,
-            baseSuccessChance: 80,
-            riskLevel: .routine,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: MilitaryEffects(militaryLoyaltyChange: 3, standingChange: 5, networkChange: 3),
-            failureEffects: MilitaryEffects(standingChange: -3)
         ),
 
         // MARK: - Tier 3-4: Regiment Command (Position 3-4)

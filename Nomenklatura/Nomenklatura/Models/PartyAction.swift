@@ -264,28 +264,6 @@ extension PartyAction {
         ),
 
         PartyAction(
-            id: "report_ideological_attitudes",
-            name: "Report on Attitudes",
-            description: "Report colleagues' ideological attitudes to superiors",
-            detailedDescription: "Compile and submit reports on the political attitudes and ideological reliability of colleagues. Information flows upward through party channels, building your reputation as vigilant.",
-            iconName: "doc.badge.ellipsis",
-            actionVerb: "REPORT",
-            category: .partyWorker,
-            minimumPositionIndex: 1,
-            organ: .organizationDept,
-            targetType: .character,
-            requiredTrack: nil,
-            cooldownTurns: 2,
-            executionTurns: 1,
-            baseSuccessChance: 85,
-            riskLevel: .moderate,
-            requiresCommitteeApproval: false,
-            canBeDecree: false,
-            successEffects: PartyEffects(standingChange: 4, networkChange: 2, targetDispositionChange: -10),
-            failureEffects: PartyEffects(standingChange: -3, targetDispositionChange: -5)
-        ),
-
-        PartyAction(
             id: "distribute_propaganda",
             name: "Distribute Propaganda",
             description: "Distribute party materials in your unit",

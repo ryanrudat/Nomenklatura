@@ -571,11 +571,15 @@ final class BureauOperationsService {
 
     /// Execute a bureau task by routing to the appropriate action service.
     /// Pass `targetCharacter` for security tasks where the player chose the target.
+    /// Pass `viaDecree: true` for security tasks issued under Chairman's Decree —
+    /// bypasses committee approval / maxTargetPosition at a steep political cost
+    /// (consumes 1 of game.decreeChargesRemaining, handled inside SecurityActionService).
     func executeTask(
         _ task: BureauTask,
         for game: Game,
         modelContext: ModelContext,
-        targetCharacter: GameCharacter? = nil
+        targetCharacter: GameCharacter? = nil,
+        viaDecree: Bool = false
     ) -> TaskExecutionResult {
         // Verify task can be initiated
         guard task.canInitiate else {
@@ -594,7 +598,7 @@ final class BureauOperationsService {
         // Route to appropriate service based on action category
         switch task.actionCategory {
         case "security":
-            execution = executeSecurityTask(task, for: game, modelContext: modelContext, targetCharacter: targetCharacter)
+            execution = executeSecurityTask(task, for: game, modelContext: modelContext, targetCharacter: targetCharacter, viaDecree: viaDecree)
         case "economic":
             execution = executeEconomicTask(task, for: game, modelContext: modelContext)
         case "party":
@@ -612,11 +616,14 @@ final class BureauOperationsService {
     }
 
     /// Execute a security-related task. Uses `targetCharacter` if provided, otherwise auto-picks.
+    /// When `viaDecree` is true, the SecurityActionService bypasses committee approval and
+    /// maxTargetPosition gates, and applies the decree political cost + charge consumption.
     private func executeSecurityTask(
         _ task: BureauTask,
         for game: Game,
         modelContext: ModelContext,
-        targetCharacter providedTarget: GameCharacter? = nil
+        targetCharacter providedTarget: GameCharacter? = nil,
+        viaDecree: Bool = false
     ) -> TaskExecutionResult {
         // Find the security action by ID
         guard let action = SecurityAction.allActions.first(where: { $0.id == task.actionId }) else {
@@ -652,7 +659,8 @@ final class BureauOperationsService {
             targetCharacter: targetCharacter,
             targetFaction: targetFaction,
             for: game,
-            modelContext: modelContext
+            modelContext: modelContext,
+            viaDecree: viaDecree
         )
 
         return TaskExecutionResult(

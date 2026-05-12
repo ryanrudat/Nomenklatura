@@ -138,6 +138,36 @@ final class CodexMessage {
     var hasUnreadResponse: Bool {
         !isRead && parentMessageId != nil
     }
+
+    /// Human-readable badge surfaced in the message bubble to make it
+    /// obvious *why* this message exists. Special-cased for response
+    /// follow-ups so the player connects the new message to their prior
+    /// stance, and falls back to the trigger type's display name for
+    /// other event-driven messages.
+    var triggerBadgeText: String? {
+        // Follow-ups to a player response carry "Follow-up to X response"
+        // in triggerContext (set by scheduleFollowUpMessage). Map those
+        // to player-facing language.
+        if let ctx = triggerContext, ctx.lowercased().hasPrefix("follow-up to") {
+            // "Follow-up to defiant response" -> pull archetype if we can
+            let suffix = ctx
+                .replacingOccurrences(of: "Follow-up to ", with: "", options: .caseInsensitive)
+                .replacingOccurrences(of: " response", with: "", options: .caseInsensitive)
+                .trimmingCharacters(in: .whitespaces)
+            if !suffix.isEmpty {
+                return "IN RESPONSE TO YOUR \(suffix.uppercased()) STANCE"
+            }
+            return "FOLLOWING UP ON OUR LAST CONVERSATION"
+        }
+
+        // Decision reactions still get a useful badge
+        if codexTriggerType == .decisionReaction {
+            return "REACTING TO YOUR RECENT DECISION"
+        }
+
+        // Otherwise, no badge (keeps surface uncluttered for routine traffic)
+        return nil
+    }
 }
 
 // MARK: - Message Types

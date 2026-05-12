@@ -138,7 +138,9 @@ extension PlayerFactionConfig {
             ),
             factionRelationshipModifiers: [
                 FactionRelationshipModifier(targetFactionId: "reformists", standingModifier: 10),
-                FactionRelationshipModifier(targetFactionId: "princelings", standingModifier: -5)
+                FactionRelationshipModifier(targetFactionId: "princelings", standingModifier: -5),
+                FactionRelationshipModifier(targetFactionId: "old_guard", standingModifier: -10),
+                FactionRelationshipModifier(targetFactionId: "regional", standingModifier: -5)
             ],
             startingCharacterBonuses: nil,
             promotionThresholdModifier: -5,
@@ -179,7 +181,9 @@ extension PlayerFactionConfig {
             ),
             factionRelationshipModifiers: [
                 FactionRelationshipModifier(targetFactionId: "old_guard", standingModifier: 10),
-                FactionRelationshipModifier(targetFactionId: "regional", standingModifier: 5)
+                FactionRelationshipModifier(targetFactionId: "regional", standingModifier: 5),
+                FactionRelationshipModifier(targetFactionId: "reformists", standingModifier: -10),
+                FactionRelationshipModifier(targetFactionId: "youth_league", standingModifier: -5)
             ],
             startingCharacterBonuses: [
                 CharacterBonus(characterRole: "ally", dispositionBonus: 15, count: 2)
@@ -221,7 +225,8 @@ extension PlayerFactionConfig {
             ),
             factionRelationshipModifiers: [
                 FactionRelationshipModifier(targetFactionId: "regional", standingModifier: 15),
-                FactionRelationshipModifier(targetFactionId: "old_guard", standingModifier: -10)
+                FactionRelationshipModifier(targetFactionId: "old_guard", standingModifier: -10),
+                FactionRelationshipModifier(targetFactionId: "princelings", standingModifier: -10)
             ],
             startingCharacterBonuses: nil,
             promotionThresholdModifier: 0,
@@ -260,7 +265,11 @@ extension PlayerFactionConfig {
                 penaltyMagnitude: 30
             ),
             factionRelationshipModifiers: [
-                FactionRelationshipModifier(targetFactionId: "youth_league", standingModifier: 20),
+                // Old Guard hardliners and reformist Youth League are
+                // natural antagonists; the previous +20 here was likely a
+                // data-entry typo (the reciprocal Youth League → Old Guard
+                // is -10, and Old Guard's `vulnerability` is reform-coded).
+                FactionRelationshipModifier(targetFactionId: "youth_league", standingModifier: -10),
                 FactionRelationshipModifier(targetFactionId: "princelings", standingModifier: 10),
                 FactionRelationshipModifier(targetFactionId: "reformists", standingModifier: -10)
             ],

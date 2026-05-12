@@ -19,14 +19,36 @@ final class SecurityActionService {
 
     // MARK: - Validation
 
-    /// Validate whether an action can be executed
+    /// Validate whether an action can be executed.
+    /// - Parameter viaDecree: When `true`, validates as a Chairman's Decree — bypasses the
+    ///   Standing Committee approval gate and the `maxTargetPosition` ceiling, but requires
+    ///   `game.decreeChargesRemaining > 0`. The action must also have `canBeDecree == true`.
     func validateAction(
         _ action: SecurityAction,
         targetCharacter: GameCharacter?,
         targetFaction: GameFaction?,
-        for game: Game
+        for game: Game,
+        viaDecree: Bool = false
     ) -> ActionValidationResult {
         // Player is General Secretary — no position or track gate needed
+
+        // Decree-specific pre-checks
+        if viaDecree {
+            guard action.canBeDecree else {
+                return ActionValidationResult(
+                    canExecute: false,
+                    reason: "This action cannot be executed by decree",
+                    successChance: 0
+                )
+            }
+            guard game.decreeChargesRemaining > 0 else {
+                return ActionValidationResult(
+                    canExecute: false,
+                    reason: "No decree charges remaining",
+                    successChance: 0
+                )
+            }
+        }
 
         // Check cooldown
         let cooldowns = getSecurityCooldowns(for: game)
@@ -43,13 +65,14 @@ final class SecurityActionService {
 
         // Check target requirements
         var targetTooSenior = false
-        var requiresApproval = action.requiresCommitteeApproval
+        // Decree bypasses the Standing Committee gate entirely.
+        var requiresApproval = viaDecree ? false : action.requiresCommitteeApproval
 
         if action.targetType == .character, let target = targetCharacter {
             let targetPosition = target.positionIndex ?? 0
 
-            // Check if target is too senior
-            if let maxTarget = action.maxTargetPosition, targetPosition > maxTarget {
+            // Decree bypasses the maxTargetPosition ceiling — Chairman can reach anyone.
+            if !viaDecree, let maxTarget = action.maxTargetPosition, targetPosition > maxTarget {
                 return ActionValidationResult(
                     canExecute: false,
                     reason: "Target is Position \(targetPosition), maximum allowed is Position \(maxTarget)",
@@ -59,8 +82,8 @@ final class SecurityActionService {
                 )
             }
 
-            // Check if approval required for this target level
-            if let approvalThreshold = action.requiresApprovalAbove, targetPosition > approvalThreshold {
+            // Decree also bypasses requiresApprovalAbove thresholds.
+            if !viaDecree, let approvalThreshold = action.requiresApprovalAbove, targetPosition > approvalThreshold {
                 requiresApproval = true
                 targetTooSenior = true
             }
@@ -74,7 +97,8 @@ final class SecurityActionService {
             reason: nil,
             successChance: successChance,
             requiresApproval: requiresApproval,
-            targetTooSenior: targetTooSenior
+            targetTooSenior: targetTooSenior,
+            viaDecree: viaDecree
         )
     }
 
@@ -141,16 +165,20 @@ final class SecurityActionService {
         let detentionCreated: ShuangguiDetention?
     }
 
-    /// Execute a security action
+    /// Execute a security action.
+    /// - Parameter viaDecree: When `true`, executes as a Chairman's Decree — consumes a decree
+    ///   charge, sets the `used_decree_turn_N` flag, and applies a steep political cost
+    ///   (−20 elite loyalty, −10 stability, +20 rival threat, −15 international standing).
     func executeAction(
         _ action: SecurityAction,
         targetCharacter: GameCharacter?,
         targetFaction: GameFaction?,
         for game: Game,
-        modelContext: ModelContext
+        modelContext: ModelContext,
+        viaDecree: Bool = false
     ) -> ExecutionResult {
         // Validate first
-        let validation = validateAction(action, targetCharacter: targetCharacter, targetFaction: targetFaction, for: game)
+        let validation = validateAction(action, targetCharacter: targetCharacter, targetFaction: targetFaction, for: game, viaDecree: viaDecree)
 
         guard validation.canExecute else {
             return ExecutionResult(
@@ -164,6 +192,23 @@ final class SecurityActionService {
             )
         }
 
+        // Apply decree-specific cost up-front: charge consumed, political cost, flag set.
+        if viaDecree {
+            applyDecreeCost(for: game)
+        }
+
+        // Prosecution pipeline registration: any action that initiates a
+        // prosecution-style pipeline (case file, formal investigation,
+        // arrest warrant, shuanggui, prepare show trial) needs to claim
+        // canonical ownership of the target character. If a prosecution is
+        // already open this is a no-op — the calling UI is expected to have
+        // already surfaced the Escalate/Defer/Cancel prompt and call
+        // `initiate(..., escalate: true)` explicitly via the executeAction
+        // wrapper if the player chose escalate.
+        if let target = targetCharacter, Self.prosecutionStartingActionIds.contains(action.id) {
+            _ = ProsecutionPipelineService.shared.initiate(kind: .bureauDirective, target: target, in: game)
+        }
+
         // Check if this is a multi-turn action
         if action.executionTurns > 0 {
             return initiateMultiTurnAction(action, targetCharacter: targetCharacter, targetFaction: targetFaction, for: game)
@@ -171,6 +216,37 @@ final class SecurityActionService {
 
         // Immediate resolution
         return resolveAction(action, targetCharacter: targetCharacter, targetFaction: targetFaction, successChance: validation.successChance, for: game, modelContext: modelContext)
+    }
+
+    /// Security action IDs that open / advance a prosecution. Used by the
+    /// ProsecutionPipelineService registration in `executeAction`.
+    private static let prosecutionStartingActionIds: Set<String> = [
+        "open_case_file",
+        "launch_formal_investigation",
+        "request_shuanggui",
+        "order_shuanggui",
+        "issue_arrest_warrant",
+        "recommend_prosecution",
+        "prepare_show_trial",
+        "initiate_senior_investigation",
+        "investigate_politburo_member"
+    ]
+
+    /// Apply the Chairman's Decree political cost: consume one charge, apply stat hits,
+    /// and set a `used_decree_turn_N` flag for downstream systems to react to.
+    private func applyDecreeCost(for game: Game) {
+        game.decreeChargesRemaining = max(0, game.decreeChargesRemaining - 1)
+
+        // Steep political cost — the apparatus does not forgive bypassing committee.
+        game.applyStat("eliteLoyalty", change: -20)
+        game.applyStat("stability", change: -10)
+        game.applyStat("rivalThreat", change: 20)
+        game.applyStat("internationalStanding", change: -15)
+
+        let flag = "used_decree_turn_\(game.turnNumber)"
+        if !game.flags.contains(flag) {
+            game.flags.append(flag)
+        }
     }
 
     /// Initiate a multi-turn action
@@ -230,9 +306,11 @@ final class SecurityActionService {
     ) -> ExecutionResult {
         var rng = game.rng
         defer { game.rng = rng }
-        // Roll for success
+        // Roll for success — bureau chief's competence scales the chance.
+        let chiefModifier = bureauChief(for: "securityServices", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Determine effects
         let effects = succeeded ? action.successEffects : action.failureEffects
@@ -513,8 +591,9 @@ final class SecurityActionService {
         game: Game,
         modelContext: ModelContext
     ) {
-        // Set status to executed (permanent death)
-        character.status = CharacterStatus.executed.rawValue
+        // Set status to executed (permanent death) + clear position via helper
+        // (snapshots previousPositionIndex so display code can still show former role)
+        character.markRemovedFromPosition(reason: .executed, turn: game.turnNumber)
 
         // Record death
         let deathDescription: String
@@ -538,11 +617,6 @@ final class SecurityActionService {
         game.applyStat("eliteLoyalty", change: 10)  // Fear increases loyalty
         game.applyStat("internationalStanding", change: -5)
         game.applyStat("stability", change: -3)
-
-        // Vacate position
-        if let positionIndex = character.positionIndex, positionIndex > 0 {
-            vacatePosition(character: character, game: game)
-        }
     }
 
     /// Dismiss a character from their position
@@ -723,12 +797,14 @@ final class SecurityActionService {
             game.characters.first { $0.id.uuidString == id }
         }
 
-        // Calculate success
+        // Calculate success — bureau chief's competence scales the chance.
         let successChance = calculateSuccessChance(action, targetCharacter: target, for: game)
+        let chiefModifier = bureauChief(for: "securityServices", in: game)?.competenceSuccessModifier ?? 1.0
+        let modifiedChance = max(0, min(100, Int((Double(successChance) * chiefModifier).rounded())))
         var rng = game.rng
         defer { game.rng = rng }
         let roll = Int.random(in: 1...100, using: &rng)
-        let succeeded = roll <= successChance
+        let succeeded = roll <= modifiedChance
 
         // Apply effects if succeeded
         if succeeded {

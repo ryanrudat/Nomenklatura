@@ -375,6 +375,12 @@ struct SCMeetingView: View {
                     voteCountColumn(count: result.abstentions.count, label: "ABSTAIN", color: SCColors.neutralGray)
                 }
 
+                // Ceremonial-role callout: surfaces how many abstentions came
+                // from members the Chairman previously co-opted via the
+                // "Promote Sideways" path. Helps the player connect their
+                // co-opt decision to the present vote dynamics.
+                ceremonialRoleCallout(abstentions: result.abstentions)
+
                 // Faction breakdown
                 factionVoteBreakdown(result: result)
 
@@ -818,6 +824,36 @@ struct SCMeetingView: View {
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .tracking(0.5)
                 .foregroundColor(theme.schemeText.opacity(0.5))
+        }
+    }
+
+    /// Renders a small line below the AYE/NAY/ABSTAIN columns showing how
+    /// many of the abstentions came from ceremonial-role-holding members
+    /// (members the Chairman co-opted via Promote Sideways). Returns an
+    /// EmptyView when no ceremonial members abstained, so quiet votes stay
+    /// uncluttered. The lookup parses SCMemberVote.characterId back to a
+    /// UUID and checks `hasCeremonialRole(in: game)` on the matching
+    /// character.
+    @ViewBuilder
+    private func ceremonialRoleCallout(abstentions: [SCMemberVote]) -> some View {
+        let ceremonialAbstainers: Int = abstentions.reduce(into: 0) { count, vote in
+            guard let uuid = UUID(uuidString: vote.characterId),
+                  let character = game.characters.first(where: { $0.id == uuid }) else { return }
+            if character.hasCeremonialRole(in: game) {
+                count += 1
+            }
+        }
+        if ceremonialAbstainers > 0 {
+            HStack(spacing: 6) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 9))
+                    .foregroundColor(theme.accentGold.opacity(0.7))
+                Text("\(ceremonialAbstainers) HELD CEREMONIAL ROLE\(ceremonialAbstainers == 1 ? "" : "S") (CO-OPTED)")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .tracking(0.5)
+                    .foregroundColor(theme.accentGold.opacity(0.7))
+            }
+            .padding(.top, 2)
         }
     }
 
