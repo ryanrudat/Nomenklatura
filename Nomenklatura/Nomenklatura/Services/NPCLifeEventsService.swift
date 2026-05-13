@@ -641,7 +641,7 @@ class NPCLifeEventsService {
             case .intel:
                 return "Your sources report: "
             case .secret:
-                return game.currentPositionIndex >= 7 ? "Eyes Only: " : "[CLASSIFIED] "
+                return "Eyes Only: "  // Chairman Sees Everything — no redaction.
             }
         }()
 

@@ -617,7 +617,12 @@ class NPCWorldActionService {
             case .intel:
                 return "Your sources report: "
             case .secret:
-                return game.currentPositionIndex >= 7 ? "Eyes Only: " : "[CLASSIFIED] "
+                // Chairman Sees Everything — no redaction. Always shows the
+                // eyes-only prefix regardless of position. Previous logic
+                // gated reveal behind position 7+, but the player is
+                // Position 8 by design and the locked rule is that no UI
+                // path should hide content from them.
+                return "Eyes Only: "
             }
         }()
 

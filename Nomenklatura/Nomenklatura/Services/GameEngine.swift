@@ -1291,6 +1291,23 @@ class GameEngine {
             game.applyStat("eliteLoyalty", change: 1)
         }
 
+        // Sustained-surplus feedback (rebalance 2026-05): every 3 consecutive
+        // turns where the EconomicReport posts a positive netChange, the
+        // apparatus rewards the chairman with +1 elite loyalty. Resets on a
+        // deficit turn. Re-triggers every 3 surplus turns afterwards.
+        if let reportData = game.lastEconomicReport,
+           let report = EconomyService.shared.decodeReport(reportData) {
+            if report.netChange > 0 {
+                game.consecutiveSurplusTurns += 1
+                if game.consecutiveSurplusTurns >= 3 {
+                    game.applyStat("eliteLoyalty", change: 1)
+                    game.consecutiveSurplusTurns = 0
+                }
+            } else {
+                game.consecutiveSurplusTurns = 0
+            }
+        }
+
         // Phase 3.7: Strategic resource feedback into political stats
         applyStrategicResourceFeedback(game: game)
     }

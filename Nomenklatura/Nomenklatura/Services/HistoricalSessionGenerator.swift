@@ -389,10 +389,10 @@ final class HistoricalSessionGenerator {
             return [
                 "Full rehabilitation of certain figures debated",
                 "Opening of archives considered then rejected",
-                "Limits on de-Stalinization established"
+                "Limits on the Reform Period established"
             ]
         default:
-            return ["[Contents remain classified]"]
+            return ["Routine proceedings; no notable resolutions"]
         }
     }
 

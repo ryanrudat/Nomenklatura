@@ -172,6 +172,11 @@ final class Game {
     var lastEconomicReport: Data?  // Encoded EconomicReport from EconomyService
     var budgetPrioritiesData: Data?  // Encoded [String: Int] budget allocation percentages
 
+    // Surplus streak — counts consecutive turns with positive EconomicReport.netChange.
+    // Every 3 surplus turns awards +1 eliteLoyalty (positive feedback for sustained
+    // good governance). Resets to 0 on any deficit turn or after firing the bonus.
+    var consecutiveSurplusTurns: Int = 0
+
     // Per-Sector Budget Allocation (encoded [String: Int] mapping EconomicSector.rawValue -> %)
     var sectorBudgetData: Data?
 
@@ -186,7 +191,15 @@ final class Game {
     var tradeBalance: Int = 0                  // Positive = surplus
 
     // Trade Policy
+    // DEPRECATED 2026-05: The tariff picker UI in TradeManagementView was removed.
+    // This stored property is retained for SwiftData schema stability — do not delete
+    // (deletion would require a schema migration). Default value is preserved; no service
+    // reads it anymore. Future cleanup: drop in a major schema bump.
     var tariffLevel: String = "standard"       // none, low, standard, high, prohibitive
+    // DEPRECATED 2026-05: The per-country embargo toggle UI was removed in favor of an
+    // auto-rule (relationshipScore < -50 → trade auto-suspended). This property is
+    // retained for SwiftData schema stability and existing saves; never mutated by code
+    // after removal. Future cleanup: drop in a major schema bump.
     var embargoedCountriesData: Data?          // Encoded [String] of embargoed countryIds
 
     // Sector breakdown (percentage of National Product)
@@ -2201,12 +2214,16 @@ extension Game {
         activeTradeAgreements.reduce(0) { $0 + $1.netEconomicImpact }
     }
 
-    /// Process trade agreements for turn
+    /// Process trade agreements for turn.
+    /// Auto-suspends agreements with hostile partners (relationshipScore < -50) —
+    /// this replaces the player-driven embargo system removed 2026-05.
     func processTradeAgreements() {
-        let currentEmbargoes = embargoedCountries
+        // Lookup table keyed by countryId so we don't pay O(n*m) per agreement.
+        let countryById = Dictionary(uniqueKeysWithValues: foreignCountries.map { ($0.countryId, $0) })
         for agreement in tradeAgreements {
             if agreement.isActive {
-                if currentEmbargoes.contains(agreement.partnerCountryId) {
+                if let partner = countryById[agreement.partnerCountryId],
+                   partner.relationshipScore < -50 {
                     agreement.suspend()
                     continue
                 }

@@ -676,15 +676,15 @@ final class NewspaperGenerator {
     private func generateIdeologicalHeadline(for game: Game) -> HeadlineStory {
         let headlines = [
             HeadlineStory(
-                headline: "MARXIST-LENINIST STUDY CIRCLES EXPAND",
+                headline: "REVOLUTIONARY DOCTRINE STUDY CIRCLES EXPAND",
                 subheadline: "Workers Deepen Political Consciousness",
-                body: "Party organizations report increased participation in Marxist-Leninist study groups. Workers express eagerness to understand the scientific basis of socialist construction.",
+                body: "Party organizations report increased participation in revolutionary doctrine study groups. Workers express eagerness to understand the scientific basis of socialist construction.",
                 category: .ideological
             ),
             HeadlineStory(
                 headline: "REVISIONISM FIRMLY REJECTED",
                 subheadline: "Party Maintains Ideological Purity",
-                body: "The Central Committee has reaffirmed its commitment to Marxist-Leninist principles, rejecting attempts to introduce bourgeois ideology under the guise of 'reform.'",
+                body: "The Central Committee has reaffirmed its commitment to orthodox revolutionary principles, rejecting attempts to introduce bourgeois ideology under the guise of 'reform.'",
                 category: .ideological
             ),
             HeadlineStory(

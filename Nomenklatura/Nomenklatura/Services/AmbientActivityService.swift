@@ -243,7 +243,7 @@ final class AmbientActivityService {
             return [
                 "studying Party doctrine",
                 "attending ideological training",
-                "reviewing Marxist-Leninist texts",
+                "reviewing revolutionary doctrine",
                 "participating in political education"
             ].randomElement(using: &rng)!
 

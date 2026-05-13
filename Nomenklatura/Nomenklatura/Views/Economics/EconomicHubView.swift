@@ -52,6 +52,7 @@ struct EconomicHubView: View {
     @State private var showPropaganda: Bool = true
     @State private var selectedSector: EconomicSector?
     @State private var lockToastMessage: String? = nil
+    @State private var showForecastSheet: Bool = false
 
     private var accessLevel: AccessLevel {
         AccessLevel(game: game)
@@ -66,6 +67,13 @@ struct EconomicHubView: View {
             hubHeader
                 .padding(.horizontal, 15)
                 .padding(.top, 10)
+
+            // Forecast button — single most-important visibility lever per
+            // the economy audit. Always one tap away from "what will happen
+            // next turn if I do nothing, and what should I consider doing?"
+            forecastButton
+                .padding(.horizontal, 15)
+                .padding(.top, 8)
 
             if canSeeReality {
                 propagandaToggle
@@ -89,6 +97,40 @@ struct EconomicHubView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .sheet(isPresented: $showForecastSheet) {
+            EconomicForecastSheet(game: game)
+        }
+    }
+
+    /// Tight pill button that opens the EconomicForecastSheet. Surfaces
+    /// the projected treasury delta inline so the player sees the pain
+    /// before even tapping in.
+    private var forecastButton: some View {
+        Button {
+            showForecastSheet = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "scope")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(theme.stampRed)
+                Text("FORECAST NEXT TURN")
+                    .font(.system(size: 12, weight: .black, design: .monospaced))
+                    .tracking(2)
+                    .foregroundColor(theme.inkBlack)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(theme.stampRed)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(theme.parchmentDark)
+            .overlay(
+                Rectangle()
+                    .stroke(theme.stampRed.opacity(0.4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Header

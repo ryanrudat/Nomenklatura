@@ -23,6 +23,7 @@ class EconomyService {
         var foreignTrade: Int = 0
         var foreignAid: Int = 0
         var resourceExtraction: Int = 0
+        var governanceBonus: Int = 0   // Stable-governance dividend; scales with stability
 
         // Expense categories
         var militarySpending: Int = 0
@@ -38,7 +39,7 @@ class EconomyService {
         var warCosts: Int = 0
 
         var totalIncome: Int {
-            domesticProduction + foreignTrade + foreignAid + resourceExtraction + tradeAgreementBonus
+            domesticProduction + foreignTrade + foreignAid + resourceExtraction + tradeAgreementBonus + governanceBonus
         }
 
         var totalExpenses: Int {
@@ -60,6 +61,7 @@ class EconomyService {
             if foreignAid > 0 { items.append(("Foreign Aid", foreignAid, true)) }
             if resourceExtraction > 0 { items.append(("Resource Extraction", resourceExtraction, true)) }
             if tradeAgreementBonus > 0 { items.append(("Trade Agreements", tradeAgreementBonus, true)) }
+            if governanceBonus > 0 { items.append(("Governance", governanceBonus, true)) }
 
             // Expenses
             if militarySpending > 0 { items.append(("Military Spending", -militarySpending, false)) }
@@ -95,6 +97,10 @@ class EconomyService {
         // 4. Resource Extraction (mining, oil, etc.)
         report.resourceExtraction = calculateResourceExtraction(game: game)
 
+        // 4b. Governance Bonus (rewards stable rule — closes the ~5/turn passive gap
+        // when the player is actually governing well; zero when collapsing)
+        report.governanceBonus = calculateGovernanceBonus(game: game)
+
         // === EXPENSES ===
 
         // 5. Military Spending
@@ -127,6 +133,177 @@ class EconomyService {
         report.warCosts = calculateWarCosts(game: game)
 
         return report
+    }
+
+    // MARK: - Forecast (non-mutating prediction)
+
+    /// Predict what the next turn's economy will look like IF the player
+    /// does nothing. Pure read of current state — no mutations. Used by
+    /// `EconomicForecastSheet` to surface the passive trajectory and
+    /// recommend levers before the player commits.
+    ///
+    /// Treasury projection is exact (from `calculateTurnEconomy`). Food,
+    /// stability, and industrial are derived from threshold-driven
+    /// feedback rules (`applyEconomicPoliticalFeedback` /
+    /// `applyStrategicResourceFeedback`) rather than running those full
+    /// simulations — gives the player a directional hint without dragging
+    /// the entire post-turn pipeline into the preview path.
+    func predictNextTurn(for game: Game) -> EconomicForecast {
+        let report = calculateTurnEconomy(game: game)
+        let netTreasury = report.netChange
+
+        // Build stat-line projections.
+        var stats: [ForecastStatLine] = []
+
+        // Treasury — exact projection from the report.
+        stats.append(ForecastStatLine(
+            key: "treasury",
+            label: "Treasury",
+            projectedDelta: netTreasury,
+            currentValue: game.treasury,
+            projectedValue: max(-100, min(100, game.treasury + netTreasury))
+        ))
+
+        // Food — declines slowly when food < 60; we don't run the full
+        // sector recipe sim here. Threshold-based hint matches what
+        // `applyEconomicPoliticalFeedback` actually does to popular support.
+        let foodDelta: Int = {
+            if game.foodSupply >= 60 { return 0 }
+            if game.foodSupply >= 40 { return -1 }
+            return -2
+        }()
+        stats.append(ForecastStatLine(
+            key: "foodSupply",
+            label: "Food",
+            projectedDelta: foodDelta,
+            currentValue: game.foodSupply,
+            projectedValue: max(0, min(100, game.foodSupply + foodDelta))
+        ))
+
+        // Stability — corruption drain when stability < 50 + cumulative
+        // feedback when unemployment / inflation are bad.
+        let unemployment = max(0, (100 - game.industrialOutput) / 5)
+        let stabilityDelta: Int = {
+            var d = 0
+            if game.stability < 50 { d -= 1 }  // corruption multiplier kicks in
+            if unemployment > 20 { d -= 1 }
+            if game.inflationRate > 25 { d -= 1 }
+            return d
+        }()
+        stats.append(ForecastStatLine(
+            key: "stability",
+            label: "Stability",
+            projectedDelta: stabilityDelta,
+            currentValue: game.stability,
+            projectedValue: max(0, min(100, game.stability + stabilityDelta))
+        ))
+
+        // Industrial — small drift from sector focus stability; we surface
+        // current value only since the recipe sim is too involved.
+        stats.append(ForecastStatLine(
+            key: "industrialOutput",
+            label: "Industrial",
+            projectedDelta: 0,
+            currentValue: game.industrialOutput,
+            projectedValue: game.industrialOutput
+        ))
+
+        // Top contributors from the breakdown — sort by absolute magnitude,
+        // take 5. Empty list when nothing is moving treasury.
+        let contributors: [ForecastContributorLine] = report.breakdown
+            .sorted { abs($0.1) > abs($1.1) }
+            .prefix(5)
+            .map { ForecastContributorLine(label: $0.0, amount: $0.1) }
+
+        // Lever recommendations — sourced from the player's current pain.
+        let levers = buildLeverRecommendations(
+            game: game,
+            projectedTreasury: game.treasury + netTreasury,
+            projectedFood: game.foodSupply + foodDelta
+        )
+
+        return EconomicForecast(
+            stats: stats,
+            contributors: contributors,
+            levers: levers,
+            netTreasuryChange: netTreasury
+        )
+    }
+
+    /// Pick 3-5 levers most relevant to the current state. Priority order:
+    /// critical (you'll bleed out without acting) → advised (worth doing
+    /// even when stable) → opportunistic (upside only).
+    private func buildLeverRecommendations(
+        game: Game,
+        projectedTreasury: Int,
+        projectedFood: Int
+    ) -> [ForecastLeverRecommendation] {
+        var levers: [ForecastLeverRecommendation] = []
+
+        // 1. Treasury about to hit crisis → recommend a loan
+        if projectedTreasury < 30 {
+            levers.append(ForecastLeverRecommendation(
+                leverId: "rec_emergency_loan",
+                kind: .loan,
+                title: "Take an Emergency Loan",
+                subtitle: "Trade tab → Loan Proposals",
+                projectedEffect: "Treasury +40 to +60 once, −3 to −8/turn until repaid",
+                urgency: .critical
+            ))
+        }
+
+        // 2. Food critically low → recommend agriculture focus shift
+        if projectedFood < 35 {
+            levers.append(ForecastLeverRecommendation(
+                leverId: "rec_ag_focus",
+                kind: .sectorFocus,
+                title: "Shift Agriculture → Private Plots",
+                subtitle: "Economy → Sectors → Agriculture",
+                projectedEffect: "Food +3/turn (at cost of industrial output)",
+                urgency: .critical
+            ))
+        }
+
+        // 3. Strategic resource deficits → recommend Emergency Decree
+        if let result = game.lastSupplyChainResult, result.deficitResources.count > 0 {
+            let count = result.deficitResources.count
+            levers.append(ForecastLeverRecommendation(
+                leverId: "rec_emergency_decree",
+                kind: .emergencyDecree,
+                title: "Issue an Emergency Decree",
+                subtitle: "Sectors → Emergency Decrees",
+                projectedEffect: "Plug \(count) deficit resource\(count == 1 ? "" : "s") (1 decree charge)",
+                urgency: .critical
+            ))
+        }
+
+        // 4. Surplus and stable → recommend opportunistic plan target push
+        if projectedTreasury >= 60 && game.stability >= 60 {
+            levers.append(ForecastLeverRecommendation(
+                leverId: "rec_plan_push",
+                kind: .planAlignment,
+                title: "Push Five-Year Plan Targets",
+                subtitle: "Gosplan → Plan Targets",
+                projectedEffect: "Switch a sector focus to align with current plan target — +standing if hit",
+                urgency: .opportunistic
+            ))
+        }
+
+        // 5. Always-on advice: surface "switch sector focus" as opportunistic
+        // when nothing else is critical — gives the player a default lever
+        // to consider.
+        if levers.allSatisfy({ $0.urgency != .critical }) {
+            levers.append(ForecastLeverRecommendation(
+                leverId: "rec_review_focuses",
+                kind: .sectorFocus,
+                title: "Review Sector Focuses",
+                subtitle: "Economy → Sectors",
+                projectedEffect: "Switch focuses to bias income, food, military, or industry",
+                urgency: .advised
+            ))
+        }
+
+        return levers
     }
 
     /// Apply the economic report to the game
@@ -202,20 +379,22 @@ class EconomyService {
     }
 
     private func calculateForeignTrade(game: Game) -> Int {
-        // Sum trade volumes with non-hostile nations
+        // Sum trade volumes with non-hostile nations.
+        // Auto-embargo replaces the old player-driven embargo toggle (removed 2026-05):
+        // any country with relationshipScore < -50 has its trade income multiplied by 0.2,
+        // simulating informal sanctions / lost markets without requiring the player
+        // to toggle individual embargoes.
         var totalTrade = 0
 
         for country in game.foreignCountries {
-            // Embargoed/hostile nations provide no trade income
-            guard country.relationshipScore > -60 else { continue }
-
             // Trade volume modified by relationship quality
             // (Trade agreement bonuses are in calculateTradeAgreementBonus)
             let relationshipMultiplier: Double = {
                 if country.relationshipScore > 60 { return 1.3 }       // Strong Ally
                 else if country.relationshipScore > 30 { return 1.0 }  // Friendly
                 else if country.relationshipScore > -30 { return 0.6 } // Neutral
-                else { return 0.3 }                                     // Unfriendly
+                else if country.relationshipScore > -50 { return 0.3 } // Unfriendly
+                else { return 0.0 }                                     // Hostile — auto-embargoed
             }()
 
             let effectiveTrade = Double(country.tradeVolume) * relationshipMultiplier
@@ -372,9 +551,27 @@ class EconomyService {
 
     private func calculateCorruption(game: Game) -> Int {
         // Corruption/inefficiency is inverse of stability
-        // Lower stability = more waste
-        let inefficiency = max(0, (100 - game.stability) / 10)
+        // Lower stability = more waste.
+        // Divisor widened from /10 → /15 (rebalance 2026-05): old formula bled
+        // +6/turn at stability=40 which compounded the death spiral. New scaling:
+        // stability=80 → +1, stability=40 → +4, stability=20 → +5.
+        let inefficiency = max(0, (100 - game.stability) / 15)
         return inefficiency
+    }
+
+    /// Stable-governance dividend — small flat income when the apparatus is
+    /// actually holding together. Closes the ~5/turn neutral-play deficit
+    /// without becoming free money during a collapse (returns 0 below 40
+    /// stability). Self-balancing: the player earns this only when they're
+    /// keeping order, and loses it the moment things slide.
+    private func calculateGovernanceBonus(game: Game) -> Int {
+        if game.stability >= 60 {
+            return 5
+        } else if game.stability >= 40 {
+            return 3
+        } else {
+            return 0
+        }
     }
 
     // MARK: - Modifier Calculations
@@ -439,6 +636,7 @@ class EconomyService {
             "foreignTrade": report.foreignTrade,
             "foreignAid": report.foreignAid,
             "resourceExtraction": report.resourceExtraction,
+            "governanceBonus": report.governanceBonus,
             "militarySpending": report.militarySpending,
             "socialPrograms": report.socialPrograms,
             "infrastructureCosts": report.infrastructureCosts,
@@ -462,6 +660,7 @@ class EconomyService {
         report.foreignTrade = dict["foreignTrade"] ?? 0
         report.foreignAid = dict["foreignAid"] ?? 0
         report.resourceExtraction = dict["resourceExtraction"] ?? 0
+        report.governanceBonus = dict["governanceBonus"] ?? 0
         report.militarySpending = dict["militarySpending"] ?? 0
         report.socialPrograms = dict["socialPrograms"] ?? 0
         report.infrastructureCosts = dict["infrastructureCosts"] ?? 0
@@ -544,6 +743,13 @@ class EconomyService {
         // 2. GDP affects Treasury - higher GDP = more tax revenue
         applyGDPToTreasury(game: game)
 
+        // 2b. Governance bonus — pay treasury the same governance dividend
+        // that EconomicReport surfaces in the breakdown, so the displayed
+        // line item matches an actual treasury effect (rebalance 2026-05).
+        let governanceBonus = calculateGovernanceBonus(game: game)
+        if governanceBonus != 0 {
+            game.applyStat("treasury", change: governanceBonus)
+        }
 
         // 3. Calculate inflation based on policies and economic conditions
         let inflationChange = calculateInflationChange(game: game)
@@ -844,27 +1050,21 @@ class EconomyService {
         return max(-3, min(3, change))
     }
 
-    /// Calculate trade balance with foreign countries
+    /// Calculate trade balance with foreign countries.
+    /// Tariff level and player-driven embargoes were removed 2026-05; this now relies
+    /// solely on relationship score, economic system alignment, and treaties.
     private func calculateTradeBalance(game: Game) -> Int {
         var balance = 0
         let playerSystem = game.currentEconomicSystem
         let playerOpenness = playerSystem.tradeOpenness
-        let tariff = game.currentTariffLevel
-        let embargoedIds = game.embargoedCountries
 
         for country in game.foreignCountries {
             var countryBalance = 0
 
-            // Embargoed countries: trade is cut, creates deficit from lost markets
-            if embargoedIds.contains(country.countryId) {
-                balance -= country.economicPower / 25
-                continue
-            }
-
             // Only count actual trading partners
             guard country.relationshipScore > -30 else {
                 // Hostile countries still create deficit (lost markets)
-                if country.relationshipScore < -60 {
+                if country.relationshipScore < -50 {
                     balance -= country.economicPower / 30
                 }
                 continue
@@ -889,12 +1089,6 @@ class EconomyService {
             let averageOpenness = (playerOpenness + countryOpenness) / 2
             // Openness modifier: 0.5x at 0 openness, 1.0x at 50, 1.5x at 100
             countryBalance = countryBalance * (50 + averageOpenness) / 100
-
-            // Apply tariff effects: volume reduced but revenue per unit increases
-            // Net effect: tariffs shift balance based on volume vs revenue tradeoff
-            let volumeEffect = Int(Double(countryBalance) * tariff.volumeMultiplier)
-            let revenueBonus = max(0, Int(Double(max(0, countryBalance)) * (tariff.revenueMultiplier - 1.0)))
-            countryBalance = volumeEffect + revenueBonus
 
             balance += countryBalance
         }
