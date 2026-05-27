@@ -1010,6 +1010,16 @@ class GameEngine {
             RivalMoveGenerator.shared.processTurn(for: game)
         }
 
+        // Heir/successor cultivation: age each active mentoring relationship,
+        // accrue neglect, decay loyalty, and let neglected high-ambition
+        // proteges turn rival. Previously never called, so turnsActive stayed
+        // 0 (the mentoring/neglect mechanic + the_mentor achievement were inert).
+        runStep("processSuccessionRelationships") {
+            for relationship in game.successorRelationships where relationship.isActive {
+                relationship.processTurn(currentTurn: game.turnNumber)
+            }
+        }
+
         // Character actions (rivals plotting, etc.)
         runStep("simulateNPCActions") {
             simulateNPCActions(game: game)
@@ -1898,18 +1908,26 @@ class GameEngine {
             game.recordWorldEvent(event)
         }
 
-        // Generate briefing if events occurred
+        // Surface intelligence reports into the General Secretary's journal
+        // (reachable via the Desk notification bell / Dossier). World events
+        // themselves are already recorded above; previously the generated
+        // intelligence reports — and a NewsBriefing summary — were computed
+        // every turn and discarded, so the player never saw them. The briefing
+        // summary overlaps with the newspaper system and is dropped; only the
+        // actionable per-event intel is surfaced here.
         if !worldEvents.isEmpty {
-            _ = WorldSimulationService.shared.generateBriefing(
-                events: worldEvents,
-                turn: game.turnNumber
-            )
-
-            // Player is General Secretary — always generate intelligence reports
-            _ = WorldSimulationService.shared.generateIntelligenceReports(
+            let reports = WorldSimulationService.shared.generateIntelligenceReports(
                 events: worldEvents,
                 game: game
             )
+            for report in reports {
+                game.addJournalEntry(JournalEntry(
+                    turnDiscovered: game.turnNumber,
+                    category: .secretIntelligence,
+                    title: report.subject,
+                    content: "\(report.source)\n\n\(report.analysis)"
+                ))
+            }
         }
     }
 

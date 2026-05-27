@@ -1313,7 +1313,7 @@ struct ScenarioPromptBuilder {
            - One that favors reform/compassion (often risky politically)
            - One that favors cunning/deflection (political maneuvering)
 
-        5. **Tone:** Grim, bureaucratic, paranoid. Use socialist state language: "Comrade," "the Party," "the Republic," "the People's Congress," "counter-revolutionary," "quota," "collective." Soviet-style governance with pragmatic flexibility.
+        5. **Tone:** Grim, bureaucratic, paranoid. Use socialist state language: "Comrade," "the Party," "the Republic," "the People's Congress," "counter-revolutionary," "quota," "collective." Authoritarian one-party governance with pragmatic flexibility.
 
         6. **BALANCE RULES - CRITICAL:**
            **Per-stat limits:**

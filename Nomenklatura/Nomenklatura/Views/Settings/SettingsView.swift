@@ -3,7 +3,7 @@
 //  Nomenklatura
 //
 //  User-facing settings sheet. Reachable via the gear icon in
-//  StitchStatusBar. Covers App Store baseline: audio/haptics toggles,
+//  StitchStatusBar. Covers App Store baseline: a haptics toggle,
 //  AI feature toggle, reset save, version/credits/legal placeholders.
 //
 //  Aesthetic: Brutalist Bureaucratic Theater — matches the parchment +
@@ -16,9 +16,9 @@ import SwiftData
 /// Settings sheet presented from the Desk's StitchStatusBar gear icon.
 ///
 /// Toggles are backed by @AppStorage so they survive process restart
-/// without needing a dedicated settings @Model. The AI toggle is a
-/// placeholder — wiring it to actually short-circuit AIScenarioGenerator
-/// is out of scope for this release; see the TODO below.
+/// without needing a dedicated settings @Model. The AI toggle gates
+/// scenario generation via `Secrets.userAIEnabled`; the haptics toggle
+/// gates the Desk's `.sensoryFeedback`.
 struct SettingsView: View {
     // Game lifecycle callbacks injected from ContentView via DeskView. Optional
     // so the view can still be previewed standalone; when nil the row is hidden.
@@ -33,18 +33,13 @@ struct SettingsView: View {
 
     // MARK: Persisted preferences
 
-    /// Mutes all in-game audio. Default OFF (audio plays).
-    @AppStorage("settings.audio.muted") private var audioMuted: Bool = false
-
-    /// Enables tactile feedback. Default ON (haptics fire).
+    /// Enables tactile feedback. Default ON (haptics fire). Read on the Desk
+    /// via @AppStorage to gate `.sensoryFeedback`.
     @AppStorage("settings.haptics.enabled") private var hapticsEnabled: Bool = true
 
-    /// Gates AI-generated scenarios. Default ON.
-    ///
-    /// TODO: Actually wire this to short-circuit AIScenarioGenerator so
-    /// that disabling skips network calls to the proxy and forces local
-    /// fallback content. Currently this toggle persists the preference
-    /// but does not yet gate the generator.
+    /// Gates AI-generated scenarios. Default ON. Read by `Secrets.userAIEnabled`,
+    /// which `AIScenarioGenerator` / `ScenarioManager` check before calling the
+    /// proxy; when OFF the game uses local fallback content (no network calls).
     @AppStorage("settings.ai.enabled") private var aiEnabled: Bool = true
 
     // MARK: Local UI state
@@ -91,7 +86,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(spacing: 0) {
                 gameMenuSection
-                audioHapticsSection
+                hapticsSection
                 aiFeaturesSection
                 aboutSection
                 Spacer(minLength: 30)
@@ -105,19 +100,12 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private var audioHapticsSection: some View {
-        SettingsSection(title: "Audio & Haptics") {
-            SettingsToggleRow(
-                icon: "speaker.slash.fill",
-                title: "Mute Audio",
-                subtitle: "Silence all in-game sound",
-                isOn: $audioMuted
-            )
-            SettingsDivider()
+    private var hapticsSection: some View {
+        SettingsSection(title: "Haptics") {
             SettingsToggleRow(
                 icon: "hand.tap.fill",
                 title: "Haptic Feedback",
-                subtitle: "Tactile response on interactions",
+                subtitle: "Tactile response on key interactions",
                 isOn: $hapticsEnabled
             )
         }

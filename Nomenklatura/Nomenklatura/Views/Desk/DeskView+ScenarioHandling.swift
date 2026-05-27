@@ -31,10 +31,6 @@ extension DeskView {
         isAIGenerated = loadingState.isAIGenerated
         isTransitioning = false
 
-        // Start pre-generating next turn's scenario while user reads current content
-        // This runs silently in background so next turn loads instantly
-        ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
-
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             withAnimation {
                 showContent = true
@@ -163,7 +159,6 @@ extension DeskView {
         game.phase = GamePhase.outcome.rawValue
         selectedOptionId = nil
 
-        ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
         onDecisionMade(outcomeData)
     }
 

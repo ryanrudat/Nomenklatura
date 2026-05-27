@@ -14,8 +14,9 @@ final class ClaudeClient: Sendable {
 
     // Use proxy URL in production, direct API for local development
     private let baseURL = Secrets.proxyURL
-    private let model = "claude-sonnet-4-5-20250929"  // Claude Sonnet 4.5 - best balance of intelligence, speed, and cost
-    private let maxTokens = 2048  // Reduced for faster responses - scenarios do not need 4k tokens
+    private let model = "claude-sonnet-4-6"  // Claude Sonnet 4.6 - latest balanced model
+    private let maxTokens = 4096  // Headroom for the full scenario JSON (briefing + 3 options + metadata). At 2048 rich scenarios truncated mid-JSON → validator rejected them → silent fallback to canned content.
+    private let temperature = 1.0  // High temperature for narrative variety / replayability
 
     // MARK: - Public API
 
@@ -77,7 +78,13 @@ final class ClaudeClient: Sendable {
             #endif
             switch httpResponse.statusCode {
             case 200:
-                return try decodeResponse(data)
+                let decoded = try decodeResponse(data)
+                #if DEBUG
+                if decoded.stop_reason == "max_tokens" {
+                    print("[ClaudeClient] ⚠️ stop_reason=max_tokens — output hit the \(maxTokens)-token cap and was truncated; JSON may be incomplete and fail validation.")
+                }
+                #endif
+                return decoded
             case 401:
                 throw ClaudeError.unauthorized
             case 429:
@@ -107,6 +114,7 @@ final class ClaudeClient: Sendable {
         let body = ClaudeRequest(
             model: model,
             max_tokens: maxTokens,
+            temperature: temperature,
             messages: [ClaudeMessage(role: "user", content: prompt)]
         )
         request.httpBody = try JSONEncoder().encode(body)
@@ -119,6 +127,7 @@ final class ClaudeClient: Sendable {
         let body = CachedClaudeRequest(
             model: model,
             max_tokens: maxTokens,
+            temperature: temperature,
             system: [SystemBlock(type: "text", text: systemPrompt, cache_control: CacheControl(type: "ephemeral"))],
             messages: [ClaudeMessage(role: "user", content: userPrompt)]
         )
@@ -157,6 +166,7 @@ final class ClaudeClient: Sendable {
 struct ClaudeRequest: Encodable, Sendable {
     let model: String
     let max_tokens: Int
+    let temperature: Double
     let messages: [ClaudeMessage]
 }
 
@@ -164,6 +174,7 @@ struct ClaudeRequest: Encodable, Sendable {
 struct CachedClaudeRequest: Encodable, Sendable {
     let model: String
     let max_tokens: Int
+    let temperature: Double
     let system: [SystemBlock]
     let messages: [ClaudeMessage]
 }

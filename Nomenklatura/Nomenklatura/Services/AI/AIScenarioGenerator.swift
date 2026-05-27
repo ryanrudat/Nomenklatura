@@ -41,7 +41,7 @@ actor AIScenarioGenerator {
 
     /// Check if AI generation is available
     func isAvailable() async -> Bool {
-        let aiEnabled = await MainActor.run { Secrets.isAIEnabled }
+        let aiEnabled = await MainActor.run { Secrets.isAIEnabled && Secrets.userAIEnabled }
         guard aiEnabled else { return false }
         guard !isCircuitOpen() else { return false }
         return await ClaudeClient.shared.checkConnection()
@@ -62,7 +62,7 @@ actor AIScenarioGenerator {
 
     /// Shared pipeline: check AI availability, circuit breaker, cache, then run the provided generator and track the result.
     private func runPipeline(cacheKey: String, generate: () async throws -> (Scenario, ScenarioNarrativeMetadata)) async -> ScenarioResult {
-        let aiEnabled = await MainActor.run { Secrets.isAIEnabled }
+        let aiEnabled = await MainActor.run { Secrets.isAIEnabled && Secrets.userAIEnabled }
         guard aiEnabled else {
             return .fallback(reason: "AI not configured")
         }

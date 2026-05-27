@@ -8,39 +8,12 @@
 
 import SwiftUI
 
-// MARK: - 1950s Color Palette (DEPRECATED — wraps ColdWarTheme.shared)
+// MARK: - 1950s Color Palette
 //
-// FiftiesColors was one of three competing color systems (alongside
-// StitchColors and BureauColors). All values now resolve through the
-// canonical ColdWarTheme so future call-site migrations are zero-risk.
-// Migration path: replace each reference with @Environment(\.theme) in
-// view bodies, or ColdWarTheme.shared.X elsewhere.
-
-@available(*, deprecated, message: "Use @Environment(\\.theme) in views or ColdWarTheme.shared elsewhere")
-struct FiftiesColors {
-    // Paper tones
-    static var agedPaper: Color { ColdWarTheme.shared.agedPaper }
-    static var freshPaper: Color { ColdWarTheme.shared.freshPaper }
-    static var cardstock: Color { ColdWarTheme.shared.cardstock }
-    static var manillaFolder: Color { ColdWarTheme.shared.manillaFolder }
-
-    // Ink tones
-    static var typewriterInk: Color { ColdWarTheme.shared.inkBlack }
-    static var fadedInk: Color { ColdWarTheme.shared.inkGray }
-    static var carbonCopy: Color { ColdWarTheme.shared.carbonCopy }
-
-    // Stamp colors
-    static var stampRed: Color { ColdWarTheme.shared.sovietRed }
-    static var stampRedDark: Color { ColdWarTheme.shared.stampRedDark }
-    static var urgentRed: Color { ColdWarTheme.shared.urgentRed }
-    static var approvedGreen: Color { ColdWarTheme.shared.approvedGreen }
-    static var deniedRed: Color { ColdWarTheme.shared.stampRedDark }
-
-    // Accent colors
-    static var brassGold: Color { ColdWarTheme.shared.bronzeGold }
-    static var steelGray: Color { ColdWarTheme.shared.steelGray }
-    static var leatherBrown: Color { ColdWarTheme.shared.leatherBrown }
-}
+// The former `struct FiftiesColors` deprecated wrapper has been deleted
+// (all call sites migrated to the canonical theme). Use
+// `@Environment(\.theme)` in view bodies, or `ColdWarTheme.shared.X`
+// elsewhere.
 
 // MARK: - Bureau Colors
 //

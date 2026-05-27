@@ -33,8 +33,6 @@ extension DeskView {
             if event.eventType == .characterMessage, let charName = event.initiatingCharacterName {
                 NotificationService.shared.notifyCharacterMessage(name: charName, turn: game.turnNumber)
             }
-            // Pre-generate next turn while user reads dynamic event
-            ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
             return
         }
 
@@ -44,9 +42,6 @@ extension DeskView {
             isAIGenerated = loadingState.isAIGenerated
             isTransitioning = false
             hasDisplayedContentForTurn = true
-
-            // Pre-generate next turn while user reads newspaper
-            ScenarioManager.shared.preGenerateForNextTurn(game: game, config: campaignConfig)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation {

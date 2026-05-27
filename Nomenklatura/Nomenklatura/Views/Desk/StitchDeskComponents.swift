@@ -17,6 +17,7 @@ struct StitchStatusBar: View {
     var onWorldTap: (() -> Void)? = nil
     var onTurnTap: (() -> Void)? = nil
     var onSettingsTap: (() -> Void)? = nil
+    var onNotificationsTap: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -101,8 +102,8 @@ struct StitchStatusBar: View {
                 .buttonStyle(.plain)
             }
 
-            // Notification bell - office style
-            Button(action: {}) {
+            // Notification bell - office style. Opens the journal / memo notifications panel.
+            Button(action: { onNotificationsTap?() }) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell.fill")
                         .font(.system(size: 14))
@@ -120,6 +121,7 @@ struct StitchStatusBar: View {
                     }
                 }
             }
+            .buttonStyle(.plain)
 
             // Settings gear - opens the SettingsView sheet
             if let onSettingsTap = onSettingsTap {

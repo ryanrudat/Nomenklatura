@@ -41,13 +41,6 @@ class ScenarioLoadingState: ObservableObject {
     }
 }
 
-/// Pre-generated content cache entry
-private struct PreGeneratedContent {
-    let scenario: Scenario
-    let metadata: ScenarioNarrativeMetadata?
-    let isAIGenerated: Bool
-}
-
 /// Sendable snapshot of the Game state needed by background scenario loading.
 ///
 /// Captured on the MainActor before launching the background task so the task
@@ -177,7 +170,6 @@ class ScenarioManager {
         if loadingState.turnNumber != currentTurn {
             loadingState.clearCache()
             loadingState.turnNumber = currentTurn
-            clearPreGenerationCache()
         }
 
         // Cancel any existing background task
@@ -196,7 +188,7 @@ class ScenarioManager {
             turnNumber: currentTurn,
             promptParts: ScenarioPromptBuilder.buildPromptParts(for: game, config: config),
             cacheKey: ScenarioPromptBuilder.buildCacheKey(for: game),
-            useAI: Secrets.isAIEnabled && currentTurn > onboardingTurns
+            useAI: Secrets.isAIEnabled && Secrets.userAIEnabled && currentTurn > onboardingTurns
         )
 
         // STEP 1: Check for dynamic events synchronously on the MainActor.
@@ -282,74 +274,6 @@ class ScenarioManager {
         Task { @MainActor in
             loadingState.isLoading = false
         }
-    }
-
-    // MARK: - Smart Pre-generation
-
-    /// Pre-generation task (runs silently in background)
-    private var preGenerateTask: Task<Void, Never>?
-
-    /// Cache for pre-generated content (keyed by turn number)
-    private var preGeneratedCache: [Int: PreGeneratedContent] = [:]
-
-    /// Pre-generation for next-turn content is intentionally disabled until the
-    /// game has a single authoritative turn-finalization path. Generating next-turn
-    /// briefings from mid-turn state leads to stale cached content.
-    @MainActor
-    func preGenerateForNextTurn(game: Game, config: CampaignConfig) {
-        clearPreGenerationCache()
-    }
-
-    /// Check if pre-generated content exists for a turn and apply it to loading state
-    /// Returns true if pre-generated content was applied
-    @MainActor
-    func applyPreGeneratedContent(for turn: Int) -> Bool {
-        guard let preGenerated = preGeneratedCache[turn] else {
-            return false
-        }
-
-        // Don't apply if content is for newspaper (we can't pre-generate newspapers properly)
-        if preGenerated.scenario.format == .newspaper {
-            preGeneratedCache.removeValue(forKey: turn)
-            return false
-        }
-
-        // Apply pre-generated content to loading state
-        loadingState.turnNumber = turn
-        loadingState.cachedScenario = preGenerated.scenario
-        loadingState.isAIGenerated = preGenerated.isAIGenerated
-        lastWasAIGenerated = preGenerated.isAIGenerated
-        lastNarrativeMetadata = preGenerated.metadata
-
-        // Mark as used
-        markAsUsed(preGenerated.scenario.templateId, category: preGenerated.scenario.category, turnNumber: turn, game: nil)
-
-        // Clean up cache
-        preGeneratedCache.removeValue(forKey: turn)
-
-        #if DEBUG
-        print("[ScenarioManager] Applied pre-generated content for turn \(turn)")
-        #endif
-        return true
-    }
-
-    /// Clear pre-generation cache (call when game state changes significantly)
-    func clearPreGenerationCache() {
-        preGenerateTask?.cancel()
-        preGenerateTask = nil
-        preGeneratedCache.removeAll()
-    }
-
-    /// Check if pre-generated content is ready for the next turn
-    @MainActor
-    func hasPreGeneratedContent(forNextTurnAfter currentTurn: Int) -> Bool {
-        return preGeneratedCache[currentTurn + 1] != nil
-    }
-
-    /// Check if pre-generation is currently in progress
-    @MainActor
-    var isPreGenerating: Bool {
-        return preGenerateTask != nil
     }
 
     // MARK: - Sync API (fallback only)
@@ -837,7 +761,7 @@ class ScenarioManager {
                     id: "B",
                     archetype: .reform,
                     shortDescription: "Propose allowing supervised discussion groups. Channel the energy.",
-                    immediateOutcome: "\"Young minds need guidance, not suppression,\" you announce to the assembled committee. A murmur ripples through the room.\n\nThe students return to their studies, now with official 'Marxist Philosophy Circles' to attend. The subversive literature quietly disappears.\n\nSome members of the Politburo take note of your pragmatism. Others mark you as dangerously soft.",
+                    immediateOutcome: "\"Young minds need guidance, not suppression,\" you announce to the assembled committee. A murmur ripples through the room.\n\nThe students return to their studies, now with official 'Revolutionary Doctrine Circles' to attend. The subversive literature quietly disappears.\n\nSome members of the Politburo take note of your pragmatism. Others mark you as dangerously soft.",
                     statEffects: ["popularSupport": 10, "eliteLoyalty": -10],
                     personalEffects: ["standing": 8],
                     followUpHook: "Some in the Politburo notice your pragmatism.",

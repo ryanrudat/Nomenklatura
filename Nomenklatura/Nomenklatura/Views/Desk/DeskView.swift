@@ -58,6 +58,9 @@ struct DeskView: View {
     // Settings sheet (gear icon in status bar)
     @State var showSettingsSheet = false
 
+    // Haptic feedback preference (SettingsView toggle). Gates .sensoryFeedback below.
+    @AppStorage("settings.haptics.enabled") private var hapticsEnabled = true
+
     // Crisis Response Panel — sheet binding flipped by CrisisResponseBanner tap.
     // Banner renders nothing when no active crises, so this stays false in calm turns.
     @State var showCrisisPanel: Bool = false
@@ -116,7 +119,8 @@ struct DeskView: View {
                     onCongressTap: onCongressTap,
                     onWorldTap: onWorldTap,
                     onTurnTap: { showEndTurnConfirmation = true },
-                    onSettingsTap: { showSettingsSheet = true }
+                    onSettingsTap: { showSettingsSheet = true },
+                    onNotificationsTap: { showMemoPanel = true }
                 )
 
                 // Phase 2.6: persistent stats bar — Treasury/Stability/Popular
@@ -300,6 +304,13 @@ struct DeskView: View {
         // The panel itself surfaces every active crisis + response option.
         .sheet(isPresented: $showCrisisPanel) {
             CrisisResponsePanel(game: game)
+        }
+        // Haptics on the two core Desk interactions, gated by the Settings toggle.
+        .sensoryFeedback(trigger: game.turnNumber) { _, _ in
+            hapticsEnabled ? .impact : nil
+        }
+        .sensoryFeedback(trigger: selectedOptionId) { _, newValue in
+            (hapticsEnabled && newValue != nil) ? .selection : nil
         }
     }
 
