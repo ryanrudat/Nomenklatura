@@ -301,7 +301,7 @@ final class HistoricalSessionGenerator {
         let significantPlenums: [(year: Int, title: String, summary: String)] = [
             (17, "Plenum on Counter-Revolutionary Conspiracy",
              "The Central Committee heard shocking evidence of a vast conspiracy reaching to the highest levels. Arrests followed."),
-            (18, "Plenum on the Trotsky-Zinoviev Bloc",
+            (18, "Plenum on the Deviationist Bloc",
              "Former leaders were condemned as foreign agents. The purge intensified."),
             (27, "Wartime Plenum",
              "Meeting in the shadow of invasion, the Committee pledged total victory or total destruction."),

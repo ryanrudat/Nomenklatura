@@ -96,7 +96,7 @@ final class InitialAgendaGenerator {
             ),
             (
                 "Educational Curriculum",
-                "The Education Ministry proposes revisions to the standard curriculum emphasizing technical subjects over classical Marxist theory.",
+                "The Education Ministry proposes revisions to the standard curriculum emphasizing technical subjects over classical revolutionary theory.",
                 .routine
             ),
             (

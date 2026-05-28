@@ -564,7 +564,7 @@ extension ForeignCountry {
         sovietUnion.region = "Eurasia"
         sovietUnion.population = 180
         sovietUnion.landArea = 10
-        sovietUnion.leaderName = "Joseph Stalin"
+        sovietUnion.leaderName = "The General Secretary"
         sovietUnion.leaderTitle = "General Secretary"
         sovietUnion.rulingParty = "Communist Party of the Soviet Union"
         sovietUnion.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -579,20 +579,20 @@ extension ForeignCountry {
         sovietUnion.espionageActivity = 40
         sovietUnion.ourIntelligenceAssets = 25
         sovietUnion.countryDescription = """
-            The world's first socialist state and leader of the communist world. Under Stalin's \
+            The world's first socialist state and leader of the communist world. Under the General Secretary's \
             iron grip, the USSR has industrialized rapidly and emerged victorious from the Great \
             Patriotic War. Moscow seeks to spread revolution while rebuilding from wartime \
             devastation.
             """
         sovietUnion.historySummary = """
             The Soviet Union emerged from the chaos of the Russian Revolution in 1917, transforming \
-            a feudal empire into an industrial powerhouse. Stalin's Five-Year Plans forced rapid \
+            a feudal empire into an industrial powerhouse. The Five-Year Plans forced rapid \
             industrialization at tremendous human cost. The Great Patriotic War against Nazi Germany \
             killed over 20 million Soviet citizens but left the Red Army the most powerful force in Europe.
 
             Now, the USSR dominates Eastern Europe through satellite states and seeks to expand its \
             influence globally. The atomic bomb, developed in 1949, has given Moscow nuclear parity \
-            with Washington. Stalin's health is declining, but his grip on power remains absolute.
+            with Washington. The General Secretary's health is declining, but his grip on power remains absolute.
 
             The Soviet system offers both model and warning: rapid industrialization is possible, \
             but at what cost? The purges, the famines, the terror—these too are part of the Soviet \
@@ -630,7 +630,7 @@ extension ForeignCountry {
         poland.region = "Eastern Europe"
         poland.population = 25
         poland.landArea = 4
-        poland.leaderName = "Boleslaw Bierut"
+        poland.leaderName = "The First Secretary"
         poland.leaderTitle = "President"
         poland.rulingParty = "Polish United Workers' Party"
         poland.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -685,7 +685,7 @@ extension ForeignCountry {
         czechoslovakia.region = "Central Europe"
         czechoslovakia.population = 13
         czechoslovakia.landArea = 3
-        czechoslovakia.leaderName = "Klement Gottwald"
+        czechoslovakia.leaderName = "The President"
         czechoslovakia.leaderTitle = "President"
         czechoslovakia.rulingParty = "Communist Party of Czechoslovakia"
         czechoslovakia.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -743,7 +743,7 @@ extension ForeignCountry {
         unitedStates.region = "North America"
         unitedStates.population = 150
         unitedStates.landArea = 9
-        unitedStates.leaderName = "Harry S. Truman"
+        unitedStates.leaderName = "The President"
         unitedStates.leaderTitle = "President"
         unitedStates.rulingParty = "Democratic Party"
         unitedStates.diplomaticStatus = DiplomaticStatus.strained.rawValue
@@ -759,7 +759,7 @@ extension ForeignCountry {
         unitedStates.ourIntelligenceAssets = 20
         unitedStates.countryDescription = """
             The world's richest and most powerful nation. America emerged from World War II with \
-            its industry intact and its military supreme. The Truman Doctrine commits Washington \
+            its industry intact and its military supreme. The containment doctrine commits Washington \
             to containing communism everywhere. Yet American consumers hunger for trade, and \
             some voices counsel engagement over confrontation.
             """
@@ -772,7 +772,7 @@ extension ForeignCountry {
             Plan rebuilt Western Europe as a bulwark against communism. The Korean War proved \
             American willingness to fight. McCarthyism revealed American fears.
 
-            Truman's presidency has been defined by containment—holding the line against Soviet \
+            The President's term has been defined by containment—holding the line against Soviet \
             expansion. But America is not monolithic. Business interests want trade. Liberals \
             question Cold War orthodoxy. The 1952 election may bring change.
             """
@@ -807,7 +807,7 @@ extension ForeignCountry {
         unitedKingdom.region = "Western Europe"
         unitedKingdom.population = 50
         unitedKingdom.landArea = 3
-        unitedKingdom.leaderName = "Clement Attlee"
+        unitedKingdom.leaderName = "The Prime Minister"
         unitedKingdom.leaderTitle = "Prime Minister"
         unitedKingdom.rulingParty = "Labour Party"
         unitedKingdom.diplomaticStatus = DiplomaticStatus.neutral.rawValue
@@ -832,7 +832,7 @@ extension ForeignCountry {
             exhausted. The costs of war bankrupted the treasury. India gained independence in 1947; \
             other colonies demanded the same.
 
-            Clement Attlee's Labour government implemented sweeping reforms—nationalization of \
+            The Labour government implemented sweeping reforms—nationalization of \
             industries, universal healthcare, expanded social services. These democratic socialist \
             measures transformed British society while maintaining the capitalist framework.
 
@@ -867,7 +867,7 @@ extension ForeignCountry {
         france.region = "Western Europe"
         france.population = 42
         france.landArea = 5
-        france.leaderName = "Vincent Auriol"
+        france.leaderName = "The President"
         france.leaderTitle = "President"
         france.rulingParty = "Coalition Government"
         france.diplomaticStatus = DiplomaticStatus.neutral.rawValue
@@ -926,7 +926,7 @@ extension ForeignCountry {
         westGermany.region = "Central Europe"
         westGermany.population = 50
         westGermany.landArea = 4
-        westGermany.leaderName = "Konrad Adenauer"
+        westGermany.leaderName = "The Chancellor"
         westGermany.leaderTitle = "Chancellor"
         westGermany.rulingParty = "Christian Democratic Union"
         westGermany.diplomaticStatus = DiplomaticStatus.strained.rawValue
@@ -942,12 +942,12 @@ extension ForeignCountry {
         westGermany.ourIntelligenceAssets = 20
         westGermany.countryDescription = """
             The western half of divided Germany, occupied by American, British, and French forces. \
-            Under Adenauer's conservative leadership, West Germany is rebuilding rapidly—the \
+            Under the Chancellor's conservative leadership, West Germany is rebuilding rapidly—the \
             "economic miracle" has begun. Anti-communist sentiment runs deep.
             """
         westGermany.historySummary = """
             Germany's defeat in 1945 left the nation divided and occupied. The western zones, \
-            combined in 1949, became the Federal Republic. Adenauer leads a pro-Western government \
+            combined in 1949, became the Federal Republic. The Chancellor leads a pro-Western government \
             firmly aligned with Washington.
 
             The economic miracle is transforming West Germany into an industrial powerhouse once \
@@ -985,7 +985,7 @@ extension ForeignCountry {
         india.region = "South Asia"
         india.population = 360
         india.landArea = 7
-        india.leaderName = "Jawaharlal Nehru"
+        india.leaderName = "The Prime Minister"
         india.leaderTitle = "Prime Minister"
         india.rulingParty = "Indian National Congress"
         india.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -1000,21 +1000,21 @@ extension ForeignCountry {
         india.espionageActivity = 15
         india.ourIntelligenceAssets = 25
         india.countryDescription = """
-            The world's largest democracy, newly independent from British rule. Nehru leads a \
+            The world's largest democracy, newly independent from British rule. The Prime Minister leads a \
             nation of enormous potential and enormous challenges. India refuses to align with \
             either superpower bloc, charting its own course as a leader of the developing world.
             """
         india.historySummary = """
-            India won independence through Gandhi's non-violent resistance—a moral victory that \
+            India won independence through a campaign of non-violent resistance—a moral victory that \
             inspired colonized peoples everywhere. Partition in 1947 created Pakistan and caused \
             massive bloodshed, but India emerged as a democratic republic.
 
-            Nehru combines Western-educated sophistication with deep roots in Indian tradition. \
+            The Prime Minister combines Western-educated sophistication with deep roots in Indian tradition. \
             His socialist economic policies and non-aligned foreign policy offer a third way \
             between Washington and Moscow. India's voice carries moral weight.
             """
         india.relationshipHistory = """
-            India is a natural friend. Nehru's socialism aligns with our principles; his \
+            India is a natural friend. The Prime Minister's socialism aligns with our principles; his \
             non-alignment protects our interests. Trade is growing. Cultural exchanges \
             flourish. India may become our most important partner outside the Soviet bloc.
             """
@@ -1041,7 +1041,7 @@ extension ForeignCountry {
         yugoslavia.region = "Southern Europe"
         yugoslavia.population = 17
         yugoslavia.landArea = 4
-        yugoslavia.leaderName = "Josip Broz Tito"
+        yugoslavia.leaderName = "The President"
         yugoslavia.leaderTitle = "President"
         yugoslavia.rulingParty = "Communist League of Yugoslavia"
         yugoslavia.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -1056,14 +1056,14 @@ extension ForeignCountry {
         yugoslavia.espionageActivity = 25
         yugoslavia.ourIntelligenceAssets = 30
         yugoslavia.countryDescription = """
-            A communist state that defied Moscow. Tito's break with Stalin in 1948 proved that \
+            A communist state that defied Moscow. Its 1948 break with Moscow proved that \
             socialist nations need not follow Soviet dictates. Yugoslavia experiments with \
             worker self-management and independent foreign policy.
             """
         yugoslavia.historySummary = """
             Yugoslavia liberated itself from Nazi occupation through partisan warfare—the only \
-            Eastern European nation that didn't require Soviet troops. This gave Tito the \
-            independence to challenge Stalin's demands for subservience.
+            Eastern European nation that didn't require Soviet troops. This gave Yugoslavia the \
+            independence to challenge Moscow's demands for subservience.
 
             The 1948 split nearly led to war. Soviet pressure failed. Yugoslavia survived as \
             an independent communist state, developing its own model of socialism with worker \
@@ -1098,7 +1098,7 @@ extension ForeignCountry {
         egypt.region = "North Africa"
         egypt.population = 21
         egypt.landArea = 4
-        egypt.leaderName = "King Farouk I"
+        egypt.leaderName = "The King"
         egypt.leaderTitle = "King"
         egypt.rulingParty = "Wafd Party (opposition growing)"
         egypt.diplomaticStatus = DiplomaticStatus.neutral.rawValue
@@ -1113,13 +1113,13 @@ extension ForeignCountry {
         egypt.espionageActivity = 20
         egypt.ourIntelligenceAssets = 20
         egypt.countryDescription = """
-            A kingdom in ferment. King Farouk's corruption has lost him popular support. The \
+            A kingdom in ferment. The King's corruption has lost him popular support. The \
             army grows restless. Arab nationalism rises. Egypt controls the Suez Canal, making \
             it strategically vital. Change is coming—the only question is its direction.
             """
         egypt.historySummary = """
             Egypt gained nominal independence from Britain in 1922, but British troops remained \
-            to protect the Suez Canal. King Farouk's regime has proven corrupt and ineffective. \
+            to protect the Suez Canal. The King's regime has proven corrupt and ineffective. \
             The 1948 war against Israel ended in humiliating defeat.
 
             Young army officers plot revolution. Arab nationalism demands real independence. \
@@ -1153,7 +1153,7 @@ extension ForeignCountry {
         china.region = "East Asia"
         china.population = 550
         china.landArea = 9
-        china.leaderName = "Mao Zedong"
+        china.leaderName = "The Chairman"
         china.leaderTitle = "Chairman"
         china.rulingParty = "Communist Party of China"
         china.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -1168,15 +1168,15 @@ extension ForeignCountry {
         china.espionageActivity = 25
         china.ourIntelligenceAssets = 15
         china.countryDescription = """
-            A revolutionary giant awakening. Mao's communists won the civil war in 1949, \
+            A revolutionary giant awakening. The Communists won the civil war in 1949, \
             establishing the People's Republic. Now they remake the world's most populous \
-            nation according to Marxist-Leninist principles. The Korean War demonstrates \
+            nation according to revolutionary principles. The Korean War demonstrates \
             China's willingness to fight.
             """
         china.historySummary = """
-            China's "century of humiliation" ended with Mao's victory in 1949. The Communist \
+            China's "century of humiliation" ended with the Communist victory in 1949. The Communist \
             Party, forged in the Long March and tempered by war with Japan, finally defeated \
-            Chiang Kai-shek's Nationalists.
+            the Nationalist forces.
 
             The new government faces enormous challenges: a devastated economy, illiteracy, \
             feudal social structures, and hostile encirclement. Land reform proceeds with \
@@ -1220,7 +1220,7 @@ extension ForeignCountry {
         japan.region = "Pacific"
         japan.population = 84
         japan.landArea = 3
-        japan.leaderName = "Shigeru Yoshida"
+        japan.leaderName = "The Prime Minister"
         japan.leaderTitle = "Prime Minister"
         japan.rulingParty = "Liberal Party"
         japan.diplomaticStatus = DiplomaticStatus.strained.rawValue
@@ -1236,7 +1236,7 @@ extension ForeignCountry {
         japan.ourIntelligenceAssets = 15
         japan.countryDescription = """
             A defeated empire under American occupation. Japan's military was destroyed; its \
-            cities were firebombed; two suffered atomic attack. Now, under MacArthur's \
+            cities were firebombed; two suffered atomic attack. Now, under Allied \
             guidance, Japan rebuilds as a pacifist democracy aligned with Washington.
             """
         japan.historySummary = """
@@ -1275,7 +1275,7 @@ extension ForeignCountry {
         mexico.region = "North America"
         mexico.population = 28
         mexico.landArea = 5
-        mexico.leaderName = "Miguel Alemán Valdés"
+        mexico.leaderName = "The President"
         mexico.leaderTitle = "President"
         mexico.rulingParty = "Institutional Revolutionary Party"
         mexico.diplomaticStatus = DiplomaticStatus.friendly.rawValue
@@ -1302,7 +1302,7 @@ extension ForeignCountry {
             revolutionary rhetoric into single-party stability.
 
             President Cárdenas's 1938 oil nationalization defied American and British companies, \
-            establishing Mexican sovereignty over its resources. Current president Alemán has \
+            establishing Mexican sovereignty over its resources. The current president has \
             tilted toward business interests and American investment, but revolutionary \
             tradition constrains complete alignment with Washington.
             """

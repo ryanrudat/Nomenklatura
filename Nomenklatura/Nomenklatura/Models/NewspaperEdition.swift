@@ -102,7 +102,7 @@ enum HeadlineCategory: String, Codable, CaseIterable, Sendable {
     case military        // Defense matters, Warsaw Pact
     case international   // Cold War, foreign relations
     case domestic        // Internal affairs, social programs
-    case ideological     // Marxist-Leninist theory, campaigns
+    case ideological     // revolutionary doctrine, campaigns
 }
 
 // MARK: - Secondary Story

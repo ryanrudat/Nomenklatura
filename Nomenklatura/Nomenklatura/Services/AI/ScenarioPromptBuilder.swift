@@ -1056,7 +1056,7 @@ struct ScenarioPromptBuilder {
 
         SOCIALIST ALLIES:
         - Soviet Union: Revolutionary ally who provided aid during our war for independence
-        - People's Republic of China: Fellow revolutionary state under Mao
+        - People's Republic of China: Fellow revolutionary state under its Chairman
         - Eastern Bloc: Poland, Czechoslovakia, Hungary, Romania, Bulgaria, East Germany
 
         CAPITALIST ADVERSARIES:
@@ -1066,8 +1066,8 @@ struct ScenarioPromptBuilder {
         - West Germany: Firmly in the Western camp
 
         NON-ALIGNED NATIONS:
-        - Yugoslavia: Tito's independent socialist path - a model we study
-        - India: Nehru's neutral stance, potential trade partner
+        - Yugoslavia: an independent socialist path - a model we study
+        - India: a neutral stance, potential trade partner
         - Egypt: Revolutionary potential brewing
         - Mexico: Southern neighbor, pragmatic relations
 

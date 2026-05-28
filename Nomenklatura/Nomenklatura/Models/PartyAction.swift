@@ -223,7 +223,7 @@ extension PartyAction {
             id: "attend_study_session",
             name: "Attend Study Session",
             description: "Participate in mandatory party theory study",
-            detailedDescription: "Attend party study sessions on Xi Jinping Thought and party history. Shows ideological commitment and builds connections with fellow party members. Essential for advancement.",
+            detailedDescription: "Attend party study sessions on the Chairman's Doctrine and party history. Shows ideological commitment and builds connections with fellow party members. Essential for advancement.",
             iconName: "book.fill",
             actionVerb: "ATTEND",
             category: .partyWorker,

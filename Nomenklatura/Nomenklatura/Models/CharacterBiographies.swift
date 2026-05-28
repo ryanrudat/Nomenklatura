@@ -178,10 +178,10 @@ class CharacterBiographyProvider {
                     institution: "Workers' Night School",
                     years: "pre-Revolution",
                     degree: nil,
-                    notes: "Self-educated in Marxist theory and economics"
+                    notes: "Self-educated in revolutionary theory and economics"
                 ),
                 EducationEntry(
-                    institution: "International Lenin School, Moscow",
+                    institution: "International Cadre School, Moscow",
                     years: "pre-Revolution",
                     degree: "Certificate in Revolutionary Leadership",
                     notes: "One year training with the Comintern; met future Soviet leaders"
@@ -753,7 +753,7 @@ class CharacterBiographyProvider {
                 DarkSecret(
                     id: "patterson_brennan",
                     title: "The Brennan Lie",
-                    fullContent: "Father Michael Brennan was a priest who secretly joined the revolutionary movement. He recruited young Eleanor Patterson, taught her to read Marx, gave her purpose. During the Religious Roundup during the Purges, Eleanor was pressured to denounce him as a foreign agent. She did. She testified to conversations that never happened, meetings that never occurred. Brennan was executed. His three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages. Eleanor never learned what happened to them. She has spent ten years trying not to find out. She collects poetry because Brennan taught her to love it. She never reads religious poetry—it hurts too much.",
+                    fullContent: "Father Michael Brennan was a priest who secretly joined the revolutionary movement. He recruited young Eleanor Patterson, taught her to read revolutionary theory, gave her purpose. During the Religious Roundup during the Purges, Eleanor was pressured to denounce him as a foreign agent. She did. She testified to conversations that never happened, meetings that never occurred. Brennan was executed. His three children—Margaret, Michael Jr., and Thomas—were sent to state orphanages. Eleanor never learned what happened to them. She has spent ten years trying not to find out. She collects poetry because Brennan taught her to love it. She never reads religious poetry—it hurts too much.",
                     discoveryDifficulty: 7,
                     evidenceLocations: ["Wallace's files on the Brennan case", "The orphanage records", "Surviving parishioners from Brennan's church"],
                     potentialConsequences: "Would expose Patterson as someone who destroyed an innocent man to save herself. The Brennan children, if found, could testify to their father's character.",
@@ -929,7 +929,7 @@ class CharacterBiographyProvider {
                     institution: "Workers' Night School",
                     years: "pre-Revolution",
                     degree: nil,
-                    notes: "Self-educated in Marxist theory"
+                    notes: "Self-educated in revolutionary theory"
                 )
             ],
             careerTimeline: [

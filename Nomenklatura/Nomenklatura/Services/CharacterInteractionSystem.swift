@@ -1156,7 +1156,7 @@ class CharacterInteractionSystem {
         if investigationType.contains("archives") {
             let archiveSecrets = [
                 "Family had ties to pre-revolutionary aristocracy",
-                "Briefly associated with Trotskyist group in youth",
+                "Briefly associated with a deviationist group in youth",
                 "Father was denounced during the '48 purges",
                 "Once wrote letter critical of Party leadership",
                 "Has relatives abroad who fled after the revolution",

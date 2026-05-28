@@ -53,7 +53,7 @@ struct LeadershipConfig: Codable {
     /// How much power the GS has relative to the SC (0.0-1.0)
     /// 0.0 = Pure collective leadership (SC can override GS)
     /// 0.5 = Balanced (GS leads but needs SC consensus)
-    /// 1.0 = Near-absolute (GS can override SC, Xi Jinping style)
+    /// 1.0 = Near-absolute (GS can override SC; personalist rule)
     var generalSecretaryPower: Double = 0.5
 
     /// GS vote weight in SC decisions (1 = normal, 2 = double, 3 = triple)
@@ -1102,7 +1102,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 45,
-            backstory: "Born to a working-class family in Red Harbor's port district—her father a longshoreman, her mother a seamstress. The Church was everything until the Revolution; she abandoned both faith and family for the Party. Rose through the Youth League as an organizer and propagandist, catching Fitzgerald's eye with her brilliant pamphlets. Survived the Purges by doing what was necessary: she denounced her own mentor, Professor William Harrigan, as a 'Trotskyist agent.' He was innocent. His wife and two children disappeared into Wallace's system. Patterson never speaks of this. She advanced rapidly after Fitzgerald's death, elevated to Second Secretary by Mitchell over more experienced candidates. She owes him everything—which means she resents him. Never married. 'Married to the Party,' she says. Collects poetry secretly; possessing some of it could be dangerous.",
+            backstory: "Born to a working-class family in Red Harbor's port district—her father a longshoreman, her mother a seamstress. The Church was everything until the Revolution; she abandoned both faith and family for the Party. Rose through the Youth League as an organizer and propagandist, catching Fitzgerald's eye with her brilliant pamphlets. Survived the Purges by doing what was necessary: she denounced her own mentor, Professor William Harrigan, as a 'deviationist agent.' He was innocent. His wife and two children disappeared into Wallace's system. Patterson never speaks of this. She advanced rapidly after Fitzgerald's death, elevated to Second Secretary by Mitchell over more experienced candidates. She owes him everything—which means she resents him. Never married. 'Married to the Party,' she says. Collects poetry secretly; possessing some of it could be dangerous.",
             ageCategory: "middle-aged",
             originLocation: "Red Harbor, Zone 5",
             familyBackground: "Working-class family from the port districts. Estranged from surviving relatives after renouncing religion during the Revolution. No spouse, no children.",
@@ -2102,7 +2102,7 @@ class CampaignLoader {
             isPatron: false,
             isRival: false,
             startingDisposition: 45,
-            backstory: "Born in Fitzgerald City, son of steelworkers. Joined the Communist Party before the economic crisis, studied Marxism with religious intensity. Traveled to Moscow before the Revolution for training at the International Lenin School—the experience shaped him permanently. During the Revolution, served as liaison to Soviet 'advisors' who brought weapons and expertise. The Soviets made him. He knows this. After the Revolution, spent a decade in various Party positions before Moscow posting in recent years. The pressure is immense: navigate between PSR interests and Soviet expectations while serving two masters who don't always agree.",
+            backstory: "Born in Fitzgerald City, son of steelworkers. Joined the Communist Party before the economic crisis, studied revolutionary theory with religious intensity. Traveled to Moscow before the Revolution for training at the International Cadre School—the experience shaped him permanently. During the Revolution, served as liaison to Soviet 'advisors' who brought weapons and expertise. The Soviets made him. He knows this. After the Revolution, spent a decade in various Party positions before Moscow posting in recent years. The pressure is immense: navigate between PSR interests and Soviet expectations while serving two masters who don't always agree.",
             ageCategory: "middle-aged",
             originLocation: "Fitzgerald City, Zone 2",
             familyBackground: "Working-class family with old Party connections. Father was a Party member who died in the Siege of Fitzgerald City. Mother survives in a the Capital apartment Chambers pays for. Married to a Soviet-trained Party cadre; their relationship is ideological as much as romantic. No children—Moscow advised against it.",
@@ -2133,7 +2133,7 @@ class CampaignLoader {
                     relationshipType: "ally",
                     description: "Fellow Moscow travelers. They trained together before the Revolution, shared the experience of seeing the Soviet Union from the inside. Graham knows about Chambers' divided loyalties. Chambers knows Graham has his own Soviet connections. Mutual blackmail keeps them close.",
                     sentiment: 55,
-                    historicalOrigin: "International Lenin School"
+                    historicalOrigin: "International Cadre School"
                 )
             ],
             historicalConnections: ["siege_fitzgerald_city"]

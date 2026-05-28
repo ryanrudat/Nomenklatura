@@ -431,7 +431,7 @@ class CodexDatabase {
                 fullDescription: """
                 Robert Fitzgerald was a factory worker who became the first General Secretary of the PSR. Born to immigrant parents in a cramped tenement in what would become Fitzgerald City, he lost his father to a factory accident at age twelve. By twenty, he was organizing wildcat strikes; by thirty, he led the largest union local in the industrial zone.
 
-                When revolutionary ferment spread through the factories, Fitzgerald transformed from labor organizer to revolutionary leader. His gift was making Marxism sound like common sense. "We're not asking for the moon," he'd say at rallies. "We're asking for what our labor already earns." He personally led the Fitzgerald City column in the March on the Capital and stood on the steps of the People's House to proclaim the Republic.
+                When revolutionary ferment spread through the factories, Fitzgerald transformed from labor organizer to revolutionary leader. His gift was making revolutionary ideas sound like common sense. "We're not asking for the moon," he'd say at rallies. "We're asking for what our labor already earns." He personally led the Fitzgerald City column in the March on the Capital and stood on the steps of the People's House to proclaim the Republic.
 
                 As General Secretary, Fitzgerald walked an impossible line. He protected many during the early Purges—"These are our people, not enemies"—but signed death warrants when political necessity demanded. He built the Youth League as a meritocratic counterweight to emerging elite families. He chose Harold Mitchell as his successor.
 
@@ -850,7 +850,7 @@ class CodexDatabase {
 
                 Population: 200 million people organized under Communist Party rule. Their industrial capacity is immense; their military might deters our enemies.
 
-                Government: Communist state under the Communist Party of the Soviet Union. Stalin's death has brought uncertainty; his successors maneuver for power.
+                Government: Communist state under the Communist Party of the Soviet Union. The Soviet leader's death has brought uncertainty; his successors maneuver for power.
 
                 Relations: Complicated gratitude. They saved our Revolution with weapons, advisors, and supplies. Moscow expects ideological conformity; we increasingly chafe at being treated as a junior partner. We are allies, not satellites—but the distinction grows finer each year.
 
@@ -863,15 +863,15 @@ class CodexDatabase {
             CodexEntry(
                 id: "china",
                 term: "People's Republic of China",
-                shortDescription: "Fellow revolutionary state - Mao's new China",
+                shortDescription: "Fellow revolutionary state - the new China",
                 fullDescription: """
-                The People's Republic of China emerged from revolution in 1949, just as we did decades earlier. Mao Zedong's victory created another socialist ally—and another model for revolutionary development.
+                The People's Republic of China emerged from revolution in 1949, just as we did decades earlier. The Communist victory created another socialist ally—and another model for revolutionary development.
 
                 Geography: East Asia. Vast territory, enormous population, sharing a long border with the Soviet Union.
 
                 Population: 550 million Chinese—the largest nation on Earth—now organized under Communist Party rule. Their revolutionary experience differs from ours but echoes familiar themes.
 
-                Government: Communist state under the Communist Party of China. Chairman Mao pursues his own path to socialism, sometimes diverging from Soviet orthodoxy.
+                Government: Communist state under the Communist Party of China. The Chairman pursues his own path to socialism, sometimes diverging from Soviet orthodoxy.
 
                 Relations: Fraternal solidarity with complications. Both we and China owe much to Soviet aid, yet both seek independent paths. Beijing watches our relationship with Moscow closely; we watch theirs.
 
@@ -915,7 +915,7 @@ class CodexDatabase {
 
                 Population: 150 million Americans living under capitalist democracy. Their industrial capacity rivals the Soviet Union's; their military reach spans the globe.
 
-                Government: Capitalist democracy under President Eisenhower. The American system combines electoral politics with corporate power in ways our theorists find contemptible.
+                Government: Capitalist democracy under its President. The American system combines electoral politics with corporate power in ways our theorists find contemptible.
 
                 Relations: No formal relations exist. Washington refuses to recognize the PSR, viewing us as a Soviet proxy. American economic pressure limits our access to Western markets and technology. CIA operations probe constantly for weakness.
 
@@ -978,7 +978,7 @@ class CodexDatabase {
 
                 Population: 50 million Germans living under a capitalist democracy. German engineering and manufacturing remain legendary.
 
-                Government: Parliamentary democracy under Chancellor Adenauer. The Bundesrepublik has renounced its Nazi past and embraced Western integration.
+                Government: Parliamentary democracy under its Chancellor. The Bundesrepublik has renounced its Nazi past and embraced Western integration.
 
                 Relations: No formal relations. West Germany follows the American line on non-recognition. German industrial expertise would be valuable; German politics make cooperation impossible.
 
@@ -993,17 +993,17 @@ class CodexDatabase {
             CodexEntry(
                 id: "yugoslavia",
                 term: "Yugoslavia",
-                shortDescription: "Socialist but independent - Tito's third way",
+                shortDescription: "Socialist but independent - a third way",
                 fullDescription: """
-                The Socialist Federal Republic of Yugoslavia proves that socialism need not mean Soviet domination. Marshal Tito broke with Stalin in 1948 and has charted an independent course ever since.
+                The Socialist Federal Republic of Yugoslavia proves that socialism need not mean Soviet domination. Yugoslavia broke with Moscow in 1948 and has charted an independent course ever since.
 
-                Geography: Southeastern Europe. A federation of diverse nations held together by Tito's personality and the Party's power.
+                Geography: Southeastern Europe. A federation of diverse nations held together by the President's authority and the Party's power.
 
                 Population: 17 million Yugoslavs of various ethnicities—Serbs, Croats, Slovenes, and others—united under socialist rule.
 
-                Government: Socialist state under the League of Communists, led by President Tito. Yugoslavia maintains a "third way" between Soviet orthodoxy and Western capitalism.
+                Government: Socialist state under the League of Communists, led by its President. Yugoslavia maintains a "third way" between Soviet orthodoxy and Western capitalism.
 
-                Relations: We study Yugoslavia's model with great interest. Tito proves that a socialist state can maintain independence from Moscow. Our Reformists cite his example; our conservatives view it with suspicion.
+                Relations: We study Yugoslavia's model with great interest. Yugoslavia proves that a socialist state can maintain independence from Moscow. Our Reformists cite his example; our conservatives view it with suspicion.
 
                 "Yugoslavia shows another path. Whether we can follow it remains to be seen."
                 """,
@@ -1014,17 +1014,17 @@ class CodexDatabase {
             CodexEntry(
                 id: "india",
                 term: "India",
-                shortDescription: "Non-aligned giant - Nehru's neutral path",
+                shortDescription: "Non-aligned giant - a neutral path",
                 fullDescription: """
-                The Republic of India gained independence from Britain in 1947 and has chosen neutrality in the Cold War. Nehru's India maintains friendly relations with both East and West, refusing to join either bloc.
+                The Republic of India gained independence from Britain in 1947 and has chosen neutrality in the Cold War. India maintains friendly relations with both East and West, refusing to join either bloc.
 
                 Geography: South Asia. Vast subcontinent with enormous population and ancient civilizations.
 
                 Population: 360 million Indians—the world's largest democracy—living under a parliamentary system that blends socialist economics with democratic politics.
 
-                Government: Parliamentary democracy under Prime Minister Nehru. India pursues a "non-aligned" foreign policy, seeking to lead the developing world between the superpowers.
+                Government: Parliamentary democracy under its Prime Minister. India pursues a "non-aligned" foreign policy, seeking to lead the developing world between the superpowers.
 
-                Relations: We seek Indian recognition and trade. Nehru's neutrality frustrates both Washington and Moscow, which we find useful. India proves that the Cold War need not consume everyone.
+                Relations: We seek Indian recognition and trade. Indian neutrality frustrates both Washington and Moscow, which we find useful. India proves that the Cold War need not consume everyone.
 
                 "India charts its own course. We respect that—and hope to benefit from it."
                 """,
@@ -1037,15 +1037,15 @@ class CodexDatabase {
                 term: "Egypt",
                 shortDescription: "Revolutionary potential - watching Cairo closely",
                 fullDescription: """
-                The Kingdom of Egypt stands on the brink of transformation. The corrupt monarchy of King Farouk teeters; military officers plot; the masses grow restless. Revolution may come to Cairo.
+                The Kingdom of Egypt stands on the brink of transformation. The corrupt monarchy teeters; military officers plot; the masses grow restless. Revolution may come to Cairo.
 
                 Geography: Northeast Africa and Sinai. The Suez Canal makes Egypt strategically vital to global trade.
 
                 Population: 21 million Egyptians living under an increasingly unstable monarchy. British influence persists despite nominal independence.
 
-                Government: Constitutional monarchy under King Farouk—for now. Military officers have organized the Free Officers Movement; change is coming.
+                Government: Constitutional monarchy—for now. Military officers have organized the Free Officers Movement; change is coming.
 
-                Relations: We watch Egyptian developments with keen interest. A revolutionary Egypt would shake the entire Middle East. Colonel Nasser and his fellow officers may provide the spark.
+                Relations: We watch Egyptian developments with keen interest. A revolutionary Egypt would shake the entire Middle East. Revolutionary army officers may provide the spark.
 
                 "Egypt could go many directions. We hope to be friends with whoever emerges."
                 """,

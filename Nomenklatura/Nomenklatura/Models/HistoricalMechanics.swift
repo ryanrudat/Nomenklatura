@@ -236,7 +236,7 @@ enum TrialCharge: String, Codable, CaseIterable {
         case .economicSabotage: return "Economic Sabotage"
         case .espionage: return "Espionage for Foreign Powers"
         case .counterRevolutionary: return "Counter-Revolutionary Activity"
-        case .trotskyism: return "Trotskyist Deviation"
+        case .trotskyism: return "Factionalist Deviation"
         case .bourgeoisNationalism: return "Bourgeois Nationalism"
         case .corruption: return "Corruption and Bribery"
         case .incompetence: return "Criminal Negligence"
@@ -253,9 +253,9 @@ enum TrialCharge: String, Codable, CaseIterable {
         case .counterRevolutionary:
             return "organizing counter-revolutionary conspiracy against the Socialist Republic"
         case .trotskyism:
-            return "adherence to Trotskyist-Zinovievist bloc ideology"
+            return "adherence to deviationist bloc ideology"
         case .bourgeoisNationalism:
-            return "promoting bourgeois nationalist deviation from Marxist-Leninist principles"
+            return "promoting bourgeois nationalist deviation from revolutionary principles"
         case .corruption:
             return "abuse of position for personal enrichment"
         case .incompetence:
