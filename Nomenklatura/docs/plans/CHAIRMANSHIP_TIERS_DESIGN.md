@@ -31,7 +31,7 @@ Sources (external history, for traceability — visible link text avoids real na
 ## 3. What already exists in the code (build on, don't reinvent)
 
 - **`Game.powerConsolidationScore: Int` (0–100)** — `Models/Game.swift:151`. Inits to **20** ("new GS… far from absolute", `:418`). Recomputed every turn via `calculatePowerConsolidation()` (`:1906`, called `:1959`).
-- **What drives the score** (`calculatePowerConsolidation()`): `standing/4` (≤25) + `eliteLoyalty/5` (≤20) + `network/5` (≤20) + position bonus (GS +20) + `lawsModifiedCount*3` + `patronFavor>70` (+5) + `militaryLoyalty>70` (+10) − `coalitionStrength/4` (opposition). → These map almost 1:1 onto the CCP factors: loyal appointments, **military backing** (Deng's commission chair), legislative dominance, minus **factional opposition**.
+- **What drives the score** (`calculatePowerConsolidation()`): `standing/4` (≤25) + `eliteLoyalty/5` (≤20) + `network/5` (≤20) + position bonus (GS +20) + `lawsModifiedCount*3` + `patronFavor>70` (+5) + `militaryLoyalty>70` (+10) − `coalitionStrength/4` (opposition). → These map almost 1:1 onto the CCP factors: loyal appointments, **military backing** (the military-commission lever), legislative dominance, minus **factional opposition**.
 - **Already-wired consumers (scattered thresholds the tiers will unify):**
   - Personal actions gated by `minPowerConsolidation` — `Models/PersonalAction.swift:90,186`.
   - Law proposals gated by `powerRequired` — `Views/Congress/LawProposalSheet.swift`, `LawCard.swift`.
