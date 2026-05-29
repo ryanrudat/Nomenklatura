@@ -166,10 +166,10 @@ One of the larger military forces in its region, with conventional forces, a mod
 ### Socialist Allies
 
 **Soviet Union**
-The world's first socialist state and revolutionary ally. The USSR provided crucial aid during the revolutionary war—weapons, advisors, and recognition. Relations are complicated by Moscow's expectations of ideological conformity and the PSR's growing desire for independence. Premier Stalin views the PSR as a useful ally in the global struggle against capitalism, but expects gratitude and obedience.
+The world's first socialist state and revolutionary ally. The USSR provided crucial aid during the revolutionary war—weapons, advisors, and recognition. Relations are complicated by Moscow's expectations of ideological conformity and the PSR's growing desire for independence. The Soviet leadership views the PSR as a useful ally in the global struggle against capitalism, but expects gratitude and obedience.
 
 **People's Republic of China**
-Mao's revolutionary victory in 1949 created another socialist ally—and another model for development. The PSR watches China's path with interest, seeing parallels to its own revolutionary experience. Beijing and The Capital maintain warm relations, though both remain primarily oriented toward Moscow.
+The Chinese revolutionary victory in 1949 created another socialist ally—and another model for development. The PSR watches China's path with interest, seeing parallels to its own revolutionary experience. Beijing and The Capital maintain warm relations, though both remain primarily oriented toward Moscow.
 
 **Eastern Bloc**
 Poland, Czechoslovakia, Hungary, Romania, Bulgaria, and East Germany are Soviet satellites with limited independence. The PSR maintains diplomatic relations and trade agreements but carefully avoids becoming similarly subordinate to Moscow.
@@ -191,13 +191,13 @@ The Bundesrepublik, firmly in the Western camp, has no relations with the PSR. G
 ### Non-Aligned Nations
 
 **Yugoslavia**
-Tito's break with Stalin in 1948 created a model of socialist independence. The PSR studies Yugoslavia's "third way" with interest—perhaps socialism need not mean Soviet domination.
+Yugoslavia's break with Moscow in 1948 created a model of socialist independence. The PSR studies Yugoslavia's "third way" with interest—perhaps socialism need not mean Soviet domination.
 
 **India**
-Nehru's India, newly independent and determinedly neutral, maintains friendly relations with both East and West. The PSR seeks Indian recognition and trade, offering an alternative to Cold War alignment.
+India, newly independent and determinedly neutral, maintains friendly relations with both East and West. The PSR seeks Indian recognition and trade, offering an alternative to Cold War alignment.
 
 **Egypt**
-Farouk's corrupt monarchy teeters toward revolution. The PSR watches developments in Cairo with interest, hoping for another ally in the developing world.
+Egypt's corrupt monarchy teeters toward revolution. The PSR watches developments in Cairo with interest, hoping for another ally in the developing world.
 
 ### The PSR's Position
 
@@ -295,20 +295,20 @@ The PSR owes its existence to Soviet aid. Without Moscow's weapons, advisors, an
 ### Points of Tension
 
 **Ideological Conformity**
-Moscow expects the PSR to follow Soviet ideological leadership. The Party's founding documents, however, blend Marxism-Leninism with local conditions and revolutionary experience. Soviet advisors call this "deviationism."
+Moscow expects the PSR to follow Soviet ideological leadership. The Party's founding documents, however, blend revolutionary doctrine with local conditions and revolutionary experience. Soviet advisors call this "deviationism."
 
 **Economic Independence**
 The PSR seeks trade relationships beyond the socialist bloc. Western technology and markets would accelerate development. Moscow views such contacts with suspicion.
 
 **The Yugoslav Example**
-Tito's break with Stalin proved that socialist states can chart independent courses. The PSR studies Belgrade's model carefully—and Moscow notices.
+Yugoslavia's break with Moscow proved that socialist states can chart independent courses. The PSR studies Belgrade's model carefully—and Moscow notices.
 
 **Military Command**
 Soviet military advisors remain embedded in the People's Army. They push for integration of command structures and shared intelligence. PSR generals resist subordination to Moscow's strategic goals.
 
 ### The Current State
 
-Relations remain officially warm. Stalin and General Secretary Mitchell exchange fraternal greetings. Trade continues. Military cooperation proceeds.
+Relations remain officially warm. The Soviet leader and General Secretary Mitchell exchange fraternal greetings. Trade continues. Military cooperation proceeds.
 
 But the cracks are visible:
 - Soviet advisors complain of PSR "exceptionalism"
@@ -329,7 +329,7 @@ The men and women who built the People's Socialist Republic are now the stuff of
 
 Robert Fitzgerald was a factory worker who became the first General Secretary of the PSR. Born to immigrant parents in a cramped tenement in what would become Fitzgerald City, he lost his father to a factory accident at age twelve. By twenty, he was organizing wildcat strikes; by thirty, he led the largest union local in the industrial zone.
 
-When revolutionary ferment spread through the factories, Fitzgerald transformed from labor organizer to revolutionary leader. His gift was making Marxism sound like common sense. "We're not asking for the moon," he'd say at rallies. "We're asking for what our labor already earns." He personally led the Fitzgerald City column in the March on the Capital and stood on the steps of the People's House to proclaim the Republic.
+When revolutionary ferment spread through the factories, Fitzgerald transformed from labor organizer to revolutionary leader. His gift was making revolutionary ideas sound like common sense. "We're not asking for the moon," he'd say at rallies. "We're asking for what our labor already earns." He personally led the Fitzgerald City column in the March on the Capital and stood on the steps of the People's House to proclaim the Republic.
 
 As the first General Secretary, Fitzgerald walked an impossible line. He protected many during the early Purges—"These are our people, not enemies"—but signed death warrants when political necessity demanded. He built the Youth League as a meritocratic counterweight to emerging elite families. He chose Harold Mitchell as his successor.
 

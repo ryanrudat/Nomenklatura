@@ -195,8 +195,8 @@ This document serves as the canonical reference for all character positions, bio
 - **Faction:** Youth League
 - **Origin:** Fitzgerald City, Zone 2
 - **Background:** Working-class family. Father was a union organizer.
-- **Career:** Rose through Youth League, trained at International Lenin School in Moscow. Wants Marshall's job.
-- **Service Record:** Subject emerged from Youth League activities with noted organizational skills. Received international training at the Lenin School. Advanced through diplomatic corps with demonstrated capability in Soviet relations.
+- **Career:** Rose through Youth League, trained at the International Cadre School in Moscow. Wants Marshall's job.
+- **Service Record:** Subject emerged from Youth League activities with noted organizational skills. Received international training at the Cadre School. Advanced through diplomatic corps with demonstrated capability in Soviet relations.
 - **Current Assignment:** Serves as principal deputy to the Foreign Minister. Handles Soviet relations and Eastern bloc coordination.
 
 ### Kenneth Roberts
@@ -231,8 +231,8 @@ This document serves as the canonical reference for all character positions, bio
 - **Faction:** Youth League
 - **Origin:** Fitzgerald City, Zone 2
 - **Background:** Son of steelworkers. Old Party connections.
-- **Career:** Joined Party before Depression. Traveled to Moscow for training at International Lenin School. Served as liaison to Soviet advisors during Revolution.
-- **Service Record:** Subject is a veteran Party member with direct Soviet connections. Trained at the International Lenin School. Served as liaison to Soviet advisors during the Revolution. Demonstrated capability in managing the critical Moscow relationship.
+- **Career:** Joined Party before Depression. Traveled to Moscow for training at the International Cadre School. Served as liaison to Soviet advisors during Revolution.
+- **Service Record:** Subject is a veteran Party member with direct Soviet connections. Trained at the International Cadre School. Served as liaison to Soviet advisors during the Revolution. Demonstrated capability in managing the critical Moscow relationship.
 - **Current Assignment:** Leads diplomatic mission in Moscow. Manages relations with the Soviet Union from the Embassy.
 
 ---

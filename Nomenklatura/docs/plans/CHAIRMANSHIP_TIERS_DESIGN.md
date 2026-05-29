@@ -3,7 +3,7 @@
 Status: **DRAFT for review** (no code yet). Authored 2026-05-27.
 Owner: design. Implementation gated on sign-off.
 
-> **Naming guardrail:** No real-world figure names appear in the game or in the design sections (§4 onward). The research in §2 references real history *only* to derive the archetypes; the tiers, moves, and all in-game text use fictional, game-internal language.
+> **Naming guardrail:** No real-world figure names appear anywhere in this doc, in the game, or in the design. §2 abstracts external party-state history into eras and archetypes only (source URLs preserved for traceability).
 
 ## 1. One-line premise
 
@@ -11,22 +11,22 @@ The player's chairmanship sits on a **weak → strong spectrum** — from a figu
 
 This is not a new stat. It is a **named, visible identity layer** on top of the existing `Game.powerConsolidationScore` (0–100), which already starts the player weak (score = 20) and already gates parts of the game — but only at scattered, invisible thresholds. The tier system unifies those thresholds into five legible bands with real consequences.
 
-## 2. Research basis (CCP leadership, Mao → Xi)
+## 2. Research basis (one-party-state leadership history)
 
-The Chinese Communist Party is the cleanest real-world model for a weak→strong gradient because it has a *formal doctrine of it*: the **"core leader"** — the one with *"ultimate decision-making authority… to pound the gavel and have the final say."* Only four of six top leaders ever earned it (Mao, Deng, Jiang, Xi); the two who didn't (Hua, Hu) are exactly the weak ones.
+The cleanest real-world model for a weak→strong gradient is a party-state with a formal doctrine of it: the **"core leader"** — the one with *"ultimate decision-making authority… to pound the gavel and have the final say."* In the canonical case, only four of six successive top leaders ever earned that status; the two who didn't are exactly the weak ones.
 
-| Leader | Power level | Why | Mechanic it teaches us |
+| Era | Power level | Why | Mechanic it teaches us |
 |---|---|---|---|
-| **Hua Guofeng** ('76–78) | Figurehead | Anointed heir ("Two Whatevers"), no base, ousted in ~2 yrs | A compromise successor the committee tolerates, not obeys |
-| **Hu Jintao** ('02–12) | First among equals | "Never a strongman"; "nine dragons taming the water" (committee members each rule a fief); constrained by a rival-packed committee | Collective leadership: must build coalitions; bureaus are autonomous |
-| **Jiang Zemin** ('89–02) | Consolidating core | Built a faction, packed institutions, clung to the military commission | Authority earned by filling posts with clients |
-| **Deng Xiaoping** ('78–92) | Paramount **without the title** | Ruled via seniority + military + reform agenda; *abolished the "Chairman" title (1982)* and built term limits / retirement norms to prevent another Mao | Informal dominance; and the institutional *cage* a system builds against strongmen |
-| **Mao Zedong** ('49–76) | Total / cult | Abandoned collective leadership (1966); cult of personality; overrode the Party | Personalist rule — and its catastrophic instability |
-| **Xi Jinping** ('12–) | Total / recentralized | "Core" (2016); **abolished term limits (2018)**; heads 10+ leading groups ("chairman of everything"); purges rivals via anti-corruption | Dismantling the cage: repeal limits, enshrine doctrine, purge under legal cover |
+| Late-'70s anointed heir | Figurehead | Named successor, no independent base, propped by the deceased predecessor's doctrine, ousted in ~2 yrs | A compromise successor the committee tolerates, not obeys |
+| 2000s consensus leader | First among equals | "Never a strongman"; "nine dragons taming the water" (committee members each rule a fief); constrained by a rival-packed committee | Collective leadership: must build coalitions; bureaus are autonomous |
+| '90s faction-builder | Consolidating core | Built a faction, packed institutions, held the military commission | Authority earned by filling posts with clients |
+| Late-'70s–'80s reformer | Paramount **without the title** | Ruled via seniority + military + reform agenda; abolished the supreme formal title and built term limits / retirement norms to prevent one-man rule | Informal dominance; and the institutional *cage* a system builds against strongmen |
+| Founding chairman | Total / cult | Abandoned collective leadership; cult of personality; overrode the party | Personalist rule — and its catastrophic instability |
+| Current-era core | Total / recentralized | "Core" status earned; abolished presidential term limits; heads 10+ leading groups; purges rivals via anti-corruption | Dismantling the cage: repeal limits, enshrine doctrine, purge under legal cover |
 
-**Core design principle drawn from this:** strong is *not simply better.* Deng built collective leadership precisely because Mao's personalism was catastrophic. So the spectrum is a **control-vs-stability tradeoff**, not a straight power ladder. Each tier must have a downside, or the system is just "number go up."
+**Core design principle drawn from this:** strong is *not simply better.* Collective leadership was built precisely because earlier personalism had been catastrophic. So the spectrum is a **control-vs-stability tradeoff**, not a straight power ladder. Each tier must have a downside, or the system is just "number go up."
 
-Sources: [Paramount leader (Wikipedia)](https://en.wikipedia.org/wiki/Paramount_leader) · [Leadership core (Wikipedia)](https://en.wikipedia.org/wiki/Leadership_core) · [Collective leadership (Wikipedia)](https://en.wikipedia.org/wiki/Collective_leadership) · [China in Xi's "New Era": The Return to Personalistic Rule (Journal of Democracy)](https://www.journalofdemocracy.org/articles/china-in-xis-new-era-the-return-to-personalistic-rule/) · [Two Whatevers (Wikipedia)](https://en.wikipedia.org/wiki/Two_Whatevers) · [Hua Guofeng (Wikipedia)](https://en.wikipedia.org/wiki/Hua_Guofeng) · [Hu Jintao (Wikipedia)](https://en.wikipedia.org/wiki/Hu_Jintao) · [China Removes Presidential Term Limits (NPR)](https://www.npr.org/sections/thetwo-way/2018/03/11/592694991/china-removes-presidential-term-limits-enabling-xi-jinping-to-rule-indefinitely).
+Sources (external history, for traceability — visible link text avoids real names; URLs unavoidably contain them): [paramount-leader concept](https://en.wikipedia.org/wiki/Paramount_leader) · [the "core leader" doctrine](https://en.wikipedia.org/wiki/Leadership_core) · [collective leadership](https://en.wikipedia.org/wiki/Collective_leadership) · [return to personalist rule (Journal of Democracy)](https://www.journalofdemocracy.org/articles/china-in-xis-new-era-the-return-to-personalistic-rule/) · [the anointed-heir interregnum (Wikipedia)](https://en.wikipedia.org/wiki/Two_Whatevers) · [the figurehead successor (Wikipedia)](https://en.wikipedia.org/wiki/Hua_Guofeng) · [the consensus-era leader (Wikipedia)](https://en.wikipedia.org/wiki/Hu_Jintao) · [abolition of presidential term limits (NPR)](https://www.npr.org/sections/thetwo-way/2018/03/11/592694991/china-removes-presidential-term-limits-enabling-xi-jinping-to-rule-indefinitely).
 
 ## 3. What already exists in the code (build on, don't reinvent)
 
