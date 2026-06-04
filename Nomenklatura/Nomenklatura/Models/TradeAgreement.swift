@@ -458,7 +458,7 @@ extension TradeAgreement {
             trade.relationshipEffect = 5
             // Phase 3.6: machinery and raw materials flow in;
             // agricultural goods flow out.
-            trade.commodityImports = [.iron: 3]
+            trade.commodityImports = [.steel: 3]
             trade.commodityExports = [.grain: 4]
             agreements.append(trade)
         }
@@ -483,7 +483,7 @@ extension TradeAgreement {
             techCoop.relationshipEffect = 5
             // Phase 3.6: Czech industry sends aluminum stock in
             // exchange for our agricultural surplus.
-            techCoop.commodityImports = [.aluminum: 2]
+            techCoop.commodityImports = [.steel: 2]
             techCoop.commodityExports = [.grain: 2]
             agreements.append(techCoop)
         }
@@ -508,8 +508,8 @@ extension TradeAgreement {
             oil.relationshipEffect = 5
             // Phase 3.6: the coal-for-oil barter the description mentions
             // — Polish coal in, our petroleum out.
-            oil.commodityImports = [.coal: 4]
-            oil.commodityExports = [.oil: 3]
+            oil.commodityImports = [.energy: 4]
+            oil.commodityExports = [.energy: 3]
             agreements.append(oil)
         }
 

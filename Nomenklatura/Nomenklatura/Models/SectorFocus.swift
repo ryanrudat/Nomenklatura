@@ -53,7 +53,13 @@ extension SectorFocus {
 
     /// Default focus id for a sector (first option)
     static func defaultFocusId(for sector: EconomicSector) -> String {
-        focuses(for: sector).first?.focusId ?? "default"
+        // Heavy Industry defaults to the steel PRODUCER, not the first listed focus
+        // ("tanks", a steel CONSUMER). Steel is the foundational input the downstream
+        // sectors (construction/transport/defense) consume; defaulting to a consumer
+        // with no producer starved the whole chain on turn 1 and bled loyalty before
+        // the player made any choice. (Economy audit, 2026-06.)
+        if sector == .heavyIndustry { return "steel" }
+        return focuses(for: sector).first?.focusId ?? "default"
     }
 
     // MARK: - Heavy Industry

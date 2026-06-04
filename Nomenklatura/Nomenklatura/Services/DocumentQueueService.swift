@@ -3857,8 +3857,10 @@ class DocumentQueueService: ObservableObject {
     private func handleCharacterReaction(_ reaction: CharacterReactionInfo, game: Game) {
         guard let character = findCharacter(forReaction: reaction, in: game) else { return }
 
-        // Apply disposition change
-        character.disposition += reaction.dispositionChange
+        // Apply disposition change (clamped to the standard -100...100 band so a
+        // large reaction can't push disposition out of range and skew downstream
+        // threshold checks that assume that band).
+        character.disposition = max(-100, min(100, character.disposition + reaction.dispositionChange))
 
         // Queue a follow-up event if reaction is significant (disposition change >= 15 or <= -15)
         if abs(reaction.dispositionChange) >= 15 {

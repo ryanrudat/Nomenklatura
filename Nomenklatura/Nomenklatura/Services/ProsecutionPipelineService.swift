@@ -261,6 +261,36 @@ final class ProsecutionPipelineService {
         return Array(loadRegistry(from: game).values)
     }
 
+    /// Remove registry entries that can no longer progress: the target is gone
+    /// (dead/executed/removed) or the prosecution has stalled for `stallTurns`
+    /// with no advancement and never reached trial/sentencing. Without this,
+    /// entries leaked forever (close() only fired on completed show trials), so
+    /// once a character was ever investigated they could never be re-prosecuted.
+    /// Call once per turn. (Audit 2026-06.)
+    func pruneStale(in game: Game, stallTurns: Int = 12) {
+        var registry = loadRegistry(from: game)
+        guard !registry.isEmpty else { return }
+
+        let livingIds = Set(game.characters.filter { $0.isAlive }.map { $0.id.uuidString })
+        let before = registry.count
+
+        registry = registry.filter { key, state in
+            // Target no longer exists or is dead → drop.
+            guard livingIds.contains(key) else { return false }
+            // Stalled below the trial stage for too long → drop so the player
+            // can eventually re-prosecute.
+            let stalled = (game.turnNumber - state.lastUpdatedTurn) >= stallTurns
+            if stalled && state.stage != .trial && state.stage != .sentencing {
+                return false
+            }
+            return true
+        }
+
+        if registry.count != before {
+            saveRegistry(registry, to: game)
+        }
+    }
+
     // MARK: Storage
 
     private func loadRegistry(from game: Game) -> [String: ProsecutionState] {

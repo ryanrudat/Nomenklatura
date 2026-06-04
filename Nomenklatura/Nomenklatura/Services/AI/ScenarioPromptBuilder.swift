@@ -1236,7 +1236,7 @@ struct ScenarioPromptBuilder {
         var section = """
         ## LAWS & POWER CONSOLIDATION
 
-        **Player's Power Score:** \(game.powerConsolidationScore)/100
+        **Player's Chairmanship Tier:** \(game.chairmanshipTier.displayName) — \(game.chairmanshipTier.promptDescriptor) (consolidation \(game.powerConsolidationScore)/100)
         **Term Limits:** \(game.termLimitsAbolished ? "ABOLISHED" : "In effect (2 terms max)")
         **Laws Modified:** \(game.lawsModifiedCount)
 

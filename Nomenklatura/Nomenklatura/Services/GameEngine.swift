@@ -123,6 +123,20 @@ class GameEngine {
             switch action.id {
             case "abolish_term_limits":
                 game.termLimitsAbolished = true
+                // The norm-breaking act that gates Supreme Chairman (design §5/§7):
+                // it removes the succession clock but spikes elite resentment and
+                // draws international condemnation. (Tiers 2026-06.)
+                game.setIntVariable("elite_resentment", min(100, game.intVariable("elite_resentment") + 25))
+                game.applyStat("internationalStanding", change: -10)
+            case "order_show_trial":
+                // Create a REAL show trial against the rival this action targets,
+                // rather than only setting a cosmetic flag. ShowTrialService drives
+                // the accusation → confession → sentencing arc and coordinates the
+                // already-opened prosecution lane (above). (Audit 2026-06.)
+                if let rival = game.primaryRival {
+                    let charges: [TrialCharge] = [.counterRevolutionary, .economicSabotage]
+                    _ = ShowTrialService.shared.initiateTrial(against: rival, charges: charges, game: game)
+                }
             default:
                 break
             }
@@ -745,10 +759,11 @@ class GameEngine {
         // Threshold lowered to 10 (from 15) to give more margin
         // Early game protection applies - patron wouldn't act this fast
         if !earlyGameProtection && game.patronFavor < 10 {
+            let patronName = game.patron?.name ?? "Your patron"
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
-                reason: "Your patron has turned against you. Wallace's men arrive at dawn. Your political career—and perhaps your life—is over.",
+                reason: "Your patron has turned against you. \(patronName)'s men arrive at dawn. Your political career—and perhaps your life—is over.",
                 allowsHeirSuccession: canUseImmediateHeirSuccession
             )
         }
@@ -892,16 +907,20 @@ class GameEngine {
         return "\(cause). \(condition.type.epitaph)"
     }
 
+    /// True once the player has held power long enough to claim a Survival
+    /// victory. This is no longer a terminal auto-win — it is OFFERED to the
+    /// player as an optional honorable retirement (see the retirement offer in the
+    /// UI). Ambition victories below take precedence and end the game outright.
+    func survivalRetirementAvailable(game: Game) -> Bool {
+        game.intVariable("turns_as_leader") >= 40
+    }
+
     private func checkWinConditions(game: Game, ladder: [LadderPosition]) -> GameEndCheck? {
-        // Survival: survive 40 turns as leader
-        if game.intVariable("turns_as_leader") >= 40 {
-            return GameEndCheck(
-                gameOver: true,
-                result: .won,
-                reason: VictoryType.survival.epitaph,
-                victoryType: .survival
-            )
-        }
+        // Ambition victories are the real climax — checked FIRST and can fire any
+        // turn they are met. Survival is intentionally NOT here anymore: it no
+        // longer force-ends the game at turn 40; it is offered as an optional
+        // retirement so a consolidation-focused player can keep ruling toward one
+        // of these greater endings. (Endgame rework 2026-06.)
 
         // Legacy: all national stats above 70 for 5 consecutive turns
         if game.intVariable("consecutive_high_stat_turns") >= 5 {
@@ -963,13 +982,22 @@ class GameEngine {
             }
         }
 
-        // Chairman's Decree pool regen — +1 charge every 50 turns since last regen,
-        // capped at 3 stockpiled. Default seeded pool is 3 at game start.
+        // Chairman's Decree pool regen — decree authority scales with chairmanship
+        // tier: higher tiers cap MORE charges and regenerate them faster, so
+        // consolidating visibly buys you the lever the Committee cannot stop.
+        // (Tiers 2026-06. Uses last turn's official tier — a 1-turn lag is fine.)
         runStep("regenerateDecreeCharges") {
+            let tier = game.chairmanshipTier
+            let maxCharges = tier.decreeMax
+            let regenInterval = max(10, 50 - tier.rawValue * 8)   // 50 → 18 across tiers
             let turnsSinceLastRegen = game.turnNumber - game.lastDecreeRegenTurn
-            if turnsSinceLastRegen >= 50 && game.decreeChargesRemaining < 3 {
-                game.decreeChargesRemaining = min(3, game.decreeChargesRemaining + 1)
+            if turnsSinceLastRegen >= regenInterval && game.decreeChargesRemaining < maxCharges {
+                game.decreeChargesRemaining = min(maxCharges, game.decreeChargesRemaining + 1)
                 game.lastDecreeRegenTurn = game.turnNumber
+            }
+            // Dropping a tier can cost you decree authority — clamp down to the cap.
+            if game.decreeChargesRemaining > maxCharges {
+                game.decreeChargesRemaining = maxCharges
             }
         }
 
@@ -994,6 +1022,22 @@ class GameEngine {
             } else {
                 game.setIntVariable("consecutive_supreme_leader_turns", 0)
             }
+
+            // Resolve the OFFICIAL chairmanship tier with hysteresis (a deadband at
+            // band edges so a one-point wobble doesn't thrash) and the Supreme gate
+            // (score alone isn't enough — you must have abolished term limits).
+            // Store it for Game.chairmanshipTier and announce on a real change so
+            // the player FEELS their grip tighten or slip. (Tiers 2026-06.)
+            let currentTier = game.chairmanshipTier
+            let resolvedTier = resolveOfficialTier(game: game, current: currentTier)
+            game.setIntVariable("official_chairmanship_tier", resolvedTier.rawValue)
+            if game.intVariable("chairmanship_tier_seeded") == 1 {
+                if resolvedTier != currentTier {
+                    announceTierChange(from: currentTier, to: resolvedTier, game: game)
+                }
+            } else {
+                game.setIntVariable("chairmanship_tier_seeded", 1)
+            }
         }
 
         // Natural stat drift
@@ -1001,11 +1045,25 @@ class GameEngine {
             applyStatDrift(game: game)
         }
 
+        // Chairmanship control-vs-stability tradeoff: elite resentment accrues at
+        // the top tiers and, once high, erodes loyalty/stability — the strongman's
+        // fragility. Runs after trackPowerConsolidation set this turn's tier.
+        runStep("processChairmanshipTradeoff") {
+            processChairmanshipTradeoff(game: game)
+        }
+
         // Rival moves (Wave 5 / Audit "deep-politics"):
         //   - expire any overdue moves and apply their pendingEffect
         //   - generate a new named scheme if none currently pending
         // Runs BEFORE simulateNPCActions so the Desk surfaces a fresh
         // move on the same turn the NPC pipeline runs against it.
+        // A new principal rival rises if the previous one was removed — so the
+        // antagonist seat is rarely empty for long. Runs before move processing so
+        // a freshly-emerged rival can immediately begin scheming.
+        runStep("processRivalEmergence") {
+            processRivalEmergence(game: game)
+        }
+
         runStep("processRivalMoves") {
             RivalMoveGenerator.shared.processTurn(for: game)
         }
@@ -1106,6 +1164,12 @@ class GameEngine {
             generateThreatWarnings(game: game)
         }
 
+        // Prune stale/closed prosecutions so the registry doesn't leak entries
+        // forever and permanently block re-prosecution of once-targeted characters.
+        runStep("pruneProsecutions") {
+            ProsecutionPipelineService.shared.pruneStale(in: game)
+        }
+
         // Achievement checks — evaluate predicates against final post-turn state
         // and award any newly-earned badges. Placed late so all stat-mutating
         // systems above have settled before predicates evaluate.
@@ -1161,6 +1225,87 @@ class GameEngine {
         // their normal event-logging path; the print() above ensures the failure
         // is observable in DEBUG even without persistence.
         _ = event
+    }
+
+    /// Announce a consolidation tier change as a journal beat (with toast) plus a
+    /// GameEvent, so crossing a band edge reads as a regime shift rather than a
+    /// silent threshold flip.
+    private func announceTierChange(from old: ChairmanshipTier, to new: ChairmanshipTier, game: Game) {
+        let rising = new > old
+        let title = rising ? "Power Consolidated — \(new.label)" : "Authority Slips — \(new.label)"
+        let body = rising
+            ? "Your grip on power has tightened. You are now \(new.regimeDescriptor)."
+            : "Your grip on power has weakened. You are now \(new.regimeDescriptor)."
+
+        JournalService.shared.addEntry(
+            to: game,
+            category: .plotDevelopment,
+            title: title,
+            content: body,
+            importance: 8,
+            showToast: true
+        )
+
+        let event = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .narrative,
+            summary: title
+        )
+        event.importance = 8
+        event.game = game
+        game.events.append(event)
+    }
+
+    /// Resolve the official chairmanship tier from the score, applying the Supreme
+    /// gate and edge hysteresis so the tier doesn't flicker at band boundaries.
+    private func resolveOfficialTier(game: Game, current: ChairmanshipTier) -> ChairmanshipTier {
+        let score = game.powerConsolidationScore
+        var raw = ChairmanshipTier.from(score: score)
+
+        // Supreme gate (§5): becoming Supreme Chairman requires an ACT — abolishing
+        // term limits — not just a high number. Otherwise cap at The Core.
+        if raw == .supremeChairman && !game.termLimitsAbolished {
+            raw = .theCore
+        }
+
+        if raw == current { return current }
+
+        // Hysteresis deadband: require the score to be a margin past the band edge
+        // before the official tier flips.
+        let margin = 3
+        if raw > current {
+            return score >= raw.lowerBound + margin ? raw : current
+        } else {
+            return score <= current.lowerBound - margin ? raw : current
+        }
+    }
+
+    /// The control-vs-stability tradeoff (design doc §7): the top tiers are more
+    /// powerful but less stable. Elite Resentment accrues at The Core / Supreme
+    /// Chairman and, once high, erodes elite loyalty and stability — feeding the
+    /// existing coup/collapse loss checks. Lower tiers let resentment cool.
+    private func processChairmanshipTradeoff(game: Game) {
+        let tier = game.chairmanshipTier
+        var resentment = game.intVariable("elite_resentment")
+
+        switch tier {
+        case .supremeChairman: resentment += 3
+        case .theCore: resentment += 2
+        case .paramountChairman: resentment = max(0, resentment - 1)
+        default: resentment = max(0, resentment - 2)
+        }
+        resentment = max(0, min(100, resentment))
+        game.setIntVariable("elite_resentment", resentment)
+
+        // Total power, total exposure: accumulated resentment bites at the top.
+        if tier >= .theCore {
+            if resentment >= 75 {
+                game.applyStat("eliteLoyalty", change: -2)
+                game.applyStat("stability", change: -1)
+            } else if resentment >= 50 {
+                game.applyStat("eliteLoyalty", change: -1)
+            }
+        }
     }
 
     /// Extended end-of-turn processing that includes Codex and Consequence integration
@@ -1327,45 +1472,31 @@ class GameEngine {
     /// matters politically. Healthy supply chain → no penalties; crisis →
     /// compounding penalties across loyalty/support/output.
     private func applyStrategicResourceFeedback(game: Game) {
-        let reserves = game.strategicReserves
+        // Simplified 3-resource economy: a shortfall is auto-IMPORTED for a VISIBLE
+        // treasury cost (charged again each turn the deficit persists) instead of a
+        // hidden political-stat bleed through a ledger the player was never shown.
+        // If the treasury can't cover the emergency import, THEN the shortage bites
+        // the constituency that depends on it. (Economy simplification 2026-06.)
+        let deficits = Set(game.lastSupplyChainResult?.deficitResources ?? [])
+        let importCost = 6
+        var unmetShortages = 0
 
-        // Resource deficits — each hits the constituency that depends on that resource
-        var deficitCount = 0
-
-        if (reserves[.grain] ?? 0) <= 0 {
-            game.applyStat("popularSupport", change: -2)
-            deficitCount += 1
-        }
-        if (reserves[.meat] ?? 0) <= 0 {
-            game.applyStat("popularSupport", change: -1)
-            deficitCount += 1
-        }
-        if (reserves[.coal] ?? 0) <= 0 || (reserves[.oil] ?? 0) <= 0 {
-            game.applyStat("industrialOutput", change: -2)
-            game.applyStat("militaryLoyalty", change: -1)
-            deficitCount += 1
-        }
-        if (reserves[.steel] ?? 0) <= 0 {
-            game.applyStat("militaryLoyalty", change: -2)
-            game.applyStat("eliteLoyalty", change: -1)
-            deficitCount += 1
-        }
-        if (reserves[.aluminum] ?? 0) <= 0 {
-            game.applyStat("militaryLoyalty", change: -1)
-            deficitCount += 1
-        }
-        if (reserves[.iron] ?? 0) <= 0 {
-            game.applyStat("industrialOutput", change: -1)
-            deficitCount += 1
-        }
-        if (reserves[.uranium] ?? 0) <= 0 && game.canUse(.uranium) {
-            game.applyStat("internationalStanding", change: -1)
-            deficitCount += 1
-        }
-        if (reserves[.rareEarths] ?? 0) <= 0 && game.canUse(.rareEarths) {
-            game.applyStat("internationalStanding", change: -1)
-            game.applyStat("eliteLoyalty", change: -1)
-            deficitCount += 1
+        for resource in [StrategicResource.steel, .grain, .energy] where deficits.contains(resource.rawValue) {
+            if game.treasury >= importCost {
+                game.applyStat("treasury", change: -importCost)
+            } else {
+                switch resource {
+                case .grain:
+                    game.applyStat("popularSupport", change: -2)
+                case .steel:
+                    game.applyStat("militaryLoyalty", change: -2)
+                    game.applyStat("eliteLoyalty", change: -1)
+                case .energy:
+                    game.applyStat("industrialOutput", change: -2)
+                    game.applyStat("stability", change: -1)
+                }
+                unmetShortages += 1
+            }
         }
 
         // Sector capacity feedback — sectors running below half capacity have
@@ -1391,24 +1522,23 @@ class GameEngine {
             }
         }
 
-        // Multi-deficit crisis: if 3+ resources are in deficit, fire a
-        // notification + log a high-importance event so the player sees the
-        // cascade clearly.
-        if deficitCount >= 3 {
+        // Crisis only when the state genuinely can't cover its needs — i.e. the
+        // treasury couldn't even afford to import 2+ shortfalls this turn.
+        if unmetShortages >= 2 {
             let event = GameEvent(
                 turnNumber: game.turnNumber,
                 eventType: .crisis,
-                summary: "Strategic resource crisis: \(deficitCount) commodities exhausted. Apparatus strained across multiple sectors."
+                summary: "Strategic resource crisis: the treasury can no longer afford to import \(unmetShortages) depleted commodities. Sectors are starving across the apparatus."
             )
             event.importance = 9
-            event.details = ["type": "strategic_resource_crisis", "deficitCount": String(deficitCount)]
+            event.details = ["type": "strategic_resource_crisis", "unmetShortages": String(unmetShortages)]
             event.game = game
             game.events.append(event)
 
             NotificationService.shared.notify(
                 .statCriticalLow,
-                title: "STRATEGIC RESERVES EXHAUSTED",
-                detail: "\(deficitCount) key commodities are depleted. Open trade or shift sector focus immediately.",
+                title: "RESERVES EXHAUSTED — TREASURY DRY",
+                detail: "You can't afford to import \(unmetShortages) depleted commodities. Shift a sector focus to produce them, or find treasury fast.",
                 turn: game.turnNumber
             )
         }
@@ -2035,6 +2165,92 @@ class GameEngine {
                     game: game
                 )
             }
+        }
+    }
+
+    // MARK: - Principal Rival Designation
+
+    /// Designate ONE principal rival, chosen at random from credible senior peers
+    /// rather than a fixed seeded character — so the ambitious, capable figure with
+    /// their own base who could replace you varies each game. Clears any
+    /// pre-flagged rival first. (Rival rework 2026-06.)
+    @discardableResult
+    func designatePrimaryRival(game: Game) -> GameCharacter? {
+        var rng = game.rng
+        defer { game.rng = rng }
+
+        // Clear existing rival flags so a seeded default doesn't dominate.
+        for character in game.characters where character.isRival {
+            character.isRival = false
+        }
+
+        // Credible peers: alive, not the patron, senior (positionIndex >= 5), with
+        // real ambition — the figures who could actually replace you.
+        let candidates = game.characters.filter { character in
+            character.isAlive
+                && !character.isPatron
+                && (character.positionIndex ?? 0) >= 5
+                && character.personalityAmbitious >= 45
+        }
+        guard !candidates.isEmpty else { return nil }
+
+        // Weight by ambition + capability: a charismatic, capable peer is the
+        // dangerous one, not a mediocre placeholder.
+        let weights = candidates.map { character in
+            max(1, character.personalityAmbitious
+                + character.personalityRuthless / 2
+                + character.personalityCompetent / 2)
+        }
+        guard let rival = weightedRandom(candidates, weights: weights, using: &rng) else { return nil }
+
+        rival.isRival = true
+        rival.disposition = min(rival.disposition, 35)   // openly antagonistic
+
+        let baseFlag = "rival_designated_\(rival.id.uuidString)"
+        if !game.flags.contains(baseFlag) {
+            game.flags.append(baseFlag)
+        }
+        // Live rival-threat floor so the antagonist matters from the start.
+        if game.rivalThreat < 55 {
+            game.rivalThreat = 55
+        }
+
+        let portfolio = rival.title ?? "a senior member of the apparatus"
+        let event = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .narrative,
+            summary: "\(rival.name), \(portfolio), is emerging as your principal rival — ambitious, capable, and quietly building a following of their own."
+        )
+        event.importance = 7
+        event.game = game
+        game.events.append(event)
+
+        JournalService.shared.addEntry(
+            to: game,
+            category: .factionDiscovery,
+            title: "A Rival Emerges",
+            content: "\(rival.name) (\(portfolio)) is positioning to replace you. Co-opt them or break them before they build an unstoppable base.",
+            relatedCharacterId: rival.id.uuidString,
+            importance: 7,
+            showToast: true
+        )
+
+        return rival
+    }
+
+    /// Power abhors a vacuum: if the principal rival has been removed (purged,
+    /// co-opted, or dead) a new contender rises after a short interregnum.
+    private func processRivalEmergence(game: Game) {
+        if game.primaryRival != nil {
+            game.setIntVariable("rival_vacuum_since_turn", 0)
+            return
+        }
+        let since = game.intVariable("rival_vacuum_since_turn")
+        if since == 0 {
+            game.setIntVariable("rival_vacuum_since_turn", game.turnNumber)
+        } else if game.turnNumber - since >= 4 {
+            _ = designatePrimaryRival(game: game)
+            game.setIntVariable("rival_vacuum_since_turn", 0)
         }
     }
 

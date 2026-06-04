@@ -48,15 +48,16 @@ final class StandingCommitteeMeetingService {
         let turn = game.turnNumber
 
         // Economic crisis -> budget/reform proposal
-        if game.treasury < 2000 || game.industrialOutput < 30 {
+        // NOTE: treasury is a clamped 0-100 stat, so thresholds/effects use that scale.
+        if game.treasury < 30 || game.industrialOutput < 30 {
             items.append(CommitteeAgendaItem(
                 title: "Emergency Economic Measures",
                 description: "The State Planning Commission reports critical shortfalls. Industrial output and treasury reserves demand urgent intervention from the Standing Committee.",
                 category: .economic,
-                priority: game.treasury < 1000 ? .critical : .urgent,
+                priority: game.treasury < 15 ? .critical : .urgent,
                 sponsorId: findEconomicSponsor(game: game),
                 turnSubmitted: turn,
-                effects: ["treasury": 300, "industrialOutput": 5, "popularSupport": -3]
+                effects: ["treasury": 15, "industrialOutput": 5, "popularSupport": -3]
             ))
         }
 
@@ -69,7 +70,7 @@ final class StandingCommitteeMeetingService {
                 priority: .critical,
                 sponsorId: findEconomicSponsor(game: game),
                 turnSubmitted: turn,
-                effects: ["foodSupply": 8, "treasury": -200, "popularSupport": -5]
+                effects: ["foodSupply": 8, "treasury": -10, "popularSupport": -5]
             ))
         }
 
@@ -82,7 +83,7 @@ final class StandingCommitteeMeetingService {
                 priority: .urgent,
                 sponsorId: findMilitarySponsor(game: game),
                 turnSubmitted: turn,
-                effects: ["militaryLoyalty": 8, "treasury": -300]
+                effects: ["militaryLoyalty": 8, "treasury": -15]
             ))
         }
 
@@ -108,7 +109,7 @@ final class StandingCommitteeMeetingService {
                 priority: .important,
                 sponsorId: findDiplomaticSponsor(game: game),
                 turnSubmitted: turn,
-                effects: ["internationalStanding": 7, "treasury": -150]
+                effects: ["internationalStanding": 7, "treasury": -8]
             ))
         }
 
@@ -121,7 +122,7 @@ final class StandingCommitteeMeetingService {
                 priority: .important,
                 sponsorId: nil,
                 turnSubmitted: turn,
-                effects: ["popularSupport": 8, "industrialOutput": -3, "treasury": -200]
+                effects: ["popularSupport": 8, "industrialOutput": -3, "treasury": -10]
             ))
         }
 
@@ -239,10 +240,9 @@ final class StandingCommitteeMeetingService {
             }
         }
 
-        // Apply player's vote weight (influenced by power consolidation)
+        // Apply player's vote weight (influenced by chairmanship tier)
         var playerInfluenceApplied = false
         if committee.playerIsOnCommittee {
-            let playerWeight = max(1, leadershipConfig.gsVoteWeight)
             let playerMemberVote = SCMemberVote(
                 characterId: "player",
                 characterName: "You",
@@ -250,9 +250,13 @@ final class StandingCommitteeMeetingService {
                 isChair: committee.playerIsChair
             )
 
-            // Player's power consolidation gives bonus influence
-            let bonusWeight = game.powerConsolidationScore > 60 ? 1 : 0
-            let totalWeight = playerWeight + bonusWeight
+            // Player's effective vote weight scales with chairmanship tier — the
+            // mechanical face of committee deference: a Compromise Chairman gets a
+            // single vote the others can outvote; a Supreme Chairman's vote is
+            // ceremonial-strength. Floored by the leadership config's base weight so
+            // the existing GS double-vote is never reduced. (Tiers 2026-06.)
+            let baseWeight = max(1, leadershipConfig.gsVoteWeight)
+            let totalWeight = max(baseWeight, game.chairmanshipTier.voteWeight)
 
             for _ in 0..<totalWeight {
                 switch playerVote {

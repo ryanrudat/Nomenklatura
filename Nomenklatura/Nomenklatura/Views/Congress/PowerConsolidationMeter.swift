@@ -15,23 +15,22 @@ struct PowerConsolidationMeter: View {
     let score: Int
     @Environment(\.theme) var theme
 
+    private var tier: ChairmanshipTier {
+        ChairmanshipTier.from(score: score)
+    }
+
     private var meterColor: Color {
-        switch score {
-        case 80...: return theme.sovietRed
-        case 60..<80: return theme.accentGold
-        case 40..<60: return .statMedium
-        default: return theme.inkGray
+        switch tier {
+        case .supremeChairman: return theme.sovietRed
+        case .theCore: return theme.accentGold
+        case .paramountChairman: return .statMedium
+        case .firstAmongEquals: return theme.bronzeGold
+        case .compromiseChairman: return theme.inkGray
         }
     }
 
     private var powerLevel: String {
-        switch score {
-        case 80...: return "SUPREME"
-        case 60..<80: return "DOMINANT"
-        case 40..<60: return "ESTABLISHED"
-        case 20..<40: return "RISING"
-        default: return "NASCENT"
-        }
+        tier.displayName.uppercased()
     }
 
     var body: some View {
@@ -66,8 +65,8 @@ struct PowerConsolidationMeter: View {
                         .fill(meterColor)
                         .frame(width: geometry.size.width * CGFloat(score) / 100)
 
-                    // Threshold markers
-                    ForEach([40, 60, 80], id: \.self) { threshold in
+                    // Threshold markers at the chairmanship-tier band edges
+                    ForEach([25, 45, 65, 85], id: \.self) { threshold in
                         Rectangle()
                             .fill(theme.inkLight.opacity(0.5))
                             .frame(width: 1)

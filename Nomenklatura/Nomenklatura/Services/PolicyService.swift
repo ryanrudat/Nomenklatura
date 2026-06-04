@@ -136,6 +136,11 @@ class PolicyService {
             voteResult: voteResult
         )
 
+        // Invalidate the memoized aggregated-policy-effects cache so derived gates
+        // (decreesEnabled / purgesEnabled / stat modifiers) reflect the new policy
+        // immediately rather than staying frozen at their first-read value this session.
+        game.invalidatePolicyCache()
+
         // Apply immediate effects
         applyPolicyEffects(game: game, newOption: newOption, previousOption: previousOption)
 

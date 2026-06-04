@@ -1885,6 +1885,20 @@ extension Game {
         variables[key] = "\(value)"
     }
 
+    /// The player's current chairmanship tier — the legible band over
+    /// powerConsolidationScore. Reads the "official" tier maintained each turn by
+    /// the pipeline (with hysteresis + the Supreme-Chairman gate), falling back to
+    /// a direct computation from the score before the first pipeline pass.
+    /// See ChairmanshipTier + GameEngine.trackPowerConsolidation.
+    var chairmanshipTier: ChairmanshipTier {
+        if let raw = variables["official_chairmanship_tier"],
+           let value = Int(raw),
+           let tier = ChairmanshipTier(rawValue: value) {
+            return tier
+        }
+        return ChairmanshipTier.from(score: powerConsolidationScore)
+    }
+
     /// Per-bureau neglect counters — decoded from `bureauNeglectTurnsData`.
     /// Keyed by `ExpandedCareerTrack.rawValue`. See `BureauChiefAgencyService`
     /// for the mechanic that drives these.

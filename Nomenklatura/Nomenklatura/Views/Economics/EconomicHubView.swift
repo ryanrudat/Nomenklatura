@@ -11,33 +11,20 @@ import SwiftData
 
 // MARK: - Hub Section Enum
 
+// Simplified in the 2026-06 economy pass from 6 sections to 3 lever tabs. The old
+// COMMAND dashboard became the always-visible summary at the top of the screen;
+// TRADE / REGIONS / BUDGET were cut (dead or folded into the summary / diplomacy /
+// security surfaces). PLANNING was renamed WORKS to end the "plan" name collision.
 enum EconomicHubSection: String, CaseIterable {
-    case commandCenter = "COMMAND"
     case sectors = "SECTORS"
-    case trade = "TRADE"
-    case regions = "REGIONS"
-    case budget = "BUDGET"
-    case planning = "PLANNING"
+    case works = "WORKS"
+    case fiscal = "FISCAL"
 
     var icon: String {
         switch self {
-        case .commandCenter: return "star.fill"
         case .sectors: return "gearshape.2.fill"
-        case .trade: return "arrow.left.arrow.right"
-        case .regions: return "map.fill"
-        case .budget: return "banknote.fill"
-        case .planning: return "hammer.fill"
-        }
-    }
-
-    var requiredLevel: Int {
-        switch self {
-        case .commandCenter: return 0
-        case .sectors: return 0
-        case .trade: return 4
-        case .regions: return 6
-        case .budget: return 6
-        case .planning: return 1
+        case .works: return "hammer.fill"
+        case .fiscal: return "banknote.fill"
         }
     }
 }
@@ -48,19 +35,9 @@ struct EconomicHubView: View {
     @Bindable var game: Game
     @Environment(\.theme) var theme
 
-    @State private var selectedSection: EconomicHubSection = .commandCenter
-    @State private var showPropaganda: Bool = true
+    @State private var selectedSection: EconomicHubSection = .sectors
     @State private var selectedSector: EconomicSector?
-    @State private var lockToastMessage: String? = nil
     @State private var showForecastSheet: Bool = false
-
-    private var accessLevel: AccessLevel {
-        AccessLevel(game: game)
-    }
-
-    private var canSeeReality: Bool {
-        accessLevel.effectiveLevel(for: .economic) >= 3
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,11 +52,12 @@ struct EconomicHubView: View {
                 .padding(.horizontal, 15)
                 .padding(.top, 8)
 
-            if canSeeReality {
-                propagandaToggle
-                    .padding(.horizontal, 15)
-                    .padding(.top, 8)
-            }
+            // Always-visible command summary (replaces the old COMMAND tab): the
+            // economic-health chip and the Five-Year-Plan clock, so the headline
+            // state is on screen without digging into a sub-section.
+            commandSummary
+                .padding(.horizontal, 15)
+                .padding(.top, 10)
 
             hubSectionSelector
                 .padding(.horizontal, 15)
@@ -90,16 +68,35 @@ struct EconomicHubView: View {
                     .padding(.bottom, 120)
             }
         }
-        .overlay(alignment: .top) {
-            if let msg = lockToastMessage {
-                LockToast(message: msg)
-                    .padding(.top, 70)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
         .sheet(isPresented: $showForecastSheet) {
             EconomicForecastSheet(game: game)
         }
+    }
+
+    /// Compact always-on summary at the top of the Economy tab.
+    private var commandSummary: some View {
+        VStack(spacing: 8) {
+            EconomicSituationCard(game: game)
+            planClockBanner
+        }
+    }
+
+    /// One-line Five-Year-Plan clock (replaces the cosmetic FiveYearPlanWheelView).
+    private var planClockBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "calendar")
+                .font(.system(size: 11))
+                .foregroundColor(theme.accentGold)
+            Text("FIVE-YEAR PLAN — YEAR \(min(game.fiveYearPlanYear, 5))/5")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(1)
+                .foregroundColor(theme.inkGray)
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(theme.parchmentDark)
+        .cornerRadius(6)
     }
 
     /// Tight pill button that opens the EconomicForecastSheet. Surfaces
@@ -159,117 +156,30 @@ struct EconomicHubView: View {
         }
     }
 
-    // MARK: - Propaganda Toggle
-
-    private var propagandaToggle: some View {
-        HStack {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showPropaganda = true
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "newspaper.fill")
-                        .font(.system(size: 10))
-                    Text("PUBLIC REPORT")
-                        .font(.system(size: 9, weight: .semibold))
-                        .tracking(0.5)
-                }
-                .foregroundColor(showPropaganda ? .white : theme.inkGray)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(showPropaganda ? theme.sovietRed : theme.parchmentDark)
-                .cornerRadius(4)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showPropaganda = false
-                }
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 10))
-                    Text("INTERNAL DATA")
-                        .font(.system(size: 9, weight: .semibold))
-                        .tracking(0.5)
-                }
-                .foregroundColor(!showPropaganda ? .white : theme.inkGray)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(!showPropaganda ? theme.accentGold : theme.parchmentDark)
-                .cornerRadius(4)
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-        }
-    }
-
-    /// Always show propaganda for junior officials, toggle for seniors
-    private var effectiveShowPropaganda: Bool {
-        canSeeReality ? showPropaganda : true
-    }
-
     // MARK: - Section Selector
 
     private var hubSectionSelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(EconomicHubSection.allCases, id: \.self) { section in
-                    let hasAccess = accessLevel.effectiveLevel(for: .economic) >= section.requiredLevel
-
-                    Button {
-                        if hasAccess {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedSection = section
-                            }
-                        } else {
-                            showLockToast(for: section)
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: section.icon)
-                                .font(.system(size: 12))
-
-                            Text(section.rawValue)
-                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                                .tracking(0.3)
-
-                            if !hasAccess {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 8))
-                            }
-                        }
-                        .foregroundColor(
-                            !hasAccess ? theme.inkLight :
-                                (selectedSection == section ? .white : theme.inkGray)
-                        )
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            !hasAccess ? theme.parchmentDark.opacity(0.5) :
-                                (selectedSection == section ? theme.sovietRed : theme.parchmentDark)
-                        )
-                        .cornerRadius(6)
-                        .opacity(!hasAccess ? 0.6 : 1.0)
+        HStack(spacing: 6) {
+            ForEach(EconomicHubSection.allCases, id: \.self) { section in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedSection = section
                     }
-                    .buttonStyle(.plain)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: section.icon)
+                            .font(.system(size: 12))
+                        Text(section.rawValue)
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .tracking(0.3)
+                    }
+                    .foregroundColor(selectedSection == section ? .white : theme.inkGray)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(selectedSection == section ? theme.sovietRed : theme.parchmentDark)
+                    .cornerRadius(6)
                 }
-            }
-        }
-    }
-
-    private func showLockToast(for section: EconomicHubSection) {
-        let currentLevel = accessLevel.effectiveLevel(for: .economic)
-        let msg = "\(section.rawValue) — Requires Economic Access \(section.requiredLevel) (you have \(currentLevel))"
-        withAnimation(.easeOut(duration: 0.25)) {
-            lockToastMessage = msg
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            withAnimation(.easeIn(duration: 0.25)) {
-                lockToastMessage = nil
+                .buttonStyle(.plain)
             }
         }
     }
@@ -279,29 +189,20 @@ struct EconomicHubView: View {
     @ViewBuilder
     private var sectionContent: some View {
         switch selectedSection {
-        case .commandCenter:
-            commandCenterSection
         case .sectors:
             sectorsSection
-        case .trade:
-            tradeSectionContent
-        case .regions:
-            regionsSectionContent
-        case .budget:
-            budgetSectionContent
-        case .planning:
+        case .works:
             planningSectionContent
+        case .fiscal:
+            fiscalSection
         }
     }
 
-    // MARK: - Command Center
+    // MARK: - Fiscal (read-only treasury / indicators report)
 
-    private var commandCenterSection: some View {
+    private var fiscalSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            EconomicSituationCard(game: game)
             keyMetricsGrid
-            sparklineSection
-            FiveYearPlanWheelView(game: game, showPropaganda: effectiveShowPropaganda)
             activeProjectsSummary
         }
         .padding(.horizontal, 15)
@@ -344,58 +245,16 @@ struct EconomicHubView: View {
                 )
             }
 
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 10) {
-                HubMetricCard(
-                    label: "TREASURY",
-                    value: "\(game.treasury)",
-                    baseline: 50,
-                    actual: game.treasury,
-                    icon: "banknote.fill"
-                )
-                HubMetricCard(
-                    label: "TRADE BAL.",
-                    value: game.tradeBalance >= 0 ? "+\(game.tradeBalance)" : "\(game.tradeBalance)",
-                    baseline: 0,
-                    actual: game.tradeBalance,
-                    icon: "arrow.left.arrow.right"
-                )
-            }
+            HubMetricCard(
+                label: "TREASURY",
+                value: "\(game.treasury)",
+                baseline: 50,
+                actual: game.treasury,
+                icon: "banknote.fill"
+            )
         }
         .padding(12)
         .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.borderTan, lineWidth: 1)
-        )
-    }
-
-    private var sparklineSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("ECONOMIC TRENDS")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
-
-            if !game.gdpHistory.isEmpty {
-                HStack(spacing: 12) {
-                    HubSparkline(label: "GDP", data: game.gdpHistory, baselineValue: 100, color: .green)
-                    HubSparkline(label: "INFLATION", data: game.inflationHistory, baselineValue: 5, color: .orange)
-                    HubSparkline(label: "UNEMPLOY.", data: game.unemploymentHistory, baselineValue: 5, color: .red)
-                }
-            } else {
-                Text("Trend data will appear after Turn 1 processing.")
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.inkLight)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
-            }
-        }
-        .padding(12)
-        .background(theme.parchment)
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -456,159 +315,7 @@ struct EconomicHubView: View {
         }
     }
 
-    // MARK: - Trade
-
-    private var tradeSectionContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            tradeSummaryCard
-
-            if !game.foreignCountries.isEmpty {
-                tradingPartnersList
-            }
-        }
-        .padding(.horizontal, 15)
-    }
-
-    private var tradeSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("TRADE OVERVIEW")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
-
-            HStack(spacing: 16) {
-                HubStatBox(label: "Trade Balance", value: game.tradeBalance >= 0 ? "+\(game.tradeBalance)" : "\(game.tradeBalance)", color: game.tradeBalance >= 0 ? .green : .red)
-                HubStatBox(label: "Partners", value: "\(game.foreignCountries.filter { $0.tradeVolume > 0 }.count)", color: theme.accentGold)
-                HubStatBox(label: "Total Volume", value: "\(game.foreignCountries.reduce(0) { $0 + $1.tradeVolume })", color: .blue)
-            }
-        }
-        .padding(12)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.borderTan, lineWidth: 1)
-        )
-    }
-
-    private var tradingPartnersList: some View {
-        let activePartners = game.foreignCountries
-            .filter { $0.tradeVolume > 0 }
-            .sorted { $0.tradeVolume > $1.tradeVolume }
-
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("TRADING PARTNERS")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
-
-            if activePartners.isEmpty {
-                Text("No active trade agreements.")
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.inkLight)
-                    .padding(.vertical, 8)
-            } else {
-                ForEach(activePartners.prefix(8), id: \.countryId) { country in
-                    HubTradePartnerRow(country: country)
-                }
-            }
-        }
-        .padding(12)
-        .background(theme.parchment)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.borderTan, lineWidth: 1)
-        )
-    }
-
-    // MARK: - Regions
-
-    private var regionsSectionContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("DOMESTIC ECONOMIC ZONES")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
-                .padding(.horizontal, 15)
-
-            ForEach(game.regions, id: \.regionId) { region in
-                RegionEconomicCard(region: region)
-                    .padding(.horizontal, 15)
-            }
-
-            if game.regions.isEmpty {
-                Text("Regional data not yet available.")
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.inkLight)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-                    .padding(.horizontal, 15)
-            }
-        }
-    }
-
-    // MARK: - Budget
-
-    private var budgetSectionContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            budgetOverview
-
-            sectorSharesCard
-        }
-        .padding(.horizontal, 15)
-    }
-
-    private var budgetOverview: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("STATE BUDGET")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
-
-            HStack(spacing: 16) {
-                HubStatBox(label: "Treasury", value: "\(game.treasury)", color: game.treasury >= 50 ? .green : .orange)
-                HubStatBox(label: "Industry", value: "\(game.industrialOutput)", color: game.industrialOutput >= 50 ? .green : .orange)
-                HubStatBox(label: "Food Supply", value: "\(game.foodSupply)", color: game.foodSupply >= 50 ? .green : .orange)
-            }
-
-            if game.lastEconomicReport == nil {
-                Text("Full economic report will be available after Turn 1 processing.")
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.inkLight)
-                    .padding(.top, 4)
-            }
-        }
-        .padding(12)
-        .background(theme.parchmentDark)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.borderTan, lineWidth: 1)
-        )
-    }
-
-    private var sectorSharesCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("NATIONAL PRODUCT BREAKDOWN")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundColor(theme.inkGray)
-
-            SectorShareRow(label: "Agriculture", share: game.agricultureShare, color: .green)
-            SectorShareRow(label: "Industry", share: game.industryShare, color: .blue)
-            SectorShareRow(label: "Services", share: game.servicesShare, color: .orange)
-        }
-        .padding(12)
-        .background(theme.parchment)
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.borderTan, lineWidth: 1)
-        )
-    }
-
-    // MARK: - Planning
+    // MARK: - Works (economic projects + actions; formerly "Planning")
 
     private var planningSectionContent: some View {
         VStack(alignment: .leading, spacing: 20) {

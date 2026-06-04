@@ -247,6 +247,11 @@ struct ContentView: View {
         // start-of-game seeding is ever re-invoked.
         FactionService.shared.applyFactionStartingDisposition(game: newGame)
 
+        // Designate the principal rival at random from the senior cast (rather than
+        // a fixed seeded character) so the antagonist varies each game. Run AFTER
+        // the faction bias so the rival stays antagonistic. (Rival rework 2026-06.)
+        GameEngine.shared.designatePrimaryRival(game: newGame)
+
         // Create factions and apply player faction relationship modifiers
         let playerFaction = PlayerFactionConfig.faction(withId: factionId)
         for factionConfig in config.factions {
@@ -352,6 +357,12 @@ struct ContentView: View {
         // Record initial stats for sparkline history (so graphs have a starting point)
         newGame.recordAllStatHistory()
 
+        // Seed a modest starting buffer of foundational resources so the strategic
+        // supply chain isn't self-starved on turn 1 while default sector focuses ramp
+        // up production. Without this, default steel-consuming focuses ran at 0% and
+        // bled loyalty before the player made a single choice. (Economy audit 2026-06.)
+        newGame.strategicReserves = [.steel: 14, .grain: 16, .energy: 16]
+
         // Generate Turn 0 economic report so the economy view has data from game start
         EconomyService.shared.snapshotEconomicReport(game: newGame)
 
@@ -439,6 +450,12 @@ struct GameView: View {
 
     // Journal navigation state (for toast -> dossier navigation)
     @State private var navigateToJournalEntry: JournalEntry?
+    // Guards against double-tapping the end-turn / pass buttons re-entering the
+    // (async, multi-second) end-of-turn pipeline and processing the turn twice.
+    @State private var isEndingTurn = false
+    // Optional "retire with honor" (Survival victory) offer — surfaced once the
+    // player has held power long enough, instead of force-ending the game.
+    @State private var showRetirementOffer = false
 
     private var campaignConfig: CampaignConfig {
         CampaignLoader.shared.getColdWarCampaign()
@@ -563,6 +580,16 @@ struct GameView: View {
             navigateToJournalEntry = entry
             selectedTab = .dossier
         })
+        .alert("Retire with Honor?", isPresented: $showRetirementOffer) {
+            Button("Retire — Survival Victory") {
+                endGame(result: .won, reason: VictoryType.survival.epitaph, victoryType: .survival)
+            }
+            Button("Rule On", role: .cancel) {
+                game.setIntVariable("retirement_declined_turn", game.turnNumber)
+            }
+        } message: {
+            Text("You have held power for \(game.intVariable("turns_as_leader")) turns. Step down now and history records you as The Survivor — or rule on toward a greater legacy: build the nation, consolidate absolute power, or reform the state.")
+        }
         .onAppear {
             // Check if game already ended
             if game.currentStatus != .active {
@@ -688,12 +715,19 @@ struct GameView: View {
     }
 
     private func completePersonalAction() {
+        // Re-entrancy guard: the end-of-turn pipeline is async and can take several
+        // seconds, during which the personalAction phase (and its buttons) stays
+        // mounted. Without this, a double-tap would process the whole turn twice.
+        guard !isEndingTurn else { return }
+        isEndingTurn = true
+
         // Apply end-of-turn updates with Codex and Consequence integration
         Task {
             await GameEngine.shared.endTurnUpdatesWithContext(game: game, ladder: campaignConfig.ladder, context: modelContext)
 
             // Check for game end conditions (on main actor)
             await MainActor.run {
+                defer { isEndingTurn = false }
                 let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
                 if endCheck.gameOver {
                     if trySuccessionRecovery(from: endCheck, requiresEndTurnProcessing: false) {
@@ -716,9 +750,15 @@ struct GameView: View {
         }
 
         if requiresEndTurnProcessing {
+            // Re-entrancy guard mirroring completePersonalAction: this path also
+            // launches the async end-of-turn pipeline. If one is already in flight,
+            // report handled so the caller doesn't fall through to endGame.
+            guard !isEndingTurn else { return true }
+            isEndingTurn = true
             Task {
                 await GameEngine.shared.endTurnUpdatesWithContext(game: game, ladder: campaignConfig.ladder, context: modelContext)
                 await MainActor.run {
+                    defer { isEndingTurn = false }
                     if completeHeirSuccession(after: endCheck.reason ?? "Your predecessor has fallen from power.") {
                         advanceToNextTurn(countCompletedTurnTowardPosition: false)
                     } else {
@@ -829,6 +869,16 @@ struct GameView: View {
         turnEvent.importance = 3
         turnEvent.game = game
         game.events.append(turnEvent)
+
+        // Offer optional "retire with honor" (Survival victory) once tenure is
+        // reached, instead of force-ending the game. Re-offered every 15 turns if
+        // declined so it nudges without nagging. (Endgame rework 2026-06.)
+        if GameEngine.shared.survivalRetirementAvailable(game: game) {
+            let declinedTurn = game.intVariable("retirement_declined_turn")
+            if declinedTurn == 0 || (game.turnNumber - declinedTurn) >= 15 {
+                showRetirementOffer = true
+            }
+        }
     }
 
     private func endGame(result: GameStatus, reason: String, victoryType: VictoryType? = nil) {

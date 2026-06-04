@@ -142,7 +142,8 @@ class EconomyService {
     /// `EconomicForecastSheet` to surface the passive trajectory and
     /// recommend levers before the player commits.
     ///
-    /// Treasury projection is exact (from `calculateTurnEconomy`). Food,
+    /// Treasury projection comes from the actual passive-economy delta recorded
+    /// last turn (with a faithful estimate fallback on turn 1). Food,
     /// stability, and industrial are derived from threshold-driven
     /// feedback rules (`applyEconomicPoliticalFeedback` /
     /// `applyStrategicResourceFeedback`) rather than running those full
@@ -150,12 +151,21 @@ class EconomyService {
     /// the entire post-turn pipeline into the preview path.
     func predictNextTurn(for game: Game) -> EconomicForecast {
         let report = calculateTurnEconomy(game: game)
-        let netTreasury = report.netChange
+
+        // Project the treasury delta from what the passive economy ACTUALLY applied
+        // last turn (recorded by processEconomy), not the report's gross
+        // income-minus-expense figure — those are different models and only the
+        // former hits the treasury the player sees. On the very first forecast
+        // (no passive run recorded yet) fall back to a faithful estimate of the
+        // dominant deterministic terms. (Economy audit 2026-06.)
+        let netTreasury: Int = game.turnNumber > 1
+            ? game.intVariable("last_economy_treasury_delta")
+            : estimatePassiveTreasuryDelta(game: game)
 
         // Build stat-line projections.
         var stats: [ForecastStatLine] = []
 
-        // Treasury — exact projection from the report.
+        // Treasury — projected from the actual passive-economy delta.
         stats.append(ForecastStatLine(
             key: "treasury",
             label: "Treasury",
@@ -230,6 +240,41 @@ class EconomyService {
         )
     }
 
+    /// Faithful, pure (non-mutating) estimate of the dominant deterministic terms
+    /// `processEconomy` applies to treasury — the GDP→treasury band, the governance
+    /// dividend, and active sector-focus upkeep. Used only as the turn-1 forecast
+    /// fallback before an actual passive run has been recorded (no loans exist yet).
+    private func estimatePassiveTreasuryDelta(game: Game) -> Int {
+        var delta = 0
+
+        // GDP → treasury (mirrors applyGDPToTreasury's bands).
+        let growth = game.gdpGrowthRate
+        if growth > 5.0 { delta += 3 }
+        else if growth > 2.0 { delta += 1 }
+        else if growth < -3.0 { delta -= 3 }
+        else if growth < 0.0 { delta -= 1 }
+
+        if game.gdpIndex >= 120 { delta += 2 }
+        else if game.gdpIndex >= 110 { delta += 1 }
+        else if game.gdpIndex <= 80 { delta -= 2 }
+        else if game.gdpIndex <= 90 { delta -= 1 }
+
+        if game.inflationRate >= 30 { delta -= 3 }
+        else if game.inflationRate >= 20 { delta -= 1 }
+
+        // Governance dividend.
+        delta += calculateGovernanceBonus(game: game)
+
+        // Active sector-focus upkeep.
+        for sector in EconomicSector.allCases {
+            if let focus = game.activeFocus(for: sector) {
+                delta -= focus.treasuryCostPerTurn
+            }
+        }
+
+        return delta
+    }
+
     /// Pick 3-5 levers most relevant to the current state. Priority order:
     /// critical (you'll bleed out without acting) → advised (worth doing
     /// even when stable) → opportunistic (upside only).
@@ -240,14 +285,15 @@ class EconomyService {
     ) -> [ForecastLeverRecommendation] {
         var levers: [ForecastLeverRecommendation] = []
 
-        // 1. Treasury about to hit crisis → recommend a loan
+        // 1. Treasury about to hit crisis → recommend a real, reachable lever
+        // (the old "take a loan" rec pointed at a screen that no longer exists).
         if projectedTreasury < 30 {
             levers.append(ForecastLeverRecommendation(
-                leverId: "rec_emergency_loan",
-                kind: .loan,
-                title: "Take an Emergency Loan",
-                subtitle: "Trade tab → Loan Proposals",
-                projectedEffect: "Treasury +40 to +60 once, −3 to −8/turn until repaid",
+                leverId: "rec_treasury_crisis",
+                kind: .emergencyDecree,
+                title: "Treasury Crisis — Act Now",
+                subtitle: "Issue an Emergency Decree, or cut a costly sector focus",
+                projectedEffect: "An emergency decree can inject funds now; switching a high-cost focus trims the per-turn drain",
                 urgency: .critical
             ))
         }
@@ -277,14 +323,15 @@ class EconomyService {
             ))
         }
 
-        // 4. Surplus and stable → recommend opportunistic plan target push
+        // 4. Surplus and stable → recommend pressing the advantage (the old rec
+        // pointed at a plan-target screen the player can't actually set).
         if projectedTreasury >= 60 && game.stability >= 60 {
             levers.append(ForecastLeverRecommendation(
-                leverId: "rec_plan_push",
-                kind: .planAlignment,
-                title: "Push Five-Year Plan Targets",
-                subtitle: "Gosplan → Plan Targets",
-                projectedEffect: "Switch a sector focus to align with current plan target — +standing if hit",
+                leverId: "rec_invest_surplus",
+                kind: .sectorFocus,
+                title: "Press Your Advantage",
+                subtitle: "Economy → Sectors",
+                projectedEffect: "You have a surplus — switch a sector to a growth focus to build industry and impress the Five-Year Plan",
                 urgency: .opportunistic
             ))
         }
@@ -306,48 +353,10 @@ class EconomyService {
         return levers
     }
 
-    /// Apply the economic report to the game
-    func applyEconomicReport(_ report: EconomicReport, to game: Game) {
-        let change = report.netChange
-
-        // Apply treasury change (clamped to prevent going too negative)
-        let newTreasury = max(-100, game.treasury + change)
-        let actualChange = newTreasury - game.treasury
-
-        if actualChange != 0 {
-            game.applyStat("treasury", change: actualChange)
-        }
-
-        // Apply budget priority bonuses
-        applyBudgetPriorityEffects(game: game)
-
-        // Store the report for display
-        game.lastEconomicReport = encodeReport(report)
-    }
-
-    /// Apply per-turn bonuses based on budget allocation priorities
-    private func applyBudgetPriorityEffects(game: Game) {
-        var rng = game.rng
-        defer { game.rng = rng }
-        let priorities = game.budgetPriorities
-
-        // High military priority: +1 military loyalty
-        if (priorities["military"] ?? 30) > 30 {
-            game.applyStat("militaryLoyalty", change: 1)
-        }
-
-        // High social priority: +1 popular support
-        if (priorities["social"] ?? 25) > 30 {
-            game.applyStat("popularSupport", change: 1)
-        }
-
-        // High infrastructure priority: +1 to a random region's infrastructure
-        if (priorities["infrastructure"] ?? 20) > 25, !game.regions.isEmpty {
-            let randomIndex = Int.random(in: 0..<game.regions.count, using: &rng)
-            let region = game.regions[randomIndex]
-            region.infrastructureQuality = min(100, region.infrastructureQuality + 1)
-        }
-    }
+    // applyEconomicReport + applyBudgetPriorityEffects removed in the 2026-06
+    // economy simplification: applyEconomicReport had zero callers (the live
+    // treasury model is the piecemeal one in processEconomy) and the budget
+    // bonuses fired no branch at their defaults with no reachable UI to change them.
 
     /// Store a fresh report snapshot without mutating game stats.
     func snapshotEconomicReport(game: Game) {
@@ -736,6 +745,13 @@ class EconomyService {
         // Record all economic indicators to history before changes
         game.recordEconomicHistory()
 
+        // Snapshot treasury so we can record the ACTUAL net delta this passive
+        // economy run applies. The pre-turn forecast (predictNextTurn) projects
+        // from this observed value rather than the EconomicReport's gross
+        // income-minus-expense figure, which is a different, much larger model
+        // that the turn never applies to treasury. (Economy audit 2026-06.)
+        let treasuryBefore = game.treasury
+
         // 1. Calculate GDP growth based on policies, treasury, and economic system
         let gdpChange = calculateGDPGrowth(game: game)
         game.applyGDPChange(gdpChange)
@@ -768,11 +784,9 @@ class EconomyService {
         // 7. Apply sector production effects to national stats
         applySectorEffects(game: game)
 
-        // 7a. Apply per-sector budget allocation effects
-        applySectorBudgetEffects(game: game)
-
-        // 7b. Process foreign loan payments
-        processLoanPayments(game: game)
+        // (Budget systems removed in the 2026-06 economy simplification: both the
+        // per-sector sectorBudget and the macro budgetPriorities had no reachable UI
+        // and fired no effect at their defaults — pure dead complexity.)
 
         // 7c. Strategic resource supply chain (Phase 3.2)
         // Extract from regions → consume in sectors → produce processed
@@ -791,6 +805,10 @@ class EconomyService {
 
         // 10. Check for economic crises and create events if needed
         checkForEconomicCrisis(game: game)
+
+        // Record the actual net treasury delta this passive economy run applied,
+        // so the pre-turn forecast can project an honest "if you do nothing" number.
+        game.setIntVariable("last_economy_treasury_delta", game.treasury - treasuryBefore)
 
         #if DEBUG
         print("[Economy] GDP: \(game.gdpIndex), Inflation: \(game.inflationRate)%, Unemployment: \(game.unemploymentRate)%, Treasury: \(game.treasury)")
@@ -1825,136 +1843,12 @@ class EconomyService {
     // MARK: - Per-Sector Budget Effects
 
     /// Apply investment and production changes based on sector budget allocations
-    private func applySectorBudgetEffects(game: Game) {
-        let budget = game.sectorBudget
+    // MARK: - Foreign Loan Processing (removed 2026-06)
 
-        for sector in EconomicSector.allCases {
-            let allocation = budget[sector.rawValue] ?? Game.defaultAllocation(for: sector)
-            let defaultAlloc = Game.defaultAllocation(for: sector)
-            let deviation = allocation - defaultAlloc
-
-            var investmentChange = 0
-            var productionChange = 0
-
-            // Sectors above default get +2 investment per turn
-            if deviation > 0 {
-                investmentChange += 2
-            }
-            // Sectors below default get -2 investment per turn
-            if deviation < 0 {
-                investmentChange -= 2
-            }
-            // Large deviation (10%+) also affects production
-            if deviation >= 10 {
-                productionChange += 1
-            }
-            if deviation <= -10 {
-                productionChange -= 1
-            }
-
-            if investmentChange != 0 || productionChange != 0 {
-                game.applySectorChange(sector, productionChange: productionChange, investmentChange: investmentChange)
-            }
-        }
-    }
-
-    // MARK: - Foreign Loan Processing
-
-    /// Process loan payments, reducing principal and handling defaults
-    private func processLoanPayments(game: Game) {
-        var loans = game.foreignLoans
-        var defaulted = false
-
-        for i in loans.indices {
-            guard !loans[i].isFullyPaid else { continue }
-
-            let payment = loans[i].paymentPerTurn
-            let principalPortion = loans[i].principalPaymentPerTurn
-            let interestPortion = loans[i].interestPaymentPerTurn
-
-            if game.treasury >= payment / 5 {
-                // Can afford payment - deduct from treasury
-                game.applyStat("treasury", change: -payment)
-                loans[i].remainingPrincipal = max(0, loans[i].remainingPrincipal - principalPortion)
-                loans[i].totalInterestPaid += interestPortion
-            } else {
-                // Cannot afford - default on this loan
-                defaulted = true
-
-                #if DEBUG
-                print("[Economy] Defaulted on loan from \(loans[i].lenderName)")
-                #endif
-            }
-        }
-
-        // Remove fully paid loans
-        loans.removeAll { $0.isFullyPaid }
-        game.foreignLoans = loans
-
-        // Apply default penalties
-        if defaulted {
-            game.applyStat("stability", change: -3)
-
-            // Damage relationships with all lender countries (use local array, already saved above)
-            for loan in loans where !loan.isFullyPaid {
-                for country in game.foreignCountries where country.countryId == loan.lenderId {
-                    country.relationshipScore = max(-100, country.relationshipScore - 5)
-                }
-            }
-
-            if !game.flags.contains("debt_default") {
-                game.flags.append("debt_default")
-            }
-        } else {
-            // Clear default flag if no defaults this turn
-            game.flags.removeAll { $0 == "debt_default" }
-        }
-    }
-
-    /// Look up the effective relationship score for a loan source
-    private func lenderRelationship(game: Game, source: LoanSource) -> Int {
-        if let country = game.foreignCountries.first(where: { $0.countryId == source.lenderId }) {
-            return country.relationshipScore
-        }
-        // International institutions - use average western relationship
-        let western = game.foreignCountries.filter { $0.politicalBloc == .capitalist }
-        return western.isEmpty ? 0 : western.reduce(0) { $0 + $1.relationshipScore } / western.count
-    }
-
-    /// Take a new foreign loan, adding principal to treasury
-    func takeLoan(game: Game, source: LoanSource, amount: Int) {
-        let relationship = lenderRelationship(game: game, source: source)
-        let rate = source.interestRate(forRelationship: relationship)
-        let clampedAmount = max(5, min(amount, source.maxAmount))
-
-        let loan = ForeignLoan(
-            lenderId: source.lenderId,
-            lenderName: source.lenderName,
-            principalAmount: clampedAmount,
-            interestRate: rate,
-            turnTaken: game.turnNumber,
-            durationTurns: source.durationTurns
-        )
-
-        var loans = game.foreignLoans
-        loans.append(loan)
-        game.foreignLoans = loans
-
-        // Immediately add principal to treasury
-        game.applyStat("treasury", change: clampedAmount)
-
-        #if DEBUG
-        print("[Economy] Took loan of \(clampedAmount) from \(source.lenderName) at \(rate)% interest")
-        #endif
-    }
-
-    /// Get available loan sources for the player based on current relationships
-    func availableLoanSources(game: Game) -> [(source: LoanSource, relationship: Int, available: Bool)] {
-        let hasCapacity = game.canTakeNewLoan
-        return LoanSource.allSources.map { source in
-            let relationship = lenderRelationship(game: game, source: source)
-            let meetsRelationship = relationship >= source.requiredRelationship
-            return (source, relationship, meetsRelationship && hasCapacity)
-        }
-    }
+    // Foreign-loan processing (processLoanPayments / takeLoan / availableLoanSources /
+    // lenderRelationship) removed in the 2026-06 economy simplification: the loan
+    // market had no reachable UI (LoanProposalSheet was never instantiated), so
+    // game.foreignLoans could never become non-empty. A future crisis cash-injection
+    // is handled by an Emergency Decree instead. Game.foreignLoans plumbing and the
+    // LoanSource catalog are retained for SwiftData schema stability.
 }

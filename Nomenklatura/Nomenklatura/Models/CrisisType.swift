@@ -18,6 +18,7 @@ enum CrisisType: String, CaseIterable, Identifiable {
     case coupRisk
     case diplomaticCrisis
     case rivalDeadline
+    case secessionCrisis
 
     var id: String { rawValue }
 
@@ -31,6 +32,7 @@ enum CrisisType: String, CaseIterable, Identifiable {
         case .coupRisk:             return "COUP RISK"
         case .diplomaticCrisis:     return "DIPLOMATIC CRISIS"
         case .rivalDeadline:        return "RIVAL DEADLINE"
+        case .secessionCrisis:      return "SECESSION CRISIS"
         }
     }
 
@@ -43,6 +45,7 @@ enum CrisisType: String, CaseIterable, Identifiable {
         case .coupRisk:             return "shield.lefthalf.filled.slash"
         case .diplomaticCrisis:     return "globe.badge.chevron.backward"
         case .rivalDeadline:        return "hourglass.bottomhalf.filled"
+        case .secessionCrisis:      return "flag.slash.fill"
         }
     }
 
@@ -55,6 +58,7 @@ enum CrisisType: String, CaseIterable, Identifiable {
         case .coupRisk:             return "Military loyalty has cratered."
         case .diplomaticCrisis:     return "Foreign tensions approaching the brink."
         case .rivalDeadline:        return "A rival's move resolves imminently."
+        case .secessionCrisis:      return "A region is breaking away from the union."
         }
     }
 }

@@ -664,14 +664,33 @@ final class SecurityActionService {
 
     // MARK: - Show Trial Integration
 
-    /// Initiate show trial for a character
+    /// Initiate show trial for a character.
+    /// Creates a REAL trial via ShowTrialService (was previously a no-op stub, which
+    /// left the entire 690-line trial engine dormant and stranded "referred to trial"
+    /// detainees in underInvestigation forever). The engine drives the trial through
+    /// its accusation → confession → public-trial → sentencing phases from here.
+    /// (Audit 2026-06.)
     private func initiateShowTrial(
         for character: GameCharacter,
         game: Game,
         modelContext: ModelContext
     ) {
-        // This integrates with existing ShowTrialService
-        // For now, set up the trial
+        // Classic show-trial charge pairing: a political headline charge plus a
+        // concrete pretext.
+        let charges: [TrialCharge] = [.counterRevolutionary, .corruption]
+        _ = ShowTrialService.shared.initiateTrial(against: character, charges: charges, game: game)
+
+        // Surface the arraignment to the player so the trial is visible immediately
+        // rather than only when the (event-driven) advancement system next fires.
+        let event = GameEvent(
+            turnNumber: game.turnNumber,
+            eventType: .purge,
+            summary: "\(character.name) has been arraigned before a show trial on charges of \(charges.map { $0.displayName }.joined(separator: " and "))."
+        )
+        event.importance = 7
+        event.game = game
+        game.events.append(event)
+
         #if DEBUG
         print("[SECURITY] Show trial initiated for \(character.name)")
         #endif
@@ -1019,6 +1038,13 @@ final class SecurityActionService {
             if target.currentStatus != .executed && target.currentStatus != .dead {
                 executeCharacter(target, method: .detention, game: game, modelContext: modelContext)
             }
+        }
+
+        // The detention is resolved — close its prosecution lane so the registry
+        // doesn't leak and the target can be prosecuted again later. The trial
+        // path is the exception: it owns its own close() on trial completion.
+        if outcome != .referredToTrial {
+            ProsecutionPipelineService.shared.close(target: target.id, in: game)
         }
     }
 

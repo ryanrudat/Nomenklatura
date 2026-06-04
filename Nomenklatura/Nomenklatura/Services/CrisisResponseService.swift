@@ -81,6 +81,11 @@ final class CrisisResponseService {
             return game.activeRivalMoves.contains { move in
                 !move.resolution.isResolved && move.deadlineTurn <= game.turnNumber + 1
             }
+
+        case .secessionCrisis:
+            // A region is drifting toward (or has reached) open secession — the
+            // moment the player needs the deploy-troops / martial-law levers.
+            return game.regions.contains { $0.secessionProgress > 0 && $0.status != .seceded }
         }
     }
 
@@ -118,6 +123,10 @@ final class CrisisResponseService {
             if soonest <= game.turnNumber { raw = 100 }
             else if soonest == game.turnNumber + 1 { raw = 60 }
             else { raw = 0 }
+
+        case .secessionCrisis:
+            // Grade off the most-advanced secession (100 = about to leave).
+            raw = game.regions.map { $0.secessionProgress }.max() ?? 0
         }
         return max(0, min(100, raw))
     }
@@ -261,9 +270,32 @@ final class CrisisResponseService {
             // Without this flag, the charge would be double-counted.
             EmergencyDecreeService.shared.apply(.requisitionGrain, to: game, force: true, viaChargeAlreadyPaid: true)
 
+        case "secession_deploy_troops":
+            // Send troops into the most-at-risk region — raises military presence
+            // and party control, slowing secessionProgress. The service applies the
+            // treasury cost (gated by this option's treasury minStatRequirement).
+            if let region = mostSecessionAtRisk(in: game) {
+                RegionSecessionService.shared.deployTroops(to: region, game: game, level: .moderate)
+            }
+
+        case "secession_martial_law":
+            // Force the region into martial law — the strongest counter, regressing
+            // secessionProgress by 5/turn at a heavy stability/reputation cost.
+            if let region = mostSecessionAtRisk(in: game) {
+                RegionSecessionService.shared.imposeMartialLaw(on: region, game: game)
+            }
+
         default:
             break
         }
+    }
+
+    /// The region furthest along toward secession (and not already gone) — the
+    /// target for the deploy-troops / martial-law crisis responses.
+    private func mostSecessionAtRisk(in game: Game) -> Region? {
+        game.regions
+            .filter { $0.secessionProgress > 0 && $0.status != .seceded }
+            .max(by: { $0.secessionProgress < $1.secessionProgress })
     }
 
     /// Human-readable reason the option is gated. Order matters: surface
@@ -295,8 +327,51 @@ final class CrisisResponseService {
         case .coupRisk:             return coupRiskOptions
         case .diplomaticCrisis:     return diplomaticCrisisOptions
         case .rivalDeadline:        return rivalDeadlineOptions
+        case .secessionCrisis:      return secessionCrisisOptions
         }
     }
+
+    // MARK: -- Secession Crisis Library
+
+    /// Re-homed here from the (deleted) regional economy view: deploying troops
+    /// and imposing martial law are the only mechanics that REGRESS a region's
+    /// secessionProgress, and secession is a power problem, not an economy one.
+    /// The actual region mutation runs in applyOptionSideEffects via
+    /// RegionSecessionService; treasury is gated here and spent there.
+    private let secessionCrisisOptions: [CrisisResponseOption] = [
+        CrisisResponseOption(
+            id: "secession_deploy_troops",
+            crisisType: .secessionCrisis,
+            label: "[DEPLOY TROOPS]",
+            shortDescription: "Send the army into the most restive region to slow the breakaway.",
+            costAP: 1,
+            costTreasury: 0,
+            requiresDecreeCharge: false,
+            minStatRequirements: ["treasury": 15, "militaryLoyalty": 25],
+            baseSuccessChance: 0.92,
+            onSuccess: [:],
+            onFailure: ["stability": -3],
+            setsFlags: [],
+            narrativeSuccess: "Columns of troops roll into the province. Garrisons swell, party control tightens, and the secession loses momentum — for now.",
+            narrativeFailure: "The deployment bogs down; local cadres stall the columns and the breakaway gathers pace."
+        ),
+        CrisisResponseOption(
+            id: "secession_martial_law",
+            crisisType: .secessionCrisis,
+            label: "[MARTIAL LAW]",
+            shortDescription: "Impose martial law on the breakaway region. The strongest secession counter — at a heavy cost.",
+            costAP: 1,
+            costTreasury: 0,
+            requiresDecreeCharge: false,
+            minStatRequirements: ["treasury": 20, "militaryLoyalty": 30],
+            baseSuccessChance: 0.95,
+            onSuccess: [:],
+            onFailure: ["stability": -4, "internationalStanding": -3],
+            setsFlags: [],
+            narrativeSuccess: "Martial law is declared. Curfews, checkpoints, and military courts crush the autonomy movement — the secession reverses, but the world condemns the tanks in the streets.",
+            narrativeFailure: "The martial-law decree is defied; the region's leaders go underground and the standoff hardens."
+        )
+    ]
 
     // MARK: -- Stability Collapse Library
 

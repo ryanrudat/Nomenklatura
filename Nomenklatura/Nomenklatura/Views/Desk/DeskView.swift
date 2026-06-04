@@ -140,59 +140,72 @@ struct DeskView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(spacing: 16) {
-                            // Bureau Credential Badge (shown when committed to a core bureau)
-                            BureauCredentialBadge(game: game)
-                                .padding(.horizontal, 4)
+                            // Power consolidation — the metric that defines whether the
+                            // player is in control. Previously buried in a Congress
+                            // sub-sheet; now the first thing on the Desk every turn so
+                            // growing/slipping grip is always legible. (Audit 2026-06.)
+                            consolidationHeader
+                                .id("deskTop")
 
-                            // Player ID Card
-                            PlayerIDCard(
-                                playerName: playerTitle,
-                                title: positionTitle,
-                                clearanceLevel: clearanceLevel
-                            )
-                            .id("idCard")
-
-                            // Personal Stats Widget with Sparklines - each stat navigates to relevant screen
-                            SparklinePersonalStatsRow(
-                                standing: game.standing,
-                                network: game.network,
-                                patronFavor: game.patronFavor,
-                                rivalThreat: game.rivalThreat,
-                                standingHistory: game.standingHistory,
-                                networkHistory: game.networkHistory,
-                                patronFavorHistory: game.patronFavorHistory,
-                                rivalThreatHistory: game.rivalThreatHistory,
-                                onStandingTap: onLadderTap,
-                                onNetworkTap: onDossierTap,
-                                onPatronTap: openPatronSheet,
-                                onRivalTap: openRivalSheet
-                            )
-
-                            // Threat Assessment Dashboard
-                            ThreatDashboardView(game: game)
-
-                            // Wave 5 / Audit "deep-politics": named rival
-                            // schemes appear here so the player sees them
-                            // before scanning to the scenario content. The
-                            // section renders nothing when there are no
-                            // pending moves, so empty turns don't add bulk.
+                            // Named rival schemes — surfaced near the top so the player
+                            // sees active threats before the decision. Renders nothing
+                            // when there are no pending moves.
                             rivalMovesSection
 
-                            if let report = latestEconomicReport {
-                                treasuryBriefingSection(report: report)
-                            }
-
-                            // Content area - newspaper preview or scenario cards
+                            // THE DECISION — the reason the turn exists. Promoted to the
+                            // top of the scroll instead of sitting behind ~8 status
+                            // widgets. (Audit 2026-06.)
                             contentSection
+
+                            // Secondary status + intelligence — collapsed by default so
+                            // it no longer buries the decision. The persistent stat bar
+                            // and crisis banner above already carry the urgent numbers.
+                            CollapsibleSection(
+                                title: "STATUS & INTELLIGENCE",
+                                storageKey: "deskStatus",
+                                defaultExpanded: false
+                            ) {
+                                VStack(spacing: 16) {
+                                    BureauCredentialBadge(game: game)
+                                        .padding(.horizontal, 4)
+
+                                    PlayerIDCard(
+                                        playerName: playerTitle,
+                                        title: positionTitle,
+                                        clearanceLevel: clearanceLevel
+                                    )
+
+                                    SparklinePersonalStatsRow(
+                                        standing: game.standing,
+                                        network: game.network,
+                                        patronFavor: game.patronFavor,
+                                        rivalThreat: game.rivalThreat,
+                                        standingHistory: game.standingHistory,
+                                        networkHistory: game.networkHistory,
+                                        patronFavorHistory: game.patronFavorHistory,
+                                        rivalThreatHistory: game.rivalThreatHistory,
+                                        onStandingTap: onLadderTap,
+                                        onNetworkTap: onDossierTap,
+                                        onPatronTap: openPatronSheet,
+                                        onRivalTap: openRivalSheet
+                                    )
+
+                                    ThreatDashboardView(game: game)
+
+                                    if let report = latestEconomicReport {
+                                        treasuryBriefingSection(report: report)
+                                    }
+                                }
+                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
                         .padding(.bottom, 120)
                     }
                     .onChange(of: game.turnNumber) { _, _ in
-                        // Scroll to top when turn changes to ensure ID card is visible
+                        // Scroll to top when turn changes so the decision is visible.
                         withAnimation(.easeOut(duration: 0.3)) {
-                            proxy.scrollTo("idCard", anchor: .top)
+                            proxy.scrollTo("deskTop", anchor: .top)
                         }
                     }
                 }
@@ -311,6 +324,87 @@ struct DeskView: View {
         }
         .sensoryFeedback(trigger: selectedOptionId) { _, newValue in
             (hapticsEnabled && newValue != nil) ? .selection : nil
+        }
+    }
+
+    // MARK: - Consolidation Header
+
+    /// Compact always-visible read of the player's power-consolidation tier — the
+    /// single metric that determines how much control they actually have. Tapping
+    /// opens Congress, where the full PowerConsolidationMeter lives. (Audit 2026-06.)
+    private var consolidationHeader: some View {
+        let score = game.powerConsolidationScore
+        let tier = game.chairmanshipTier
+        let color = tierColor(tier)
+        return Button {
+            onCongressTap?()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(color)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("POWER CONSOLIDATION")
+                        .font(.system(size: 8, weight: .bold))
+                        .tracking(1)
+                        .foregroundColor(theme.inkGray)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(theme.parchmentDark)
+                            Capsule()
+                                .fill(color)
+                                .frame(width: geo.size.width * CGFloat(min(max(score, 0), 100)) / 100)
+                        }
+                    }
+                    .frame(height: 5)
+
+                    // Elite Resentment — the cost of concentrated power (design §7).
+                    // Only appears at the top tiers where it accrues and bites, so
+                    // the player sees the strongman's fragility building.
+                    let resentment = game.intVariable("elite_resentment")
+                    if tier >= .theCore && resentment >= 25 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 7))
+                            Text("ELITE RESENTMENT \(resentment)")
+                                .font(.system(size: 7, weight: .bold))
+                                .tracking(0.5)
+                        }
+                        .foregroundColor(resentment >= 60 ? theme.sovietRed : theme.bronzeGold)
+                    }
+                }
+
+                Text(tier.label)
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(0.5)
+                    .foregroundColor(color)
+
+                Text("\(score)")
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .foregroundColor(color)
+                    .frame(minWidth: 28, alignment: .trailing)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(theme.cardstock)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(color.opacity(0.4), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func tierColor(_ tier: ChairmanshipTier) -> Color {
+        switch tier {
+        case .supremeChairman: return theme.sovietRed
+        case .theCore: return theme.accentGold
+        case .paramountChairman: return .statMedium
+        case .firstAmongEquals: return theme.bronzeGold
+        case .compromiseChairman: return theme.inkGray
         }
     }
 

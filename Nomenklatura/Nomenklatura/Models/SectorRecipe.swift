@@ -43,90 +43,87 @@ extension SectorRecipe {
     /// SectorFocus — recipes are additive, not a replacement.
     static let allRecipes: [SectorRecipe] = [
 
-        // MARK: Heavy Industry
+        // MARK: Heavy Industry — the STEEL feeder
         SectorRecipe(focusId: "tanks", sector: .heavyIndustry,
-                     inputs: [.steel: 4, .aluminum: 2, .oil: 2]),
+                     inputs: [.steel: 4, .energy: 2]),
         SectorRecipe(focusId: "tractors", sector: .heavyIndustry,
-                     inputs: [.steel: 3, .oil: 1]),
+                     inputs: [.steel: 3]),
         SectorRecipe(focusId: "steel", sector: .heavyIndustry,
-                     inputs: [.iron: 8, .coal: 4],
-                     outputs: [.steel: 6]),
+                     inputs: [.energy: 3],
+                     outputs: [.steel: 8]),
         SectorRecipe(focusId: "machinery", sector: .heavyIndustry,
-                     inputs: [.steel: 2, .aluminum: 1]),
+                     inputs: [.steel: 2, .energy: 1]),
 
-        // MARK: Agriculture
+        // MARK: Agriculture — the GRAIN feeder
         SectorRecipe(focusId: "collectives", sector: .agriculture,
-                     inputs: [.oil: 2],
-                     outputs: [.grain: 10]),
+                     inputs: [.energy: 1],
+                     outputs: [.grain: 12]),
         SectorRecipe(focusId: "private_plots", sector: .agriculture,
-                     outputs: [.grain: 6, .meat: 3]),
+                     outputs: [.grain: 8]),
         SectorRecipe(focusId: "export_crops", sector: .agriculture,
-                     inputs: [.oil: 2],
-                     outputs: [.cotton: 6, .grain: 4]),
+                     outputs: [.grain: 7]),
         SectorRecipe(focusId: "mixed_farming", sector: .agriculture,
-                     outputs: [.grain: 7, .meat: 2]),
+                     outputs: [.grain: 9]),
 
-        // MARK: Light Industry
+        // MARK: Light Industry — consumes energy
         SectorRecipe(focusId: "consumer_goods", sector: .lightIndustry,
-                     inputs: [.cotton: 3, .timber: 2]),
+                     inputs: [.energy: 2]),
         SectorRecipe(focusId: "textiles_export", sector: .lightIndustry,
-                     inputs: [.cotton: 5]),
+                     inputs: [.energy: 1]),
         SectorRecipe(focusId: "military_uniforms", sector: .lightIndustry,
-                     inputs: [.cotton: 4]),
+                     inputs: [.steel: 1]),
         SectorRecipe(focusId: "housing_materials", sector: .lightIndustry,
-                     inputs: [.timber: 4, .steel: 1]),
+                     inputs: [.steel: 2]),
 
-        // MARK: Energy
+        // MARK: Energy — the ENERGY feeder
         SectorRecipe(focusId: "coal", sector: .energy,
-                     outputs: [.coal: 8]),
+                     outputs: [.energy: 9]),
         SectorRecipe(focusId: "oil", sector: .energy,
-                     outputs: [.oil: 6]),
-        SectorRecipe(focusId: "hydroelectric", sector: .energy),
+                     outputs: [.energy: 8]),
+        SectorRecipe(focusId: "hydroelectric", sector: .energy,
+                     outputs: [.energy: 6]),
         SectorRecipe(focusId: "nuclear", sector: .energy,
-                     inputs: [.uranium: 2],
-                     requiredTechEra: .atomic),
+                     outputs: [.energy: 12]),
 
-        // MARK: Mining
+        // MARK: Mining — secondary STEEL feeder
         SectorRecipe(focusId: "iron_ore", sector: .mining,
-                     outputs: [.iron: 8]),
-        SectorRecipe(focusId: "precious_metals", sector: .mining),
+                     outputs: [.steel: 6]),
+        SectorRecipe(focusId: "precious_metals", sector: .mining,
+                     outputs: [.steel: 2]),
         SectorRecipe(focusId: "construction_materials", sector: .mining,
-                     outputs: [.timber: 4]),
+                     outputs: [.steel: 4]),
         SectorRecipe(focusId: "strategic_minerals", sector: .mining,
-                     outputs: [.uranium: 1, .rareEarths: 1],
-                     requiredTechEra: .atomic),
+                     outputs: [.steel: 3, .energy: 2]),
 
-        // MARK: Construction
+        // MARK: Construction — consumes steel
         SectorRecipe(focusId: "housing", sector: .construction,
-                     inputs: [.timber: 3, .steel: 2]),
+                     inputs: [.steel: 3]),
         SectorRecipe(focusId: "factories", sector: .construction,
-                     inputs: [.steel: 4, .aluminum: 1]),
+                     inputs: [.steel: 4]),
         SectorRecipe(focusId: "infrastructure", sector: .construction,
-                     inputs: [.steel: 2, .timber: 2]),
+                     inputs: [.steel: 2, .energy: 1]),
         SectorRecipe(focusId: "military_bases", sector: .construction,
-                     inputs: [.steel: 3, .timber: 2]),
+                     inputs: [.steel: 3]),
 
-        // MARK: Transport
+        // MARK: Transport — consumes energy + steel
         SectorRecipe(focusId: "rail_network", sector: .transport,
-                     inputs: [.steel: 2, .oil: 2]),
+                     inputs: [.steel: 2, .energy: 2]),
         SectorRecipe(focusId: "roads", sector: .transport,
-                     inputs: [.oil: 1]),
+                     inputs: [.energy: 1]),
         SectorRecipe(focusId: "ports", sector: .transport,
-                     inputs: [.steel: 1, .timber: 1]),
+                     inputs: [.steel: 1]),
         SectorRecipe(focusId: "military_logistics", sector: .transport,
-                     inputs: [.oil: 2, .steel: 1]),
+                     inputs: [.energy: 2, .steel: 1]),
 
-        // MARK: Defense
+        // MARK: Defense — consumes steel + energy
         SectorRecipe(focusId: "conventional_arms", sector: .defense,
-                     inputs: [.steel: 3, .aluminum: 1]),
+                     inputs: [.steel: 3]),
         SectorRecipe(focusId: "nuclear_weapons", sector: .defense,
-                     inputs: [.uranium: 2, .steel: 2],
-                     requiredTechEra: .atomic),
+                     inputs: [.steel: 2, .energy: 2]),
         SectorRecipe(focusId: "intelligence_tech", sector: .defense,
-                     inputs: [.rareEarths: 1],
-                     requiredTechEra: .computerized),
+                     inputs: [.energy: 1]),
         SectorRecipe(focusId: "civil_defense", sector: .defense,
-                     inputs: [.steel: 1, .timber: 2])
+                     inputs: [.steel: 1])
     ]
 
     /// Lookup recipe by focus id.
@@ -149,26 +146,26 @@ extension RegionType {
     var defaultEndowments: [StrategicResource: Int] {
         switch self {
         case .capital:
-            // Capital is administrative — modest baseline of consumables
-            return [.grain: 2, .timber: 2]
+            // Administrative — modest grain baseline
+            return [.grain: 3]
         case .industrial:
-            // Industrial heartland — coal + iron + steel (processed) deposits
-            return [.coal: 6, .iron: 4, .timber: 1]
+            // Industrial heartland — energy (coal) + some steel deposits
+            return [.energy: 6, .steel: 2]
         case .agricultural:
-            // Farming region — grain, meat, cotton
-            return [.grain: 8, .meat: 4, .cotton: 3]
+            // Farming region — grain
+            return [.grain: 9]
         case .border:
-            // Frontier — modest extraction, defensive priority
-            return [.timber: 4, .iron: 2, .coal: 2]
+            // Frontier — modest energy + steel
+            return [.energy: 3, .steel: 1]
         case .autonomous:
-            // Ethnic regions often hold rare deposits the center wants
-            return [.oil: 3, .rareEarths: 1, .timber: 2]
+            // Often holds energy deposits the center wants
+            return [.energy: 4]
         case .coastal:
-            // Ports + offshore — oil, cotton (textile trade), aluminum (bauxite)
-            return [.oil: 5, .cotton: 3, .aluminum: 2]
+            // Ports + offshore energy
+            return [.energy: 6]
         case .extractive:
-            // Mining-heavy — coal, iron, uranium, rare earths
-            return [.coal: 8, .iron: 6, .uranium: 1, .rareEarths: 1]
+            // Mining-heavy — energy + steel
+            return [.energy: 7, .steel: 3]
         }
     }
 }

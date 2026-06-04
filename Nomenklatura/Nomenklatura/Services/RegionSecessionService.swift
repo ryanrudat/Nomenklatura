@@ -318,11 +318,24 @@ class RegionSecessionService {
             game.variables["game_over_turn"] = String(game.turnNumber)
         }
 
-        // Severe instability even without game over
+        // Severe instability even without game over.
+        // Apply the heavy one-time shock ONCE per new secession-count level (so each
+        // additional region that secedes lands a discrete blow), then a modest,
+        // survivable recurring drain — instead of re-applying the full -20/-30 every
+        // turn, which previously guaranteed an unstoppable patron-purge loss in ~2 turns.
         if secededRegions.count >= 2 {
-            game.applyStat("stability", change: -20)
-            game.applyStat("patronFavor", change: -30)
-            game.applyStat("worldTension", change: 25)
+            let penalizedLevel = game.intVariable("territorial_shock_level")
+            if secededRegions.count > penalizedLevel {
+                // New territory just fell — discrete shock.
+                game.applyStat("stability", change: -12)
+                game.applyStat("patronFavor", change: -10)
+                game.applyStat("worldTension", change: 15)
+                game.setIntVariable("territorial_shock_level", secededRegions.count)
+            } else {
+                // Ongoing fragmentation — recurring but recoverable pressure.
+                game.applyStat("stability", change: -3)
+                game.applyStat("patronFavor", change: -2)
+            }
         }
     }
 

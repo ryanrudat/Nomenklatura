@@ -83,12 +83,12 @@ enum EmergencyDecree: String, CaseIterable, Codable, Identifiable {
     /// to reserves; negative = drawn from reserves.
     var resourceEffects: [StrategicResource: Int] {
         switch self {
-        case .requisitionGrain:           return [.grain: 30, .coal: 20, .steel: 15]
-        case .emergencyCoalImports:       return [.coal: 20]
-        case .industrialConscription:     return [.steel: 8, .iron: 6]
-        case .strategicReserveLiquidation: return [.coal: 15, .oil: 10, .iron: 10, .steel: 8, .grain: 10]
-        case .blackMarketTolerance:       return [.cotton: 10, .timber: 10, .grain: 8]
-        case .emergencyOilRationing:      return [.oil: 12]
+        case .requisitionGrain:            return [.grain: 30]
+        case .emergencyCoalImports:        return [.energy: 25]
+        case .industrialConscription:      return [.steel: 20]
+        case .strategicReserveLiquidation: return [.steel: 15, .energy: 15, .grain: 15]
+        case .blackMarketTolerance:        return [.grain: 12, .energy: 10]
+        case .emergencyOilRationing:       return [.energy: 15]
         }
     }
 
@@ -101,18 +101,18 @@ enum EmergencyDecree: String, CaseIterable, Codable, Identifiable {
         case .requisitionGrain:
             return (reserves[.grain] ?? 0) <= 5
         case .emergencyCoalImports:
-            return (reserves[.coal] ?? 0) <= 5 && game.treasury >= 15
+            return (reserves[.energy] ?? 0) <= 5 && game.treasury >= 15
         case .industrialConscription:
-            return (reserves[.steel] ?? 0) <= 0 || (reserves[.iron] ?? 0) <= 0
+            return (reserves[.steel] ?? 0) <= 0
         case .strategicReserveLiquidation:
-            // Once per game proxy: only when a multi-resource crisis exists
+            // Only when a multi-resource crisis exists
             let deficitCount = StrategicResource.allCases
                 .filter { (reserves[$0] ?? 0) <= 0 }.count
             return deficitCount >= 2
         case .blackMarketTolerance:
-            return (reserves[.cotton] ?? 0) <= 0 || (reserves[.timber] ?? 0) <= 0
+            return (reserves[.grain] ?? 0) <= 5 || (reserves[.energy] ?? 0) <= 5
         case .emergencyOilRationing:
-            return (reserves[.oil] ?? 0) <= 5
+            return (reserves[.energy] ?? 0) <= 5
         }
     }
 
