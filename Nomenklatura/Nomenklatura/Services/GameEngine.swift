@@ -114,11 +114,11 @@ class GameEngine {
         if let family = game.playerFamily, family.hasFamily {
             switch action.id {
             case "family_evening":
-                family.improveHarmony(8)
+                family.improveHarmony(amount: 8)
                 family.relievePressure()
             case "root_out_informant":
                 let cleared = family.clearInformants()
-                family.damageHarmony(15)
+                family.damageHarmony(amount: 15)
                 if !cleared.isEmpty {
                     outcomeText = "The truth comes out at the kitchen table: \(cleared.joined(separator: ", ")) had been reporting to BPS handlers. There are tears, promises, and a silence that will take years to mend. But the leak is closed."
                 }
@@ -1239,6 +1239,13 @@ class GameEngine {
                 event.game = game
                 game.events.append(event)
             }
+        }
+
+        // Conspiracy — grudges and regime weakness aggregate into an actual
+        // plot: forms silently, recruits, leaks through your network, and
+        // climaxes in a coup attempt resolved against your real defenses.
+        runStep("processConspiracy") {
+            ConspiracyService.shared.processTurn(game: game)
         }
 
         // Family pressure — the household as attack surface. The BPS and the

@@ -20,9 +20,9 @@ app.use((req, res, next) => {
 });
 
 // Shared-secret auth for all /api endpoints. Set PROXY_AUTH_TOKEN in the
-// Render dashboard to the same value as Secrets.proxyAuthToken in the app.
-// If unset, requests pass with a loud warning so an unconfigured deploy
-// degrades open rather than bricking the shipped app.
+// Railway service variables to the same value as Secrets.proxyAuthToken in
+// the app. If unset, requests pass with a loud warning so an unconfigured
+// deploy degrades open rather than bricking the shipped app.
 const PROXY_AUTH_TOKEN = process.env.PROXY_AUTH_TOKEN;
 app.use('/api', (req, res, next) => {
   if (!PROXY_AUTH_TOKEN) {
