@@ -2,16 +2,16 @@
 //  DecreeChargesCounter.swift
 //  Nomenklatura
 //
-//  Small "DECREES n/3" pill surfaced on every UI that can spend a
+//  Small "DECREES n/cap" pill surfaced on every UI that can spend a
 //  Chairman's decree charge. The Chairman shares one decree pool
 //  across four surfaces (SecurityPortal, DirectivePhase, Crisis,
 //  EmergencyDecree); without this counter, the player can strand
-//  themselves by spending all 3 in one menu before realizing none
-//  remain for another.
+//  themselves by spending every charge in one menu before realizing
+//  none remain for another. The cap and regen cadence scale with
+//  ChairmanshipTier (cap 3→8, regen every 50→18 turns).
 //
-//  Aesthetic mirrors the existing inline "\(game.decreeChargesRemaining)/3"
-//  badge embedded in the EXECUTE BY DECREE buttons: gold seal icon,
-//  monospaced tracking, parchment-dark fill.
+//  Aesthetic mirrors the inline charge badge embedded in the EXECUTE BY
+//  DECREE buttons: gold seal icon, monospaced tracking, parchment-dark fill.
 //
 
 import SwiftUI
@@ -26,6 +26,7 @@ struct DecreeChargesCounter: View {
     var emphasizeLowCharges: Bool = true
 
     private var charges: Int { game.decreeChargesRemaining }
+    private var cap: Int { game.chairmanshipTier.decreeMax }
 
     private var tint: Color {
         guard emphasizeLowCharges else { return theme.accentGold }
@@ -42,7 +43,7 @@ struct DecreeChargesCounter: View {
                 .font(.system(size: 11))
                 .foregroundColor(tint.opacity(0.85))
 
-            Text("DECREES \(charges)/3")
+            Text("DECREES \(charges)/\(cap)")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(0.5)
                 .foregroundColor(tint.opacity(0.9))
@@ -57,7 +58,7 @@ struct DecreeChargesCounter: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Decree charges remaining")
-        .accessibilityValue("\(charges) of 3")
+        .accessibilityValue("\(charges) of \(cap)")
     }
 }
 
@@ -69,14 +70,17 @@ struct DecreeChargesCounter: View {
 ///
 /// If `lastDecreeRegenTurn` is set (>0), we compute the precise turn
 /// the next charge will regenerate; otherwise we fall back to the
-/// "in 50 turns" copy.
+/// "in N turns" copy. The interval is tier-scaled (50 → 18 turns) and
+/// must mirror GameEngine's regenerateDecreeCharges step — both read
+/// ChairmanshipTier.decreeRegenInterval.
 func decreeLastChargeWarning(for game: Game) -> String? {
     guard game.decreeChargesRemaining == 1 else { return nil }
+    let interval = game.chairmanshipTier.decreeRegenInterval
     if game.lastDecreeRegenTurn > 0 {
-        let nextTurn = game.lastDecreeRegenTurn + 50
+        let nextTurn = game.lastDecreeRegenTurn + interval
         return "\u{26A0} This is your last decree charge. Next regenerates around turn \(nextTurn)."
     } else {
-        return "\u{26A0} This is your last decree charge. Next regenerates in 50 turns."
+        return "\u{26A0} This is your last decree charge. Next regenerates in \(interval) turns."
     }
 }
 

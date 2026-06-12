@@ -426,6 +426,7 @@ final class StandingCommitteeMeetingService {
         // Apply effects of passed items
         for result in results where result.passed {
             applyItemEffects(item: result.item, game: game)
+            StandingCommitteeService.shared.resolveLawChangeIfNeeded(item: result.item, passed: true, game: game)
         }
 
         // Update faction balance
@@ -498,7 +499,7 @@ final class StandingCommitteeMeetingService {
             let loyaltyInfluence = max(0, member.personalityLoyal - 40) / 5
             switch playerVote {
             case .for: voteScore += loyaltyInfluence
-            case .against: voteScore += loyaltyInfluence  // Follow chair either way
+            case .against: voteScore -= loyaltyInfluence  // Follow chair either way
             case .abstain: break
             }
         }

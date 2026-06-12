@@ -1043,6 +1043,13 @@ class CharacterInteractionSystem {
             // Update character's evidence level
             character.evidenceLevel = min(100, character.evidenceLevel + evidenceGained)
 
+            // Enough material on the primary rival unlocks the formal
+            // denunciation play (cleared when a new rival is designated).
+            if character.isRival && character.evidenceLevel >= 40
+                && !game.flags.contains("rival_evidence_collected") {
+                game.flags.append("rival_evidence_collected")
+            }
+
             // Personality reveal
             if interaction.id.contains("personality") {
                 personalityRevealed = true
@@ -1753,8 +1760,7 @@ class CharacterInteractionSystem {
 
             // Target becomes hostile
             relationshipDamage = isPublicAccusation ? -40 : -20
-            character.disposition += relationshipDamage // Actually += because it's negative... let me fix
-            character.disposition = max(-100, character.disposition - abs(relationshipDamage))
+            character.disposition = max(-100, character.disposition + relationshipDamage)
 
             // If they find out who denounced them
             if !interaction.id.contains("anonymous") || Double.random(in: 0...1) < 0.3 {

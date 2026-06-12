@@ -189,6 +189,11 @@ final class MilitaryActionService {
             )
         }
 
+        // Unilateral execution of a committee-flagged action has a political price.
+        if validation.requiresApproval {
+            game.applyCommitteeBypassCost(actionTitle: action.name)
+        }
+
         // Check if this is a multi-turn campaign
         if action.executionTurns > 1 && action.successEffects.startsCampaign {
             return initiateCampaign(action, targetTheater: targetTheater, successChance: validation.successChance, for: game)

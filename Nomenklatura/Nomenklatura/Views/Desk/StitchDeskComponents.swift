@@ -900,11 +900,14 @@ struct StitchBottomTabBar: View {
 struct EndTurnConfirmationSheet: View {
     let game: Game
     let pendingDocuments: [DeskDocument]
+    /// The turn's central scenario, when it still awaits a decision —
+    /// ending the turn leaves it unsigned (Standing -3, Patron Favor -2).
+    var unsignedDecisionPresenter: String? = nil
     let onConfirm: () -> Void
     let onCancel: () -> Void
 
     private var hasUrgentItems: Bool {
-        pendingDocuments.contains { $0.urgencyEnum >= .urgent }
+        unsignedDecisionPresenter != nil || pendingDocuments.contains { $0.urgencyEnum >= .urgent }
     }
 
     private var hasCriticalItems: Bool {
@@ -939,6 +942,30 @@ struct EndTurnConfirmationSheet: View {
             .background(ColdWarTheme.shared.cardstock)
 
             Divider()
+
+            // The day's central decision still awaits a signature
+            if let presenter = unsignedDecisionPresenter {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "signature")
+                            .font(.system(size: 12))
+                            .foregroundColor(ColdWarTheme.shared.urgentRed)
+                        Text("THE DAY'S DECISION — UNSIGNED")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1)
+                            .foregroundColor(ColdWarTheme.shared.urgentRed)
+                    }
+
+                    Text("The matter raised by \(presenter) will go unanswered. The apparatus notes indecision at the top. (Standing \u{2212}3, Patron Favor \u{2212}2)")
+                        .font(.system(size: 11, design: .serif))
+                        .foregroundColor(ColdWarTheme.shared.inkBlack)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(ColdWarTheme.shared.urgentRed.opacity(0.08))
+
+                Divider()
+            }
 
             // Pending items warning
             if !pendingDocuments.isEmpty {
@@ -986,7 +1013,7 @@ struct EndTurnConfirmationSheet: View {
                 }
                 .padding()
                 .background(ColdWarTheme.shared.agedPaper.opacity(0.5))
-            } else {
+            } else if unsignedDecisionPresenter == nil {
                 VStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 32))

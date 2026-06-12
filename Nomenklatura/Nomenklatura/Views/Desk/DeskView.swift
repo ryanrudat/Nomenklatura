@@ -282,6 +282,7 @@ struct DeskView: View {
             EndTurnConfirmationSheet(
                 game: game,
                 pendingDocuments: documentQueue.getActiveDocuments(for: game).filter { $0.requiresDecision },
+                unsignedDecisionPresenter: (currentScenario?.requiresDecision == true) ? currentScenario?.presenterName : nil,
                 onConfirm: {
                     showEndTurnConfirmation = false
                     processEndTurnWithConsequences()

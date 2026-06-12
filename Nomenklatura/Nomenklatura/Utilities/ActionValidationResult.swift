@@ -40,3 +40,44 @@ struct ActionValidationResult {
         ActionValidationResult(canExecute: false, reason: reason)
     }
 }
+
+// MARK: - Committee oversight cost
+
+extension Game {
+    /// Political price of executing a Standing-Committee-flagged action
+    /// without convening the committee (and without a decree). The committee
+    /// resents being bypassed — scaled by how consolidated the Chairman is.
+    /// At Supreme tier the committee is ceremonial and the cost vanishes;
+    /// at The Core it grumbles quietly; below that, every unilateral move
+    /// feeds the resentment that drives the strongman-fragility loop.
+    /// Returns the applied stat deltas for callers that surface them.
+    @discardableResult
+    func applyCommitteeBypassCost(actionTitle: String) -> [String: Int] {
+        let eliteCost: Int
+        let resentment: Int
+        switch chairmanshipTier {
+        case .supremeChairman:
+            return [:]   // the committee ratifies whatever you decide
+        case .theCore:
+            eliteCost = -1
+            resentment = 1
+        default:
+            eliteCost = -3
+            resentment = 2
+        }
+
+        applyStat("eliteLoyalty", change: eliteCost)
+        setIntVariable("elite_resentment", min(100, intVariable("elite_resentment") + resentment))
+
+        let event = GameEvent(
+            turnNumber: turnNumber,
+            eventType: .decision,
+            summary: "\(actionTitle): executed without Standing Committee approval. The committee notes it was not consulted."
+        )
+        event.importance = 4
+        event.game = self
+        events.append(event)
+
+        return ["eliteLoyalty": eliteCost]
+    }
+}

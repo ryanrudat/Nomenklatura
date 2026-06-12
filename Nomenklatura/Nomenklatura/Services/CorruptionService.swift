@@ -126,7 +126,10 @@ final class CorruptionService {
     // MARK: - Investigation Consequences
 
     /// Handle investigation result
-    func handleInvestigation(for game: Game) -> InvestigationResult {
+    /// Resolve an open Discipline Commission inquiry. `modifier` shifts the
+    /// threshold by the player's chosen stance (negative = safer): cooperate
+    /// -10, call in the patron -20, stonewall +5 (looks guilty).
+    func handleInvestigation(for game: Game, modifier: Int = 0) -> InvestigationResult {
         var rng = game.rng
         defer { game.rng = rng }
         let evidence = game.corruptionEvidence
@@ -139,7 +142,7 @@ final class CorruptionService {
 
         // Roll against evidence
         let roll = Int.random(in: 1...100, using: &rng)
-        let threshold = evidence - protectionBonus - patronProtection
+        let threshold = evidence - protectionBonus - patronProtection + modifier
 
         if roll > threshold {
             // Survived investigation
@@ -163,10 +166,18 @@ final class CorruptionService {
                 message: "You received a formal Party reprimand. Significant assets were 'returned to the state'."
             )
         } else {
-            // Serious consequences
+            // Serious consequences: the scandal breaks containment. With
+            // evidence >= 70 and weak protection, corruption_exposed arms the
+            // corruption loss condition in GameEngine.checkLossConditions.
+            game.applyStat("standing", change: -20)
+            game.applyStat("eliteLoyalty", change: -10)
+            game.applyStat("personalWealth", change: -30)
+            if !game.flags.contains("corruption_exposed") {
+                game.flags.append("corruption_exposed")
+            }
             return InvestigationResult(
                 outcome: .demoted,
-                message: "The investigation has cost you your position. You have been 'transferred to other work'."
+                message: "The Commission's findings have leaked beyond containment. Your name and the word 'corruption' now travel together. Only your patron and your standing keep the wolves at bay."
             )
         }
     }

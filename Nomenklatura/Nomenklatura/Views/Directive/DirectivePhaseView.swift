@@ -447,7 +447,7 @@ struct DirectivePhaseView: View {
                     .font(.system(size: 10, weight: .heavy, design: .monospaced))
                     .tracking(1.2)
                 Spacer()
-                Text("\(game.decreeChargesRemaining)/3")
+                Text("\(game.decreeChargesRemaining)/\(game.chairmanshipTier.decreeMax)")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .opacity(0.85)
             }
@@ -465,7 +465,7 @@ struct DirectivePhaseView: View {
         .disabled(!isAvailable)
         .padding(.horizontal, 8)
         .accessibilityHint(isAvailable
-            ? "Bypass Standing Committee approval at a steep political cost. \(game.decreeChargesRemaining) of 3 charges remaining."
+            ? "Bypass Standing Committee approval at a steep political cost. \(game.decreeChargesRemaining) of \(game.chairmanshipTier.decreeMax) charges remaining."
             : (game.decreeChargesRemaining == 0
                 ? "No decree charges remaining. Charges regenerate slowly."
                 : "Insufficient directive points."))

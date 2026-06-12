@@ -80,7 +80,16 @@ class GameEngine {
         // If discovered, there are consequences
         var outcomeText = ""
         var newFlags: [String] = []
-        let removedFlags: [String] = []
+
+        // One-shot opportunity flags are consumed by the action that spends
+        // them: evidence is used up in the denunciation, a scandal goes stale
+        // once exploited. Re-collect before playing the card again.
+        var removedFlags: [String] = []
+        switch action.id {
+        case "denounce_rival": removedFlags.append("rival_evidence_collected")
+        case "exploit_scandal": removedFlags.append("rival_scandal_brewing")
+        default: break
+        }
 
         if discoveryResult.wasDiscovered {
             // Discovery consequences based on action type
@@ -475,11 +484,13 @@ class GameEngine {
     private func getSuccessFlags(action: PersonalAction) -> [String] {
         switch action.id {
         case "gather_intel_rival":
-            return ["sullivan_weakness_known"]
+            // Unlocks the "Formally denounce" high-stakes play — evidence is
+            // the gate, whether honestly gathered or fabricated.
+            return ["rival_evidence_collected"]
         case "begin_coup":
             return ["coup_preparations_begun"]
         case "frame_conspiracy":
-            return ["sullivan_under_investigation"]
+            return ["rival_evidence_collected"]
         case "order_show_trial":
             return ["show_trial_conducted"]
         case "launch_anticorruption":
@@ -989,7 +1000,7 @@ class GameEngine {
         runStep("regenerateDecreeCharges") {
             let tier = game.chairmanshipTier
             let maxCharges = tier.decreeMax
-            let regenInterval = max(10, 50 - tier.rawValue * 8)   // 50 → 18 across tiers
+            let regenInterval = tier.decreeRegenInterval   // 50 → 18 across tiers
             let turnsSinceLastRegen = game.turnNumber - game.lastDecreeRegenTurn
             if turnsSinceLastRegen >= regenInterval && game.decreeChargesRemaining < maxCharges {
                 game.decreeChargesRemaining = min(maxCharges, game.decreeChargesRemaining + 1)
@@ -1133,9 +1144,80 @@ class GameEngine {
             processPoliticalAI(game: game)
         }
 
+        // Standing Committee roster upkeep — purged, dead, and exiled members
+        // vacate their seats, candidate members step up, and patronage refills
+        // the bench. Every 20 turns the Party Congress re-elects the committee
+        // outright (the cadence SessionsView advertises).
+        runStep("processCommitteeRoster") {
+            guard let committee = game.standingCommittee else { return }
+            let service = StandingCommitteeService.shared
+
+            // Senior tenure feeds SC eligibility (12+ turns at position 4+) —
+            // without this accrual the candidate pool never grows.
+            service.updateSeniorTenure(game: game)
+
+            for change in service.processVacancies(committee: committee, game: game) {
+                let event = GameEvent(
+                    turnNumber: game.turnNumber,
+                    eventType: .standingCommitteeMeeting,
+                    summary: change
+                )
+                event.importance = 6
+                event.game = game
+                game.events.append(event)
+            }
+
+            if game.turnNumber > 0 && game.turnNumber % 20 == 0 {
+                let result = service.runPartyCongressElection(game: game)
+                let event = GameEvent(
+                    turnNumber: game.turnNumber,
+                    eventType: .standingCommitteeMeeting,
+                    summary: result.narrative
+                )
+                event.importance = 8
+                event.game = game
+                game.events.append(event)
+
+                JournalService.shared.addEntry(
+                    to: game,
+                    category: .committeeActivity,
+                    title: "Party Congress: Standing Committee Elected",
+                    content: result.narrative,
+                    importance: 8,
+                    showToast: true
+                )
+            }
+        }
+
         // Standing Committee meetings - convene periodically and process decisions
         runStep("processStandingCommitteeCycle") {
             processStandingCommitteeCycle(game: game)
+        }
+
+        // Corruption pressure: wealth visibility fades as people forget, and
+        // an open Discipline Commission inquiry (stance flag set by the
+        // investigation event) resolves with real consequences.
+        runStep("processCorruption") {
+            CorruptionService.shared.applyVisibilityDecay(for: game)
+
+            if let stanceFlag = game.flags.first(where: { $0.hasPrefix("corruption_inv_") }) {
+                game.flags.removeAll { $0.hasPrefix("corruption_inv_") }
+                let modifier: Int
+                switch stanceFlag {
+                case "corruption_inv_cooperate": modifier = -10
+                case "corruption_inv_patron": modifier = -20
+                default: modifier = 5   // stonewalling looks guilty
+                }
+                let result = CorruptionService.shared.handleInvestigation(for: game, modifier: modifier)
+                let event = GameEvent(
+                    turnNumber: game.turnNumber,
+                    eventType: .crisis,
+                    summary: result.message
+                )
+                event.importance = result.outcome == .cleared ? 6 : 8
+                event.game = game
+                game.events.append(event)
+            }
         }
 
         // Position offers - check expirations and generate new offers
@@ -2183,6 +2265,10 @@ class GameEngine {
         for character in game.characters where character.isRival {
             character.isRival = false
         }
+
+        // Intel gathered on the previous rival doesn't transfer to the new one —
+        // stale evidence/scandal opportunities must be re-earned.
+        game.flags.removeAll { $0 == "rival_evidence_collected" || $0 == "rival_scandal_brewing" }
 
         // Credible peers: alive, not the patron, senior (positionIndex >= 5), with
         // real ambition — the figures who could actually replace you.

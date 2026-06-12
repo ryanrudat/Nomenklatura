@@ -68,7 +68,7 @@ struct PersonalAction: Codable, Identifiable {
         if let requiredFlags = reqs.requiredFlags {
             for flag in requiredFlags {
                 if !game.flags.contains(flag) {
-                    return (false, "Missing requirement")
+                    return (false, Self.requirementDescription(forFlag: flag))
                 }
             }
         }
@@ -104,6 +104,20 @@ struct PersonalAction: Codable, Identifiable {
         }
 
         return (true, nil)
+    }
+
+    /// Player-readable lock reason for a missing requirement flag. Known
+    /// opportunity flags get a hint at how to earn them; unknown flags fall
+    /// back to generic copy.
+    static func requirementDescription(forFlag flag: String) -> String {
+        switch flag {
+        case "rival_evidence_collected":
+            return "Requires evidence on your rival — gather intelligence or order an investigation first"
+        case "rival_scandal_brewing":
+            return "Requires an active scandal around your rival"
+        default:
+            return "Missing requirement"
+        }
     }
 }
 

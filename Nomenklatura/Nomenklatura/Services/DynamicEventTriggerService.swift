@@ -1410,11 +1410,11 @@ class DynamicEventTriggerService {
     private func checkCorruptionEvents(game: Game) -> [DynamicEvent] {
         var events: [DynamicEvent] = []
 
-        // Check if player should face corruption investigation
+        // Check if player should face corruption investigation. The service's
+        // risk-band roll (5/15/30% by exposure tier) is the whole gate — the
+        // old extra 15% roll made investigations near-nonexistent.
         if CorruptionService.shared.shouldTriggerInvestigation(for: game) {
-            if Double.random(in: 0...1) < 0.15 {  // 15% chance when conditions met
-                events.append(generateCorruptionInvestigationEvent(game: game))
-            }
+            events.append(generateCorruptionInvestigationEvent(game: game))
         }
 
         return events
@@ -1429,24 +1429,30 @@ class DynamicEventTriggerService {
             turnGenerated: game.turnNumber,
             isUrgent: true,
             responseOptions: [
+                // Each stance sets a flag GameEngine's processCorruption step
+                // resolves at end of turn via CorruptionService.handleInvestigation.
                 EventResponse(
                     id: "cooperate",
                     text: "Cooperate fully - you have nothing to hide",
                     shortText: "Cooperate",
-                    effects: ["standing": -5]
+                    effects: ["standing": -5],
+                    setsFlag: "corruption_inv_cooperate"
                 ),
                 EventResponse(
                     id: "lawyer",
                     text: "Request time to prepare your records",
                     shortText: "Delay",
-                    effects: ["network": -3]
+                    effects: ["network": -3, "corruptionEvidence": -8],
+                    followUpHint: "Doctored ledgers — but stonewalling looks guilty",
+                    setsFlag: "corruption_inv_delay"
                 ),
                 EventResponse(
                     id: "patron",
                     text: "Contact your ally immediately",
                     shortText: "Call Patron",
                     effects: ["patronFavor": -10],
-                    followUpHint: "Uses significant political capital"
+                    followUpHint: "Uses significant political capital",
+                    setsFlag: "corruption_inv_patron"
                 )
             ],
             iconName: "exclamationmark.shield.fill",

@@ -19,6 +19,23 @@ extension DeskView {
             applyDocumentConsequence(doc)
         }
 
+        // The day's central decision was left unsigned. Ducking the dilemma
+        // is itself a decision — the apparatus notices indecision at the top.
+        // Sting is deliberately milder than most bad option outcomes.
+        if let scenario = currentScenario, scenario.requiresDecision {
+            game.applyStat("standing", change: -3)
+            game.applyStat("patronFavor", change: -2)
+
+            let event = GameEvent(
+                turnNumber: game.turnNumber,
+                eventType: .decision,
+                summary: "Left unsigned: the matter raised by \(scenario.presenterName) went unanswered. The apparatus notes the Chairman's silence."
+            )
+            event.importance = 5
+            event.game = game
+            game.events.append(event)
+        }
+
         // Clear current scenario/newspaper state
         currentScenario = nil
         currentNewspaper = nil

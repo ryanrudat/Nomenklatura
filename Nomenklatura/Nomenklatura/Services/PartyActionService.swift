@@ -218,6 +218,11 @@ final class PartyActionService {
             )
         }
 
+        // Unilateral execution of a committee-flagged action has a political price.
+        if validation.requiresApproval {
+            game.applyCommitteeBypassCost(actionTitle: action.name)
+        }
+
         // Check if this is a multi-turn campaign
         if action.executionTurns > 1 && action.successEffects.initiatesCampaign {
             return initiateCampaign(action, targetDepartment: targetDepartment, successChance: validation.successChance, for: game)
@@ -427,8 +432,9 @@ final class PartyActionService {
         }
 
         // Decrease target's disposition, increase grudge
+        // (GameCharacter.grudgeLevel: -100..100, NEGATIVE = grudge)
         target.disposition = max(-100, target.disposition - 25)
-        target.grudgeLevel = min(100, target.grudgeLevel + 30)
+        target.grudgeLevel = max(-100, target.grudgeLevel - 30)
 
         // Target becomes less loyal
         target.personalityLoyal = max(0, target.personalityLoyal - 20)
@@ -444,14 +450,17 @@ final class PartyActionService {
         }
 
         // Devastate target's disposition and loyalty
+        // (GameCharacter.grudgeLevel: -100..100, NEGATIVE = grudge)
         target.disposition = max(-100, target.disposition - 50)
-        target.grudgeLevel = min(100, target.grudgeLevel + 50)
+        target.grudgeLevel = max(-100, target.grudgeLevel - 50)
         target.personalityLoyal = max(0, target.personalityLoyal - 40)
         target.fearLevel = max(0, target.fearLevel - 40)
         target.trustLevel = 0
 
-        // Remove from position track
-        target.positionIndex = 0
+        // Out of the party means out of office: clear the position (vacancy
+        // pattern) and drop them from active service so they can't remain a
+        // bureau chief or SC-eligible while "expelled".
+        target.markRemovedFromPosition(reason: .retired, turn: game.turnNumber)
     }
 
     // MARK: - Result Description

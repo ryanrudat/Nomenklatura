@@ -225,6 +225,13 @@ class NPCLifeEventsService {
         // Determine type of scandal based on personality
         let scandalType = determineScandalType(for: character, using: &rng)
 
+        // A scandal touching the player's principal rival is an opening —
+        // unlocks the "Exploit scandal" personal action (consumed on use,
+        // cleared if a new rival is designated).
+        if character.isRival && !game.flags.contains("rival_scandal_brewing") {
+            game.flags.append("rival_scandal_brewing")
+        }
+
         return NPCLifeEventResult(
             character: character,
             eventType: .scandal,

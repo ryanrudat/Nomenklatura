@@ -541,7 +541,7 @@ extension GameCharacter {
     /// should prefer this helper to do the right thing in one step.
     ///
     /// Only call with a "removal" status (`.dead`, `.executed`, `.imprisoned`,
-    /// `.exiled`). For temporary / pending statuses (`.detained`,
+    /// `.exiled`, `.retired`). For temporary / pending statuses (`.detained`,
     /// `.underInvestigation`, `.disappeared`, `.rehabilitated`), the character
     /// is still nominally in role and `positionIndex` must NOT be cleared.
     func markRemovedFromPosition(reason: CharacterStatus, turn: Int) {

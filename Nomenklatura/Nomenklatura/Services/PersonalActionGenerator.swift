@@ -837,6 +837,29 @@ final class PersonalActionGenerator {
             ))
         }
 
+        // Counterplay for the corruption system: visible once the player has
+        // something worth hiding. Effects are plain applyStat keys; discovery
+        // risk rides the generic medium-risk roll (laundering can be caught).
+        if game.wealthVisibility >= 20 || game.corruptionEvidence >= 20 {
+            actions.append(PersonalAction(
+                id: "launder_wealth",
+                category: .securePosition,
+                title: "Quiet the ledgers",
+                description: "Move assets through trusted intermediaries and let certain records go missing.",
+                costAP: 1,
+                riskLevel: .medium,
+                requirements: ActionRequirements(minNetwork: 20),
+                effects: ["wealthVisibility": -18, "corruptionEvidence": -12, "personalWealth": -8],
+                isLocked: false,
+                flavorText: "Paper burns. Memories can be encouraged to fade.",
+                successNarratives: [
+                    "The ledgers are clean. The men who cleaned them know better than to remember.",
+                    "Certain files have been re-archived. Incorrectly. Permanently.",
+                    "Your wealth is quieter now. Quieter is safer."
+                ]
+            ))
+        }
+
         // Check for scandal flags that create opportunities
         if game.flags.contains("rival_scandal_brewing") {
             if let rival = rival {
@@ -948,7 +971,7 @@ final class PersonalActionGenerator {
                     requiredFlags: ["rival_evidence_collected"]
                 ),
                 effects: ["rivalThreat": -40, "standing": 15, "reputationRuthless": 20],
-                isLocked: true,
+                isLocked: false,
                 lockReason: "Requires Standing 70+, Network 50+, and collected evidence",
                 flavorText: "The accusation is the weapon. The evidence is ammunition."
             ))

@@ -1101,7 +1101,7 @@ struct SecurityActionCard: View {
                             .font(.system(size: 11, weight: .heavy))
                             .tracking(1.2)
                         Spacer()
-                        Text("\(game.decreeChargesRemaining)/3")
+                        Text("\(game.decreeChargesRemaining)/\(game.chairmanshipTier.decreeMax)")
                             .font(.system(size: 10, weight: .bold))
                             .opacity(0.85)
                     }

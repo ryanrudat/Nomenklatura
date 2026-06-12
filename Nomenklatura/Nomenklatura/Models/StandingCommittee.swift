@@ -199,6 +199,11 @@ struct CommitteeAgendaItem: Codable, Identifiable {
     var turnSubmitted: Int
     var effects: [String: Int] = [:] // Game state effects when passed (e.g., ["stability": 5, "popularSupport": -3])
 
+    // Law-change proposals carry the target so vote resolution can apply
+    // the change via processLawChangeVote (optionals: old saves decode as nil).
+    var relatedLawId: String? = nil
+    var proposedLawState: String? = nil   // LawState rawValue
+
     // Voting tracking
     var hasBeenVoted: Bool = false
     var votesFor: [String] = []      // Member IDs who voted for
@@ -368,9 +373,10 @@ final class StandingCommitteeService {
     func isEligibleForStandingCommittee(_ character: GameCharacter, game: Game) -> SCEligibilityResult {
         var failureReasons: [String] = []
 
-        // Must be alive
-        guard character.isAlive else {
-            return SCEligibilityResult(isEligible: false, reasons: ["Not active"])
+        // Must be in active service — exiled/imprisoned/disappeared characters
+        // are "alive" (they can return someday) but cannot hold a seat.
+        guard character.isAlive, character.isActive else {
+            return SCEligibilityResult(isEligible: false, reasons: ["Not in active service"])
         }
 
         // Position Level 5+ (Senior Politburo)
@@ -435,14 +441,18 @@ final class StandingCommitteeService {
         let chair = game.characters.first { $0.templateId == committee.chairId }
         let chairFactionId = chair?.factionId
 
-        // Calculate election scores for each candidate
+        // Calculate election scores for each candidate (seeded — elections
+        // must replay identically from the same save)
+        var rng = game.rng
+        defer { game.rng = rng }
         var candidateScores: [(character: GameCharacter, score: Double)] = []
 
         for candidate in candidates {
             let score = calculateElectionScore(
                 candidate: candidate,
                 game: game,
-                chairFactionId: chairFactionId
+                chairFactionId: chairFactionId,
+                using: &rng
             )
             candidateScores.append((candidate, score))
         }
@@ -463,6 +473,17 @@ final class StandingCommitteeService {
         }
         let addedMembers = addedMemberIds.compactMap { id in
             game.characters.first { $0.templateId == id }
+        }
+
+        // Losing a seat stings; gaining one is owed to the chairman's order.
+        // (GameCharacter.grudgeLevel: -100..100, NEGATIVE = grudge)
+        for member in removedMembers {
+            member.disposition = max(-100, member.disposition - 10)
+            member.grudgeLevel = max(-100, member.grudgeLevel - 15)
+        }
+        for member in addedMembers {
+            member.disposition = min(100, member.disposition + 5)
+            member.gratitudeLevel = min(100, member.gratitudeLevel + 10)
         }
 
         // Update committee composition - split into full and candidate members
@@ -498,7 +519,8 @@ final class StandingCommitteeService {
     private func calculateElectionScore(
         candidate: GameCharacter,
         game: Game,
-        chairFactionId: String?
+        chairFactionId: String?,
+        using rng: inout SeededRNG
     ) -> Double {
         var score: Double = 0
 
@@ -526,8 +548,14 @@ final class StandingCommitteeService {
         let positionScore = Double(candidate.positionIndex ?? 0) * 1.5
         score += min(positionScore, 10.0)
 
+        // The velvet coffin closes: a member promoted sideways into a
+        // ceremonial role has no real base left to campaign from.
+        if candidate.hasCeremonialRole(in: game) {
+            score *= 0.5
+        }
+
         // Random variance (+/- 5%)
-        let variance = Double.random(in: -5...5)
+        let variance = Double.random(in: -5...5, using: &rng)
         score += variance
 
         return max(0, score)
@@ -591,6 +619,56 @@ final class StandingCommitteeService {
         return nil
     }
 
+    /// Per-turn roster upkeep: prune members no longer in active service,
+    /// promote candidate members into vacated full seats, and refill the
+    /// bench by patronage appointment. This is what makes purges, deaths,
+    /// and exiles actually reshape the committee between Party Congress
+    /// elections. Returns player-facing change descriptions for the journal.
+    func processVacancies(committee: StandingCommittee, game: Game) -> [String] {
+        var changes: [String] = []
+
+        // A member keeps their seat through temporary statuses (detention,
+        // investigation — nominally still in role); removal statuses and
+        // vanished characters vacate it.
+        func holdsSeat(_ id: String) -> Bool {
+            guard let character = game.characters.first(where: { $0.templateId == id }) else { return false }
+            switch character.currentStatus {
+            case .active, .detained, .underInvestigation, .rehabilitated:
+                return true
+            default:
+                return false
+            }
+        }
+
+        let vacated = committee.memberIds.filter { !holdsSeat($0) }
+        for id in vacated {
+            let name = game.characters.first(where: { $0.templateId == id })?.name ?? "A member"
+            changes.append("\(name)'s seat on the Standing Committee stands vacant.")
+        }
+        committee.fullMemberIds.removeAll { !holdsSeat($0) }
+        committee.candidateMemberIds.removeAll { !holdsSeat($0) }
+
+        // Candidate members exist precisely as the bench — step them up.
+        while committee.fullMemberIds.count < 5, !committee.candidateMemberIds.isEmpty {
+            let promotedId = committee.candidateMemberIds.removeFirst()
+            committee.fullMemberIds.append(promotedId)
+            if let promoted = game.characters.first(where: { $0.templateId == promotedId }) {
+                changes.append("\(promoted.name) elevated to full membership of the Standing Committee.")
+            }
+        }
+
+        // Refill the bench (stops quietly if no one is eligible).
+        while committee.memberIds.count < 7 {
+            guard let appointee = fillVacancy(committee: committee, game: game) else { break }
+            changes.append("\(appointee.name) appointed candidate member of the Standing Committee.")
+        }
+
+        if !changes.isEmpty {
+            updateFactionBalance(committee: committee, game: game)
+        }
+        return changes
+    }
+
     /// Update senior tenure for all characters (call at end of each turn)
     func updateSeniorTenure(game: Game) {
         for character in game.characters where character.isAlive {
@@ -617,8 +695,13 @@ final class StandingCommitteeService {
             return false
         }
 
+        // One pending proposal per law — no stacking before the next meeting
+        if committee.pendingAgenda.contains(where: { $0.relatedLawId == law.lawId }) {
+            return false
+        }
+
         // Create agenda item for the law change
-        let item = CommitteeAgendaItem(
+        var item = CommitteeAgendaItem(
             title: "Modify: \(law.name)",
             description: "Proposal to change \(law.name) from \(law.lawCurrentState.displayName) to \(newState.displayName)",
             category: .policy,
@@ -626,12 +709,36 @@ final class StandingCommitteeService {
             sponsorId: sponsor?.templateId,
             turnSubmitted: game.turnNumber
         )
+        item.relatedLawId = law.lawId
+        item.proposedLawState = newState.rawValue
 
         var agenda = committee.pendingAgenda
         agenda.append(item)
         committee.pendingAgenda = agenda
 
         return true
+    }
+
+    /// If an agenda item is a law-change proposal, resolve it: on pass the
+    /// law is modified, consequences scheduled, and gates (term limits)
+    /// updated. Called from BOTH meeting paths — interactive
+    /// (StandingCommitteeMeetingService.completeMeeting) and autonomous
+    /// (conveneMeeting). No-op for ordinary agenda items.
+    func resolveLawChangeIfNeeded(item: CommitteeAgendaItem, passed: Bool, game: Game) {
+        guard let lawId = item.relatedLawId,
+              let rawState = item.proposedLawState,
+              let newState = LawState(rawValue: rawState),
+              let law = game.laws.first(where: { $0.lawId == lawId }) else { return }
+
+        let sponsorName = game.characters.first(where: { $0.templateId == item.sponsorId })?.name ?? "The Chairman"
+        processLawChangeVote(
+            item: item,
+            law: law,
+            newState: newState,
+            passed: passed,
+            sponsorName: sponsorName,
+            game: game
+        )
     }
 
     /// Process a law change vote result
@@ -779,6 +886,7 @@ final class StandingCommitteeService {
         for item in committee.pendingAgenda.sorted(by: { priorityOrder($0.priority) > priorityOrder($1.priority) }) {
             let result = processAgendaItem(item: item, committee: committee, meeting: &meeting, game: game)
             results.append(result)
+            resolveLawChangeIfNeeded(item: item, passed: result.outcome == .approved, game: game)
 
             var updatedItem = item
             updatedItem.hasBeenVoted = true

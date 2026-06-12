@@ -196,6 +196,12 @@ class DiplomaticActionService {
             )
         }
 
+        // Unilateral execution of a committee-flagged action has a political
+        // price (the service's own helper handles emergency-powers bypass).
+        if requiresCommitteeApproval(action, for: game) {
+            game.applyCommitteeBypassCost(actionTitle: action.name)
+        }
+
         // Check if this is a multi-turn action
         if action.executionTurns > 0 {
             return initiateMultiTurnAction(action, targetCountry: targetCountry, game: game, modelContext: modelContext)

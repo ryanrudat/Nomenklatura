@@ -217,14 +217,18 @@ struct ScenarioValidator {
 
         let combinedText = allText.joined(separator: " ").lowercased()
 
-        // Check for inappropriate content
+        // Check for inappropriate content. Match on word boundaries, not raw
+        // substrings — purge fiction legitimately produces "trumped-up charges",
+        // and a substring match on "trump" would silently reject the scenario
+        // and degrade to canned fallback content.
         let blockedTerms = [
             "real person", "actual politician", "trump", "biden", "putin", "xi jinping",
             "explicit", "sexual", "nude", "graphic violence", "torture details"
         ]
 
         for term in blockedTerms {
-            if combinedText.contains(term) {
+            let pattern = "\\b" + NSRegularExpression.escapedPattern(for: term) + "\\b"
+            if combinedText.range(of: pattern, options: .regularExpression) != nil {
                 return "Content contains blocked term: \(term)"
             }
         }

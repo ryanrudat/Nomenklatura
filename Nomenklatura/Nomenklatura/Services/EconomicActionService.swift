@@ -193,6 +193,11 @@ final class EconomicActionService {
             )
         }
 
+        // Unilateral execution of a committee-flagged action has a political price.
+        if validation.requiresApproval {
+            game.applyCommitteeBypassCost(actionTitle: action.name)
+        }
+
         // Check if this is a multi-turn project
         if action.executionTurns > 1 && action.successEffects.startsProject {
             return initiateProject(action, targetSector: targetSector, successChance: validation.successChance, for: game)

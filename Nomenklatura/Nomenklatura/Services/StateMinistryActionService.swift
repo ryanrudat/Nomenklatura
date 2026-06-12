@@ -242,6 +242,11 @@ final class StateMinistryActionService {
             )
         }
 
+        // Unilateral execution of a committee-flagged action has a political price.
+        if validation.requiresApproval {
+            game.applyCommitteeBypassCost(actionTitle: action.name)
+        }
+
         // Check if this is a multi-turn project
         if action.executionTurns > 1 && action.successEffects.initiatesProject {
             return initiateProject(

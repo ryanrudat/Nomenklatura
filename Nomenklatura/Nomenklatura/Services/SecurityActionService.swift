@@ -197,6 +197,13 @@ final class SecurityActionService {
             applyDecreeCost(for: game)
         }
 
+        // Unilateral execution of a committee-flagged action has a political
+        // price — waived when formally decreed (the decree pays its own,
+        // larger bill); validation already reports false on the decree path.
+        if validation.requiresApproval {
+            game.applyCommitteeBypassCost(actionTitle: action.name)
+        }
+
         // Prosecution pipeline registration: any action that initiates a
         // prosecution-style pipeline (case file, formal investigation,
         // arrest warrant, shuanggui, prepare show trial) needs to claim

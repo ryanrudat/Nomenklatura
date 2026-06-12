@@ -89,6 +89,13 @@ enum ChairmanshipTier: Int, CaseIterable, Comparable {
         }
     }
 
+    /// Turns between Chairman's Decree charge regenerations at this tier
+    /// (50 → 18 across tiers). Single source of truth — read by both the
+    /// GameEngine regen step and the last-charge warning copy.
+    var decreeRegenInterval: Int {
+        max(10, 50 - rawValue * 8)
+    }
+
     /// How the Standing Committee treats the player at this tier (for prompts/UI).
     var committeeBehavior: String {
         switch self {

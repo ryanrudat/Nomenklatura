@@ -12,12 +12,14 @@ import SwiftData
 
 enum CongressSubTab: String, CaseIterable {
     case policies
+    case laws
     case committee
     case sessions
 
     var title: String {
         switch self {
         case .policies: return "Policies"
+        case .laws: return "Laws"
         case .committee: return "Committee"
         case .sessions: return "Sessions"
         }
@@ -26,6 +28,7 @@ enum CongressSubTab: String, CaseIterable {
     var icon: String {
         switch self {
         case .policies: return "building.columns.fill"
+        case .laws: return "scroll.fill"
         case .committee: return "person.3.fill"
         case .sessions: return "calendar.badge.clock"
         }
@@ -34,6 +37,7 @@ enum CongressSubTab: String, CaseIterable {
     var description: String {
         switch self {
         case .policies: return "Policy settings across all institutions"
+        case .laws: return "Fundamental laws of the Republic"
         case .committee: return "The Standing Committee of the Politburo"
         case .sessions: return "Legislative sessions and voting history"
         }
@@ -65,6 +69,8 @@ struct CongressTabView: View {
                     switch selectedSubTab {
                     case .policies:
                         PolicySlotsView(game: game)
+                    case .laws:
+                        LawsListView(game: game)
                     case .committee:
                         StandingCommitteeView(game: game)
                     case .sessions:
@@ -72,6 +78,41 @@ struct CongressTabView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Laws List
+
+/// The 13 fundamental laws, each proposable for change. Proposals land on
+/// the Standing Committee agenda and are voted at its next meeting —
+/// resolution applies the change via resolveLawChangeIfNeeded.
+struct LawsListView: View {
+    @Bindable var game: Game
+    @Environment(\.theme) var theme
+    @State private var proposalLaw: Law?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Changes are proposed to the Standing Committee and voted at its next meeting. The apparatus remembers who rewrote which rules.")
+                    .font(.system(size: 11, design: .serif))
+                    .foregroundColor(theme.inkGray)
+                    .padding(.bottom, 4)
+
+                ForEach(game.laws.sorted(by: { $0.name < $1.name }), id: \.lawId) { law in
+                    LawCard(
+                        law: law,
+                        game: game,
+                        canPropose: !(game.standingCommittee?.pendingAgenda.contains(where: { $0.relatedLawId == law.lawId }) ?? false),
+                        onProposeTap: { proposalLaw = law }
+                    )
+                }
+            }
+            .padding(15)
+        }
+        .sheet(item: $proposalLaw) { law in
+            LawProposalSheet(law: law, game: game)
         }
     }
 }
