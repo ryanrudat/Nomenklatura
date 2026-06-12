@@ -363,6 +363,9 @@ struct ContentView: View {
         // bled loyalty before the player made a single choice. (Economy audit 2026-06.)
         newGame.strategicReserves = [.steel: 14, .grain: 16, .energy: 16]
 
+        // The Chairman's household — an attack surface, not a sanctuary.
+        newGame.playerFamily = PlayerFamily.generateRandomFamily()
+
         // Generate Turn 0 economic report so the economy view has data from game start
         EconomyService.shared.snapshotEconomicReport(game: newGame)
 

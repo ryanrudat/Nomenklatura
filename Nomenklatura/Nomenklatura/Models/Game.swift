@@ -294,6 +294,9 @@ final class Game {
     // Standing Committee (inner circle of power)
     @Relationship(deleteRule: .cascade) var standingCommittee: StandingCommittee?
 
+    // The Chairman's household (family-as-vulnerability system)
+    @Relationship(deleteRule: .cascade) var playerFamily: PlayerFamily?
+
     // Historical Sessions (pre-game history Year 1-43)
     @Relationship(deleteRule: .cascade) var historicalSessions: [HistoricalSession]
 

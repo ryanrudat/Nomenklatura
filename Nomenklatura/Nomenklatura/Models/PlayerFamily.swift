@@ -385,13 +385,13 @@ final class PlayerFamily {
         recalculateVulnerability()
     }
 
-    /// Apply BPS pressure to family member
-    func applyPressure(memberId: UUID) {
+    /// Apply BPS pressure to family member (seeded — runs in the turn pipeline)
+    func applyPressure(memberId: UUID, using rng: inout SeededRNG) {
         if var spouse = spouse, spouse.id == memberId {
             spouse.isUnderPressure = true
             spouseUnderPressure = true
             // Check if they break and become informant
-            if checkInformantBreak(member: spouse) {
+            if checkInformantBreak(member: spouse, using: &rng) {
                 spouse.isInformant = true
             }
             self.spouse = spouse
@@ -400,7 +400,7 @@ final class PlayerFamily {
         var updatedChildren = children
         if let index = updatedChildren.firstIndex(where: { $0.id == memberId }) {
             updatedChildren[index].isUnderPressure = true
-            if checkInformantBreak(member: updatedChildren[index]) {
+            if checkInformantBreak(member: updatedChildren[index], using: &rng) {
                 updatedChildren[index].isInformant = true
             }
             children = updatedChildren
@@ -411,12 +411,12 @@ final class PlayerFamily {
     }
 
     /// Check if a family member breaks under pressure and becomes informant
-    private func checkInformantBreak(member: PlayerFamilyMember) -> Bool {
+    private func checkInformantBreak(member: PlayerFamilyMember, using rng: inout SeededRNG) -> Bool {
         let breakChance = member.temperament.informantRisk +
                          (100 - member.loyaltyToPlayer) / 4 +
                          (member.loyaltyToParty - 50) / 4
 
-        return Int.random(in: 1...100) <= breakChance
+        return Int.random(in: 1...100, using: &rng) <= breakChance
     }
 
     /// Recalculate family vulnerability score
@@ -479,6 +479,44 @@ final class PlayerFamily {
         familyHarmony = max(0, familyHarmony - amount)
         recalculateVulnerability()
     }
+
+    /// Presence relieves pressure: members under BPS attention confide in the
+    /// player and the pressure campaign loses its grip.
+    func relievePressure() {
+        if var spouse = spouse {
+            spouse.isUnderPressure = false
+            self.spouse = spouse
+        }
+        spouseUnderPressure = false
+        var updatedChildren = children
+        for i in updatedChildren.indices {
+            updatedChildren[i].isUnderPressure = false
+        }
+        children = updatedChildren
+        recalculateVulnerability()
+    }
+
+    /// Confront and turn back any informants in the household.
+    /// Returns the names of those who had broken.
+    func clearInformants() -> [String] {
+        var cleared: [String] = []
+        if var spouse = spouse, spouse.isInformant {
+            cleared.append(spouse.name)
+            spouse.isInformant = false
+            spouse.isUnderPressure = false
+            self.spouse = spouse
+            spouseUnderPressure = false
+        }
+        var updatedChildren = children
+        for i in updatedChildren.indices where updatedChildren[i].isInformant {
+            cleared.append(updatedChildren[i].name)
+            updatedChildren[i].isInformant = false
+            updatedChildren[i].isUnderPressure = false
+        }
+        children = updatedChildren
+        recalculateVulnerability()
+        return cleared
+    }
 }
 
 // MARK: - Family Generation
@@ -498,9 +536,10 @@ extension PlayerFamily {
         let spouseTemperament = FamilyTemperament.allCases.randomElement() ?? .devoted
         let spouseAge = Int.random(in: 30...50)
 
+        // PSR-flavored names matching the cast's naming conventions
         let spouseNames = marriageType == .political ?
-            ["Chen Wei", "Liu Fang", "Wang Min", "Zhang Ling", "Zhou Mei", "Yang Jing", "Huang Li", "Wu Xiu"] :
-            ["Li Na", "Wang Yan", "Chen Hong", "Liu Lan", "Zhang Wei", "Zhao Ping", "Sun Qian", "Ma Yun"]
+            ["Margaret", "Vera", "Konstantin", "Irene", "Helena", "Gregor", "Camilla", "Viktor"] :
+            ["Anna", "Elena", "Marta", "Pavel", "Sonia", "Tomas", "Lena", "Karel"]
 
         family.setSpouse(
             name: spouseNames.randomElement() ?? "Chen Wei",
@@ -512,7 +551,7 @@ extension PlayerFamily {
         // 80% chance of having children
         if Int.random(in: 1...100) <= 80 {
             let numChildren = Int.random(in: 1...3)
-            let childNames = ["Wei", "Ming", "Hua", "Long", "Xiao", "Jin", "Lei", "Tao", "Lin", "Hong"]
+            let childNames = ["Pavel", "Anya", "Viktor", "Mira", "Stefan", "Lena", "Tomas", "Vera", "Karel", "Dana"]
 
             for i in 0..<numChildren {
                 let age = Int.random(in: 8...25)

@@ -144,6 +144,8 @@ final class ClaudeClient: Sendable {
         if Secrets.useDirectAPI {
             request.addValue(Secrets.anthropicAPIKey, forHTTPHeaderField: "x-api-key")
             request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        } else {
+            request.addValue(Secrets.proxyAuthToken, forHTTPHeaderField: "x-proxy-token")
         }
         request.timeoutInterval = 45
         return request

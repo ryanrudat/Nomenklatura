@@ -860,6 +860,43 @@ final class PersonalActionGenerator {
             ))
         }
 
+        // Household: presence is maintenance (harmony + pressure relief);
+        // the corrective appears only once your network uncovers an informant.
+        if let family = game.playerFamily, family.hasFamily {
+            actions.append(PersonalAction(
+                id: "family_evening",
+                category: .securePosition,
+                title: "An evening at home",
+                description: "Set aside the red folders for one night. Your family carries your burdens too — and carries them better when you are present.",
+                costAP: 1,
+                riskLevel: .low,
+                requirements: nil,
+                effects: [:],
+                isLocked: false,
+                flavorText: "The apparatus can wait until morning.",
+                successNarratives: [
+                    "Dinner runs long. For a few hours the Republic does not exist.",
+                    "Your family confides what they would never put in writing.",
+                    "The household settles. Whatever pressure was building eases."
+                ]
+            ))
+
+            if family.hasInformant && game.network >= 50 {
+                actions.append(PersonalAction(
+                    id: "root_out_informant",
+                    category: .securePosition,
+                    title: "Root out the informant at home",
+                    description: "Your sources say someone in your household reports to the BPS. Confront them — whatever it costs.",
+                    costAP: 2,
+                    riskLevel: .low,
+                    requirements: ActionRequirements(minNetwork: 50),
+                    effects: [:],
+                    isLocked: false,
+                    flavorText: "Betrayal at the breakfast table."
+                ))
+            }
+        }
+
         // Check for scandal flags that create opportunities
         if game.flags.contains("rival_scandal_brewing") {
             if let rival = rival {

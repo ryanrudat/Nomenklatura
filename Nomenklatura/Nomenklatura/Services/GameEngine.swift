@@ -110,6 +110,22 @@ class GameEngine {
             game.applyStat(key, change: value)
         }
 
+        // Family actions operate on the household model, not applyStat keys.
+        if let family = game.playerFamily, family.hasFamily {
+            switch action.id {
+            case "family_evening":
+                family.improveHarmony(8)
+                family.relievePressure()
+            case "root_out_informant":
+                let cleared = family.clearInformants()
+                family.damageHarmony(15)
+                if !cleared.isEmpty {
+                    outcomeText = "The truth comes out at the kitchen table: \(cleared.joined(separator: ", ")) had been reporting to BPS handlers. There are tears, promises, and a silence that will take years to mend. But the leak is closed."
+                }
+            default: break
+            }
+        }
+
         // Try to spawn a network contact for network-building actions
         if !discoveryResult.wasDiscovered && action.category == .buildNetwork {
             if let newContact = NetworkContactSystem.shared.trySpawnContact(actionId: action.id, game: game) {
@@ -361,6 +377,11 @@ class GameEngine {
 
         // Low patron favor means less protection
         if game.patronFavor < 30 {
+            discoveryChance += 10
+        }
+
+        // An informant inside your own household reports what they see.
+        if game.playerFamily?.hasInformant == true {
             discoveryChance += 10
         }
 
@@ -1217,6 +1238,56 @@ class GameEngine {
                 event.importance = result.outcome == .cleared ? 6 : 8
                 event.game = game
                 game.events.append(event)
+            }
+        }
+
+        // Family pressure — the household as attack surface. The BPS and the
+        // rival reach for your family when you're exposed; members who break
+        // become informants inside your own home.
+        runStep("processFamily") {
+            guard let family = game.playerFamily, family.hasFamily else { return }
+            family.processTurn(game: game)
+
+            var rng = game.rng
+            defer { game.rng = rng }
+
+            // One pressure attempt per turn at most, when you're exposed.
+            var pressureChance = 0
+            if game.rivalThreat >= 60 { pressureChance += 12 }
+            if game.corruptionEvidence >= 40 { pressureChance += 8 }
+            let untouched = family.allFamilyMembers.filter { !$0.isUnderPressure && !$0.isInformant }
+            if pressureChance > 0, !untouched.isEmpty,
+               Int.random(in: 1...100, using: &rng) <= pressureChance,
+               let target = untouched.randomElement(using: &rng) {
+                let hadInformant = family.hasInformant
+                family.applyPressure(memberId: target.id, using: &rng)
+
+                let event = GameEvent(
+                    turnNumber: game.turnNumber,
+                    eventType: .crisis,
+                    summary: "\(target.name) came home shaken. Men with official credentials had questions — about schedules, about visitors, about you."
+                )
+                event.importance = 6
+                event.game = game
+                game.events.append(event)
+
+                // The break itself is secret — only a strong network hears of it.
+                if !hadInformant && family.hasInformant && game.network >= 50 {
+                    let intel = GameEvent(
+                        turnNumber: game.turnNumber,
+                        eventType: .crisis,
+                        summary: "Your sources report that someone inside your own household has begun meeting with BPS handlers."
+                    )
+                    intel.importance = 8
+                    intel.game = game
+                    game.events.append(intel)
+                }
+            }
+
+            // A broken family member reports on everything they see.
+            if family.hasInformant {
+                game.applyStat("corruptionEvidence", change: 2)
+                game.applyStat("rivalThreat", change: 1)
             }
         }
 

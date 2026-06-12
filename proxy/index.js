@@ -19,6 +19,23 @@ app.use((req, res, next) => {
   next();
 });
 
+// Shared-secret auth for all /api endpoints. Set PROXY_AUTH_TOKEN in the
+// Render dashboard to the same value as Secrets.proxyAuthToken in the app.
+// If unset, requests pass with a loud warning so an unconfigured deploy
+// degrades open rather than bricking the shipped app.
+const PROXY_AUTH_TOKEN = process.env.PROXY_AUTH_TOKEN;
+app.use('/api', (req, res, next) => {
+  if (!PROXY_AUTH_TOKEN) {
+    console.warn('WARNING: PROXY_AUTH_TOKEN not set — /api endpoints are UNAUTHENTICATED');
+    return next();
+  }
+  if (req.get('x-proxy-token') !== PROXY_AUTH_TOKEN) {
+    console.warn(`401 rejected ${req.method} ${req.path} (bad or missing x-proxy-token)`);
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  next();
+});
+
 // =============================================================================
 // Health Check Endpoints
 // =============================================================================
