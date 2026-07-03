@@ -64,7 +64,9 @@ struct BriefingPaperView: View {
         default:            prefix = "DIR"   // Directive
         }
         let serial = abs(scenario.templateId.hashValue) % 10000
-        let year = 1952 + (turnNumber / 24)
+        // Filing year follows the Revolutionary Calendar ("Year 43"), the
+        // only calendar the apparatus recognizes — never a Gregorian year.
+        let year = RevolutionaryCalendar.yearFromTurn(turnNumber)
         return String(format: "%@-%d-%04d", prefix, year, serial)
     }
 
@@ -112,9 +114,6 @@ struct BriefingPaperView: View {
         // Returns nil if no custom portrait exists (will use initials fallback)
         let nameToAsset: [String: String] = [
             "Director Wallace": "WallacePortrait",
-            "Secretary Kennedy": "KennedyPortrait",
-            "General Anderson": "AndersonPortrait",
-            "Comrade Peterson": "PetersonPortrait",
             "Sasha": "SashaPortrait",
             // Add more as portraits are created
         ]
@@ -123,32 +122,60 @@ struct BriefingPaperView: View {
 
     /// Generate character entrance description (called once on appear)
     private func generateEntranceDescription() -> String {
-        // Default entrance descriptions that hint at character personality
-        let entrances: [String: [String]] = [
-            "Director Wallace": [
-                "enters without knocking, his boots echoing on the floor",
+        // Non-decision events keep their quieter entrances no matter who
+        // is presenting.
+        switch scenario.category {
+        case .routineDay:
+            return "is already present, sorting through papers"
+        case .newspaper:
+            return "" // Newspapers don't have presenters entering
+        case .characterMoment:
+            return "passes by briefly"
+        case .tensionBuilder:
+            return "delivers a message and departs"
+        default:
+            break
+        }
+
+        // Entrance variants keyed to presenter TITLE patterns (not names),
+        // so every presenter gets a fitting entrance regardless of how the
+        // campaign or the AI names them.
+        let descriptor = "\(scenario.presenterTitle ?? "") \(scenario.presenterName)".lowercased()
+        func descriptorContains(_ patterns: String...) -> Bool {
+            patterns.contains { descriptor.contains($0) }
+        }
+
+        let variants: [String]?
+        if descriptorContains("director", "security") {
+            variants = [
+                "enters without knocking, boots echoing on the floor",
                 "appears at your door, expression unreadable",
-                "materializes silently, as if he'd been waiting outside"
-            ],
-            "Secretary Kennedy": [
-                "arrives with a diplomatic smile that doesn't reach his eyes",
-                "enters, glancing at the window before speaking",
-                "appears, papers clutched carefully to his chest"
-            ],
-            "General Anderson": [
+                "materializes silently, as if they'd been waiting outside"
+            ]
+        } else if descriptorContains("general", "marshal", "colonel", "commander", "defense", "military") {
+            variants = [
                 "strides in, medals clinking softly",
                 "enters with military precision",
                 "appears, back straight as a parade ground flagpole"
-            ],
-            "Comrade Peterson": [
-                "shuffles in, avoiding your gaze",
-                "enters hesitantly, clearing his throat",
-                "appears with the look of a man bearing bad news"
             ]
-        ]
+        } else if descriptorContains("aide", "assistant", "clerk", "deputy", "personal") {
+            variants = [
+                "shuffles in, avoiding your gaze",
+                "enters hesitantly, clearing their throat",
+                "appears with the look of someone bearing bad news"
+            ]
+        } else if descriptorContains("minister", "secretary", "ambassador", "diplomat", "foreign") {
+            variants = [
+                "arrives with a diplomatic smile that doesn't reach their eyes",
+                "enters, glancing at the window before speaking",
+                "appears, papers clutched carefully to their chest"
+            ]
+        } else {
+            variants = nil
+        }
 
-        if let characterEntrances = entrances[scenario.presenterName] {
-            return characterEntrances.randomElement() ?? "enters"
+        if let variants, let entrance = variants.randomElement() {
+            return entrance
         }
 
         // Generic fallbacks based on category
@@ -163,15 +190,8 @@ struct BriefingPaperView: View {
             return "enters with a knowing look"
         case .character:
             return "enters and closes the door carefully behind them"
-        // Non-decision events have quieter entrances
-        case .routineDay:
-            return "is already present, sorting through papers"
-        case .newspaper:
-            return "" // Newspapers don't have presenters entering
-        case .characterMoment:
-            return "passes by briefly"
-        case .tensionBuilder:
-            return "delivers a message and departs"
+        default:
+            return "enters"
         }
     }
 

@@ -70,7 +70,7 @@ struct PolicySlotsView: View {
             .scrollIndicators(.hidden)
 
             // Power consolidation meter
-            PowerConsolidationMeter(score: game.powerConsolidationScore)
+            PowerConsolidationMeter(score: game.powerConsolidationScore, tier: game.chairmanshipTier)
                 .padding(.horizontal, 15)
                 .padding(.bottom, 15)
         }

@@ -100,7 +100,17 @@ struct LawProposalSheet: View {
     private var canSubmit: Bool {
         guard let state = selectedState else { return false }
         let requirements = LawChangeRequirement.requirements(for: law, toState: state)
-        return game.powerConsolidationScore >= requirements.powerRequired
+        guard game.powerConsolidationScore >= requirements.powerRequired else { return false }
+
+        // Faction support is a hard requirement, not just advisory —
+        // every listed faction must be at or above its minimum standing.
+        if let factionSupport = requirements.factionSupportRequired {
+            for (factionId, requiredStanding) in factionSupport {
+                let currentStanding = game.factions.first { $0.factionId == factionId }?.playerStanding ?? 0
+                if currentStanding < requiredStanding { return false }
+            }
+        }
+        return true
     }
 
     private func submitProposal() {
@@ -311,41 +321,29 @@ struct RequirementsCard: View {
 
                 ForEach(Array(factionSupport.keys), id: \.self) { factionId in
                     if let requiredStanding = factionSupport[factionId] {
+                        let currentStanding = getFactionStanding(factionId)
+                        let isMet = currentStanding >= requiredStanding
+
                         HStack {
+                            Image(systemName: isMet ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(isMet ? .statHigh : .statLow)
+
                             Text(factionDisplayName(factionId))
                                 .font(theme.bodyFontSmall)
-                                .foregroundColor(theme.inkGray)
+                                .foregroundColor(isMet ? theme.inkGray : .statLow)
 
                             Spacer()
 
-                            let currentStanding = getFactionStanding(factionId)
                             Text("\(currentStanding) / \(requiredStanding)")
                                 .font(theme.labelFont)
                                 .fontWeight(.bold)
-                                .foregroundColor(currentStanding >= requiredStanding ? .statHigh : .statLow)
+                                .foregroundColor(isMet ? .statHigh : .statLow)
                         }
                     }
                 }
             }
 
-            // Force option
-            if requirements.canBeForced {
-                Divider()
-
-                HStack {
-                    Image(systemName: "exclamationmark.shield.fill")
-                        .foregroundColor(theme.sovietRed)
-                    Text("Can be forced (decree)")
-                        .font(theme.bodyFontSmall)
-                        .foregroundColor(theme.inkGray)
-
-                    Spacer()
-
-                    Text("Requires \(requirements.forcePowerRequired) power")
-                        .font(.system(size: 11))
-                        .foregroundColor(theme.inkLight)
-                }
-            }
         }
         .padding(15)
         .background(theme.parchmentDark)

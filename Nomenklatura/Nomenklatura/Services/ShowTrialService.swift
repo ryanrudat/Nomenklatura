@@ -66,6 +66,7 @@ final class ShowTrialService {
         switch trial.phase {
         case .accusation:
             trial.phase = .confessionExtraction
+            logTrialEvent(game, importance: 5, "Show trial of \(trial.defendantName): State Security interrogators are extracting a confession.")
             return generateConfessionExtractionEvent(trial: trial, game: game)
 
         case .confessionExtraction:
@@ -75,10 +76,14 @@ final class ShowTrialService {
             trial.confessionObtained = confessionResult.obtained
             trial.confessionType = confessionResult.type
             trial.phase = .publicTrial
+            logTrialEvent(game, importance: 6, confessionResult.obtained
+                ? "Show trial of \(trial.defendantName): a confession has been obtained. The public trial begins."
+                : "Show trial of \(trial.defendantName): the defendant refuses to confess. The public trial begins.")
             return generatePublicTrialEvent(trial: trial, confessionResult: confessionResult, game: game, using: &rng)
 
         case .publicTrial:
             trial.phase = .sentencing
+            logTrialEvent(game, importance: 6, "Show trial of \(trial.defendantName): the People's Court delivers its verdict — guilty on all counts.")
             return generateSentencingEvent(trial: trial, game: game, using: &rng)
 
         case .sentencing:
@@ -93,12 +98,15 @@ final class ShowTrialService {
         }
     }
 
-    /// Check if any trials need phase advancement this turn
-    func checkTrialsForAdvancement(game: Game) -> [DynamicEvent] {
-        var events: [DynamicEvent] = []
-        var updatedTrials = game.activeShowTrials
+    /// THE single entry point for trial advancement — called once per turn from
+    /// the GameEngine end-of-turn pipeline. Trials must not be advanced from
+    /// event-candidate gathering or any other path.
+    func advanceTrialsEndOfTurn(game: Game) {
+        // Idempotent per turn: a second call in the same turn is a no-op.
+        guard game.intVariable("last_trial_advance_turn") != game.turnNumber else { return }
+        game.setIntVariable("last_trial_advance_turn", game.turnNumber)
 
-        for (index, trial) in updatedTrials.enumerated() {
+        for trial in game.activeShowTrials where trial.phase != .completed {
             // Trials advance every 1-2 turns depending on phase
             let turnsInPhase = game.turnNumber - trial.turnInitiated
             let shouldAdvance: Bool
@@ -116,17 +124,28 @@ final class ShowTrialService {
                 shouldAdvance = false
             }
 
-            if shouldAdvance {
-                var mutableTrial = trial
-                if let event = advanceTrialPhase(trial: &mutableTrial, game: game) {
-                    events.append(event)
-                    updatedTrials[index] = mutableTrial
-                }
+            guard shouldAdvance else { continue }
+
+            var mutableTrial = trial
+            let event = advanceTrialPhase(trial: &mutableTrial, game: game)
+
+            // applyTrialOutcome (inside advanceTrialPhase, on the sentencing →
+            // completed transition) already removed the completed trial from
+            // game.activeShowTrials — writing back a pre-advancement snapshot
+            // would resurrect it as a phantom active trial. Persist only
+            // in-flight trials; re-assert removal of completed ones (covers the
+            // defendant-missing path where applyTrialOutcome bails early).
+            if mutableTrial.phase == .completed {
+                game.completeShowTrial(id: mutableTrial.id)
+            } else {
+                game.updateShowTrial(mutableTrial)
+            }
+
+            // Surface the beat at the next briefing rather than applying silently.
+            if let event {
+                game.queueDynamicEvent(event)
             }
         }
-
-        game.activeShowTrials = updatedTrials
-        return events
     }
 
     // MARK: - Confession Determination
@@ -311,6 +330,20 @@ final class ShowTrialService {
 
         // International condemnation
         game.applyStat("internationalStanding", change: -trialCopy.internationalCondemnation)
+
+        // Journal the outcome so the beat is visible even if the queued
+        // dynamic event never surfaces.
+        switch trial.sentence {
+        case .execution:
+            logTrialEvent(game, importance: 9, eventType: .death, "\(defendant.name) executed by firing squad following show trial conviction for \(formatCharges(trial.charges)).")
+        case .some(let sentence):
+            logTrialEvent(game, importance: 7, "Show trial concluded: \(defendant.name) — \(sentence.displayName).")
+        case .none:
+            break
+        }
+        if trialCopy.martyrCreated {
+            logTrialEvent(game, importance: 6, "\(defendant.name)'s defiance at trial has made them a martyr. Public sympathy stirs.")
+        }
 
         // Update stored trial
         game.updateShowTrial(trialCopy)
@@ -574,6 +607,13 @@ final class ShowTrialService {
     }
 
     // MARK: - Helpers
+
+    private func logTrialEvent(_ game: Game, importance: Int, eventType: EventType = .purge, _ summary: String) {
+        let event = GameEvent(turnNumber: game.turnNumber, eventType: eventType, summary: summary)
+        event.importance = importance
+        event.game = game
+        game.events.append(event)
+    }
 
     private func formatCharges(_ charges: [TrialCharge]) -> String {
         if charges.count == 1 {

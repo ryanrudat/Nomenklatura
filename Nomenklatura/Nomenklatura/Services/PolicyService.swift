@@ -161,6 +161,17 @@ class PolicyService {
         // Track important changes
         if slot.slotId == "presidium_term_limits" && toOptionId == "term_limits_life_tenure" {
             game.termLimitsAbolished = true
+            // Keep the Law entity in sync so the Laws UI reflects abolition
+            // (mirrors StandingCommitteeService.processLawChangeVote). No
+            // extra lawsModifiedCount bump here — the player's change was
+            // already counted above, and this is the same single act.
+            if let law = game.laws.first(where: { $0.lawId == "term_limits" }),
+               law.lawCurrentState != .abolished {
+                let changerName = byCharacterId.flatMap { id in
+                    game.characters.first(where: { $0.templateId == id })?.name
+                } ?? "The Chairman"
+                law.modify(to: .abolished, by: changerName, forced: asDecree, turn: game.turnNumber)
+            }
         }
 
         let message = asDecree
@@ -217,12 +228,16 @@ class PolicyService {
             }
         }
 
-        // GS (if exists and is voting) gets extra weight or breaks ties
+        // GS (if exists and is voting) gets extra weight or breaks ties.
+        // Vote weight scales with chairmanship tier, mirroring
+        // StandingCommitteeMeetingService.resolveVote — committee deference
+        // applies to policy votes too.
         let gsVote = determineGSVote(game: game, newOption: newOption)
+        let gsWeight = max(1, game.chairmanshipTier.voteWeight)
         switch gsVote {
-        case .inFavor: inFavor += 1
-        case .against: against += 1
-        case .abstain: abstained += 1
+        case .inFavor: inFavor += gsWeight
+        case .against: against += gsWeight
+        case .abstain: abstained += gsWeight
         }
 
         let unanimous = (against == 0 && abstained == 0) || (inFavor == 0 && abstained == 0)

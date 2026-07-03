@@ -243,7 +243,7 @@ struct ScenarioPromptBuilder {
 
         **Turn:** \(game.turnNumber) — Each turn represents 2 weeks (a fortnight)
         **Current Date:** \(currentDate)
-        **Player Position:** General Secretary of the PSR (supreme leader)
+        **Player Position:** General Secretary of the PSR (supreme leader — in narration and dialogue always address the player as "the Chairman" or "Comrade Chairman", never "General Secretary")
         **Career Track:** \(currentTrack.displayName)
         **Power Consolidation:** \(powerConsolidation)/100 — \(powerConsolidation < 30 ? "PRECARIOUS: The Standing Committee can override you. Rivals sense weakness." : powerConsolidation < 60 ? "CONTESTED: You hold power but face resistance from key factions." : "CONSOLIDATED: Your authority is strong but never absolute.")
 
@@ -466,7 +466,7 @@ struct ScenarioPromptBuilder {
         You work within the state's security and intelligence apparatus. Your concerns are:
         - Counter-intelligence and catching foreign spies
         - Internal surveillance and monitoring dissent
-        - Shuanggui detention and political investigations
+        - Special measures detention and political investigations
         - Protecting state secrets and key personnel
         - The paranoid world of loyalty verification
 
@@ -592,7 +592,7 @@ struct ScenarioPromptBuilder {
 
     private static func getBureauGuidance_EconomicPlanning(level: Int) -> String {
         let baseGuidance = """
-        **Bureau Focus:** ECONOMIC PLANNING (State Planning Commission - Gosplan)
+        **Bureau Focus:** ECONOMIC PLANNING (State Planning Commission)
         You work within the command economy apparatus. Your concerns are:
         - Setting and enforcing production quotas
         - Allocating resources across the economy
@@ -641,7 +641,7 @@ struct ScenarioPromptBuilder {
             """
         case 6: // Chairman of State Planning
             return baseGuidance + """
-            **Level-Specific Scope:** As Chairman of Gosplan, you are:
+            **Level-Specific Scope:** As Chairman of the State Planning Commission, you are:
             - The supreme authority over economic planning
             - Architect of five-year plans affecting millions
             - A key voice in all resource allocation decisions
@@ -1412,7 +1412,7 @@ struct ScenarioPromptBuilder {
            **SECURITY SERVICES THEMES (Your Primary Domain):**
            - Counter-intelligence operations against foreign spies
            - Internal surveillance and monitoring dissent
-           - Political investigations and shuanggui detention
+           - Political investigations and special measures detention
            - Suspected counter-revolutionary activities
            - Loyalty verification of key personnel
            - Informant network management

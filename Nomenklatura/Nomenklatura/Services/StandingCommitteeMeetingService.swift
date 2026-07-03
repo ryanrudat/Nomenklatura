@@ -223,6 +223,17 @@ final class StandingCommitteeMeetingService {
                 }
             }
 
+            // CANDIDATE MEMBERS: per SCRank, candidate votes are advisory —
+            // they attend and speak, but only full members (and the chair)
+            // carry weight in the tally. Record their preference as an
+            // abstention so the UI shows attendance without letting a
+            // probationary member swing the outcome.
+            let isWeightedVoter = committee.fullMemberIds.contains(member.templateId)
+                || member.templateId == committee.chairId
+            if !isWeightedVoter {
+                vote = .abstain
+            }
+
             let memberVote = SCMemberVote(
                 characterId: member.templateId,
                 characterName: member.name,

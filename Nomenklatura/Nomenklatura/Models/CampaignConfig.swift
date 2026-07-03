@@ -306,10 +306,10 @@ struct CampaignTerminology: Codable {
     var leader: String            // "General Secretary" / "Chairman"
     var party: String             // "The Party" / "People's Worker Party"
     var comrade: String           // "Comrade" / "Tongzhi"
-    var purge: String             // "Purge" / "Shuanggui"
+    var purge: String             // "Purge" / "Special Measures"
     var enemy: String             // "Counter-revolutionary" / "Two-faced person"
-    var investigation: String     // "NKVD Investigation" / "CCDI Review"
-    var loyaltyOrgan: String      // "State Security" / "Central Commission for Discipline Inspection"
+    var investigation: String     // "State Protection Investigation" / "Discipline Inspectorate Review"
+    var loyaltyOrgan: String      // "State Security" / "Central Discipline Inspectorate"
     var succession: String        // "Succession" / "Leadership transition"
 
     static var soviet: CampaignTerminology {
@@ -319,7 +319,7 @@ struct CampaignTerminology: Codable {
             comrade: "Comrade",
             purge: "Purge",
             enemy: "counter-revolutionary",
-            investigation: "NKVD Investigation",
+            investigation: "State Protection Investigation",
             loyaltyOrgan: "State Security",
             succession: "succession"
         )
@@ -446,8 +446,11 @@ class CampaignLoader {
             return loaded
         }
 
-        // Fallback to hardcoded config
-        return createColdWarConfig()
+        // Fallback to hardcoded config — cache it so the dozens of per-turn
+        // callers don't re-probe the bundle (and re-log) on every call.
+        let fallback = createColdWarConfig()
+        loadedCampaigns["coldwar"] = fallback
+        return fallback
     }
 
     private func createColdWarConfig() -> CampaignConfig {
@@ -458,7 +461,7 @@ class CampaignLoader {
             description: "You have just been elected General Secretary by a divided Standing Committee. Consolidate your fragile authority, outmaneuver rivals, and survive the intrigues of the nomenklatura to keep supreme power.",
             nationName: "The People's Socialist Republic",
             leaderTitle: "General Secretary",
-            currencyName: "rubles",
+            currencyName: "dollars",
             startingPosition: 8,  // General Secretary — the game is about keeping power
             startingStats: StartingStats(
                 stability: 50,
@@ -498,9 +501,9 @@ class CampaignLoader {
         [
             PersonalAction(id: "plant_ally_security", category: .buildNetwork, title: "Plant ally in State Protection", description: "Cultivate an informant in Wallace's department.", costAP: 1, riskLevel: .medium, requirements: ActionRequirements(minStanding: 25), effects: ["network": 5], isLocked: false, lockReason: nil),
             PersonalAction(id: "cultivate_military", category: .buildNetwork, title: "Cultivate military contact", description: "Build relationship with junior officers.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["network": 3], isLocked: false, lockReason: nil),
-            PersonalAction(id: "gather_intel_rival", category: .buildNetwork, title: "Gather intelligence on Kovacs", description: "Learn your rival's secrets and weaknesses.", costAP: 1, riskLevel: .medium, requirements: ActionRequirements(minNetwork: 15), effects: ["network": 2, "rivalThreat": -5], isLocked: false, lockReason: nil),
-            PersonalAction(id: "leak_failures", category: .undermineRivals, title: "Leak rival's failures to the press office", description: "Anonymously expose Kovacs's production shortfalls.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minNetwork: 20), effects: ["rivalThreat": -15, "reputationCunning": 10], isLocked: false, lockReason: nil),
-            PersonalAction(id: "frame_conspiracy", category: .undermineRivals, title: "Implicate rival in conspiracy", description: "Plant evidence suggesting Kovacs has foreign contacts.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 50, minNetwork: 40), effects: ["rivalThreat": -25, "reputationRuthless": 15], isLocked: false, lockReason: nil),
+            PersonalAction(id: "gather_intel_rival", category: .buildNetwork, title: "Gather intelligence on your rival", description: "Learn your rival's secrets and weaknesses.", costAP: 1, riskLevel: .medium, requirements: ActionRequirements(minNetwork: 15), effects: ["network": 2, "rivalThreat": -5], isLocked: false, lockReason: nil),
+            PersonalAction(id: "leak_failures", category: .undermineRivals, title: "Leak rival's failures to the press office", description: "Anonymously expose your rival's failures in office.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minNetwork: 20), effects: ["rivalThreat": -15, "reputationCunning": 10], isLocked: false, lockReason: nil),
+            PersonalAction(id: "frame_conspiracy", category: .undermineRivals, title: "Implicate rival in conspiracy", description: "Plant evidence suggesting your rival has foreign contacts.", costAP: 2, riskLevel: .high, requirements: ActionRequirements(minStanding: 50, minNetwork: 40), effects: ["rivalThreat": -25, "reputationRuthless": 15], isLocked: false, lockReason: nil),
             PersonalAction(id: "private_meeting_secretary", category: .securePosition, title: "Private audience with key ally", description: "Meet privately with your most important political ally to reinforce the relationship.", costAP: 1, riskLevel: .low, requirements: ActionRequirements(minStanding: 40), effects: ["patronFavor": 5, "reputationLoyal": 5], isLocked: false, lockReason: nil),
             PersonalAction(id: "public_praise_patron", category: .securePosition, title: "Publicly acknowledge your ally", description: "Give a speech crediting your key supporter for their contributions to the state.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["patronFavor": 8, "standing": -3], isLocked: false, lockReason: nil),
             PersonalAction(id: "prepare_dossier", category: .securePosition, title: "Prepare defensive dossier", description: "Compile intelligence on potential threats to your leadership.", costAP: 1, riskLevel: .low, requirements: nil, effects: ["network": 2], isLocked: false, lockReason: nil),

@@ -161,7 +161,7 @@ struct SCProposalGenerator {
                          "\(attacker.name) delivered a pointed critique of \(target.name)'s department in the latest Politburo review, citing 'systematic failures' and 'inadequate leadership.' The attack caught many off guard.",
                          .public),
                         ("Investigation Request",
-                         "Your sources report that \(attacker.name) has privately requested an investigation into \(target.name)'s conduct. The CCDI is reportedly considering the request.",
+                         "Your sources report that \(attacker.name) has privately requested an investigation into \(target.name)'s conduct. The Discipline Inspectorate is reportedly considering the request.",
                          .intel),
                         ("Coalition Against",
                          "\(attacker.name) is quietly building a coalition of SC members opposed to \(target.name). Informal discussions suggest a coordinated effort to isolate them.",

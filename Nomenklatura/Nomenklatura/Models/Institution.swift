@@ -41,7 +41,7 @@ enum Institution: String, Codable, CaseIterable, Identifiable {
         case .congress: return "Congress"
         case .military: return "Military"
         case .security: return "BPS"
-        case .economy: return "Gosplan"
+        case .economy: return "State Plan"
         case .regions: return "Regions"
         case .propaganda: return "Agitprop"
         case .foreign: return "MFA"

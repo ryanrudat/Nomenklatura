@@ -305,7 +305,7 @@ extension ColdWarTheme {
     func bureauSubtitle(for bureau: ExpandedCareerTrack) -> String {
         switch bureau {
         case .securityServices: return "Security Services Official"
-        case .economicPlanning: return "Gosplan Official"
+        case .economicPlanning: return "State Plan Official"
         case .partyApparatus:   return "Central Committee Official"
         case .foreignAffairs:   return "Foreign Ministry Official"
         case .militaryPolitical: return "Military-Political Official"

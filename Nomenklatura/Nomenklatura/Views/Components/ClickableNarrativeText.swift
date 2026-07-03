@@ -485,7 +485,7 @@ extension View {
 // MARK: - Preview
 
 #Preview {
-    let text = "Minister Wallace approaches you after the morning briefing. Director Kovacs has been asking questions about your background."
+    let text = "Minister Wallace approaches you after the morning briefing. Director Mercer has been asking questions about your background."
 
     return VStack {
         Text("Demo - names should be clickable:")

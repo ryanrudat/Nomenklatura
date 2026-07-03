@@ -134,7 +134,7 @@ final class BureauOperationsService {
             bureauTrack: ExpandedCareerTrack.securityServices.rawValue,
             operationType: .detention,
             name: "Detention: \(detention.targetName)",
-            description: "Subject held under shuanggui regulations. Phase: \(detention.phase.rawValue.capitalized)",
+            description: "Subject held under special measures regulations. Phase: \(detention.phase.rawValue.capitalized)",
             initiatedTurn: detention.initiatedTurn,
             targetCompletionTurn: nil,
             progress: progress,

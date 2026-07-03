@@ -275,12 +275,13 @@ class GameOverChecker {
     // MARK: - System-Level Checks (Cannot be prevented)
 
     private static func checkNuclearWar(game: Game) -> GameOverCondition? {
-        // Nuclear war triggered by extreme world tension and crisis escalation
-        guard game.variables["world_tension"] != nil else { return nil }
-        let tension = Int(game.variables["world_tension"] ?? "0") ?? 0
+        // Nuclear war triggered by extreme world tension and crisis escalation.
+        // worldTension is clamped 0-100 (baseline 30); 95+ only occurs after
+        // sustained escalation, so this loss stays an extreme-case outcome.
+        let tension = game.worldTension
 
         // Check for nuclear escalation flag from international crisis
-        if game.flags.contains("nuclear_escalation") || tension >= 100 {
+        if game.flags.contains("nuclear_escalation") || tension >= 95 {
             return createGameOver(
                 type: .nuclearWar,
                 game: game,

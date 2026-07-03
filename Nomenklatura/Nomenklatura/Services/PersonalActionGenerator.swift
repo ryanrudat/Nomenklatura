@@ -1108,11 +1108,11 @@ final class PersonalActionGenerator {
             ]
         ))
 
-        // Authorize Mass Detention (Shuanggui)
+        // Authorize Mass Detention (Special Measures)
         actions.append(PersonalAction(
             id: "authorize_detention",
             category: .purgeEnemies,
-            title: "Authorize shuanggui detention",
+            title: "Authorize special measures detention",
             description: "Order the extralegal detention and interrogation of suspect officials. They will confess or disappear.",
             costAP: 1,
             riskLevel: .high,

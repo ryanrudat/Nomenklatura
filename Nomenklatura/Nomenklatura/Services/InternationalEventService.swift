@@ -607,7 +607,7 @@ class InternationalEventService {
 
         // Check for superpower confrontation
         if let atlanticUnion = game.foreignCountries.first(where: { $0.countryId == "atlantic_union" }) {
-            if atlanticUnion.diplomaticTension > 80 && game.variables["world_tension"] ?? "0" != "0" {
+            if atlanticUnion.diplomaticTension > 80 && game.worldTension > 60 {
                 let confrontationRisk = Int.random(in: 1...100, using: &rng)
                 if confrontationRisk <= 10 {
                     events.append(InternationalCrisisEvent(

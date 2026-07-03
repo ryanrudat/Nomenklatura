@@ -154,7 +154,7 @@ enum CharacterFateType: String, Codable, CaseIterable, Sendable {
     case promoted
     case reassigned           // Demotion disguised
     case retired              // Forced retirement
-    case underInvestigation   // NKVD/CCDI attention
+    case underInvestigation   // State Protection/Discipline Inspectorate attention
     case arrested
     case executed
     case disappeared

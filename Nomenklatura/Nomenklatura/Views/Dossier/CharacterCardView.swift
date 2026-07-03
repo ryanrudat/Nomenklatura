@@ -284,6 +284,7 @@ struct CharacterDetailView: View {
                             .padding(.bottom, 100)
                     }
                 }
+                .classifiedWatermark(text: "BPS FILE", opacity: 0.03)
 
                 // Fixed bottom action buttons
                 if let game = game, character.isActive {
@@ -1792,6 +1793,21 @@ struct CharacterDetailView: View {
                     .padding(.bottom, 8)
             }
 
+            // Generic interaction results (truce / inline interactions).
+            // executeTruce and InteractionButton set these; without this block
+            // the result cards were defined but never rendered.
+            if showingInteractionResult, let result = lastInteractionResult {
+                interactionResultCard(result)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
+
+            if showingInteractionResult, let result = lastLeaderResult {
+                leaderResultCard(result)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
+
             // Action buttons
             HStack(spacing: 16) {
                 // INVESTIGATE
@@ -2174,7 +2190,45 @@ struct CharacterDetailView: View {
         return "+5-15% evidence"
     }
 
+    /// Charges the up-front AP cost shared by the interaction executors
+    /// (investigate / cultivate / denounce / truce). Returns false — charging
+    /// nothing — when the player can't afford it. Callers MUST surface that
+    /// refusal to the player: a silent return after the confirmation UI has
+    /// been dismissed is indistinguishable from success.
+    private func chargeInteractionAP(_ cost: Int, game: Game) -> Bool {
+        guard game.actionPoints >= cost else { return false }
+        game.actionPoints -= cost
+        game.useCharacterInteraction()
+        return true
+    }
+
+    /// Shared refusal copy for the insufficient-AP failure cards.
+    private func insufficientAPNarrative(cost: Int, game: Game) -> String {
+        "Authorization refused — insufficient action points (need \(cost), have \(game.actionPoints)). The order never left your desk."
+    }
+
     private func executeInvestigate(option: CharacterInteraction, game: Game) {
+        // Charge AP up-front. Belt-and-suspenders: the EXECUTE affordance is
+        // disabled when unaffordable, but if we get here anyway, surface an
+        // explicit failure card rather than silently doing nothing.
+        guard chargeInteractionAP(option.costAP, game: game) else {
+            lastInvestigateResult = InvestigateResult(
+                success: false,
+                narrative: insufficientAPNarrative(cost: option.costAP, game: game),
+                targetName: character.name,
+                evidenceGained: 0,
+                totalEvidence: 0,
+                secretsRevealed: [],
+                personalityRevealed: false,
+                alertedTarget: false
+            )
+            showingInvestigateOptions = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showingInvestigateResult = true
+            }
+            return
+        }
+
         // Execute the investigation
         let result = CharacterInteractionSystem.shared.executeInvestigation(
             option,
@@ -2510,6 +2564,29 @@ struct CharacterDetailView: View {
     }
 
     private func executeCultivate(option: CharacterInteraction, game: Game) {
+        // Charge AP up-front; on refusal surface an explicit failure card —
+        // never a silent no-op that looks identical to success.
+        guard chargeInteractionAP(option.costAP, game: game) else {
+            lastCultivateResult = CultivateResult(
+                success: false,
+                narrative: insufficientAPNarrative(cost: option.costAP, game: game),
+                targetName: character.name,
+                dispositionGain: 0,
+                newDisposition: character.disposition,
+                becameAlly: false,
+                rivalryEnded: false,
+                becameProtege: false,
+                becameAsset: false,
+                trustLevel: 0,
+                effects: [:]
+            )
+            showingCultivateOptions = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showingCultivateResult = true
+            }
+            return
+        }
+
         // Execute the cultivation
         let result = CharacterInteractionSystem.shared.executeCultivation(
             option,
@@ -2885,6 +2962,27 @@ struct CharacterDetailView: View {
     }
 
     private func executeDenounce(option: CharacterInteraction, game: Game) {
+        // Charge AP up-front; on refusal surface an explicit failure card —
+        // never a silent no-op that looks identical to success.
+        guard chargeInteractionAP(option.costAP, game: game) else {
+            lastDenounceResult = DenounceResult(
+                success: false,
+                narrative: insufficientAPNarrative(cost: option.costAP, game: game),
+                targetName: character.name,
+                newTargetStatus: nil,
+                repercussions: [:],
+                relationshipDamage: 0,
+                patronAnger: 0,
+                madeEnemy: false,
+                evidenceRevealed: 0
+            )
+            showingDenounceOptions = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showingDenounceResult = true
+            }
+            return
+        }
+
         // Execute the denouncement
         let result = CharacterInteractionSystem.shared.executeDenouncement(
             option,
@@ -3275,6 +3373,9 @@ struct CharacterDetailView: View {
     private func negotiationTierCard(tier: NegotiationTier, game: Game) -> some View {
         let (riskColor, riskLabel) = riskInfo(for: tier.riskLevel)
         let chancePct = Int(tier.successChanceHint * 100)
+        // Truce executes immediately on tap, so gate the affordance here:
+        // an unaffordable tier is grayed and inert, never a silent no-op.
+        let affordable = game.actionPoints >= tierMinAP(tier: tier)
 
         return Button {
             handleTierSelection(tier: tier, game: game)
@@ -3331,9 +3432,11 @@ struct CharacterDetailView: View {
 
                         Spacer()
 
-                        Text(tierCostHint(tier: tier))
+                        Text(affordable
+                                ? tierCostHint(tier: tier)
+                                : "\(tierCostHint(tier: tier)) — insufficient AP")
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(theme.inkGray)
+                            .foregroundColor(affordable ? theme.inkGray : theme.stampRed)
                     }
                     .padding(.top, 4)
                 }
@@ -3345,8 +3448,22 @@ struct CharacterDetailView: View {
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(riskColor.opacity(0.4), lineWidth: 1)
             )
+            .opacity(affordable ? 1 : 0.55)
         }
         .buttonStyle(.plain)
+        .disabled(!affordable)
+    }
+
+    /// Minimum AP needed to attempt anything in a tier (mirrors tierCostHint).
+    private func tierMinAP(tier: NegotiationTier) -> Int {
+        switch tier {
+        case .cultivate(let options):
+            return options.map(\.costAP).min() ?? 1
+        case .truce(let interaction):
+            return interaction.costAP
+        case .coopt(let paths):
+            return paths.map(\.costAP).min() ?? 1
+        }
     }
 
     /// Per-tier short use-case copy shown on the picker card.
@@ -3405,10 +3522,23 @@ struct CharacterDetailView: View {
     /// and surfaces the result via the same `showingInteractionResult` card
     /// that the inline AVAILABLE ACTIONS list uses.
     private func executeTruce(interaction: CharacterInteraction, game: Game) {
-        // Charge AP up-front (Truce costs 1 AP per getRivalInteractions).
-        guard game.actionPoints >= interaction.costAP else { return }
-        game.actionPoints -= interaction.costAP
-        game.useCharacterInteraction()
+        // Charge AP up-front (Truce costs 1 AP per getRivalInteractions). The
+        // tier card is disabled when unaffordable; if we get here anyway,
+        // surface an explicit refusal instead of silently returning.
+        guard chargeInteractionAP(interaction.costAP, game: game) else {
+            lastInteractionResult = InteractionResult(
+                success: false,
+                narrative: insufficientAPNarrative(cost: interaction.costAP, game: game),
+                effects: [:],
+                dispositionChange: 0,
+                characterName: character.name
+            )
+            lastLeaderResult = nil
+            withAnimation {
+                showingInteractionResult = true
+            }
+            return
+        }
 
         let result = CharacterInteractionSystem.shared.executeInteraction(
             interaction,
@@ -3643,6 +3773,7 @@ struct CharacterDetailView: View {
             briefingText: "TARGET: \(character.name)\n\n\(briefingText)",
             projectedOutcomes: outcomes,
             cost: interaction.costAP * 25, // Convert AP to political capital
+            apCost: interaction.costAP,    // Card disables EXECUTE when unaffordable
             riskLevel: riskLevel,
             failureProbability: failureProbability,
             securityLevel: max(3, game.currentPositionIndex),

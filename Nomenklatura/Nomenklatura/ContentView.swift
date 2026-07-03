@@ -520,14 +520,26 @@ struct GameView: View {
                     }
                 }
 
-                // Bottom navigation (hidden during outcome and SC meeting phases for focus)
-                if game.currentPhase != .outcome && game.currentPhase != .standingCommittee {
+                // Bottom navigation (hidden during outcome and SC meeting phases for focus,
+                // and while a full-screen state event awaits ACKNOWLEDGE)
+                if game.currentPhase != .outcome && game.currentPhase != .standingCommittee && !game.hasPendingStateEvent {
                     VStack {
                         Spacer()
                         BottomNavBar(selectedTab: $selectedTab) {
                             activeSheet = .memorial
                         }
                     }
+                }
+            }
+
+            // State Event overlay — full-screen Constructivist beats staged by
+            // services (coup night, conspiracy resolutions) via pendingStateEvent.
+            // Presented at the root, above the BottomNavBar, so it covers every
+            // tab by construction — the player may have switched tabs while the
+            // async end-of-turn pipeline staged it.
+            if game.hasPendingStateEvent, let stateEvent = game.pendingStateEvent {
+                StateEventOverlay(payload: stateEvent) {
+                    game.pendingStateEvent = nil
                 }
             }
         }

@@ -641,8 +641,8 @@ class CharacterAgencyService {
         motivation += character.aggressionLevel / 3
 
         // High grudge dramatically increases motivation
-        if character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
-            motivation += (character.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 2
+        if character.grudgeMagnitude >= BalanceConfig.npcHighGrudgeThreshold {
+            motivation += (character.grudgeMagnitude - BalanceConfig.npcHighGrudgeThreshold) / 2
         }
 
         // Low fear makes NPCs bolder
@@ -884,8 +884,8 @@ class CharacterAgencyService {
         motivation += (actor.positionIndex ?? 0) * 3
 
         // High grudge drives action (NPCs with grudges are compelled to act)
-        if actor.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
-            motivation += (actor.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 2
+        if actor.grudgeMagnitude >= BalanceConfig.npcHighGrudgeThreshold {
+            motivation += (actor.grudgeMagnitude - BalanceConfig.npcHighGrudgeThreshold) / 2
         }
 
         // High aggression increases activity
@@ -1433,6 +1433,10 @@ class CharacterAgencyService {
         // Get or create relationship
         let relationship = getOrCreateNPCRelationship(from: actor, to: target, game: game)
 
+        // Stamp the interaction so the per-pair cooldown in
+        // evaluateSingleNPCAction actually fires for every action type.
+        relationship.lastInteractionTurn = game.turnNumber
+
         // Execute action effects
         switch actionType {
         case .formAlliance:
@@ -1585,6 +1589,8 @@ class CharacterAgencyService {
             target.status = CharacterStatus.detained.rawValue
             target.statusChangedTurn = game.turnNumber
             target.statusDetails = "Detained for questioning by \(actor.name)"
+            // Timed hold: released by processNPCDetentionReleases after 3-5 turns
+            game.setIntVariable("npc_detention_release_\(target.templateId)", game.turnNumber + Int.random(in: 3...5))
 
         // GOVERNANCE: State Ministry Track
         case .proposeLegislation:
@@ -2292,6 +2298,61 @@ class CharacterAgencyService {
         for relationship in game.npcRelationships {
             relationship.processDecay(currentTurn: game.turnNumber)
         }
+        processNPCDetentionReleases(game: game)
+    }
+
+    /// Release characters detained by NPC-vs-NPC detainSuspect once their timed
+    /// hold expires. Only touches characters with an npc_detention_release_* key,
+    /// so detentions from other systems (spy detection, prosecution) are unaffected.
+    /// Stale keys — the character left .detained via another system (conspiracy
+    /// strike, show trial, rehabilitation) or is now owned by a live Shuanggui
+    /// detention — are removed without releasing anyone, so an old NPC hold can
+    /// never void a later player prosecution of the same character.
+    private func processNPCDetentionReleases(game: Game) {
+        let prefix = "npc_detention_release_"
+        let releaseKeys = game.variables.keys.filter { $0.hasPrefix(prefix) }
+        guard !releaseKeys.isEmpty else { return }
+
+        // Characters currently held by an unresolved player-side Shuanggui detention.
+        let shuangguiOwnedIds = Set(
+            SecurityActionService.shared.getActiveDetentions(for: game)
+                .filter { $0.outcome == nil }
+                .map { $0.targetCharacterId }
+        )
+
+        for key in releaseKeys {
+            let templateId = String(key.dropFirst(prefix.count))
+            guard let character = game.characters.first(where: { $0.templateId == templateId }),
+                  character.status == CharacterStatus.detained.rawValue else {
+                // Character is gone or no longer detained — the key is stale.
+                game.variables.removeValue(forKey: key)
+                continue
+            }
+
+            // A live Shuanggui detention owns this character now; drop the NPC
+            // hold so it can't release them out from under the prosecution.
+            if shuangguiOwnedIds.contains(character.id.uuidString) {
+                game.variables.removeValue(forKey: key)
+                continue
+            }
+
+            let releaseTurn = game.intVariable(key)
+            guard releaseTurn > 0, game.turnNumber >= releaseTurn else { continue }
+
+            character.status = CharacterStatus.active.rawValue
+            character.statusChangedTurn = game.turnNumber
+            character.statusDetails = "Released after questioning"
+            game.variables.removeValue(forKey: key)
+
+            let event = GameEvent(
+                turnNumber: game.turnNumber,
+                eventType: .narrative,
+                summary: "\(character.name) has been released from detention and restored to their duties"
+            )
+            event.importance = 4
+            event.game = game
+            game.events.append(event)
+        }
     }
 
     // MARK: - Trust-Based Coalition Formation
@@ -2397,7 +2458,9 @@ class CharacterAgencyService {
                 eventType: .grudgeAttack,
                 headline: headline,
                 details: details,
-                visibilityLevel: .secret,
+                // The informer reports directly to the Chairman — no network
+                // threshold should gate the player from seeing it.
+                visibilityLevel: .public,
                 involvedCharacters: [npc],
                 targetCharacter: target
             ))

@@ -198,7 +198,7 @@ struct BadgeRegistry {
         BadgeDefinition(
             id: "architect_socialism",
             name: "Architect of Socialism",
-            description: "Become Chairman of Gosplan",
+            description: "Become Chairman of the State Plan",
             tier: .elite,
             category: .position,
             iconName: "chart.bar.fill",

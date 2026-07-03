@@ -616,17 +616,24 @@ struct SCMeetingView: View {
 
     // MARK: - Reusable Components
 
+    /// NPC chair id for display — nil when the player chairs the session,
+    /// so no NPC gets the CHAIR badge (mirrors StandingCommitteeView).
+    private var npcChairId: String? {
+        if committee?.playerIsChair == true { return nil }
+        return committee?.chairId
+    }
+
     private func memberAttendanceRow(member: GameCharacter) -> some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(member.templateId == committee?.chairId ? theme.accentGold : theme.sovietRed.opacity(0.5))
+                .fill(member.templateId == npcChairId ? theme.accentGold : theme.sovietRed.opacity(0.5))
                 .frame(width: 8, height: 8)
 
             Text(member.name)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(theme.schemeText.opacity(0.8))
 
-            if member.templateId == committee?.chairId {
+            if member.templateId == npcChairId {
                 Text("CHAIR")
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
                     .tracking(0.5)

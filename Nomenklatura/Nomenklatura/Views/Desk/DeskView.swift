@@ -147,6 +147,11 @@ struct DeskView: View {
                             consolidationHeader
                                 .id("deskTop")
 
+                            // What the apparatus did while the Chairman slept — top
+                            // overnight events from the end-of-turn pipeline. Renders
+                            // nothing on quiet nights.
+                            OvernightDigestCard(game: game)
+
                             // Named rival schemes — surfaced near the top so the player
                             // sees active threats before the decision. Renders nothing
                             // when there are no pending moves.
@@ -416,7 +421,7 @@ struct DeskView: View {
     }
 
     var playerTitle: String {
-        "Comrade Director"
+        "Comrade Chairman"
     }
 
     var positionTitle: String {

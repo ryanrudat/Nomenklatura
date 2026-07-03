@@ -582,7 +582,7 @@ struct InternationalEconomyView: View {
                     .font(.system(size: 16))
                     .foregroundColor(theme.bronzeGold)
 
-                Text("GOSPLAN COMMAND CENTER")
+                Text("STATE PLAN COMMAND CENTER")
                     .font(.system(size: 13, weight: .black, design: .monospaced))
                     .tracking(1.5)
                     .foregroundColor(theme.inkBlack)

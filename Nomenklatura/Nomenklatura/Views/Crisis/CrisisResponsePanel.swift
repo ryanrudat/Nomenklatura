@@ -417,8 +417,8 @@ private struct CrisisOptionCard: View {
 
             if option.costTreasury > 0 {
                 costChip(
-                    text: "\u{2212}\(option.costTreasury) \u{20BD}",
-                    icon: "rublesign.circle.fill",
+                    text: "\u{2212}\(option.costTreasury) $",
+                    icon: "dollarsign.circle.fill",
                     tint: theme.stampRed
                 )
             }
@@ -530,7 +530,7 @@ private struct CrisisOptionCard: View {
         parts.append("")
         var costs: [String] = []
         if option.costAP > 0 { costs.append("\(option.costAP) AP") }
-        if option.costTreasury > 0 { costs.append("\(option.costTreasury) \u{20BD}") }
+        if option.costTreasury > 0 { costs.append("\(option.costTreasury) $") }
         if option.requiresDecreeCharge { costs.append("1 Decree Charge") }
         if !costs.isEmpty {
             parts.append("Cost: " + costs.joined(separator: " \u{2022} "))

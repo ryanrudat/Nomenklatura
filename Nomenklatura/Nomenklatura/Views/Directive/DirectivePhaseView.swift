@@ -788,7 +788,6 @@ struct DirectivePhaseView: View {
         let positionIndex = game.currentPositionIndex
         return actions
             .filter { minPosition($0) <= positionIndex }
-            .prefix(4)
             .map { action in
                 let execTurns = executionTurns(action)
                 return BureauTask(

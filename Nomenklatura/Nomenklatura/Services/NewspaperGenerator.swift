@@ -43,6 +43,12 @@ final class NewspaperGenerator {
     // MARK: - Headline Generation
 
     private func generateHeadline(for game: Game, worldEvents: [WorldEvent]) -> HeadlineStory {
+        // Domestic drama outranks everything — a regime's paper spins last
+        // night's arrests before it reports foreign affairs.
+        if let domestic = generateDomesticDramaHeadline(for: game) {
+            return domestic
+        }
+
         // Check for major world events first - they should dominate headlines
         if let eventHeadline = generateEventBasedHeadline(from: worldEvents, game: game) {
             return eventHeadline
@@ -81,6 +87,87 @@ final class NewspaperGenerator {
             return generateDomesticHeadline(for: game)
         case .ideological:
             return generateIdeologicalHeadline(for: game)
+        }
+    }
+
+    /// Front-page treatment for last night's domestic drama. Feeds the
+    /// previously-orphaned trial/corruption/death/congress generators plus
+    /// the conspiracy-aftermath flash staged by ConspiracyService. A single
+    /// dedupe token in variables prevents the same story running two
+    /// mornings straight; nil on quiet mornings.
+    private func generateDomesticDramaHeadline(for game: Game) -> HeadlineStory? {
+        let lastStoryKey = "press_last_domestic_story"
+
+        // 1. Conspiracy/coup aftermath — staged by ConspiracyService,
+        //    consumed here so it runs exactly one morning.
+        if let flash = game.variables["press_domestic_flash"] {
+            game.variables["press_domestic_flash"] = nil
+            return generateConspiracyAftermathHeadline(kind: flash, game: game)
+        }
+
+        // 2. Death or execution of a cadre last turn.
+        if let fallen = game.characters.first(where: { c in
+            guard let changed = c.statusChangedTurn, changed == game.turnNumber - 1 else { return false }
+            return c.currentStatus == .executed || c.currentStatus == .dead
+        }) {
+            let token = "death-\(fallen.templateId)"
+            if game.variables[lastStoryKey] != token {
+                game.variables[lastStoryKey] = token
+                let cause: DeathCause = fallen.currentStatus == .executed ? .executed : .naturalCauses
+                return generateDeathHeadline(character: fallen, cause: cause, game: game)
+            }
+        }
+
+        // 3. Active show trial — one story per phase as it advances.
+        if let trial = game.activeShowTrials.first(where: { $0.phase != .completed }) {
+            let token = "trial-\(trial.id.uuidString)-\(String(describing: trial.phase))"
+            if game.variables[lastStoryKey] != token {
+                game.variables[lastStoryKey] = token
+                return generateTrialHeadline(trial: trial, game: game)
+            }
+        }
+
+        // 4. The Chairman's corruption scandal broke — the paper spins it
+        //    as a campaign against unnamed ministries.
+        if game.flags.contains("corruption_exposed") {
+            let token = "corruption-exposed"
+            if game.variables[lastStoryKey] != token {
+                game.variables[lastStoryKey] = token
+                return generateCorruptionHeadline(targetName: "senior officials", phase: "initiated", game: game)
+            }
+        }
+
+        // 5. A Congress session convened last turn.
+        if let session = game.currentCongressSession, session.turnConvened == game.turnNumber - 1 {
+            let token = "congress-\(session.sessionNumber)"
+            if game.variables[lastStoryKey] != token {
+                game.variables[lastStoryKey] = token
+                return generateCongressHeadline(session: session, game: game)
+            }
+        }
+
+        return nil
+    }
+
+    /// State-press spin on a conspiracy resolution. "order_restored" = the
+    /// plot was crushed (arrests, triumphant tone); "state_of_emergency" =
+    /// the coup wounded the regime and the paper conspicuously minimizes.
+    private func generateConspiracyAftermathHeadline(kind: String, game: Game) -> HeadlineStory {
+        switch kind {
+        case "state_of_emergency":
+            return HeadlineStory(
+                headline: "CALM RETURNS TO THE CAPITAL",
+                subheadline: "Garrison Exercises Conclude; Ministries Resume Normal Operations",
+                body: "Residents are advised that the unusual troop movements observed in recent days were scheduled readiness exercises, conducted successfully under the personal direction of the Chairman. Rumors circulated by hostile elements regarding disturbances at government buildings are without foundation. All ministries report normal operations.",
+                category: .political
+            )
+        default: // "order_restored"
+            return HeadlineStory(
+                headline: "WRECKERS' PLOT SMASHED",
+                subheadline: "Organs of State Security Act Decisively; Conspirators in Custody",
+                body: "The vigilance of the organs of state security has exposed and dismantled a conspiratorial clique that sought to betray the revolution from within. The plotters, whose names will be announced pending investigation, were taken into custody without incident. The Party calls on all citizens to redouble their watchfulness against enemies of the people.",
+                category: .political
+            )
         }
     }
 
@@ -1387,7 +1474,7 @@ final class NewspaperGenerator {
             return HeadlineStory(
                 headline: "ANTI-CORRUPTION CAMPAIGN INTENSIFIES",
                 subheadline: "Party Discipline Commission Launches Investigation",
-                body: "The Central Commission for Discipline Inspection has initiated inquiries into reports of economic irregularities within certain ministries. The Party reaffirms its commitment to maintaining socialist morality among cadres at all levels.",
+                body: "The Central Discipline Inspectorate has initiated inquiries into reports of economic irregularities within certain ministries. The Party reaffirms its commitment to maintaining socialist morality among cadres at all levels.",
                 category: .political
             )
         case "detention":
@@ -1408,7 +1495,7 @@ final class NewspaperGenerator {
             return HeadlineStory(
                 headline: "CORRUPTION EXPOSED AND PUNISHED",
                 subheadline: "\(targetName) Expelled from Party",
-                body: "The Central Commission for Discipline Inspection has announced the expulsion of \(targetName) following confirmation of serious disciplinary violations. The decisive action demonstrates the Party's zero tolerance for corruption.",
+                body: "The Central Discipline Inspectorate has announced the expulsion of \(targetName) following confirmation of serious disciplinary violations. The decisive action demonstrates the Party's zero tolerance for corruption.",
                 category: .political
             )
         default:
@@ -1659,9 +1746,9 @@ final class NewspaperGenerator {
         RevolutionaryCalendar.formatTurnFull(turnNumber)
     }
 
-    /// Parse world tension from game variables
+    /// Live world tension stat (0-100, clamped by Game.applyStat)
     private func worldTensionValue(for game: Game) -> Int {
-        Int(game.variables["world_tension"] ?? "0") ?? 0
+        game.worldTension
     }
 
     /// Parse recent diplomatic action flags into structured tuples.

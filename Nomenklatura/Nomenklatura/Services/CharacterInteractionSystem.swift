@@ -1450,8 +1450,8 @@ class CharacterInteractionSystem {
                 becameLeveraged = true
             }
 
-            // Update character disposition
-            character.disposition = max(0, min(100, character.disposition + dispositionChange))
+            // Update character disposition (model range is -100...100)
+            character.disposition = max(-100, min(100, character.disposition + dispositionChange))
 
         } else {
             narrative = interaction.failureNarratives?.randomElement() ?? "Your attempt to use the information fails."
@@ -1467,7 +1467,7 @@ class CharacterInteractionSystem {
                 dispositionChange = -25
             }
 
-            character.disposition = max(0, character.disposition + dispositionChange)
+            character.disposition = max(-100, character.disposition + dispositionChange)
 
             // Target may become aware and hostile
             if Double.random(in: 0...1) < 0.5 {

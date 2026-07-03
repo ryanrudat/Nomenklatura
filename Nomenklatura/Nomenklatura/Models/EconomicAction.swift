@@ -47,8 +47,8 @@ enum EconomicActionCategory: String, Codable, CaseIterable {
         case .planning: return "Regional Planner"
         case .allocation: return "Sector Coordinator"
         case .reform: return "Deputy Minister"
-        case .strategic: return "Gosplan Deputy Chairman"
-        case .supreme: return "Gosplan Chairman"
+        case .strategic: return "State Plan Deputy Chairman"
+        case .supreme: return "State Plan Chairman"
         }
     }
 }
@@ -284,6 +284,11 @@ struct EconomicAction: Identifiable, Codable {
 
     let cooldownTurns: Int
     let executionTurns: Int             // Some actions take multiple turns
+
+    /// Action-point cost charged on execution. Economic actions draw from the
+    /// same per-turn AP pool as every other action surface (flat 1 by default;
+    /// omitted from the definitions below so all 31 actions inherit it).
+    var costAP: Int = 1
     let baseSuccessChance: Int          // 0-100
     let riskLevel: EconomicRiskLevel
 
@@ -628,7 +633,7 @@ extension EconomicAction {
             name: "Adjust State Prices",
             description: "Modify controlled prices",
             detailedDescription: "Propose adjustments to state-controlled prices. Can reduce shortages but may cause inflation fears.",
-            iconName: "rublesign.circle.fill",
+            iconName: "dollarsign.circle.fill",
             actionVerb: "Adjust",
             category: .reform,
             minimumPositionIndex: 5,

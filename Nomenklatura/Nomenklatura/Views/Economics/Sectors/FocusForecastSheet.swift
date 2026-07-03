@@ -204,7 +204,7 @@ struct FocusForecastSheet: View {
 
     private var treasuryRow: some View {
         HStack {
-            Image(systemName: "rublesign.circle.fill")
+            Image(systemName: "dollarsign.circle.fill")
                 .foregroundColor(theme.accentGold)
             Text("Treasury Cost / Turn")
                 .font(.system(size: 12))

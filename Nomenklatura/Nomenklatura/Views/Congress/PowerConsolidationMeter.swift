@@ -13,11 +13,11 @@ import SwiftUI
 
 struct PowerConsolidationMeter: View {
     let score: Int
+    /// The official tier (game.chairmanshipTier), which applies the
+    /// Supreme-Chairman gate and 3-point hysteresis — deriving it here from
+    /// the raw score could disagree with the tier shown on the Desk.
+    let tier: ChairmanshipTier
     @Environment(\.theme) var theme
-
-    private var tier: ChairmanshipTier {
-        ChairmanshipTier.from(score: score)
-    }
 
     private var meterColor: Color {
         switch tier {

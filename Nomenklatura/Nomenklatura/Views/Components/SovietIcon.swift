@@ -74,7 +74,7 @@ struct SovietIcon: View {
 
             // Domain
             case .planning:    return "calendar.badge.checkmark"
-            case .treasury:    return "rublesign.circle.fill"
+            case .treasury:    return "dollarsign.circle.fill"
             case .industry:    return "hammer.fill"
             case .agriculture: return "leaf.fill"
             case .state:       return "flag.fill"

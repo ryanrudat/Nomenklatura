@@ -85,7 +85,7 @@ struct AnimatedStatMeter: View {
 
 #Preview {
     VStack(alignment: .leading, spacing: 10) {
-        AnimatedStatMeter(label: "Treasury",       icon: "rublesign.circle.fill", value: 56, delta: +8)
+        AnimatedStatMeter(label: "Treasury",       icon: "dollarsign.circle.fill", value: 56, delta: +8)
         AnimatedStatMeter(label: "Food Supply",    icon: "leaf.fill",             value: 64, delta: +12)
         AnimatedStatMeter(label: "Stability",      icon: "shield.fill",           value: 51, delta: -9)
         AnimatedStatMeter(label: "Popular Support",icon: "person.3.fill",         value: 30, delta: -14)

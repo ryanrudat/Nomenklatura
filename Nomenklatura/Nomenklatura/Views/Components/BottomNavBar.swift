@@ -20,7 +20,7 @@ enum NavTab: String, CaseIterable {
         case .ledger: return "Ledger"
         case .dossier: return "Dossier"
         case .codex: return "Codex"
-        case .economy: return "Gosplan"
+        case .economy: return "Plan"
         }
     }
 

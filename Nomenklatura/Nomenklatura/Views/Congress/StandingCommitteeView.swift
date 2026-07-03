@@ -545,8 +545,9 @@ struct NextMeetingCard: View {
     }
 
     private var turnsUntilNextMeeting: Int {
-        // Meetings every 4 turns (quarterly)
-        let meetingInterval = 4
+        // Cadence comes from the campaign's leadership config — must match
+        // StandingCommitteeMeetingService.shouldHaveMeeting's schedule.
+        let meetingInterval = CampaignLoader.shared.getColdWarCampaign().leadershipConfig?.meetingFrequency ?? 4
         let turnsSinceLast = game.turnNumber - lastMeetingTurn
         return max(0, meetingInterval - turnsSinceLast)
     }

@@ -53,7 +53,26 @@ struct LedgerView: View {
         }
     }
 
+    /// Last two turns' high-importance events, rendered as the wire ticker.
+    /// The events relationship is unordered in SwiftData — sort chronologically
+    /// (turn, then creation time, then id as a stable tiebreaker) before taking
+    /// the most recent six.
+    private var tickerItems: [String] {
+        game.events
+            .filter { $0.turnNumber >= game.turnNumber - 2 && $0.importance >= 6 }
+            .sorted {
+                ($0.turnNumber, $0.createdAt, $0.id.uuidString)
+                    < ($1.turnNumber, $1.createdAt, $1.id.uuidString)
+            }
+            .suffix(6)
+            .map { String($0.summary.prefix(90)).uppercased() }
+    }
+
     var body: some View {
+        // Computed once per body evaluation (it filters + sorts the whole
+        // events relationship — don't pay for it twice).
+        let ticker = tickerItems
+
         ZStack {
             // Background
             theme.parchment.ignoresSafeArea()
@@ -71,6 +90,12 @@ struct LedgerView: View {
 
                 // Overall status banner
                 OverallStatusBanner(health: overallHealth)
+
+                // Overnight wire — recent high-importance events as teletype
+                if !ticker.isEmpty {
+                    TeletypeStrip(items: ticker)
+                        .frame(height: 22)
+                }
 
                 // Scrollable stats
                 ScrollView {
@@ -117,7 +142,7 @@ struct LedgerView: View {
                                 subtitle: "Economic Foundation",
                                 accentColor: Color(hex: "4A7C59"),
                                 stats: [
-                                    StatItem(key: "treasury", label: "Treasury", value: game.treasury, icon: "rublesign.circle.fill"),
+                                    StatItem(key: "treasury", label: "Treasury", value: game.treasury, icon: "dollarsign.circle.fill"),
                                     StatItem(key: "industrialOutput", label: "Industrial Output", value: game.industrialOutput, icon: "gearshape.2.fill"),
                                     StatItem(key: "foodSupply", label: "Food Supply", value: game.foodSupply, icon: "leaf.fill")
                                 ],
@@ -738,7 +763,7 @@ struct EconomicQuickAccessCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(theme.accentGold)
 
-                    Text("GOSPLAN")
+                    Text("STATE PLAN")
                         .font(.system(size: 12, weight: .bold))
                         .tracking(1)
                         .foregroundColor(theme.schemeText)

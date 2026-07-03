@@ -26,8 +26,10 @@ enum UrgencyAdvisor {
     static func detectCrises(game: Game) -> [Crisis] {
         var crises: [Crisis] = []
 
-        // Stability crisis
-        if game.stability < 30 {
+        // Stability crisis — shares CrisisResponseService's canonical
+        // threshold so the Desk urgency flags and the Crisis Response
+        // Panel always agree on whether a crisis exists.
+        if CrisisResponseService.isStabilityCrisis(game) {
             crises.append(Crisis(
                 id: "low_stability",
                 label: "LOW STABILITY",
@@ -59,8 +61,8 @@ enum UrgencyAdvisor {
             ))
         }
 
-        // Military loyalty crisis
-        if game.militaryLoyalty < 30 {
+        // Military loyalty crisis (canonical threshold: CrisisResponseService)
+        if CrisisResponseService.isCoupRiskCrisis(game) {
             crises.append(Crisis(
                 id: "low_military",
                 label: "MILITARY UNREST",
@@ -103,8 +105,9 @@ enum UrgencyAdvisor {
             ))
         }
 
-        // Treasury crisis
-        if game.treasury < 15 {
+        // Treasury crisis (canonical predicate: CrisisResponseService —
+        // low treasury OR unsustainable debt service)
+        if CrisisResponseService.isTreasuryCrisis(game) {
             crises.append(Crisis(
                 id: "low_treasury",
                 label: "TREASURY DEPLETED",

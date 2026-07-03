@@ -219,7 +219,7 @@ struct RevolutionaryCalendar {
             case .secondFiveYearPlan: return "Second Five-Year Plan"
             case .greatPurge: return "The Great Purge"
             case .preWarTension: return "Pre-War Tension"
-            case .greatPatrioticWar: return "Great Patriotic War"
+            case .greatPatrioticWar: return "The Liberation War"
             case .postWarReconstruction: return "Post-War Reconstruction"
             case .thawPeriod: return "The Thaw"
             }
@@ -263,7 +263,7 @@ struct RevolutionaryCalendar {
             case .postWarReconstruction:
                 return ["Reconstruction", "Ideological campaigns", "Cold War beginnings"]
             case .thawPeriod:
-                return ["De-Stalinization debates", "Reform vs orthodoxy", "Rehabilitation", "Cultural relaxation"]
+                return ["Reform Period debates", "Reform vs orthodoxy", "Rehabilitation", "Cultural relaxation"]
             }
         }
     }

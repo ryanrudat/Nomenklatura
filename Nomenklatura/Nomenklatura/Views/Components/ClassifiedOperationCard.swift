@@ -19,9 +19,10 @@ struct ClassifiedOperation: Identifiable {
     let imageName: String?               // Asset name for the image
     let briefingText: String             // Intelligence briefing
     let projectedOutcomes: [OperationOutcome]
-    let cost: Int                        // Political capital cost
+    let cost: Int                        // Legacy "political capital" cost — no longer displayed (no such currency exists)
+    let apCost: Int                      // Action-point cost (0 = no AP gate)
     let riskLevel: OperationRiskLevel
-    let failureProbability: Int          // 0-100
+    let failureProbability: Int          // Legacy — no longer displayed (call sites fabricated it; risk meter is driven by riskLevel)
     let securityLevel: Int               // 1-10
     let operationType: OperationType
 
@@ -34,6 +35,7 @@ struct ClassifiedOperation: Identifiable {
         briefingText: String,
         projectedOutcomes: [OperationOutcome],
         cost: Int,
+        apCost: Int = 0,
         riskLevel: OperationRiskLevel,
         failureProbability: Int,
         securityLevel: Int = 5,
@@ -48,6 +50,7 @@ struct ClassifiedOperation: Identifiable {
         self.briefingText = briefingText
         self.projectedOutcomes = projectedOutcomes
         self.cost = cost
+        self.apCost = apCost
         self.riskLevel = riskLevel
         self.failureProbability = failureProbability
         self.securityLevel = securityLevel
@@ -83,6 +86,17 @@ enum OperationRiskLevel: String {
         case .critical: return Color(hex: "B71C1C")
         }
     }
+
+    /// How much of the risk meter to fill for this level.
+    var meterFraction: CGFloat {
+        switch self {
+        case .minimal: return 0.1
+        case .low: return 0.3
+        case .moderate: return 0.5
+        case .high: return 0.7
+        case .critical: return 0.9
+        }
+    }
 }
 
 enum OperationType: String {
@@ -103,6 +117,12 @@ struct ClassifiedOperationCard: View {
     let onExecute: () -> Void
 
     @State private var isExecuting = false
+
+    /// AP affordability gate — when false, EXECUTE ORDER is disabled so an
+    /// insufficient-AP tap can never dismiss the card looking like success.
+    private var canAffordAP: Bool {
+        operation.apCost <= game.actionPoints
+    }
 
     // Dark theme colors
     private let bgDark = Color(hex: "1A2634")
@@ -177,11 +197,10 @@ struct ClassifiedOperationCard: View {
 
             Spacer()
 
-            Button(action: {}) {
-                Image(systemName: "bell.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(textSecondary)
-            }
+            // Invisible counterweight to the dismiss button keeps the title centered
+            // (a dead notification bell used to sit here).
+            Color.clear
+                .frame(width: 18, height: 18)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -189,9 +208,7 @@ struct ClassifiedOperationCard: View {
     }
 
     private var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: Date())
+        RevolutionaryCalendar.formatTurnWithMonth(game.turnNumber)
     }
 
     // MARK: - Decision Header
@@ -351,20 +368,22 @@ struct ClassifiedOperationCard: View {
                 }
             }
 
-            // Cost
-            HStack {
-                Spacer()
-                HStack(spacing: 6) {
-                    Image(systemName: "creditcard.fill")
-                        .font(.system(size: 12))
-                    Text("COST: \(operation.cost) CAP")
-                        .font(.system(size: 11, weight: .semibold))
+            // Cost — the real action-point price (there is no political-capital currency)
+            if operation.apCost > 0 {
+                HStack {
+                    Spacer()
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 12))
+                        Text("COST: \(operation.apCost) AP")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundColor(textSecondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(bgLight)
+                    .clipShape(Capsule())
                 }
-                .foregroundColor(textSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(bgLight)
-                .clipShape(Capsule())
             }
         }
     }
@@ -403,7 +422,9 @@ struct ClassifiedOperationCard: View {
                     .foregroundColor(operation.riskLevel.color)
             }
 
-            // Risk bar
+            // Risk bar — driven by the option's real risk level. (A fabricated
+            // "failure probability" percentage used to be shown here; no
+            // underlying success chance exists for these interactions.)
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Background track
@@ -420,24 +441,10 @@ struct ClassifiedOperationCard: View {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: geometry.size.width * CGFloat(operation.failureProbability) / 100, height: 8)
+                        .frame(width: geometry.size.width * operation.riskLevel.meterFraction, height: 8)
                 }
             }
             .frame(height: 8)
-
-            // Failure probability
-            HStack {
-                Rectangle()
-                    .fill(bgLight)
-                    .frame(width: 40, height: 4)
-
-                Spacer()
-
-                Text("Failure probability: \(operation.failureProbability)%")
-                    .font(.system(size: 10))
-                    .italic()
-                    .foregroundColor(textSecondary)
-            }
         }
         .padding(16)
         .background(bgMedium)
@@ -447,48 +454,64 @@ struct ClassifiedOperationCard: View {
     // MARK: - Action Buttons
 
     private var actionButtons: some View {
-        HStack(spacing: 12) {
-            // Dismiss button
-            Button(action: onDismiss) {
-                HStack(spacing: 6) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
-                    Text("DISMISS")
-                        .font(.system(size: 12, weight: .bold))
-                        .tracking(1)
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                // Dismiss button
+                Button(action: onDismiss) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("DISMISS")
+                            .font(.system(size: 12, weight: .bold))
+                            .tracking(1)
+                    }
+                    .foregroundColor(textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(bgLight)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-                .foregroundColor(textSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(bgLight)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // Execute button — grayed and inert when the player can't
+                // afford the AP cost, so insufficient AP never reads as success.
+                Button(action: {
+                    isExecuting = true
+                    onExecute()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "pencil.line")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("EXECUTE ORDER")
+                            .font(.system(size: 12, weight: .bold))
+                            .tracking(1)
+                    }
+                    .foregroundColor(canAffordAP ? .white : textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            colors: canAffordAP ? [bgLight, accentTeal] : [bgLight, bgLight],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .opacity(canAffordAP ? 1 : 0.6)
+                }
+                .disabled(isExecuting || !canAffordAP)
             }
 
-            // Execute button
-            Button(action: {
-                isExecuting = true
-                onExecute()
-            }) {
+            if !canAffordAP {
                 HStack(spacing: 6) {
-                    Image(systemName: "pencil.line")
-                        .font(.system(size: 12, weight: .bold))
-                    Text("EXECUTE ORDER")
-                        .font(.system(size: 12, weight: .bold))
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                    Text("INSUFFICIENT ACTION POINTS — NEED \(operation.apCost), HAVE \(game.actionPoints)")
+                        .font(.system(size: 10, weight: .bold))
                         .tracking(1)
                 }
-                .foregroundColor(.white)
+                .foregroundColor(dangerRed)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    LinearGradient(
-                        colors: [bgLight, accentTeal],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .disabled(isExecuting)
         }
     }
 
@@ -573,6 +596,7 @@ struct OperationFlowLayout: Layout {
                     OperationOutcome(stat: "FEAR", change: 15, isPositive: true)
                 ],
                 cost: 50,
+                apCost: 2,
                 riskLevel: .high,
                 failureProbability: 75,
                 securityLevel: 5,
@@ -605,6 +629,7 @@ struct OperationFlowLayout: Layout {
                     OperationOutcome(stat: "INTL STANDING", change: -10, isPositive: false)
                 ],
                 cost: 80,
+                apCost: 3,
                 riskLevel: .critical,
                 failureProbability: 40,
                 securityLevel: 8,

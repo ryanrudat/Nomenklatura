@@ -29,7 +29,7 @@ struct SecurityPortalView: View {
             // Header
             PortalHeader(
                 title: "STATE PROTECTION BUREAU",
-                subtitle: "Central Commission for Discipline Inspection",
+                subtitle: "Central Discipline Inspectorate",
                 accentColor: theme.sovietRed
             )
             .padding(.horizontal, 15)
@@ -674,7 +674,7 @@ struct SecurityDetentionSection: View {
                             .font(.system(size: 12))
                             .foregroundColor(theme.sovietRed)
 
-                        Text("ACTIVE SHUANGGUI DETENTIONS")
+                        Text("ACTIVE SPECIAL MEASURES DETENTIONS")
                             .font(.system(size: 11, weight: .bold))
                             .tracking(1)
                             .foregroundColor(theme.inkBlack)
@@ -688,7 +688,7 @@ struct SecurityDetentionSection: View {
                 PortalEmptyStateView(
                     icon: "lock.open.fill",
                     title: "No Active Detentions",
-                    message: "Use security actions to initiate shuanggui detention of suspects."
+                    message: "Use security actions to initiate special measures detention of suspects."
                 )
             }
         }
@@ -1433,8 +1433,8 @@ struct SecurityPositionBanner: View {
         case 3: return "Case Handler"
         case 4: return "Section Chief"
         case 5: return "Department Director"
-        case 6: return "CCDI Standing Committee"
-        case 7...8: return "CCDI Secretary"
+        case 6: return "Discipline Inspectorate Directorate"
+        case 7...8: return "Discipline Inspectorate Secretary"
         default: return "Observer"
         }
     }

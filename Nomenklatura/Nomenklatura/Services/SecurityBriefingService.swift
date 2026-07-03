@@ -73,11 +73,11 @@ class SecurityBriefingService {
                 headline: "Investigation ongoing: \(target.name)",
                 summary: "Case File #\(action.id.uuidString.prefix(8)): Formal investigation of \(target.name) (Position \(targetPosition)) continues. Evidence gathering in progress.",
                 fullDetails: "Investigation of \(target.name) initiated on Turn \(action.initiatedTurn). Current evidence level: \(action.successChance)%. Subject holding Position \(targetPosition) in \(target.positionTrack ?? "government"). Completion expected Turn \(action.completionTurn).",
-                rawIntelligence: "CASE STATUS: Active investigation of \(target.name). Initiated by security services Turn \(action.initiatedTurn). Success probability: \(action.successChance)%. Target position: \(targetPosition). Factional affiliation: \(target.factionId ?? "unknown"). Recommended approach: standard CCDI procedures.",
+                rawIntelligence: "CASE STATUS: Active investigation of \(target.name). Initiated by security services Turn \(action.initiatedTurn). Success probability: \(action.successChance)%. Target position: \(targetPosition). Factional affiliation: \(target.factionId ?? "unknown"). Recommended approach: standard Discipline Inspectorate procedures.",
                 sensitiveData: ["evidence_level": action.successChance, "target_position": targetPosition],
                 isUrgent: targetPosition >= 5,
                 reliabilityRating: "B",
-                recommendedActions: targetPosition < 4 ? ["Proceed with formal charges", "Request shuanggui authorization"] : ["Seek Standing Committee approval", "Prepare case documentation"]
+                recommendedActions: targetPosition < 4 ? ["Proceed with formal charges", "Request special measures authorization"] : ["Seek Standing Committee approval", "Prepare case documentation"]
             ))
         }
 
@@ -101,10 +101,10 @@ class SecurityBriefingService {
                 classification: classification,
                 relatedCharacterId: detention.targetCharacterId,
                 relatedCharacterName: detention.targetName,
-                headline: "Shuanggui: \(detention.targetName) - \(detention.phase.displayName)",
-                summary: "\(detention.targetName) remains in shuanggui detention. Phase: \(detention.phase.displayName). \(detention.turnsInDetention) weeks in custody.",
+                headline: "Special Measures: \(detention.targetName) - \(detention.phase.displayName)",
+                summary: "\(detention.targetName) remains in special measures detention. Phase: \(detention.phase.displayName). \(detention.turnsInDetention) weeks in custody.",
                 fullDetails: "Subject \(detention.targetName) detained at \(detention.location.displayName) since Turn \(detention.initiatedTurn). Current phase: \(detention.phase.displayName). Evidence accumulated: \(detention.evidenceAccumulated)%. Confession status: \(detention.confessionObtained ? "OBTAINED" : "NOT YET"). Suicide watch: ACTIVE. Lawyer access: DENIED.",
-                rawIntelligence: "SHUANGGUI REPORT: \(detention.targetName) (Pos \(detention.targetPosition)) under double designation at \(detention.location.displayName). Initiated by \(detention.initiatedByName). Duration: \(detention.turnsInDetention) weeks. Guards: \(detention.accompanyingProtectors). Evidence: \(detention.evidenceAccumulated)%. Confession: \(detention.confessionObtained). Implicated others: \(detention.implicatedCharacterIds.count). Refer to trial: \(detention.referredToTrial ? "YES" : "PENDING").",
+                rawIntelligence: "SPECIAL MEASURES REPORT: \(detention.targetName) (Pos \(detention.targetPosition)) under special measures detention at \(detention.location.displayName). Initiated by \(detention.initiatedByName). Duration: \(detention.turnsInDetention) weeks. Guards: \(detention.accompanyingProtectors). Evidence: \(detention.evidenceAccumulated)%. Confession: \(detention.confessionObtained). Implicated others: \(detention.implicatedCharacterIds.count). Refer to trial: \(detention.referredToTrial ? "YES" : "PENDING").",
                 sensitiveData: ["evidence": detention.evidenceAccumulated, "duration_weeks": detention.turnsInDetention * 2],
                 isUrgent: detention.turnsInDetention >= 10,
                 reliabilityRating: "A",
@@ -177,7 +177,7 @@ class SecurityBriefingService {
                 headline: "Corruption indicators: \(official.name)",
                 summary: "Discipline inspection has flagged \(official.name) for potential violations. Further investigation recommended.",
                 fullDetails: "Subject: \(official.name), Position Level \(position). Corruption assessment: \(official.personality.corrupt)%. Loyalty rating: \(official.personality.loyal)%. Track: \(official.positionTrack ?? "unknown").",
-                rawIntelligence: "CCDI WATCHLIST: \(official.name) (Pos \(position)) shows elevated corruption markers. Personality profile - Corrupt: \(official.personality.corrupt), Ambitious: \(official.personality.ambitious), Loyal: \(official.personality.loyal). Faction: \(official.factionId ?? "none"). Recommend: \(position >= 5 ? "Seek SC approval for investigation" : "Initiate preliminary review").",
+                rawIntelligence: "DISCIPLINE INSPECTORATE WATCHLIST: \(official.name) (Pos \(position)) shows elevated corruption markers. Personality profile - Corrupt: \(official.personality.corrupt), Ambitious: \(official.personality.ambitious), Loyal: \(official.personality.loyal). Faction: \(official.factionId ?? "none"). Recommend: \(position >= 5 ? "Seek SC approval for investigation" : "Initiate preliminary review").",
                 sensitiveData: ["corruption_level": official.personality.corrupt, "position": position],
                 isUrgent: official.personality.corrupt > 80,
                 reliabilityRating: "B",

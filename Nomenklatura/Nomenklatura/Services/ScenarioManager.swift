@@ -430,6 +430,24 @@ class ScenarioManager {
             """
         }
 
+        // Ground the stakes in the actually-designated patron and rival (both
+        // assigned during new-game setup, before the first scenario loads).
+        // These names were previously hardcoded and usually wrong.
+        let patronLine: String
+        if let patron = game.patron {
+            let title = patron.title.map { "\($0) " } ?? ""
+            patronLine = "\(title)\(patron.name) championed your candidacy on the Standing Committee. Loyalty is expected in return."
+        } else {
+            patronLine = "The elders who championed your candidacy expect loyalty in return."
+        }
+        let rivalLine: String
+        if let rival = game.primaryRival {
+            let title = rival.title.map { "\($0) " } ?? ""
+            rivalLine = "\(title)\(rival.name) believes the chair you now occupy was stolen — and is already counting allies."
+        } else {
+            rivalLine = "Someone on the Committee believes the chair you now occupy was stolen — and is already counting allies."
+        }
+
         let customizedBriefing = """
         The heavy oak doors of the General Secretary's office close behind you. The room is larger than you expected — mahogany desk, red curtains, a wall of telephones connecting you to every ministry, every military district, every corner of the Republic.
 
@@ -437,9 +455,9 @@ class ScenarioManager {
 
         \(factionContext)
 
-        Your chief of staff, Sasha, sets a leather portfolio on the desk. "Comrade General Secretary. Your first morning briefing."
+        Your chief of staff, Sasha, sets a leather portfolio on the desk. "Comrade Chairman. Your first morning briefing."
 
-        "Director Wallace championed your candidacy on the Standing Committee. He expects loyalty in return — and he controls State Security. Deputy Director Sullivan believes he should be sitting where you sit. He has allies."
+        "\(patronLine) \(rivalLine)"
 
         Sasha opens the portfolio. "The previous General Secretary left... suddenly. The Standing Committee is fractured. Three factions are already maneuvering. But you hold the seals of office, and for now, that is enough."
 

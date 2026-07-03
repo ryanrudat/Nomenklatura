@@ -562,8 +562,8 @@ private enum NewspaperColors {
         publicationName: "The People's Weekly",
         headline: HeadlineStory(
             headline: "PREMIER ANNOUNCES FIVE-YEAR PLAN TRIUMPH",
-            subheadline: "Steel Production Rises 12% Across the Urals",
-            body: "In a decisive address to the Supreme Soviet, the Premier declared the latest industrial quotas not merely met, but shattered. Steel production has risen by 12% across the Urals, signaling a new era of dominance against Western imperialism.",
+            subheadline: "Steel Production Rises 12% Across the Northern Zones",
+            body: "In a decisive address to the People's Congress, the Premier declared the latest industrial quotas not merely met, but shattered. Steel production has risen by 12% across the northern industrial zones, signaling a new era of dominance against Western imperialism.",
             category: .political
         ),
         secondaryStories: [

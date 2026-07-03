@@ -26,6 +26,31 @@ final class CrisisResponseService {
     static let shared = CrisisResponseService()
     private init() {}
 
+    // MARK: - Canonical Thresholds
+
+    // Single source of truth for crisis trigger conditions. UrgencyAdvisor
+    // reads these same predicates for the Desk urgency flags, so the urgency
+    // panel and the Crisis Response Panel can never disagree about whether a
+    // crisis exists. (The panel-only grace period below is deliberate pacing
+    // and does not apply to urgency triage.)
+    nonisolated static let stabilityCrisisThreshold = 25
+    nonisolated static let treasuryCrisisThreshold = 30
+    nonisolated static let militaryLoyaltyCrisisThreshold = 25
+
+    nonisolated static func isStabilityCrisis(_ game: Game) -> Bool {
+        game.stability < stabilityCrisisThreshold
+    }
+
+    nonisolated static func isTreasuryCrisis(_ game: Game) -> Bool {
+        if game.treasury < treasuryCrisisThreshold { return true }
+        let debtService = game.totalDebtService
+        return debtService > 0 && debtService * 3 > game.treasury
+    }
+
+    nonisolated static func isCoupRiskCrisis(_ game: Game) -> Bool {
+        game.militaryLoyalty < militaryLoyaltyCrisisThreshold
+    }
+
     // MARK: - Detection
 
     /// Every active crisis right now. Order is canonical (matches the
@@ -49,12 +74,10 @@ final class CrisisResponseService {
 
         switch crisis {
         case .stabilityCollapse:
-            return game.stability < 25
+            return Self.isStabilityCrisis(game)
 
         case .treasuryCrisis:
-            if game.treasury < 30 { return true }
-            let debtService = game.totalDebtService
-            return debtService > 0 && debtService * 3 > game.treasury
+            return Self.isTreasuryCrisis(game)
 
         case .resourceCatastrophe:
             // Only SEVERE shortfalls count toward catastrophe. A sector at
@@ -71,7 +94,7 @@ final class CrisisResponseService {
             return false
 
         case .coupRisk:
-            return game.militaryLoyalty < 25
+            return Self.isCoupRiskCrisis(game)
 
         case .diplomaticCrisis:
             if game.worldTension > 80 { return true }

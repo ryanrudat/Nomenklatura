@@ -463,6 +463,7 @@ final class SecurityActionService {
     func advanceDetention(_ detention: inout ShuangguiDetention, game: Game, modelContext: ModelContext) {
         var rng = game.rng
         defer { game.rng = rng }
+        let phaseBeforeAdvance = detention.phase
         detention.turnsInDetention += 1
 
         // Evidence accumulates each turn
@@ -502,6 +503,19 @@ final class SecurityActionService {
         case .referral:
             // Ready for outcome
             break
+        }
+
+        // Keep the canonical prosecution registry in step with detention
+        // reality — updateStage refreshes lastUpdatedTurn so pruneStale
+        // doesn't mistake a live detention for a stalled prosecution.
+        if detention.phase != phaseBeforeAdvance,
+           let targetId = UUID(uuidString: detention.targetCharacterId) {
+            ProsecutionPipelineService.shared.updateStage(
+                for: targetId,
+                stage: .arrest,
+                evidenceLevel: detention.evidenceAccumulated,
+                in: game
+            )
         }
 
         // Check for "accidents" - rare death in detention
@@ -888,7 +902,7 @@ final class SecurityActionService {
             case "launch_formal_investigation":
                 return "The State Protection Bureau launched a formal investigation into \(targetName)."
             case "order_shuanggui":
-                return "\(targetName) was detained under shuanggui by order of \(character.name)."
+                return "\(targetName) was detained under special measures by order of \(character.name)."
             default:
                 return "\(character.name) executed security action: \(action.name)"
             }
@@ -916,7 +930,7 @@ final class SecurityActionService {
             case "open_case_file":
                 return "A formal case file has been opened on \(targetName)."
             case "order_shuanggui":
-                return "\(targetName) has been detained under shuanggui at a designated location."
+                return "\(targetName) has been detained under special measures at a designated location."
             case "execute_without_trial":
                 return "\(targetName) died during detention. The official report cites suicide."
             default:

@@ -121,15 +121,15 @@ enum EmergencyDecree: String, CaseIterable, Codable, Identifiable {
         case .requisitionGrain:
             return "Available only during a grain crisis (≤ 5 reserves)."
         case .emergencyCoalImports:
-            return "Available during a coal crisis. Requires ≥ 15 treasury for procurement."
+            return "Available only during an energy crisis (≤ 5 reserves). Requires ≥ 15 treasury for procurement."
         case .industrialConscription:
-            return "Available only when steel or iron reserves are exhausted."
+            return "Available only when steel reserves are exhausted."
         case .strategicReserveLiquidation:
             return "Available only when 2+ resources are simultaneously in deficit."
         case .blackMarketTolerance:
-            return "Available only during a cotton or timber shortage."
+            return "Available only during a grain or energy shortage (≤ 5 reserves)."
         case .emergencyOilRationing:
-            return "Available only during an oil crisis (≤ 5 reserves)."
+            return "Available only during an energy crisis (≤ 5 reserves)."
         }
     }
 }

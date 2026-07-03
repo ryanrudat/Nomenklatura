@@ -39,7 +39,7 @@ enum ExpandedCareerTrack: String, Codable, CaseIterable, Sendable {
         case .stateMinistry: return "CoM"
         case .securityServices: return "BPS"
         case .foreignAffairs: return "MFA"
-        case .economicPlanning: return "Gosplan"
+        case .economicPlanning: return "State Plan"
         case .militaryPolitical: return "MPA"
         case .regional: return "Region"
         }
@@ -58,7 +58,7 @@ enum ExpandedCareerTrack: String, Codable, CaseIterable, Sendable {
         case .foreignAffairs:
             return "The voice of the nation - diplomacy, treaties, and international relations"
         case .economicPlanning:
-            return "The architects of socialism - Gosplan, quotas, and industrial strategy"
+            return "The architects of socialism - the State Plan, quotas, and industrial strategy"
         case .militaryPolitical:
             return "The political soul of the army - commissars, loyalty, and defense policy"
         case .regional:

@@ -145,7 +145,7 @@ struct EconomicHubView: View {
                     .tracking(2)
                     .foregroundColor(theme.accentGold)
 
-                Text("GOSPLAN")
+                Text("STATE PLAN")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1)
                     .foregroundColor(theme.inkGray)
@@ -426,7 +426,9 @@ private struct SectorDetailCard: View {
     @Environment(\.theme) var theme
 
     private var production: Int {
-        sectorValue(for: sector)
+        // Same source of truth as SectorDetailView — the card must agree with
+        // the detail screen it opens.
+        game.sectorPerformance(for: sector).actualOutput
     }
 
     var body: some View {
@@ -471,30 +473,12 @@ private struct SectorDetailCard: View {
         )
     }
 
-    private func sectorValue(for sector: EconomicSector) -> Int {
-        switch sector {
-        case .heavyIndustry: return min(100, max(0, game.industrialOutput + 10))
-        case .lightIndustry: return min(100, max(0, (game.industrialOutput + game.popularSupport) / 2))
-        case .agriculture: return game.foodSupply
-        case .energy: return min(100, max(0, game.industrialOutput - 5))
-        case .mining: return min(100, max(0, (game.industrialOutput + game.stability) / 2))
-        case .construction: return min(100, max(0, game.stability))
-        case .transport: return min(100, max(0, (game.industrialOutput + game.stability) / 2))
-        case .defense: return min(100, max(0, game.militaryLoyalty))
-        }
-    }
-
     private func sectorDependencies(_ sector: EconomicSector) -> String? {
-        switch sector {
-        case .heavyIndustry: return "Depends on: Energy, Mining"
-        case .lightIndustry: return "Depends on: Heavy Industry"
-        case .agriculture: return "Depends on: Transport, Energy"
-        case .energy: return nil
-        case .mining: return "Depends on: Energy, Transport"
-        case .construction: return "Depends on: Heavy Industry, Mining"
-        case .transport: return "Depends on: Energy, Construction"
-        case .defense: return "Depends on: Heavy Industry, Energy"
-        }
+        // Render the model's real dependency graph — the same one the
+        // supply-chain sim and SectorDetailView use.
+        let deps = sector.dependencies
+        guard !deps.isEmpty else { return nil }
+        return "Depends on: " + deps.map(\.displayName).joined(separator: ", ")
     }
 
     private func barColor(_ value: Int) -> Color {

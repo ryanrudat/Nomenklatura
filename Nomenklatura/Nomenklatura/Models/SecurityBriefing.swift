@@ -383,7 +383,7 @@ struct InvestigationBriefingStatus: Codable, Identifiable {
             switch self {
             case .preliminary: return "Preliminary Review"
             case .formal: return "Formal Investigation"
-            case .detention: return "Shuanggui Detention"
+            case .detention: return "Special Measures Detention"
             case .prosecution: return "Prosecution Pending"
             case .concluded: return "Case Concluded"
             }

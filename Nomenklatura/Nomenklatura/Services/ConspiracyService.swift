@@ -58,6 +58,13 @@ final class ConspiracyService {
         defer { game.rng = rng }
 
         guard var conspiracy = activeConspiracy(in: game) else {
+            // Stale response flags from a previous conspiracy would silently
+            // auto-resolve the next one the turn it forms — clear them first.
+            // Only mutate the persisted flags array when something matches,
+            // so the common no-conspiracy path stays a true no-op.
+            if game.flags.contains(where: { $0.hasPrefix("conspiracy_") }) {
+                game.flags.removeAll { $0.hasPrefix("conspiracy_") }
+            }
             checkFormation(game: game, using: &rng)
             return
         }
@@ -119,6 +126,10 @@ final class ConspiracyService {
             if Int.random(in: 1...100, using: &rng) <= leakChance {
                 conspiracy.exposed = true
                 queueExposureEvent(conspiracy, instigator: instigator, game: game)
+                // The player must get at least one turn to answer the
+                // exposure event before the climax can fire.
+                save(conspiracy, in: game)
+                return
             }
         }
 
@@ -221,16 +232,17 @@ final class ConspiracyService {
     private func resolveStrike(_ conspiracy: Conspiracy, game: Game) {
         let members = conspiracy.memberIds.compactMap { character($0, in: game) }
         for member in members where member.isActive {
-            member.status = CharacterStatus.detained.rawValue
-            member.statusChangedTurn = game.turnNumber
+            member.markRemovedFromPosition(reason: .imprisoned, turn: game.turnNumber)
             member.fearLevel = min(100, member.fearLevel + 40)
             member.disposition = max(-100, member.disposition - 20)
         }
         game.applyStat("standing", change: 8)
         game.applyStat("stability", change: -5)
         game.applyStat("eliteLoyalty", change: -(3 * members.count))
-        logEvent(game, importance: 9,
-                 "The conspiracy is broken in a single night. \(members.map(\.name).joined(separator: ", ")) taken from their beds. The Politburo is silent at breakfast — the kind of silence that remembers.")
+        let summary = "The conspiracy is broken in a single night. \(members.map(\.name).joined(separator: ", ")) taken from their beds. The Politburo is silent at breakfast — the kind of silence that remembers."
+        logEvent(game, importance: 9, summary)
+        stageOverlay(game, stamp: "EXECUTED", title: "THE NIGHT OF ARRESTS", body: summary, accent: .red)
+        game.variables["press_domestic_flash"] = "order_restored"
     }
 
     private func resolveInfiltration(_ conspiracy: Conspiracy, game: Game) {
@@ -240,8 +252,9 @@ final class ConspiracyService {
             member.disposition = max(-100, member.disposition - 10)
         }
         game.applyStat("rivalThreat", change: -5)
-        logEvent(game, importance: 9,
-                 "Your agent inside the conspiracy delivered everything: names, dates, hesitations. Confronted privately with their own words, the plotters scatter. No arrests, no martyrs — only \(members.count) senior figures who now know the Chairman saw them coming. Full list filed: \(members.map(\.name).joined(separator: ", ")).")
+        let summary = "Your agent inside the conspiracy delivered everything: names, dates, hesitations. Confronted privately with their own words, the plotters scatter. No arrests, no martyrs — only \(members.count) senior figures who now know the Chairman saw them coming. Full list filed: \(members.map(\.name).joined(separator: ", "))."
+        logEvent(game, importance: 9, summary)
+        stageOverlay(game, stamp: "CLASSIFIED", title: "THE PLOT UNRAVELED", body: summary, accent: .gold)
     }
 
     private func collapse(_ conspiracy: Conspiracy, game: Game) {
@@ -282,20 +295,23 @@ final class ConspiracyService {
                 game.applyStat("stability", change: -12)
                 game.applyStat("militaryLoyalty", change: -8)
                 game.applyStat("rivalThreat", change: 20)
-                logEvent(game, importance: 10,
-                         "A night of confused orders and seized radio stations. You hold the building — barely. \(names) moved openly against you, and though the plot failed, the whole apparatus watched the Chairman bleed.")
+                let summary = "A night of confused orders and seized radio stations. You hold the building — barely. \(names) moved openly against you, and though the plot failed, the whole apparatus watched the Chairman bleed."
+                logEvent(game, importance: 10, summary)
+                stageOverlay(game, stamp: "STATE OF EMERGENCY", title: "THE NIGHT THEY MOVED", body: summary, accent: .red)
+                game.variables["press_domestic_flash"] = "state_of_emergency"
             }
         } else {
             for member in members where member.isActive {
-                member.status = CharacterStatus.detained.rawValue
-                member.statusChangedTurn = game.turnNumber
+                member.markRemovedFromPosition(reason: .imprisoned, turn: game.turnNumber)
                 member.fearLevel = min(100, member.fearLevel + 40)
             }
             game.applyStat("standing", change: 10)
             game.applyStat("eliteLoyalty", change: 5)
             game.applyStat("stability", change: -5)
-            logEvent(game, importance: 10,
-                     "They moved at 3 a.m. and found every door already held against them. \(names) in custody by sunrise. The apparatus draws the obvious lesson: the Chairman cannot be surprised.")
+            let summary = "They moved at 3 a.m. and found every door already held against them. \(names) in custody by sunrise. The apparatus draws the obvious lesson: the Chairman cannot be surprised."
+            logEvent(game, importance: 10, summary)
+            stageOverlay(game, stamp: "ORDER RESTORED", title: "THE 3 A.M. PLOT", body: summary, accent: .gold)
+            game.variables["press_domestic_flash"] = "order_restored"
         }
     }
 
@@ -308,6 +324,13 @@ final class ConspiracyService {
 
     private func character(_ templateId: String, in game: Game) -> GameCharacter? {
         game.characters.first { $0.templateId == templateId }
+    }
+
+    /// Stage the full-screen Constructivist overlay for the next briefing.
+    private func stageOverlay(_ game: Game, stamp: String, title: String, body: String, accent: StateEventPayload.Accent) {
+        game.pendingStateEvent = StateEventPayload(
+            id: UUID().uuidString, stampText: stamp, title: title, body: body, accent: accent
+        )
     }
 
     private func logEvent(_ game: Game, importance: Int, _ summary: String) {

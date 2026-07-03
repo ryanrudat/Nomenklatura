@@ -306,6 +306,13 @@ extension GameCharacter {
         currentStatus.isFallen
     }
 
+    /// Magnitude of a held grudge. grudgeLevel is -100..100 with negative =
+    /// grudge, so reading it raw against positive thresholds silently never
+    /// fires — always compare via this property.
+    var grudgeMagnitude: Int {
+        max(0, -grudgeLevel)
+    }
+
     /// Whether this character might return from their current status
     var mightReturn: Bool {
         canReturnFlag && currentStatus.canReturn

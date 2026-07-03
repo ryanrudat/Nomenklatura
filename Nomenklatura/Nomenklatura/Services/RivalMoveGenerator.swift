@@ -353,9 +353,9 @@ final class RivalMoveGenerator {
     // MARK: - Kind selection
 
     private func pickKind(for rival: GameCharacter, game: Game, avoiding: RivalMoveKind? = nil, using rng: inout SeededRNG) -> RivalMoveKind {
-        // Personality-driven biases. Each branch produces a "primary"
-        // pick; if that matches `avoiding` we fall through to the next
-        // best fit so the same rival rotates schemes between appearances.
+        // Personality-driven biases build a candidate pool; the final pick
+        // is random among candidates that don't match `avoiding`, so the
+        // same rival rotates schemes between appearances.
         let amb = rival.personalityAmbitious
         let ruth = rival.personalityRuthless
         let corrupt = rival.personalityCorrupt
@@ -383,13 +383,12 @@ final class RivalMoveGenerator {
         // Always-available fallback.
         candidates.append(.factionWhisperCampaign)
 
-        // Prefer the first candidate that isn't the rival's last move.
-        if let avoiding {
-            if let rotated = candidates.first(where: { $0 != avoiding }) {
-                return rotated
-            }
-        }
-        return candidates.first ?? .factionWhisperCampaign
+        // Random pick among candidates that aren't the rival's last move;
+        // if avoidance empties the pool, fall back to the full candidate set.
+        let pool = candidates.filter { $0 != avoiding }
+        return pool.randomElement(using: &rng)
+            ?? candidates.randomElement(using: &rng)
+            ?? .factionWhisperCampaign
     }
 
     // MARK: - Templates

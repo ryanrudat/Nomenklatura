@@ -272,11 +272,28 @@ final class ProsecutionPipelineService {
         guard !registry.isEmpty else { return }
 
         let livingIds = Set(game.characters.filter { $0.isAlive }.map { $0.id.uuidString })
+        // Live-state check: a never-confessing detention can legitimately sit at
+        // maxDetentionTurns (12) — the same length as the stall window — without
+        // touching its registry entry. Pruning it while the detention is still
+        // live would allow a second prosecution against the same target and turn
+        // the eventual close() into a no-op.
+        let detainedIds = Set(
+            SecurityActionService.shared.getActiveDetentions(for: game)
+                .filter { $0.outcome == nil }
+                .map { $0.targetCharacterId }
+        )
+        let onTrialIds = Set(
+            game.activeShowTrials
+                .filter { $0.phase != .completed }
+                .map { $0.defendantId.uuidString }
+        )
         let before = registry.count
 
         registry = registry.filter { key, state in
             // Target no longer exists or is dead → drop.
             guard livingIds.contains(key) else { return false }
+            // A live detention or trial is still progressing → keep.
+            if detainedIds.contains(key) || onTrialIds.contains(key) { return true }
             // Stalled below the trial stage for too long → drop so the player
             // can eventually re-prosecute.
             let stalled = (game.turnNumber - state.lastUpdatedTurn) >= stallTurns

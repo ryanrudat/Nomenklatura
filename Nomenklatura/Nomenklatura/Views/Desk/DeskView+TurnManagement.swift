@@ -258,6 +258,8 @@ extension DeskView {
     @ViewBuilder
     func treasuryBriefingSection(report: EconomyService.EconomicReport) -> some View {
         let primaryLines = Array(report.breakdown.sorted { abs($0.1) > abs($1.1) }.prefix(3))
+        // report.netChange is a gross activity model; the actual treasury move is recorded separately
+        let actualDelta = game.intVariable("last_economy_treasury_delta")
 
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -286,9 +288,9 @@ extension DeskView {
                         .font(.system(size: 8, weight: .bold, design: .monospaced))
                         .tracking(1)
                         .foregroundColor(ColdWarTheme.shared.inkGray)
-                    Text(signedValue(report.netChange))
+                    Text(signedValue(actualDelta))
                         .font(.system(size: 17, weight: .bold, design: .monospaced))
-                        .foregroundColor(colorForDelta(report.netChange))
+                        .foregroundColor(colorForDelta(actualDelta))
                 }
 
                 Rectangle()
@@ -310,6 +312,11 @@ extension DeskView {
                 Rectangle()
                     .fill(ColdWarTheme.shared.leatherBrown.opacity(0.15))
                     .frame(height: 1)
+
+                Text("GROSS ACTIVITY (reference)")
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(ColdWarTheme.shared.inkGray)
 
                 VStack(spacing: 4) {
                     ForEach(Array(primaryLines.enumerated()), id: \.offset) { _, line in

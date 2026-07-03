@@ -382,8 +382,8 @@ final class MilitaryActionService {
         target.disposition = max(-100, target.disposition - 30)
         target.trustLevel = max(0, target.trustLevel - 20)
 
-        // Target becomes more resentful (grudge increases)
-        target.grudgeLevel = min(100, target.grudgeLevel + 30)
+        // Target becomes more resentful (GameCharacter.grudgeLevel: negative = grudge)
+        target.grudgeLevel = max(-100, target.grudgeLevel - 30)
 
         // Reduce their loyalty trait
         target.personalityLoyal = max(0, target.personalityLoyal - 20)

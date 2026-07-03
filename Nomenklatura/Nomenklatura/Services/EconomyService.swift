@@ -152,14 +152,19 @@ class EconomyService {
     func predictNextTurn(for game: Game) -> EconomicForecast {
         let report = calculateTurnEconomy(game: game)
 
-        // Project the treasury delta from what the passive economy ACTUALLY applied
-        // last turn (recorded by processEconomy), not the report's gross
-        // income-minus-expense figure — those are different models and only the
-        // former hits the treasury the player sees. On the very first forecast
-        // (no passive run recorded yet) fall back to a faithful estimate of the
+        // Project the treasury delta from what the economy ACTUALLY applied last
+        // turn, not the report's gross income-minus-expense figure — those are
+        // different models and only the former hits the treasury the player sees.
+        // The key is owned by GameEngine's recordEconomyTreasuryDelta step, which
+        // re-bases it every turn to the authoritative bracket delta — including
+        // the strategic-resource auto-import charges — so the recorded delta IS
+        // the honest "if you do nothing" projection; no separate import-charge
+        // term is needed (adding one would double-count). On the very first
+        // forecast (no recorded run yet) fall back to a faithful estimate of the
         // dominant deterministic terms. (Economy audit 2026-06.)
+        let recordedDelta = game.intVariable("last_economy_treasury_delta")
         let netTreasury: Int = game.turnNumber > 1
-            ? game.intVariable("last_economy_treasury_delta")
+            ? recordedDelta
             : estimatePassiveTreasuryDelta(game: game)
 
         // Build stat-line projections.
@@ -174,13 +179,37 @@ class EconomyService {
             projectedValue: max(-100, min(100, game.treasury + netTreasury))
         ))
 
-        // Food — declines slowly when food < 60; we don't run the full
-        // sector recipe sim here. Threshold-based hint matches what
-        // `applyEconomicPoliticalFeedback` actually does to popular support.
+        // Food — mirror the deterministic food terms `processEconomy` actually
+        // applies: applySectorEffects' agriculture-share formula, each sector's
+        // active-focus foodSupply effects (output-scaled exactly as
+        // applySectorToNationalEconomy scales them), and the ±1 nudges from
+        // major farming regions. Uses current sector output as the projection
+        // basis — a directional hint, not a re-run of the full pipeline.
         let foodDelta: Int = {
-            if game.foodSupply >= 60 { return 0 }
-            if game.foodSupply >= 40 { return -1 }
-            return -2
+            var d = (game.agricultureShare - 20) / 10
+            for sector in EconomicSector.allCases {
+                let output = game.sectorPerformance(for: sector).actualOutput
+                if let focus = game.activeFocus(for: sector) {
+                    guard let change = focus.effects["foodSupply"], change != 0 else { continue }
+                    if change > 0 {
+                        if output >= 70 { d += change }
+                        else if output >= 50 { d += max(1, change / 2) }
+                    } else {
+                        d += change  // negative focus effects always apply
+                    }
+                } else if sector == .agriculture {
+                    // No focus: default primary-effect rule (agriculture's
+                    // primary stat is foodSupply).
+                    if output >= 70 { d += 1 }
+                    else if output <= 30 { d -= 1 }
+                }
+            }
+            // Major regions (contribution >= 15) push food ±1 by farm output.
+            for region in game.regions where region.economicContribution >= 15 {
+                if region.agriculturalOutput >= 70 { d += 1 }
+                else if region.agriculturalOutput <= 30 { d -= 1 }
+            }
+            return d
         }()
         stats.append(ForecastStatLine(
             key: "foodSupply",
@@ -190,14 +219,17 @@ class EconomyService {
             projectedValue: max(0, min(100, game.foodSupply + foodDelta))
         ))
 
-        // Stability — corruption drain when stability < 50 + cumulative
-        // feedback when unemployment / inflation are bad.
-        let unemployment = max(0, (100 - game.industrialOutput) / 5)
+        // Stability — corruption drain when stability < 50 + the real
+        // unemployment / inflation feedback tiers that
+        // `applyEconomicPoliticalFeedback` applies (reads the actual
+        // unemploymentRate stat, not a proxy derived from industrial output).
         let stabilityDelta: Int = {
             var d = 0
             if game.stability < 50 { d -= 1 }  // corruption multiplier kicks in
-            if unemployment > 20 { d -= 1 }
-            if game.inflationRate > 25 { d -= 1 }
+            if game.unemploymentRate > 30 { d -= 2 }
+            else if game.unemploymentRate > 20 { d -= 1 }
+            if game.inflationRate > 40 { d -= 2 }
+            else if game.inflationRate > 25 { d -= 1 }
             return d
         }()
         stats.append(ForecastStatLine(
@@ -265,6 +297,9 @@ class EconomyService {
         // Governance dividend.
         delta += calculateGovernanceBonus(game: game)
 
+        // Base state revenue (mirrors the 2c step in processEconomy).
+        delta += calculateBaseStateRevenue(game: game)
+
         // Active sector-focus upkeep.
         for sector in EconomicSector.allCases {
             if let focus = game.activeFocus(for: sector) {
@@ -273,6 +308,12 @@ class EconomyService {
         }
 
         return delta
+    }
+
+    /// Baseline tax/levy intake that funds sector upkeep. Scales with GDP so
+    /// growth is the income lever. Clamped 6...16; 10 at the starting index.
+    func calculateBaseStateRevenue(game: Game) -> Int {
+        max(6, min(16, 10 + (game.gdpIndex - 100) / 5))
     }
 
     /// Pick 3-5 levers most relevant to the current state. Priority order:
@@ -767,6 +808,14 @@ class EconomyService {
             game.applyStat("treasury", change: governanceBonus)
         }
 
+        // 2c. Base state revenue — the baseline tax/levy intake that funds
+        // sector upkeep. Without it the 8 default sector focuses bill ~17/turn
+        // against ~5 of passive income and the treasury sinks ~11/turn no
+        // matter what the player does (device playtest 2026-06). Scales with
+        // GDP so growth is the income lever; tuned so the start state runs
+        // about -1/turn — pressure, not a death slide.
+        game.applyStat("treasury", change: calculateBaseStateRevenue(game: game))
+
         // 3. Calculate inflation based on policies and economic conditions
         let inflationChange = calculateInflationChange(game: game)
         game.applyInflationChange(inflationChange)
@@ -806,8 +855,11 @@ class EconomyService {
         // 10. Check for economic crises and create events if needed
         checkForEconomicCrisis(game: game)
 
-        // Record the actual net treasury delta this passive economy run applied,
-        // so the pre-turn forecast can project an honest "if you do nothing" number.
+        // Record the net treasury delta this passive economy run applied. This is
+        // an interim value: GameEngine's recordEconomyTreasuryDelta step re-bases
+        // the key every turn to the authoritative bracket delta (which also spans
+        // foreign-economy effects and strategic-resource auto-import charges) —
+        // that final value is what the pre-turn forecast projects.
         game.setIntVariable("last_economy_treasury_delta", game.treasury - treasuryBefore)
 
         #if DEBUG
@@ -1551,54 +1603,92 @@ class EconomyService {
         #endif
     }
 
-    /// Check for and create economic crisis events
+    /// Check for and create economic crisis events.
+    ///
+    /// Full penalties fire only on crisis ONSET; while the condition persists a
+    /// reduced (~1/3) tick applies instead, and the crisis's own trigger stat is
+    /// excluded from the recurring drain — otherwise the crisis re-deepens the
+    /// very condition that triggered it every turn (e.g. harvestFailure draining
+    /// -15 foodSupply/turn while foodSupply <= 30) and recovery is impossible.
     private func checkForEconomicCrisis(game: Game) {
-        guard game.hasEconomicCrisis else { return }
+        let currentCrisis: EconomicCrisisType? = game.hasEconomicCrisis
+            ? game.currentEconomicCrisisType
+            : nil
 
-        if let crisisType = game.currentEconomicCrisisType {
-            #if DEBUG
-            print("[Economy] CRISIS DETECTED: \(crisisType.displayName)")
-            #endif
+        // Clear a type's flag only when its underlying CONDITION has resolved,
+        // so a re-trigger fires full onset effects again. Clearing merely
+        // because the type isn't the current (single, most-severe) crisis would
+        // make a still-true lower-severity crisis (e.g. harvestFailure while a
+        // more severe crisis takes priority) re-fire FULL onset — including its
+        // trigger-stat hit — every time it unmasks.
+        let trueConditions = Set(game.currentEconomicCrises)
+        for type in EconomicCrisisType.allCases where !trueConditions.contains(type) {
+            let key = "economic_crisis_active_\(type.rawValue)"
+            if game.intVariable(key) != 0 {
+                game.setIntVariable(key, 0)
+            }
+        }
 
-            // Apply crisis effects based on type and severity
-            switch crisisType {
-            case .shortage:
-                // Consumer goods unavailable
-                game.applyStat("popularSupport", change: -10)
-                game.applyStat("stability", change: -3)
-            case .hyperinflation:
-                // Currency collapse - most severe
-                game.applyStat("stability", change: -12)
-                game.applyStat("popularSupport", change: -15)
-                game.applyStat("treasury", change: -10)
-            case .bankRun:
-                // Financial panic
-                game.applyStat("treasury", change: -20)
-                game.applyStat("eliteLoyalty", change: -10)
-                game.applyStat("stability", change: -5)
-            case .harvestFailure:
-                // Agricultural crisis
-                game.applyStat("popularSupport", change: -15)
-                game.applyStat("stability", change: -8)
-                game.applyStat("foodSupply", change: -15)
-            case .industrialCollapse:
-                // Factory closures
-                game.applyStat("treasury", change: -15)
-                game.applyStat("industrialOutput", change: -10)
-                game.applyStat("stability", change: -5)
-            case .tradeBlockade:
-                // External trade cut off
-                game.applyStat("treasury", change: -12)
-                game.applyStat("industrialOutput", change: -5)
-            case .laborUnrest:
-                // Strikes and work stoppages
-                game.applyStat("stability", change: -10)
-                game.applyStat("industrialOutput", change: -8)
-                game.applyStat("popularSupport", change: 3)  // Workers feel empowered
-            case .blackMarket:
-                // Underground economy
-                game.applyStat("stability", change: -5)
-                game.applyStat("treasury", change: -8)  // Lost tax revenue
+        guard let crisisType = currentCrisis else { return }
+
+        let activeKey = "economic_crisis_active_\(crisisType.rawValue)"
+        let isOnset = game.intVariable(activeKey) == 0
+        if isOnset {
+            game.setIntVariable(activeKey, 1)
+        }
+
+        #if DEBUG
+        print("[Economy] CRISIS \(isOnset ? "ONSET" : "ONGOING"): \(crisisType.displayName)")
+        #endif
+
+        // Full onset effects per type, plus the stat whose threshold defines the
+        // crisis (excluded from the ongoing tick).
+        let effects: [(stat: String, change: Int)]
+        let triggerStat: String?
+        switch crisisType {
+        case .shortage:
+            // Consumer goods unavailable (triggered by sector output, not a stat)
+            effects = [("popularSupport", -10), ("stability", -3)]
+            triggerStat = nil
+        case .hyperinflation:
+            // Currency collapse - most severe
+            effects = [("stability", -12), ("popularSupport", -15), ("treasury", -10)]
+            triggerStat = "inflationRate"
+        case .bankRun:
+            // Financial panic
+            effects = [("treasury", -20), ("eliteLoyalty", -10), ("stability", -5)]
+            triggerStat = "treasury"
+        case .harvestFailure:
+            // Agricultural crisis
+            effects = [("popularSupport", -15), ("stability", -8), ("foodSupply", -15)]
+            triggerStat = "foodSupply"
+        case .industrialCollapse:
+            // Factory closures
+            effects = [("treasury", -15), ("industrialOutput", -10), ("stability", -5)]
+            triggerStat = "gdpIndex"
+        case .tradeBlockade:
+            // External trade cut off
+            effects = [("treasury", -12), ("industrialOutput", -5)]
+            triggerStat = "tradeBalance"
+        case .laborUnrest:
+            // Strikes and work stoppages (popularSupport positive: workers feel empowered)
+            effects = [("stability", -10), ("industrialOutput", -8), ("popularSupport", 3)]
+            triggerStat = "unemploymentRate"
+        case .blackMarket:
+            // Underground economy - lost tax revenue
+            effects = [("stability", -5), ("treasury", -8)]
+            triggerStat = "inflationRate"
+        }
+
+        for (stat, change) in effects {
+            if isOnset {
+                game.applyStat(stat, change: change)
+            } else {
+                guard stat != triggerStat else { continue }
+                let reduced = Int((Double(change) / 3.0).rounded())
+                if reduced != 0 {
+                    game.applyStat(stat, change: reduced)
+                }
             }
         }
     }

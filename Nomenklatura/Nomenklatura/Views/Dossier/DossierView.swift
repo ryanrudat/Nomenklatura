@@ -463,6 +463,14 @@ struct PoliticalActivityCard: View {
     let game: Game
     @Environment(\.theme) var theme
     @State private var isExpanded = false
+    @State private var showingRelatedCharacter = false
+
+    /// Entries store either a templateId or a UUID string depending on which
+    /// service wrote them — match both so links resolve across save generations.
+    private var relatedCharacter: GameCharacter? {
+        guard let refId = entry.relatedCharacterId else { return nil }
+        return game.characters.first(where: { $0.templateId == refId || $0.id.uuidString == refId })
+    }
 
     private var accentColor: Color {
         switch entry.category {
@@ -527,15 +535,21 @@ struct PoliticalActivityCard: View {
                     .padding(.leading, 30)
 
                 // Related character link if available
-                if let characterId = entry.relatedCharacterId,
-                   let character = game.characters.first(where: { $0.templateId == characterId }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 10))
-                        Text(character.name)
-                            .font(.system(size: 11, weight: .medium))
+                if let character = relatedCharacter {
+                    Button {
+                        showingRelatedCharacter = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 10))
+                            Text(character.name)
+                                .font(.system(size: 11, weight: .medium))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundColor(theme.accentGold)
                     }
-                    .foregroundColor(theme.accentGold)
+                    .buttonStyle(.plain)
                     .padding(.top, 6)
                     .padding(.leading, 30)
                 }
@@ -547,6 +561,11 @@ struct PoliticalActivityCard: View {
             Rectangle()
                 .stroke(entry.isRead ? theme.borderTan : accentColor.opacity(0.5), lineWidth: 1)
         )
+        .sheet(isPresented: $showingRelatedCharacter) {
+            if let character = relatedCharacter {
+                CharacterDetailView(character: character, game: game)
+            }
+        }
     }
 }
 
@@ -637,6 +656,14 @@ struct SavedNoteCard: View {
     let game: Game
     @Environment(\.theme) var theme
     @State private var isExpanded = false
+    @State private var showingRelatedCharacter = false
+
+    /// Entries store either a templateId or a UUID string depending on which
+    /// service wrote them — match both so links resolve across save generations.
+    private var relatedCharacter: GameCharacter? {
+        guard let refId = entry.relatedCharacterId else { return nil }
+        return game.characters.first(where: { $0.templateId == refId || $0.id.uuidString == refId })
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -702,15 +729,21 @@ struct SavedNoteCard: View {
                     .padding(.top, 4)
 
                 // Related character link if present
-                if let characterId = entry.relatedCharacterId,
-                   let character = game.characters.first(where: { $0.templateId == characterId }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 10))
-                        Text("Related: \(character.name)")
-                            .font(.system(size: 10, weight: .medium))
+                if let character = relatedCharacter {
+                    Button {
+                        showingRelatedCharacter = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 10))
+                            Text("Related: \(character.name)")
+                                .font(.system(size: 10, weight: .medium))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundColor(theme.accentGold)
                     }
-                    .foregroundColor(theme.accentGold)
+                    .buttonStyle(.plain)
                     .padding(.leading, 24)
                     .padding(.top, 4)
                 }
@@ -725,6 +758,11 @@ struct SavedNoteCard: View {
                         .stroke(entry.isRead ? theme.borderTan : theme.accentGold.opacity(0.3), lineWidth: 1)
                 )
         )
+        .sheet(isPresented: $showingRelatedCharacter) {
+            if let character = relatedCharacter {
+                CharacterDetailView(character: character, game: game)
+            }
+        }
     }
 }
 

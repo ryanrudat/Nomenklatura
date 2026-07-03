@@ -148,6 +148,15 @@ class GameEngine {
             switch action.id {
             case "abolish_term_limits":
                 game.termLimitsAbolished = true
+                // Keep the Laws registry in sync with the mechanic — without
+                // this the Laws UI still shows term limits intact while the
+                // succession clock is gone. Mirrors the SC law pipeline's
+                // bookkeeping (StandingCommitteeService.processLawChangeVote).
+                if let law = game.laws.first(where: { $0.lawId == "term_limits" }),
+                   law.lawCurrentState != .abolished {
+                    law.modify(to: .abolished, by: "The Chairman", forced: true, turn: game.turnNumber)
+                    game.lawsModifiedCount += 1
+                }
                 // The norm-breaking act that gates Supreme Chairman (design §5/§7):
                 // it removes the succession clock but spikes elite resentment and
                 // draws international condemnation. (Tiers 2026-06.)
@@ -755,6 +764,16 @@ class GameEngine {
 
     /// Check all end-game conditions and return result
     func checkGameEndConditions(game: Game, ladder: [LadderPosition]) -> GameEndCheck {
+        // A mid-pipeline system (e.g. ConspiracyService on coup defeat) may have
+        // already ended the game by writing status/endReason directly. Surface
+        // that stored outcome so it flows through the normal endGame path
+        // instead of being silently skipped by re-derivation.
+        if let storedStatus = GameStatus(rawValue: game.status),
+           storedStatus != .active,
+           let storedReason = game.endReason {
+            return GameEndCheck(gameOver: true, result: storedStatus, reason: storedReason)
+        }
+
         // Check loss conditions first
         if let lossResult = checkLossConditions(game: game) {
             return lossResult
@@ -844,19 +863,28 @@ class GameEngine {
 
         // LOSS: Military coup (if player at top and military loyalty too low)
         // Use BalanceConfig thresholds
-        if game.flags.contains("reached_general_secretary") &&
+        if (game.currentPositionIndex >= 7 || game.flags.contains("reached_general_secretary")) &&
            game.militaryLoyalty <= BalanceConfig.coupMilitaryLoyaltyThreshold &&
            game.stability <= BalanceConfig.coupStabilityThreshold {
+            // Name the actual senior military figure — the cast has no
+            // "Marshal Anderson". Fall back to a generic title when no
+            // active military-track character exists.
+            let coupLeader: String
+            if let chief = bureauChief(for: ExpandedCareerTrack.militaryPolitical.rawValue, in: game) {
+                coupLeader = chief.title.map { "\(chief.name), \($0)," } ?? chief.name
+            } else {
+                coupLeader = "The Marshal of the Armed Forces"
+            }
             return GameEndCheck(
                 gameOver: true,
                 result: .lost,
-                reason: "Tanks roll through the capital at dawn. Marshal Anderson appears on state television. 'The people's patience has limits,' he announces. Your reign is over."
+                reason: "Tanks roll through the capital at dawn. \(coupLeader) appears on state television. 'The people's patience has limits,' the announcement declares. Your reign is over."
             )
         }
 
         // LOSS: Popular revolution (if player at top and popular support too low)
         // Use BalanceConfig thresholds - requires both low stability AND low support
-        if game.flags.contains("reached_general_secretary") &&
+        if (game.currentPositionIndex >= 7 || game.flags.contains("reached_general_secretary")) &&
            game.popularSupport <= BalanceConfig.revolutionPopularSupportThreshold &&
            game.stability <= BalanceConfig.revolutionStabilityThreshold {
             return GameEndCheck(
@@ -1110,6 +1138,41 @@ class GameEngine {
             }
         }
 
+        // Returns from disgrace — fallen cadres flagged "may resurface"
+        // (canReturnFlag + returnProbability) finally get their roll; the
+        // Dossier has advertised this for a while with nothing behind it.
+        // After a quiet period (6+ turns since the fall) each eligible cadre
+        // rolls returnProbability once per turn. On success they are
+        // rehabilitated — restored to good standing, but to no position.
+        // Rare by design: at most one return per turn.
+        runStep("processFallenReturns") {
+            var rng = game.rng
+            defer { game.rng = rng }
+
+            for character in game.characters {
+                guard character.mightReturn,
+                      character.returnProbability > 0,
+                      let fellTurn = character.statusChangedTurn,
+                      game.turnNumber - fellTurn >= 6 else { continue }
+                guard Int.random(in: 1...100, using: &rng) <= character.returnProbability else { continue }
+
+                character.status = CharacterStatus.rehabilitated.rawValue
+                character.statusChangedTurn = game.turnNumber
+                character.canReturnFlag = false
+                character.returnProbability = 0
+
+                let event = GameEvent(
+                    turnNumber: game.turnNumber,
+                    eventType: .narrative,
+                    summary: "\(character.name) has been rehabilitated and returned to public life. Errors, it is announced, have been corrected. What they remember of their fall is another matter."
+                )
+                event.importance = 6
+                event.game = game
+                game.events.append(event)
+                break   // cap: one return per turn keeps rehabilitations rare
+            }
+        }
+
         // Character actions (rivals plotting, etc.)
         runStep("simulateNPCActions") {
             simulateNPCActions(game: game)
@@ -1151,6 +1214,10 @@ class GameEngine {
 
         // Macro economic processing - GDP, inflation, unemployment, trade balance
         // (runs before political AI so NPCs react to current economic conditions)
+        // Treasury snapshot brackets the whole economic block (domestic + foreign
+        // economies + strategic-resource feedback) so the recorded delta below is
+        // the REAL applied change, not the partial in-service figure.
+        let treasuryBeforeEconomy = game.treasury
         runStep("processEconomicSystem") {
             processEconomicSystem(game: game)
         }
@@ -1158,6 +1225,31 @@ class GameEngine {
         // Economic conditions affect political stability
         runStep("applyEconomicPoliticalFeedback") {
             applyEconomicPoliticalFeedback(game: game)
+        }
+
+        // Authoritative economy delta for the turn — overwrites the earlier
+        // in-service write from EconomyService.processEconomy, which runs before
+        // auto-import charges and foreign-economy treasury effects land.
+        runStep("recordEconomyTreasuryDelta") {
+            let realDelta = game.treasury - treasuryBeforeEconomy
+            game.setIntVariable("last_economy_treasury_delta", realDelta)
+
+            // Sustained-surplus feedback (rebalance 2026-05): every 3 consecutive
+            // turns where the treasury actually GAINED from the economy, the
+            // apparatus rewards the chairman with +1 elite loyalty. Resets on a
+            // deficit turn. Re-triggers every 3 surplus turns afterwards.
+            // Lives HERE, after the re-base, so the streak keys on the
+            // authoritative bracket delta (including auto-import charges) —
+            // not the passive pre-import figure processEconomy recorded.
+            if realDelta > 0 {
+                game.consecutiveSurplusTurns += 1
+                if game.consecutiveSurplusTurns >= 3 {
+                    game.applyStat("eliteLoyalty", change: 1)
+                    game.consecutiveSurplusTurns = 0
+                }
+            } else {
+                game.consecutiveSurplusTurns = 0
+            }
         }
 
         // Political AI - NPC policy proposals and voting
@@ -1210,11 +1302,6 @@ class GameEngine {
             }
         }
 
-        // Standing Committee meetings - convene periodically and process decisions
-        runStep("processStandingCommitteeCycle") {
-            processStandingCommitteeCycle(game: game)
-        }
-
         // Corruption pressure: wealth visibility fades as people forget, and
         // an open Discipline Commission inquiry (stance flag set by the
         // investigation event) resolves with real consequences.
@@ -1246,6 +1333,12 @@ class GameEngine {
         // climaxes in a coup attempt resolved against your real defenses.
         runStep("processConspiracy") {
             ConspiracyService.shared.processTurn(game: game)
+        }
+
+        // Show trials — advance any in-flight trials through their phases so a
+        // launched trial actually reaches verdict instead of stalling forever.
+        runStep("advanceShowTrials") {
+            ShowTrialService.shared.advanceTrialsEndOfTurn(game: game)
         }
 
         // Family pressure — the household as attack surface. The BPS and the
@@ -1606,22 +1699,10 @@ class GameEngine {
             game.applyStat("eliteLoyalty", change: 1)
         }
 
-        // Sustained-surplus feedback (rebalance 2026-05): every 3 consecutive
-        // turns where the EconomicReport posts a positive netChange, the
-        // apparatus rewards the chairman with +1 elite loyalty. Resets on a
-        // deficit turn. Re-triggers every 3 surplus turns afterwards.
-        if let reportData = game.lastEconomicReport,
-           let report = EconomyService.shared.decodeReport(reportData) {
-            if report.netChange > 0 {
-                game.consecutiveSurplusTurns += 1
-                if game.consecutiveSurplusTurns >= 3 {
-                    game.applyStat("eliteLoyalty", change: 1)
-                    game.consecutiveSurplusTurns = 0
-                }
-            } else {
-                game.consecutiveSurplusTurns = 0
-            }
-        }
+        // (Sustained-surplus elite-loyalty feedback lives in the
+        // recordEconomyTreasuryDelta pipeline step — it must run AFTER the
+        // authoritative bracket delta is re-based, which happens after this
+        // feedback pass applies auto-import charges.)
 
         // Phase 3.7: Strategic resource feedback into political stats
         applyStrategicResourceFeedback(game: game)
@@ -1644,6 +1725,27 @@ class GameEngine {
         for resource in [StrategicResource.steel, .grain, .energy] where deficits.contains(resource.rawValue) {
             if game.treasury >= importCost {
                 game.applyStat("treasury", change: -importCost)
+                // A paid import must actually land in the stockpile, or the
+                // deficit persists forever and the treasury is charged again
+                // every turn. Credit one full turn of demand: active-recipe
+                // inputs, plus civilian consumption for grain — the population
+                // eats via the engine's STEP 2.5, not via any recipe, so
+                // recipe demand alone leaves a grain import ~1 unit against
+                // ~16/turn of draw. (Deficit reserves are stored as 0, so this
+                // covers the shortfall with a small buffer.)
+                var demand = 0
+                for sector in EconomicSector.allCases {
+                    guard let recipe = SectorRecipe.recipe(for: game.sectorFocus(for: sector)),
+                          recipe.sector == sector,
+                          game.currentTechEra >= recipe.requiredTechEra else { continue }
+                    demand += recipe.inputs[resource] ?? 0
+                }
+                if resource == .grain {
+                    demand += EconomySupplyChainEngine.shared.civilianGrainDemand(for: game)
+                }
+                var reserves = game.strategicReserves
+                reserves[resource, default: 0] += max(1, demand)
+                game.strategicReserves = reserves
             } else {
                 switch resource {
                 case .grain:
@@ -1798,356 +1900,6 @@ class GameEngine {
 
             gameLogger.info("Political event: \(event.eventType.rawValue) - \(event.narrative)")
         }
-    }
-
-    /// Process Standing Committee meeting cycle
-    /// Convenes meetings based on LeadershipConfig settings
-    private func processStandingCommitteeCycle(game: Game) {
-        guard let committee = game.standingCommittee else { return }
-
-        // Get leadership config (with defaults)
-        let config = CampaignLoader.shared.loadCampaign(id: game.campaignId)?.leadershipConfig
-        let meetingInterval = config?.meetingFrequency ?? 5
-        let minAgenda = config?.minimumAgendaItems ?? 1
-
-        let turnsSinceMeeting = game.turnNumber - committee.lastMeetingTurn
-
-        // Check if it's time for a meeting
-        guard turnsSinceMeeting >= meetingInterval else {
-            gameLogger.debug("SC meeting not due. Turns since last: \(turnsSinceMeeting)/\(meetingInterval)")
-            return
-        }
-
-        // Need agenda items to meet (unless crisis)
-        guard committee.pendingAgenda.count >= minAgenda || game.stability < 30 else {
-            gameLogger.debug("SC meeting skipped - insufficient agenda items (\(committee.pendingAgenda.count)/\(minAgenda))")
-            return
-        }
-
-        gameLogger.info("Convening Standing Committee meeting (turn \(game.turnNumber))")
-
-        // Convene the meeting
-        let result = StandingCommitteeService.shared.conveneMeeting(
-            committee: committee,
-            game: game
-        )
-
-        // Process decisions and generate downstream effects
-        processMeetingDecisions(result: result, game: game)
-
-        // Log the meeting as a game event
-        let gameEvent = GameEvent(
-            turnNumber: game.turnNumber,
-            eventType: .standingCommitteeMeeting,
-            summary: result.narrative
-        )
-        gameEvent.importance = 8
-        gameEvent.game = game
-        game.events.append(gameEvent)
-
-        gameLogger.info("SC meeting concluded. \(result.itemResults.count) decisions made.")
-    }
-
-    /// Process the results of a Standing Committee meeting
-    /// Generates trickle-down effects like documents, events, and world state changes
-    private func processMeetingDecisions(result: CommitteeMeetingResult, game: Game) {
-        for decision in result.itemResults {
-            // Process passed decisions
-            if decision.outcome == .approved || decision.outcome == .amendedAndApproved {
-                // Apply any stat effects from the decision
-                applyDecisionEffects(decision: decision, game: game)
-
-                // Queue documents for players based on position level
-                queueDecisionDocuments(decision: decision, game: game)
-
-                // Queue events for players if decision is significant
-                if decision.item.priority == .urgent || decision.item.priority == .critical {
-                    queueDecisionEvent(decision: decision, game: game)
-                }
-
-                gameLogger.info("SC decision passed: \(decision.item.title)")
-            } else if decision.outcome == .rejected {
-                // Failed proposals may have political consequences
-                if let sponsorId = decision.item.sponsorId,
-                   let sponsor = game.characters.first(where: { $0.templateId == sponsorId }) {
-                    // Sponsor loses disposition (their reputation suffers)
-                    sponsor.disposition = max(0, sponsor.disposition - 5)
-                    gameLogger.info("SC decision rejected: \(decision.item.title) - \(sponsor.name) loses standing")
-                }
-            }
-        }
-    }
-
-    /// Apply effects of a passed SC decision to game state
-    private func applyDecisionEffects(decision: CommitteeDecisionResult, game: Game) {
-        let item = decision.item
-
-        // Use proposal-specific effects if defined, otherwise fall back to category-based
-        if !item.effects.isEmpty {
-            // Apply custom effects from the proposal
-            for (key, value) in item.effects {
-                switch key {
-                case "stability", "popularSupport", "eliteLoyalty", "industrialOutput", "internationalStanding":
-                    game.applyStat(key, change: value)
-                case "militaryLoyalty":
-                    // Find military faction and adjust power
-                    if let militaryFaction = game.factions.first(where: { $0.factionId == "military" }) {
-                        militaryFaction.power = max(0, min(100, militaryFaction.power + value))
-                    }
-                default:
-                    gameLogger.warning("Unknown effect key: \(key)")
-                }
-            }
-            gameLogger.info("SC decision '\(item.title)' applied custom effects: \(item.effects)")
-        } else {
-            // Fall back to category-based effects for legacy/routine proposals
-            switch item.category {
-            case .economic:
-                // Economic decisions affect industrial output and treasury
-                let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
-                game.applyStat("industrialOutput", change: impact)
-
-            case .security:
-                // Security decisions affect stability but may hurt popular support
-                let impact = item.priority == .critical ? 8 : (item.priority == .urgent ? 5 : 2)
-                game.applyStat("stability", change: impact)
-                game.applyStat("popularSupport", change: -(impact / 2))
-
-            case .personnel:
-                // Personnel changes affect elite loyalty
-                let impact = item.priority == .critical ? 6 : (item.priority == .urgent ? 4 : 2)
-                game.applyStat("eliteLoyalty", change: impact)
-
-            case .foreign:
-                // Foreign policy affects international standing
-                let impact = item.priority == .critical ? 5 : (item.priority == .urgent ? 3 : 1)
-                game.applyStat("internationalStanding", change: impact)
-
-            case .ideological:
-                // Ideological decisions affect elite loyalty but may hurt popular support
-                let impact = item.priority == .critical ? 5 : 3
-                game.applyStat("eliteLoyalty", change: impact)
-                game.applyStat("popularSupport", change: -2)
-
-            case .crisis:
-                // Crisis responses have mixed effects
-                game.applyStat("stability", change: 5)
-
-            case .policy:
-                // General policy has modest stability effect
-                game.applyStat("stability", change: 2)
-
-            case .succession:
-                // Succession decisions affect elite loyalty and stability
-                game.applyStat("eliteLoyalty", change: 5)
-                game.applyStat("stability", change: 3)
-            }
-        }
-    }
-
-    /// Queue documents for players based on SC decisions
-    private func queueDecisionDocuments(decision: CommitteeDecisionResult, game: Game) {
-        // Only queue documents for significant decisions
-        guard decision.item.priority != .routine else { return }
-
-        // Generate appropriate document based on player's position level
-        let clearanceLevel = game.currentPositionIndex
-        var document: DeskDocument?
-
-        switch decision.item.category {
-        case .economic:
-            if clearanceLevel <= 3 {
-                document = DeskDocument.builder()
-                    .withTemplateId("sc_economic_directive_\(game.turnNumber)")
-                    .ofType(.directive)
-                    .titled("Production Quota Adjustment Notice")
-                    .from("Standing Committee Secretariat", title: "Economic Affairs Division")
-                    .receivedOnTurn(game.turnNumber)
-                    .withUrgency(.routine)
-                    .inCategory(.economic)
-                    .withBody("""
-                        NOTICE TO ALL BUREAUS
-
-                        Following the Standing Committee's directive on \(decision.item.title), your bureau's quotas have been updated.
-
-                        All personnel must review and acknowledge compliance requirements within the specified timeframe.
-
-                        Failure to meet adjusted targets will be noted in performance evaluations.
-
-                        By order of the Standing Committee
-                        """)
-                    .requiresDecision(true)
-                    .addOption(id: "acknowledge", text: "Acknowledge and comply", shortDescription: "Acknowledged directive", effects: [:])
-                    .addOption(id: "request_extension", text: "Request implementation extension", shortDescription: "Requested extension", effects: ["stability": -1])
-                    .build()
-            } else {
-                document = DeskDocument.builder()
-                    .withTemplateId("sc_economic_policy_\(game.turnNumber)")
-                    .ofType(.directive)
-                    .titled("Economic Policy Implementation Directive")
-                    .from("Standing Committee", title: "Central Government")
-                    .receivedOnTurn(game.turnNumber)
-                    .withUrgency(.priority)
-                    .inCategory(.economic)
-                    .withBody("""
-                        DIRECTIVE TO SENIOR OFFICIALS
-
-                        The Standing Committee has approved: \(decision.item.title)
-
-                        As a senior official, you are responsible for ensuring your department implements these measures promptly and completely.
-
-                        Implementation progress will be monitored. Report any obstacles through proper channels.
-
-                        By authority of the Standing Committee
-                        """)
-                    .requiresDecision(true)
-                    .addOption(id: "implement", text: "Begin immediate implementation", shortDescription: "Ordered implementation", effects: ["eliteLoyalty": 2])
-                    .addOption(id: "delay", text: "Request clarification before acting", shortDescription: "Delayed for clarification", effects: ["eliteLoyalty": -2])
-                    .build()
-            }
-
-        case .security:
-            document = DeskDocument.builder()
-                .withTemplateId("sc_security_directive_\(game.turnNumber)")
-                .ofType(.directive)
-                .titled("Security Vigilance Notice")
-                .from("State Security Directorate", title: "Standing Committee Authority")
-                .receivedOnTurn(game.turnNumber)
-                .withUrgency(.priority)
-                .inCategory(.security)
-                .withBody("""
-                    SECURITY DIRECTIVE - ALL PERSONNEL
-
-                    The Standing Committee has issued new security directives regarding \(decision.item.title).
-
-                    All personnel are expected to maintain heightened vigilance. Report any suspicious activities or behaviors through established channels.
-
-                    Remember: Security is everyone's responsibility.
-
-                    State Security Directorate
-                    """)
-                .requiresDecision(true)
-                .addOption(id: "acknowledge", text: "Acknowledge and increase vigilance", shortDescription: "Acknowledged security notice", effects: [:])
-                .addOption(id: "report", text: "Report observed concerns", shortDescription: "Submitted security report", effects: ["network": -3, "stability": 1])
-                .build()
-
-        case .personnel:
-            if clearanceLevel >= 4 {
-                document = DeskDocument.builder()
-                    .withTemplateId("sc_personnel_notice_\(game.turnNumber)")
-                    .ofType(.directive)
-                    .titled("Personnel Changes Notification")
-                    .from("Central Personnel Department", title: "Standing Committee")
-                    .receivedOnTurn(game.turnNumber)
-                    .withUrgency(.priority)
-                    .inCategory(.political)
-                    .withBody("""
-                        LEADERSHIP CHANGES ANNOUNCEMENT
-
-                        The Standing Committee has approved changes to leadership positions: \(decision.item.title)
-
-                        These changes take effect immediately. All affected departments should ensure smooth transitions.
-
-                        Cooperation with incoming leadership is expected from all personnel.
-
-                        Central Personnel Department
-                        """)
-                    .requiresDecision(true)
-                    .addOption(id: "acknowledge", text: "Acknowledge personnel changes", shortDescription: "Acknowledged changes", effects: [:])
-                    .addOption(id: "contact", text: "Reach out to affected parties", shortDescription: "Made contacts", effects: ["network": 2])
-                    .build()
-            }
-
-        case .ideological:
-            document = DeskDocument.builder()
-                .withTemplateId("sc_ideological_directive_\(game.turnNumber)")
-                .ofType(.directive)
-                .titled("Political Education Directive")
-                .from("Propaganda Department", title: "Central Committee")
-                .receivedOnTurn(game.turnNumber)
-                .withUrgency(.routine)
-                .inCategory(.political)
-                .withBody("""
-                    POLITICAL EDUCATION NOTICE
-
-                    Following the Committee's guidance on \(decision.item.title), all units must conduct political study sessions.
-
-                    Attendance is mandatory. Study materials will be distributed through party channels.
-
-                    Strengthen your ideological foundation. Build socialist consciousness.
-
-                    Propaganda Department
-                    """)
-                .requiresDecision(true)
-                .addOption(id: "attend", text: "Schedule attendance", shortDescription: "Scheduled study session", effects: ["eliteLoyalty": 1])
-                .addOption(id: "organize", text: "Organize unit study session", shortDescription: "Organized study session", effects: ["eliteLoyalty": 2, "network": -1])
-                .build()
-
-        default:
-            break
-        }
-
-        // Queue the document if we generated one
-        if let doc = document {
-            game.deskDocuments.append(doc)
-            gameLogger.info("Queued SC directive document: \(doc.title)")
-        }
-    }
-
-    /// Queue a dynamic event for the player about an SC decision
-    private func queueDecisionEvent(decision: CommitteeDecisionResult, game: Game) {
-        let title: String
-        let briefText: String
-        let priority: EventPriority
-
-        switch decision.item.category {
-        case .crisis:
-            title = "Standing Committee Crisis Response"
-            briefText = "The Standing Committee has convened to address: \(decision.item.title)"
-            priority = .urgent
-        case .security:
-            title = "Security Policy Update"
-            briefText = "New security measures approved: \(decision.item.title)"
-            priority = .elevated
-        case .personnel:
-            title = "Leadership Changes Announced"
-            briefText = "The Standing Committee has decided: \(decision.item.title)"
-            priority = .elevated
-        default:
-            title = "Standing Committee Decision"
-            briefText = "The Committee has approved: \(decision.item.title)"
-            priority = .normal
-        }
-
-        // Look up sponsor name from sponsorId
-        let sponsorName: String
-        if let sponsorId = decision.item.sponsorId,
-           let sponsor = game.characters.first(where: { $0.templateId == sponsorId }) {
-            sponsorName = sponsor.name
-        } else {
-            sponsorName = "Standing Committee"
-        }
-
-        // Player is General Secretary — always receive institutional change notifications
-        let event = DynamicEvent(
-            eventType: .institutionalChange,
-            priority: priority,
-            title: title,
-            briefText: briefText,
-            initiatingCharacterName: sponsorName,
-            turnGenerated: game.turnNumber,
-            isUrgent: priority == .urgent,
-            responseOptions: [
-                EventResponse(
-                    id: "acknowledge",
-                    text: "Acknowledge and prepare",
-                    shortText: "Acknowledge",
-                    effects: [:]
-                )
-            ],
-            iconName: "building.columns.fill"
-        )
-        game.queueDynamicEvent(event)
     }
 
     /// Process NPC behavior system updates each turn
@@ -2506,8 +2258,17 @@ class GameEngine {
     }
 
     private func applyFate(to character: GameCharacter, fate: CharacterStatus, game: Game, using rng: inout SeededRNG) {
-        character.status = fate.rawValue
-        character.statusChangedTurn = game.turnNumber
+        switch fate {
+        case .dead, .executed, .imprisoned, .exiled, .retired:
+            // Removal statuses must vacate the position slot (same vacancy fix
+            // as the rest of the purge machinery) so successors can fill it.
+            character.markRemovedFromPosition(reason: fate, turn: game.turnNumber)
+        default:
+            // Temporary/pending statuses: the character is still nominally in
+            // role, so positionIndex must NOT be cleared.
+            character.status = fate.rawValue
+            character.statusChangedTurn = game.turnNumber
+        }
 
         // Invalidate patron/rival cache since status affects cache validity
         if character.isPatron || character.isRival {
@@ -2751,8 +2512,7 @@ extension GameEngine {
 
         // Enemies contribute to risk
         if let rival = game.primaryRival, rival.isActive {
-            // Rival grudge and ruthlessness
-            riskScore += rival.grudgeLevel / 2
+            riskScore += rival.grudgeMagnitude / 2
             riskScore += rival.personalityRuthless / 4
         }
 

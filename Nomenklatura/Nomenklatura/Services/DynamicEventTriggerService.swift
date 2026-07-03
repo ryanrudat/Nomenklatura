@@ -1205,14 +1205,13 @@ class DynamicEventTriggerService {
     }
 
     private func generateCongressConveneEvent(session: CongressSession, game: Game) -> DynamicEvent {
-        // Generate headline for newspaper integration
-        _ = NewspaperGenerator.shared.generateCongressHeadline(session: session, game: game)
-
+        // Newspaper coverage happens at generation time now: NewspaperGenerator's
+        // domestic-drama branch picks up sessions convened last turn.
         return DynamicEvent(
             eventType: .worldNews,
             priority: .elevated,
             title: session.newspaperHeadline,
-            briefText: "The People's Congress has convened in the Capital. \(session.delegatesPresent) delegates have assembled from all zones to affirm Party policies and demonstrate the unity of the socialist state.\n\nAs a rising official, your attendance may be expected.",
+            briefText: "The People's Congress has convened in the Capital. \(session.delegatesPresent) delegates have assembled from all zones to affirm Party policies and demonstrate the unity of the socialist state.\n\nThe delegates await the Chairman's address.",
             turnGenerated: game.turnNumber,
             isUrgent: false,
             responseOptions: [
@@ -1290,16 +1289,14 @@ class DynamicEventTriggerService {
     // MARK: - Show Trial Events
 
     private func checkShowTrialEvents(game: Game) -> [DynamicEvent] {
-        // Check for any active show trials that need phase advancement
-        // Trials progress automatically through phases over multiple turns
+        // Trial advancement lives in ShowTrialService.advanceTrialsEndOfTurn
+        // (GameEngine end-of-turn pipeline); candidate gathering must not
+        // mutate trial state. Phase/outcome beats arrive via the pending
+        // dynamic-event queue instead.
 
         var events: [DynamicEvent] = []
 
-        // Get any trials that need to advance this turn
-        let trialEvents = ShowTrialService.shared.checkTrialsForAdvancement(game: game)
-        events.append(contentsOf: trialEvents)
-
-        // Also check if powerful NPCs might initiate trials against rivals (rare)
+        // Check if powerful NPCs might initiate trials against rivals (rare)
         if game.activeShowTrials.isEmpty && game.turnNumber > 10 {
             // Small chance of NPC-initiated purge event
             if Double.random(in: 0...1) < 0.03 {  // 3% per turn
@@ -1425,7 +1422,7 @@ class DynamicEventTriggerService {
             eventType: .urgentInterruption,
             priority: .elevated,
             title: "Party Discipline Commission Inquires",
-            briefText: "A knock at your office door. Two men in dark suits enter without waiting for permission.\n\n\"Comrade, the Central Commission for Discipline Inspection has some questions regarding certain... irregularities in your department's accounts. This is merely routine, of course.\"\n\nTheir smiles don't reach their eyes.",
+            briefText: "A knock at your office door. Two men in dark suits enter without waiting for permission.\n\n\"Comrade, the Central Discipline Inspectorate has some questions regarding certain... irregularities in your department's accounts. This is merely routine, of course.\"\n\nTheir smiles don't reach their eyes.",
             turnGenerated: game.turnNumber,
             isUrgent: true,
             responseOptions: [

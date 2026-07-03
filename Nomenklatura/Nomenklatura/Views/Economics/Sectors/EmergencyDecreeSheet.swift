@@ -157,7 +157,7 @@ struct EmergencyDecreeSheet: View {
                     .font(.system(size: 10, weight: .heavy, design: .monospaced))
                     .tracking(1.5)
                     .foregroundColor(theme.sovietRed)
-                Text("No charges remain. The Chairman's pool regenerates 1 per 50 turns and is shared across Security, Directives, Crisis Response, and Emergency surfaces.")
+                Text("No charges remain. The Chairman's pool regenerates 1 per \(game.chairmanshipTier.decreeRegenInterval) turns and is shared across Security, Directives, Crisis Response, and Emergency surfaces.")
                     .font(.system(size: 11))
                     .foregroundColor(theme.inkGray)
             }

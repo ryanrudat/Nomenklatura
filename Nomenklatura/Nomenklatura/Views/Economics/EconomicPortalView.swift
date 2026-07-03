@@ -77,7 +77,7 @@ struct EconomicPortalHeader: View {
                 .tracking(2)
                 .foregroundColor(theme.accentGold)
 
-            Text("State Planning Committee (Gosplan)")
+            Text("State Planning Committee")
                 .font(.system(size: 10, weight: .medium))
                 .tracking(0.5)
                 .foregroundColor(theme.inkGray)
@@ -262,7 +262,7 @@ struct EconomicPositionBanner: View {
         case 2...3: return "Planning Office"
         case 4...5: return "Sector Directorate"
         case 6: return "Deputy Chairman"
-        default: return "Gosplan Chairman"
+        default: return "State Plan Chairman"
         }
     }
 
@@ -1194,18 +1194,21 @@ struct EconomicActionCard: View {
 
     private let actionService = EconomicActionService.shared
 
+    private var canAffordAP: Bool { game.actionPoints >= action.costAP }
+    private var isDisabled: Bool { isOnCooldown || !canAffordAP }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: action.iconName)
                     .font(.system(size: 14))
-                    .foregroundColor(isOnCooldown ? theme.inkLight : theme.accentGold)
+                    .foregroundColor(isDisabled ? theme.inkLight : theme.accentGold)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(action.name)
                         .font(theme.bodyFont)
                         .fontWeight(.semibold)
-                        .foregroundColor(isOnCooldown ? theme.inkLight : theme.inkBlack)
+                        .foregroundColor(isDisabled ? theme.inkLight : theme.inkBlack)
 
                     Text(action.description)
                         .font(theme.tagFont)
@@ -1219,10 +1222,20 @@ struct EconomicActionCard: View {
                     Text("\(cooldownRemaining)t")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.orange)
+                } else if !canAffordAP {
+                    Text("\(action.costAP) AP")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(.red)
                 } else {
-                    Text("\(validation.successChance)%")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(theme.accentGold)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(validation.successChance)%")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(theme.accentGold)
+
+                        Text("\(action.costAP) AP")
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .foregroundColor(theme.inkGray)
+                    }
                 }
             }
 
@@ -1234,6 +1247,7 @@ struct EconomicActionCard: View {
                     .foregroundColor(theme.inkGray)
 
                 HStack {
+                    ActionInfoBadge(label: "Cost", value: "\(action.costAP) AP")
                     ActionInfoBadge(label: "Risk", value: action.riskLevel.displayName)
                     if action.executionTurns > 1 {
                         ActionInfoBadge(label: "Duration", value: "\(action.executionTurns) turns")
@@ -1270,9 +1284,9 @@ struct EconomicActionCard: View {
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isOnCooldown ? theme.inkLight.opacity(0.3) : theme.borderTan, lineWidth: 1)
+                .stroke(isDisabled ? theme.inkLight.opacity(0.3) : theme.borderTan, lineWidth: 1)
         )
-        .opacity(isOnCooldown ? 0.7 : 1.0)
+        .opacity(isDisabled ? 0.7 : 1.0)
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isExpanded.toggle()

@@ -1085,7 +1085,7 @@ struct EndTurnConfirmationSheet: View {
 
 #Preview("ID Card") {
     PlayerIDCard(
-        playerName: "Comrade Director",
+        playerName: "Comrade Chairman",
         title: "Minister of Interior",
         clearanceLevel: 4
     )

@@ -40,6 +40,18 @@ final class EconomicActionService {
             )
         }
 
+        // Check action points — economic actions draw from the same per-turn
+        // AP pool as every other action surface.
+        if game.actionPoints < action.costAP {
+            return ActionValidationResult(
+                canExecute: false,
+                reason: "Not enough action points (need \(action.costAP), have \(game.actionPoints))",
+                successChance: 0,
+                requiresApproval: false,
+                treasuryCost: 0
+            )
+        }
+
         // Calculate treasury cost (negative treasuryChange means cost)
         let treasuryCost = action.successEffects.treasuryChange < 0
             ? abs(action.successEffects.treasuryChange)
@@ -192,6 +204,9 @@ final class EconomicActionService {
                 quotaCompleted: false
             )
         }
+
+        // Charge the action-point cost (affordability guaranteed by validation).
+        game.actionPoints -= action.costAP
 
         // Unilateral execution of a committee-flagged action has a political price.
         if validation.requiresApproval {

@@ -98,6 +98,17 @@ class DiplomaticActionService {
             return .failure("Must select a target country")
         }
 
+        // Treaty actions need a treaty partner; without one the roll would
+        // apply no effects and only burn the cooldown.
+        if action.targetType == .treaty {
+            guard let country = targetCountry else {
+                return .failure("Must select a country with an active treaty")
+            }
+            guard !country.treaties.isEmpty else {
+                return .failure("No active treaty with \(country.name)")
+            }
+        }
+
         // Check treasury cost
         if action.successEffects.treasuryCost > 0 {
             guard game.treasury >= action.successEffects.treasuryCost else {
@@ -246,13 +257,16 @@ class DiplomaticActionService {
         )
     }
 
-    /// Resolve an action (roll for success and apply effects)
+    /// Resolve an action (roll for success and apply effects).
+    /// `applyCooldown` is false when resolving a pending multi-turn action,
+    /// whose cooldown was already set at initiation.
     private func resolveAction(
         _ action: DiplomaticAction,
         targetCountry: ForeignCountry?,
         game: Game,
         modelContext: ModelContext,
-        successChance: Int
+        successChance: Int,
+        applyCooldown: Bool = true
     ) -> ActionExecutionResult {
         var rng = game.rng
         defer { game.rng = rng }
@@ -303,8 +317,9 @@ class DiplomaticActionService {
             triggeredEvents.append(eventId)
         }
 
-        // Set cooldown
-        setCooldown(actionId: action.id, cooldownTurns: action.cooldownTurns, for: game)
+        if applyCooldown {
+            setCooldown(actionId: action.id, cooldownTurns: action.cooldownTurns, for: game)
+        }
 
         // Generate description
         let description = generateResultDescription(
@@ -432,10 +447,11 @@ class DiplomaticActionService {
     func processPendingActions(for game: Game, modelContext: ModelContext) -> [ActionExecutionResult] {
         var results: [ActionExecutionResult] = []
         var pendingActions = getPendingActions(for: game)
-        let resolvingTurn = game.turnNumber + 1
 
         for i in pendingActions.indices {
-            if pendingActions[i].completionTurn <= resolvingTurn && !pendingActions[i].isComplete {
+            // Runs during end-of-turn processing, before turnNumber increments,
+            // so an action completing on turn N resolves as turn N ends.
+            if pendingActions[i].completionTurn <= game.turnNumber && !pendingActions[i].isComplete {
                 // This action is ready to resolve
                 guard let action = DiplomaticAction.action(withId: pendingActions[i].actionId) else { continue }
 
@@ -444,7 +460,7 @@ class DiplomaticActionService {
                 }
 
                 let successChance = calculateSuccessChance(action, targetCountry: targetCountry, game: game)
-                let result = resolveAction(action, targetCountry: targetCountry, game: game, modelContext: modelContext, successChance: successChance)
+                let result = resolveAction(action, targetCountry: targetCountry, game: game, modelContext: modelContext, successChance: successChance, applyCooldown: false)
 
                 // Update the pending record
                 pendingActions[i].succeeded = result.succeeded

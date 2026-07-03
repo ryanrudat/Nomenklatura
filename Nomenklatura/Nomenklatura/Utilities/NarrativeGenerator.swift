@@ -191,7 +191,10 @@ class NarrativeGenerator {
 
     private func generateBriefingAtmosphere(game: Game) -> String {
         let timeDescriptions: [String]
-        let hour = (game.turnNumber * 3) % 24  // Pseudo time of day
+        // Pseudo time of day, confined to working hours (8:00-19:00) so a
+        // briefing never opens at dead of night. Turn 1 lands on 8:00 —
+        // morning — to match Sasha's "first morning briefing".
+        let hour = 8 + (max(0, game.turnNumber - 1) * 5) % 12
 
         if hour >= 6 && hour < 12 {
             timeDescriptions = [
@@ -203,7 +206,7 @@ class NarrativeGenerator {
             timeDescriptions = [
                 "The afternoon stretches on, heavy with unspoken tensions.",
                 "Cigarette smoke hangs in the air.",
-                "The portrait of the General Secretary watches from the wall."
+                "Your own portrait watches from the wall, freshly printed."
             ]
         } else {
             timeDescriptions = [

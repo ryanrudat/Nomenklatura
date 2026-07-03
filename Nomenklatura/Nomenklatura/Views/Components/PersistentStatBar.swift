@@ -17,7 +17,7 @@ struct PersistentStatBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            statCell(label: "TRES", value: game.treasury, icon: "rublesign.circle.fill", critical: 25, low: 40)
+            statCell(label: "TRES", value: game.treasury, icon: "dollarsign.circle.fill", critical: 25, low: 40)
             divider
             statCell(label: "STAB", value: game.stability, icon: "shield.fill", critical: 25, low: 40)
             divider

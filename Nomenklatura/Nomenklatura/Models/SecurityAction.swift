@@ -42,8 +42,8 @@ enum SecurityActionCategory: String, Codable, CaseIterable {
         case .investigator: return "Case Handler"
         case .caseOfficer: return "Section Chief"
         case .directorate: return "Department Director"
-        case .command: return "CCDI Standing Committee"
-        case .director: return "CCDI Secretary"
+        case .command: return "Discipline Inspectorate Directorate"
+        case .director: return "Discipline Inspectorate Secretary"
         }
     }
 
@@ -626,9 +626,9 @@ extension SecurityAction {
 
         SecurityAction(
             id: "request_shuanggui",
-            name: "Request Shuanggui Detention",
+            name: "Request Special Measures Detention",
             description: "Submit detention request to superiors",
-            detailedDescription: "Request authorization to detain target under shuanggui ('double designation') - designated place at designated time.",
+            detailedDescription: "Request authorization to detain target under special measures - designated place at designated time.",
             iconName: "lock.rectangle.fill",
             actionVerb: "Request",
             category: .caseOfficer,
@@ -679,9 +679,9 @@ extension SecurityAction {
 
         SecurityAction(
             id: "order_shuanggui",
-            name: "Order Shuanggui Detention",
+            name: "Order Special Measures Detention",
             description: "Detain without further approval",
-            detailedDescription: "Exercise authority to detain targets up to Position 4 under shuanggui without seeking additional approval.",
+            detailedDescription: "Exercise authority to detain targets up to Position 4 under special measures without seeking additional approval.",
             iconName: "lock.shield.fill",
             actionVerb: "Order",
             category: .directorate,
@@ -821,7 +821,7 @@ extension SecurityAction {
             id: "launch_anti_corruption_campaign",
             name: "Launch Anti-Corruption Campaign",
             description: "Target sector or faction",
-            detailedDescription: "Initiate a comprehensive anti-corruption campaign against a sector or faction. 'Tigers and Flies' approach.",
+            detailedDescription: "Initiate a comprehensive anti-corruption campaign against a sector or faction. Spare neither the highest official nor the lowest clerk.",
             iconName: "flame.fill",
             actionVerb: "Launch",
             category: .command,

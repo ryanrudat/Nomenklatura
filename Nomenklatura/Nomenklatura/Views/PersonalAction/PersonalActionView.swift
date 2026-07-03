@@ -722,6 +722,13 @@ private struct AppointSuccessorCandidateRow: View {
         return .statMedium
     }
 
+    /// Player-facing faction name (raw ids like "youth_league" stay internal).
+    private var factionDisplayName: String? {
+        guard let factionId = candidate.factionId else { return nil }
+        return candidate.game?.factions.first { $0.factionId == factionId }?.name
+            ?? factionId.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
     var body: some View {
         Button(action: onSelect) {
             VStack(alignment: .leading, spacing: 8) {
@@ -745,8 +752,8 @@ private struct AppointSuccessorCandidateRow: View {
                         .foregroundColor(dispositionColor)
                 }
 
-                if let factionId = candidate.factionId {
-                    Text("Faction: \(factionId)")
+                if let factionName = factionDisplayName {
+                    Text("Faction: \(factionName)")
                         .font(theme.tagFont)
                         .foregroundColor(theme.schemeText.opacity(0.6))
                 }

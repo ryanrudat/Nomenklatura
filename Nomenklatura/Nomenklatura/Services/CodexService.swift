@@ -183,10 +183,10 @@ final class CodexService: ObservableObject {
             }
         }
 
-        // Check ally disposition changes (allies are characters with high disposition who aren't patron/rival)
+        // Check ally disposition changes (only actual allies — not every lukewarm neutral)
         for character in game.characters where !character.isPatron && !character.isRival && character.isAlive {
-            // If disposition recently dropped below 50, generate concerned message
-            if character.disposition < 50 && character.disposition > 30 {
+            // If an ally's disposition recently dropped below 50, generate concerned message
+            if character.currentRole == .ally && character.disposition < 50 && character.disposition > 30 {
                 let lastAllyTurn = getLastMessageTurn(from: character.templateId, game: game)
                 if game.turnNumber - lastAllyTurn >= 3 {
                     return await generateAllyConcern(ally: character, game: game)
@@ -334,7 +334,7 @@ final class CodexService: ObservableObject {
         let content = selectTemplate(from: [
             "I hear you've been busy. Making friends in high places, perhaps? Enjoy it while it lasts.",
             "Interesting times ahead, wouldn't you say? I wonder how history will remember this period.",
-            "Some colleagues have been asking questions about your department. I thought you should know that certain... irregularities have been noticed.",
+            "Some colleagues have been asking quiet questions about your inner circle. I thought you should know that certain... irregularities have been noticed.",
             "You seem confident lately. That can be dangerous in our line of work."
         ])
 
@@ -389,7 +389,7 @@ final class CodexService: ObservableObject {
         let content = selectTemplate(from: [
             "The situation is becoming untenable. The Party demands action - decisive action. What is your plan?",
             "Reports from the regions are alarming. If we do not restore order soon, heads will roll. Starting with those closest to the problem.",
-            "The General Secretary is watching. He is not pleased. You must demonstrate that you have the situation under control."
+            "The Standing Committee is watching. The old guard is not pleased. You must demonstrate that you have the situation under control."
         ])
 
         return CodexMessage(
@@ -415,7 +415,7 @@ final class CodexService: ObservableObject {
     private func generateNetworkContactMessage(milestone: Int, game: Game) async -> CodexMessage {
         var rng = game.rng
         defer { game.rng = rng }
-        let contactName = ["Mikhail Petrov", "Anna Volkonsky", "Dmitri Orlov", "Elena Kozlova"].randomElement(using: &rng) ?? "Mikhail Petrov"
+        let contactName = ["Howard Mercer", "Frances Calloway", "Vernon Whitfield", "Edith Langford"].randomElement(using: &rng) ?? "Howard Mercer"
         let contactTitle = ["Economic Planning Aide", "Party Records Clerk", "Regional Liaison", "Cultural Affairs Deputy"].randomElement(using: &rng) ?? "Party Aide"
 
         let content = selectTemplate(from: [
@@ -957,9 +957,9 @@ final class CodexService: ObservableObject {
     }
 
     private func applyResponseEffects(_ effects: CodexResponseEffects, sender: GameCharacter?, game: Game) {
-        // Apply disposition change
+        // Apply disposition change (model range is -100...100)
         if let sender = sender, effects.dispositionChange != 0 {
-            sender.disposition = max(0, min(100, sender.disposition + effects.dispositionChange))
+            sender.disposition = max(-100, min(100, sender.disposition + effects.dispositionChange))
         }
 
         // Apply patron favor change

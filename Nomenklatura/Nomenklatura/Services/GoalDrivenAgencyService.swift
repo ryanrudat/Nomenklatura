@@ -48,8 +48,8 @@ final class GoalDrivenAgencyService {
 
         // Prioritize high-grudge and high-aggression NPCs (they act first)
         let prioritizedNPCs = npcsWithGoals.sorted { npc1, npc2 in
-            let score1 = npc1.grudgeLevel + npc1.aggressionLevel
-            let score2 = npc2.grudgeLevel + npc2.aggressionLevel
+            let score1 = npc1.grudgeMagnitude + npc1.aggressionLevel
+            let score2 = npc2.grudgeMagnitude + npc2.aggressionLevel
             return score1 > score2
         }
 
@@ -57,7 +57,7 @@ final class GoalDrivenAgencyService {
             // Per-character cooldown: reduced for aggressive/grudge-holding NPCs
             let baseCooldown = BalanceConfig.npcGoalActionCooldown
             let cooldown: Int
-            if character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold ||
+            if character.grudgeMagnitude >= BalanceConfig.npcHighGrudgeThreshold ||
                character.aggressionLevel > BalanceConfig.npcHighAggressionThreshold {
                 cooldown = max(1, baseCooldown - 1)  // Aggressive NPCs act faster
             } else {
@@ -117,7 +117,7 @@ final class GoalDrivenAgencyService {
 
         // Skip if this goal type was used recently (prevents "Seeks Advancement" spam)
         // But high-grudge NPCs bypass this -- their grievances override variety concerns
-        let bypassVarietyCheck = character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold
+        let bypassVarietyCheck = character.grudgeMagnitude >= BalanceConfig.npcHighGrudgeThreshold
         if !bypassVarietyCheck && recentGoalTypes.contains(primaryGoal.goalType) {
             goalLogger.debug("Goal type \(primaryGoal.goalType.displayName) used recently, skipping for variety")
             return nil
@@ -142,8 +142,8 @@ final class GoalDrivenAgencyService {
         )
 
         // High-grudge NPCs are more likely to act even if the decision maker said no
-        if !shouldAct && character.grudgeLevel > BalanceConfig.npcHighGrudgeThreshold {
-            let grudgeOverrideChance = Double(character.grudgeLevel - BalanceConfig.npcHighGrudgeThreshold) / 100.0
+        if !shouldAct && character.grudgeMagnitude >= BalanceConfig.npcHighGrudgeThreshold {
+            let grudgeOverrideChance = Double(character.grudgeMagnitude - BalanceConfig.npcHighGrudgeThreshold) / 100.0
             if Double.random(in: 0...1, using: &rng) < grudgeOverrideChance {
                 goalLogger.info("\(character.name) grudge override (grudge: \(character.grudgeLevel)) — acting despite risk assessment")
                 shouldAct = true
@@ -1644,7 +1644,7 @@ final class GoalDrivenAgencyService {
         return DynamicEvent(
             eventType: .networkIntel,
             priority: .elevated,
-            title: "CCDI Investigation: \(target.name)",
+            title: "Discipline Inspectorate Investigation: \(target.name)",
             briefText: "\(character.name) from the security services has opened an investigation into \(target.name). They've shared preliminary findings with you: suspicious financial activities, unexplained assets, and questionable associations. Your position has been noted.",
             initiatingCharacterId: character.id,
             initiatingCharacterName: character.name,
