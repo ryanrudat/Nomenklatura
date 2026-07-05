@@ -615,6 +615,36 @@ struct GameView: View {
                     gameOverVictoryType = VictoryType(rawValue: vtRaw)
                 }
             }
+
+            // If the app was killed mid end-of-turn pipeline, finish the
+            // remaining stages and advance the turn (completed stages are
+            // skipped via the persisted stage counter).
+            recoverInterruptedTurnIfNeeded()
+        }
+    }
+
+    /// Resume and finish a turn pipeline that was interrupted by process
+    /// death (backgrounding kill, crash) during end-of-turn processing.
+    /// Mirrors completePersonalAction's post-pipeline flow exactly.
+    private func recoverInterruptedTurnIfNeeded() {
+        guard game.currentStatus == .active,
+              GameEngine.shared.hasInterruptedTurnPipeline(game: game),
+              !isEndingTurn else { return }
+        isEndingTurn = true
+        Task {
+            await GameEngine.shared.endTurnUpdatesWithContext(game: game, ladder: campaignConfig.ladder, context: modelContext)
+            await MainActor.run {
+                defer { isEndingTurn = false }
+                let endCheck = GameEngine.shared.checkGameEndConditions(game: game, ladder: campaignConfig.ladder)
+                if endCheck.gameOver {
+                    if trySuccessionRecovery(from: endCheck, requiresEndTurnProcessing: false) {
+                        return
+                    }
+                    endGame(result: endCheck.result ?? .lost, reason: endCheck.reason ?? "Your journey has ended.", victoryType: endCheck.victoryType)
+                    return
+                }
+                advanceToNextTurn()
+            }
         }
     }
 
@@ -874,6 +904,10 @@ struct GameView: View {
         game.turnNumber += 1
         game.actionPoints = BalanceConfig.actionPointsPerTurn  // Reset AP for next turn
         game.usedActionsThisTurn = []  // Clear used actions for new turn
+
+        // Turn fully advanced — clear the interruption sentinel so a later
+        // launch doesn't try to resume this (finished) pipeline.
+        GameEngine.shared.completeTurnPipeline(game: game)
 
         // Log the new turn only after progression state is finalized.
         let turnEvent = GameEvent(

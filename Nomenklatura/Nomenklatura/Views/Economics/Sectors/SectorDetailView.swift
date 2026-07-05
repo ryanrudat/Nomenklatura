@@ -356,12 +356,37 @@ struct SectorDetailView: View {
 
     // MARK: - Focus Options
 
+    /// Sasha's ripple briefing: where this sector's output lands in the
+    /// wider game. Chains verified by EconomyVerificationTests.
+    private var advisorRippleText: String {
+        switch sector {
+        case .agriculture:
+            return "The farms feed the food supply, and the food supply feeds your popular support — hungry citizens turn on Chairmen fast, and below 30 food the bleeding compounds every turn. Grain also fills the granaries the whole supply chain draws on."
+        case .heavyIndustry:
+            return "The mills produce the steel that feeds industry, construction, and the army's equipment. Steel shortages bleed military and elite loyalty — the two constituencies you least want hungry."
+        case .energy:
+            return "Power feeds everything: nearly every recipe in the plan consumes energy. An energy shortfall doesn't hurt one sector — it throttles all of them at once, and the treasury pays for emergency imports until you fix it."
+        case .lightIndustry:
+            return "Consumer goods keep the shelves stocked and the citizens quiet. Starve this sector and popular support pays; feed it and the people forgive a great deal."
+        case .mining:
+            return "Extraction fills the strategic reserves the mills and power plants draw down. When reserves run dry, the deficit machinery starts charging the treasury and bleeding whoever depends on the missing resource."
+        case .construction:
+            return "Housing and infrastructure convert treasury into stability. It is slow, unglamorous, and the first thing everyone cuts — which is why its collapse surprises them."
+        case .transport:
+            return "The railways move what the other sectors make. Transport underperforming quietly taxes every other sector's output."
+        case .defense:
+            return "The military-industrial complex converts steel and treasury into the army's loyalty. Starve it and the marshals notice before anyone else does."
+        }
+    }
+
     private var focusSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("PRODUCTION FOCUS")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(1)
                 .foregroundColor(theme.inkGray)
+
+            AdvisorNote(text: advisorRippleText + " Change the focus below and I will bring you the full forecast — resources, reserves, and stat effects — before you commit.")
 
             ForEach(focuses) { focus in
                 FocusOptionCard(

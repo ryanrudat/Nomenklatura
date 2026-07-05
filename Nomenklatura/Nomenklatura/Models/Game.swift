@@ -1958,14 +1958,14 @@ extension Game {
 
     /// Whether player has enough power to modify a law
     func canModifyLaw(_ law: Law, to newState: LawState) -> Bool {
-        let requirements = LawChangeRequirement.requirements(for: law, toState: newState)
+        let requirements = LawChangeRequirement.requirements(for: law, toState: newState, game: self)
         let currentPower = calculatePowerConsolidation()
         return currentPower >= requirements.powerRequired
     }
 
     /// Whether player can force a law change (decree vs vote)
     func canForceLawChange(_ law: Law, to newState: LawState) -> Bool {
-        let requirements = LawChangeRequirement.requirements(for: law, toState: newState)
+        let requirements = LawChangeRequirement.requirements(for: law, toState: newState, game: self)
         guard requirements.canBeForced else { return false }
         let currentPower = calculatePowerConsolidation()
         return currentPower >= requirements.forcePowerRequired

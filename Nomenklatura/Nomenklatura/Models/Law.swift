@@ -417,6 +417,10 @@ extension Law {
         internalPassport.beneficiaries = ["old_guard"]  // Security apparatus controls movement
         laws.append(internalPassport)
 
+        // REFORM-AXIS LAWS — the regime itself as a ladder (see ReformLaws)
+        laws.append(ReformLaws.makeConstitutionalOrderLaw())
+        laws.append(ReformLaws.makeEconomicConstitutionLaw())
+
         return laws
     }
 }
@@ -429,9 +433,16 @@ struct LawChangeRequirement {
     var canBeForced: Bool                        // Can be decreed without vote
     var forcePowerRequired: Int                  // Extra power needed to force
 
-    static func requirements(for law: Law, toState: LawState) -> LawChangeRequirement {
+    static func requirements(for law: Law, toState: LawState, game: Game? = nil) -> LawChangeRequirement {
         let category = law.lawCategory
         var basepower = category.modificationDifficulty
+
+        // A successful pilot zone makes the next liberalizing economic step
+        // cheaper — tested reform beats ideological reform (see PilotZone).
+        let pilotDiscount = (game?.flags.contains(PilotZone.reformCreditFlag) ?? false)
+            && law.lawId == ReformLaws.economicLawId
+            && (toState == .modifiedWeak || toState == .modifiedStrong)
+            ? PilotZone.reformCreditDiscount : 0
 
         // Abolishing is harder than modifying
         if toState == .abolished {
@@ -481,6 +492,86 @@ struct LawChangeRequirement {
                 )
             default:
                 break
+            }
+        }
+
+        // Reform-axis laws: escalating gates per rung. Democratization is the
+        // hardest road in the game — it cannot be decreed (a legislature
+        // imposed by fiat is not one), and it needs both reformers AND enough
+        // of the old elite bought in (the transition pact). Hardening back is
+        // easier and CAN be forced. .abolished is unreachable by vote.
+        if law.lawId == ReformLaws.politicalLawId {
+            switch toState {
+            case .modifiedWeak:  // hybrid assembly
+                return LawChangeRequirement(
+                    powerRequired: 65,
+                    factionSupportRequired: ["reformists": 50, "youth_league": 50],
+                    canBeForced: false,
+                    forcePowerRequired: 99
+                )
+            case .modifiedStrong:  // electoral democracy
+                return LawChangeRequirement(
+                    powerRequired: 85,
+                    factionSupportRequired: ["reformists": 60, "youth_league": 60, "princelings": 45],
+                    canBeForced: false,
+                    forcePowerRequired: 99
+                )
+            case .strengthened:  // reinforced party-state
+                return LawChangeRequirement(
+                    powerRequired: 70,
+                    factionSupportRequired: ["old_guard": 50],
+                    canBeForced: true,
+                    forcePowerRequired: 88
+                )
+            case .defaultState:  // restore standard one-party order
+                return LawChangeRequirement(
+                    powerRequired: 65,
+                    factionSupportRequired: nil,
+                    canBeForced: true,
+                    forcePowerRequired: 85
+                )
+            case .abolished:
+                return LawChangeRequirement(
+                    powerRequired: 999, factionSupportRequired: nil,
+                    canBeForced: false, forcePowerRequired: 999
+                )
+            }
+        }
+        if law.lawId == ReformLaws.economicLawId {
+            switch toState {
+            case .modifiedWeak:  // mixed economy
+                return LawChangeRequirement(
+                    powerRequired: 60 - pilotDiscount,
+                    factionSupportRequired: ["reformists": 45],
+                    canBeForced: true,
+                    forcePowerRequired: 80 - pilotDiscount
+                )
+            case .modifiedStrong:  // free market
+                return LawChangeRequirement(
+                    powerRequired: 80 - pilotDiscount,
+                    factionSupportRequired: ["reformists": 60, "youth_league": 50],
+                    canBeForced: true,
+                    forcePowerRequired: 92 - pilotDiscount
+                )
+            case .strengthened:  // full command economy
+                return LawChangeRequirement(
+                    powerRequired: 65,
+                    factionSupportRequired: ["old_guard": 50],
+                    canBeForced: true,
+                    forcePowerRequired: 82
+                )
+            case .defaultState:  // restore market socialism
+                return LawChangeRequirement(
+                    powerRequired: 60,
+                    factionSupportRequired: nil,
+                    canBeForced: true,
+                    forcePowerRequired: 80
+                )
+            case .abolished:
+                return LawChangeRequirement(
+                    powerRequired: 999, factionSupportRequired: nil,
+                    canBeForced: false, forcePowerRequired: 999
+                )
             }
         }
 

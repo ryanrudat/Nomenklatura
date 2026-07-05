@@ -816,6 +816,18 @@ class EconomyService {
         // about -1/turn — pressure, not a death slide.
         game.applyStat("treasury", change: calculateBaseStateRevenue(game: game))
 
+        // 2d. Credit cycle — bubble evolution under the current lending
+        // stance, and the crash roll once overheated (see CreditPolicy).
+        processCreditCycle(game: game)
+
+        // 2e. Growth tournament — governors pad their reported returns;
+        // ripe distortion can be exposed (see GrowthTournament).
+        processGrowthTournament(game: game)
+
+        // 2f. Pilot zone — Special Development Zone scoring and resolution
+        // (see PilotZone).
+        processPilotZone(game: game)
+
         // 3. Calculate inflation based on policies and economic conditions
         let inflationChange = calculateInflationChange(game: game)
         game.applyInflationChange(inflationChange)
@@ -932,9 +944,248 @@ class EconomyService {
     }
 
     /// Calculate GDP growth based on economic system and policies
+    /// Per-turn credit cycle: bubble evolution under the current lending
+    /// stance, and the crash roll once overheated. Loose credit inflates the
+    /// bubble faster in more market-exposed systems (volatility); tight
+    /// credit deflates it but starves the elite's enterprises.
+    private func processCreditCycle(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
+
+        switch game.creditStance {
+        case .loose:
+            // 4/turn under command economy up to 7/turn under free market
+            game.creditBubble += 3 + game.currentEconomicSystem.volatility / 15
+        case .neutral:
+            game.creditBubble -= 2
+        case .tight:
+            game.creditBubble -= 6
+            game.applyStat("eliteLoyalty", change: -1)
+        }
+
+        // Crash roll: risk begins above 60, rising linearly (bubble − 50)%.
+        let bubble = game.creditBubble
+        if bubble > 60, Int.random(in: 1...100, using: &rng) <= bubble - 50 {
+            applyCreditCrash(game: game)
+        }
+    }
+
+    private func applyCreditCrash(game: Game) {
+        game.applyGDPChange(-10)
+        game.applyStat("treasury", change: -15)
+        game.applyUnemploymentChange(4)
+        game.applyStat("stability", change: -8)
+        game.applyStat("popularSupport", change: -6)
+        game.applyStat("eliteLoyalty", change: -5)
+        game.creditBubble = 15
+        // Forced rectification: the bank slams the window shut
+        game.setCreditStance(.tight, forced: true)
+
+        let summary = "The credit boom ends the way they all do: overnight. Enterprise paper nobody can redeem, warehouses of goods nobody ordered, and a line outside the State Bank by dawn. The rectification begins — and everyone remembers whose signature kept the window open."
+        let event = GameEvent(turnNumber: game.turnNumber, eventType: .crisis, summary: summary)
+        event.importance = 9
+        game.events.append(event)
+
+        game.pendingStateEvent = StateEventPayload(
+            id: UUID().uuidString,
+            stampText: "RECTIFICATION",
+            title: "THE CREDIT COLLAPSE",
+            body: summary,
+            accent: .red
+        )
+        game.variables["press_domestic_flash"] = "credit_crash"
+    }
+
+    // MARK: - Pilot Zones (see PilotZone.swift)
+
+    /// Designate a region as the Special Development Zone. Returns a
+    /// player-readable failure reason, or nil on success.
+    func designatePilotZone(_ region: Region, game: Game) -> String? {
+        guard game.canDesignatePilotZone else {
+            return game.pilotZoneRegionId != nil
+                ? "A zone trial is already running"
+                : "A command economy has nothing to pilot — liberalize the Economic Constitution first"
+        }
+        guard game.actionPoints >= PilotZone.designateAPCost else { return "Not enough action points" }
+        guard game.treasury >= PilotZone.designateTreasuryCost else { return "Not enough treasury" }
+        guard region.status != .seceded else { return "The region is outside state control" }
+
+        game.actionPoints -= PilotZone.designateAPCost
+        game.applyStat("treasury", change: -PilotZone.designateTreasuryCost)
+        game.pilotZoneRegionId = region.regionId
+        game.setIntVariable("pilot_zone_start_turn", game.turnNumber)
+        game.setIntVariable("pilot_zone_score", 0)
+        // The old guard reads every experiment as heresy in miniature
+        game.applyStat("eliteLoyalty", change: -3)
+
+        let event = GameEvent(turnNumber: game.turnNumber, eventType: .decision, summary: "\(region.name) designated a Special Development Zone. Market rules apply within its borders for \(PilotZone.trialLength) turns — an experiment the whole apparatus will be watching, some of it hoping for failure.")
+        event.importance = 7
+        game.events.append(event)
+        return nil
+    }
+
+    /// End the trial early — contained, no verdict, no reform credit.
+    func terminatePilotZone(game: Game) {
+        guard let regionId = game.pilotZoneRegionId,
+              let region = game.regions.first(where: { $0.regionId == regionId }) else { return }
+        clearPilotZone(game: game)
+        let event = GameEvent(turnNumber: game.turnNumber, eventType: .decision, summary: "The \(region.name) zone experiment is wound down ahead of schedule. No verdict, no lessons — only relief in some offices and disappointment in others.")
+        event.importance = 5
+        game.events.append(event)
+    }
+
+    /// Per-turn zone scoring and end-of-trial resolution.
+    private func processPilotZone(game: Game) {
+        guard let regionId = game.pilotZoneRegionId,
+              let region = game.regions.first(where: { $0.regionId == regionId }) else { return }
+        var rng = game.rng
+        defer { game.rng = rng }
+
+        // Score accrual: fundamentals + luck. Competent governors and
+        // economically weighty regions make better laboratories.
+        var delta = 2
+        let competence = region.governor?.competence ?? 50
+        if competence >= 60 { delta += 1 }
+        if competence < 40 { delta -= 1 }
+        if region.economicContribution >= 15 { delta += 1 }
+        delta += Int.random(in: -2...2, using: &rng)
+        game.setIntVariable("pilot_zone_score", max(0, game.pilotZoneScore + delta))
+
+        guard game.pilotZoneTurnsElapsed >= PilotZone.trialLength else { return }
+
+        let score = game.pilotZoneScore
+        clearPilotZone(game: game)
+        if score >= PilotZone.successThreshold {
+            region.economicContribution += 3
+            game.applyGDPChange(3)
+            game.applyStat("standing", change: 3)
+            game.flags.append(PilotZone.reformCreditFlag)
+
+            let summary = "The \(region.name) zone verdict is in: it worked. Wages up, shelves full, the ledgers clean enough to survive an audit. The reformers now have something more dangerous than an argument — they have a result. (Next liberalizing Economic Constitution step: −\(PilotZone.reformCreditDiscount) power required.)"
+            let event = GameEvent(turnNumber: game.turnNumber, eventType: .crisis, summary: summary)
+            event.importance = 8
+            game.events.append(event)
+            game.variables["press_domestic_flash"] = "pilot_success"
+        } else {
+            region.economicContribution = max(1, region.economicContribution - 1)
+            game.applyStat("stability", change: -3)
+            game.applyStat("popularSupport", change: -2)
+
+            let summary = "The \(region.name) zone verdict is in: it failed. Speculation, shortages, two ministries blaming each other in writing. The damage stays local — that was the point of the exercise — but the ideologues will dine on this for years."
+            let event = GameEvent(turnNumber: game.turnNumber, eventType: .crisis, summary: summary)
+            event.importance = 7
+            game.events.append(event)
+            game.variables["press_domestic_flash"] = "pilot_failure"
+        }
+    }
+
+    private func clearPilotZone(game: Game) {
+        game.pilotZoneRegionId = nil
+        game.setIntVariable("pilot_zone_start_turn", 0)
+        game.setIntVariable("pilot_zone_score", 0)
+    }
+
+    // MARK: - Growth Tournament (see GrowthTournament.swift)
+
+    /// Per-turn statistical padding by regional governors. Corrupt or
+    /// incompetent governors pad more; national underperformance adds
+    /// tournament pressure ("the center demands numbers"). Ripe distortion
+    /// can be exposed by events — the shock scales with how long the lie ran.
+    private func processGrowthTournament(game: Game) {
+        var rng = game.rng
+        defer { game.rng = rng }
+
+        for region in game.regions where region.status != .seceded {
+            var distortion = game.statDistortion(for: region.regionId)
+
+            // Padding roll: prior from the governor's corruption/competence,
+            // plus pressure when the national index sags.
+            let governor = region.governor
+            let corruption = governor?.corruption ?? 30
+            let competence = governor?.competence ?? 50
+            var padChance = (corruption + (100 - competence)) / 4   // ~10-45%
+            if game.gdpIndex < 100 { padChance += 15 }
+            if Int.random(in: 1...100, using: &rng) <= padChance {
+                distortion += Int.random(in: 1...2, using: &rng)
+                game.setStatDistortion(distortion, for: region.regionId)
+            }
+
+            // Exposure roll — the empty warehouse
+            if distortion >= GrowthTournament.shockThreshold,
+               Int.random(in: 1...100, using: &rng) <= GrowthTournament.shockChancePercent {
+                applyStatisticsShock(game: game, region: region, distortion: distortion)
+            }
+        }
+    }
+
+    private func applyStatisticsShock(game: Game, region: Region, distortion: Int) {
+        game.applyStat("treasury", change: -distortion / 2)
+        game.applyStat("foodSupply", change: -distortion / 3)
+        game.applyStat("industrialOutput", change: -distortion / 3)
+        game.applyStat("stability", change: -4)
+        game.applyGDPChange(-distortion / 3)
+        game.setStatDistortion(0, for: region.regionId)
+
+        let summary = "The returns from \(region.name) were fiction. Inspectors found warehouses reported full standing empty, quotas met only on paper, a governor's office where the arithmetic worked backward from the answer. The correction lands all at once — \(distortion) points of growth that never existed."
+        let event = GameEvent(turnNumber: game.turnNumber, eventType: .crisis, summary: summary)
+        event.importance = 8
+        game.events.append(event)
+        game.variables["press_domestic_flash"] = "statistics_scandal"
+    }
+
+    /// Player-ordered audit of a region's books. Catching padding early is
+    /// far cheaper than letting it blow up: a quiet correction at half
+    /// strength, no stability hit, and the governor put on notice.
+    func auditRegion(_ region: Region, game: Game) -> RegionAuditResult {
+        guard game.actionPoints >= GrowthTournament.auditAPCost else {
+            return .cannotAfford(reason: "Not enough action points")
+        }
+        guard game.treasury >= GrowthTournament.auditTreasuryCost else {
+            return .cannotAfford(reason: "Not enough treasury")
+        }
+        guard game.auditCooldownRemaining(for: region.regionId) == 0 else {
+            return .cannotAfford(reason: "Recently audited")
+        }
+
+        game.actionPoints -= GrowthTournament.auditAPCost
+        game.applyStat("treasury", change: -GrowthTournament.auditTreasuryCost)
+        game.recordAudit(for: region.regionId)
+
+        let distortion = game.statDistortion(for: region.regionId)
+        if distortion > 4 {
+            // Quiet correction — half the damage a public shock would do
+            game.applyStat("treasury", change: -distortion / 4)
+            game.applyGDPChange(-distortion / 6)
+            game.setStatDistortion(0, for: region.regionId)
+            game.applyStat("standing", change: 2)
+
+            if var governor = region.governor {
+                governor.loyaltyToPlayer = max(-100, governor.loyaltyToPlayer - 10)
+                region.governor = governor
+            }
+
+            let summary = "Audit of \(region.name): the returns were padded by \(distortion) points. The correction is handled quietly — figures restated, a deputy reassigned, the governor's office suddenly very cooperative."
+            let event = GameEvent(turnNumber: game.turnNumber, eventType: .crisis, summary: summary)
+            event.importance = 6
+            game.events.append(event)
+            return .paddingFound(distortion: distortion)
+        } else {
+            game.setStatDistortion(0, for: region.regionId)
+            let event = GameEvent(turnNumber: game.turnNumber, eventType: .outcome, summary: "Audit of \(region.name): the books are in order. The governor makes sure everyone knows they passed.")
+            event.importance = 3
+            game.events.append(event)
+            return .booksClean
+        }
+    }
+
     private func calculateGDPGrowth(game: Game) -> Int {
         let system = game.currentEconomicSystem
-        var growth = Int(system.baseGrowthRate)
+        // .rounded(): plain Int() truncation halved freeMarket's designed
+        // edge over mixedEconomy (4.5 → 4 vs 4.0 → 4).
+        var growth = Int(system.baseGrowthRate.rounded())
+
+        // Credit stance — the state bank's lending posture (see CreditPolicy)
+        growth += game.creditStance.gdpGrowthTerm
 
         // Faction economic bonus (Reformist faction ability)
         growth += FactionService.shared.getEconomicPolicyBonus(game: game)
@@ -1052,6 +1303,9 @@ class EconomyService {
 
         // Move toward system's natural inflation level
         var change = (targetInflation - game.inflationRate) / 20
+
+        // Credit stance — loose money is inflationary (see CreditPolicy)
+        change += game.creditStance.inflationTerm
 
         // Price controls reduce inflation
         if let slot = game.policySlot(withId: "economy_price_controls") {

@@ -17,7 +17,7 @@ struct LawCard: View {
     @State private var isExpanded = false
 
     private var requirements: LawChangeRequirement {
-        LawChangeRequirement.requirements(for: law, toState: .modifiedWeak)
+        LawChangeRequirement.requirements(for: law, toState: .modifiedWeak, game: game)
     }
 
     private var canModify: Bool {

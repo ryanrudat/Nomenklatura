@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		145BA4D387508B2584465954 /* DeterminismTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6412BD521F440CC459083DE /* DeterminismTests.swift */; };
+		1A2B3C4D5E6F708192A3B4C5 /* EconomyVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8E7D6C5B4A392817065F4E /* EconomyVerificationTests.swift */; };
 		3B94947FCBDAB9249FE023D6 /* SchemaLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1ECABEF799E5CFE6C10814 /* SchemaLoadTests.swift */; };
 		784B33B98FE9F81A71A85241 /* TurnPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B904559BF3E890395C9743 /* TurnPipelineTests.swift */; };
 		90CCB649A2ACCCD7199FB537 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C43C1C7FACD45262A6A5F087 /* Foundation.framework */; };
@@ -30,6 +31,7 @@
 		09B904559BF3E890395C9743 /* TurnPipelineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TurnPipelineTests.swift; sourceTree = "<group>"; };
 		6B772F8625D65C2E3655972A /* NomenklaturaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NomenklaturaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EEB92052EE7BBBF00D0340B /* Nomenklatura.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nomenklatura.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9F8E7D6C5B4A392817065F4E /* EconomyVerificationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EconomyVerificationTests.swift; sourceTree = "<group>"; };
 		C43C1C7FACD45262A6A5F087 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		C70CFCFFCF3E5F45A157E099 /* RegressionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RegressionTests.swift; sourceTree = "<group>"; };
 		CF1ECABEF799E5CFE6C10814 /* SchemaLoadTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SchemaLoadTests.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 				CF1ECABEF799E5CFE6C10814 /* SchemaLoadTests.swift */,
 				F1E2D3C4B5A69788970605F4 /* RivalMoveTests.swift */,
 				F6412BD521F440CC459083DE /* DeterminismTests.swift */,
+				9F8E7D6C5B4A392817065F4E /* EconomyVerificationTests.swift */,
 				E8F9A0B1C2D3E4F5A6B7C8D9 /* SettingsViewTests.swift */,
 			);
 			path = NomenklaturaTests;
@@ -223,6 +226,7 @@
 				3B94947FCBDAB9249FE023D6 /* SchemaLoadTests.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* RivalMoveTests.swift in Sources */,
 				145BA4D387508B2584465954 /* DeterminismTests.swift in Sources */,
+				1A2B3C4D5E6F708192A3B4C5 /* EconomyVerificationTests.swift in Sources */,
 				D7E8F9A0B1C2D3E4F5A6B7C8 /* SettingsViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

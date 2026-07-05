@@ -42,6 +42,9 @@ struct SettingsView: View {
     /// proxy; when OFF the game uses local fallback content (no network calls).
     @AppStorage("settings.ai.enabled") private var aiEnabled: Bool = true
 
+    /// Advisor guidance layer — ON by default; veterans opt out.
+    @AppStorage(AdvisorGuidance.storageKey) private var advisorEnabled: Bool = true
+
     // MARK: Local UI state
 
     @State private var showPlaceholderLegalAlert = false
@@ -87,6 +90,7 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 gameMenuSection
                 hapticsSection
+                advisorSection
                 aiFeaturesSection
                 aboutSection
                 Spacer(minLength: 30)
@@ -107,6 +111,18 @@ struct SettingsView: View {
                 title: "Haptic Feedback",
                 subtitle: "Tactile response on key interactions",
                 isOn: $hapticsEnabled
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var advisorSection: some View {
+        SettingsSection(title: "Guidance") {
+            SettingsToggleRow(
+                icon: "person.text.rectangle.fill",
+                title: "Advisor Guidance",
+                subtitle: "Sasha explains controls, costs, and ripple effects, and asks for confirmation before consequential decisions",
+                isOn: $advisorEnabled
             )
         }
     }

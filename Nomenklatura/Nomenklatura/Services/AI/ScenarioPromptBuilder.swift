@@ -1236,6 +1236,8 @@ struct ScenarioPromptBuilder {
         var section = """
         ## LAWS & POWER CONSOLIDATION
 
+        **Political Order:** The PSR is \(game.politicalOrder.promptDescriptor).
+        **Economic Model:** \(game.currentEconomicSystem.displayName)
         **Player's Chairmanship Tier:** \(game.chairmanshipTier.displayName) — \(game.chairmanshipTier.promptDescriptor) (consolidation \(game.powerConsolidationScore)/100)
         **Term Limits:** \(game.termLimitsAbolished ? "ABOLISHED" : "In effect (2 terms max)")
         **Laws Modified:** \(game.lawsModifiedCount)
@@ -1313,7 +1315,7 @@ struct ScenarioPromptBuilder {
            - One that favors reform/compassion (often risky politically)
            - One that favors cunning/deflection (political maneuvering)
 
-        5. **Tone:** Grim, bureaucratic, paranoid. Use socialist state language: "Comrade," "the Party," "the Republic," "the People's Congress," "counter-revolutionary," "quota," "collective." Authoritarian one-party governance with pragmatic flexibility.
+        5. **Tone:** Grim, bureaucratic, paranoid. Use socialist state language: "Comrade," "the Party," "the Republic," "the People's Congress," "counter-revolutionary," "quota," "collective." Match the governance tone to the Political Order stated in this prompt — one-party rule reads differently from a hybrid assembly, a junta, or a young democracy.
 
         6. **BALANCE RULES - CRITICAL:**
            **Per-stat limits:**

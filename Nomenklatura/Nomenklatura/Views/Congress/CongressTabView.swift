@@ -114,6 +114,10 @@ struct LawsListView: View {
         .sheet(item: $proposalLaw) { law in
             LawProposalSheet(law: law, game: game)
         }
+        .onAppear {
+            // Backfill the reform-axis laws into saves created before they existed
+            ReformLaws.ensureSeeded(game: game)
+        }
     }
 }
 

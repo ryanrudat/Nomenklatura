@@ -38,6 +38,10 @@ struct EconomicHubView: View {
     @State private var selectedSection: EconomicHubSection = .sectors
     @State private var selectedSector: EconomicSector?
     @State private var showForecastSheet: Bool = false
+    @State private var showAuditAlert: Bool = false
+    @State private var auditResultMessage: String = ""
+    /// Region awaiting the advisor's pre-commit confirmation for zone designation.
+    @State private var zoneCandidate: Region?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -198,14 +202,295 @@ struct EconomicHubView: View {
         }
     }
 
-    // MARK: - Fiscal (read-only treasury / indicators report)
+    // MARK: - Fiscal (credit policy + treasury / indicators report)
 
     private var fiscalSection: some View {
         VStack(alignment: .leading, spacing: 20) {
+            creditPolicyCard
+            pilotZoneCard
+            regionalReturnsCard
             keyMetricsGrid
             activeProjectsSummary
         }
         .padding(.horizontal, 15)
+        // Advisor pre-commit confirmation for zone designation. Bypassed
+        // (direct action) when Advisor Guidance is off; designateZone still
+        // reports the outcome either way.
+        .alert(
+            "DESIGNATE \(zoneCandidate?.name.uppercased() ?? "ZONE")?",
+            isPresented: Binding(
+                get: { zoneCandidate != nil },
+                set: { if !$0 { zoneCandidate = nil } }
+            )
+        ) {
+            Button("Cancel", role: .cancel) { zoneCandidate = nil }
+            Button("Designate") {
+                if let region = zoneCandidate { designateZone(region) }
+                zoneCandidate = nil
+            }
+        } message: {
+            Text("Costs \(PilotZone.designateAPCost) AP + \(PilotZone.designateTreasuryCost) treasury now, and the old guard docks 3 elite loyalty the moment you sign. For \(PilotZone.trialLength) turns, market rules apply in \(zoneCandidate?.name ?? "the region"). Success: permanent output +3, standing +3, and the next liberalization law costs \(PilotZone.reformCreditDiscount) less power. Failure: the damage stays local — that is the point of the exercise.")
+        }
+    }
+
+    // MARK: - Pilot Zone (Special Development Zone — see PilotZone.swift)
+
+    /// Executes designation and always reports the outcome — success was
+    /// previously silent, leaving the player unsure anything happened.
+    private func designateZone(_ region: Region) {
+        if let reason = EconomyService.shared.designatePilotZone(region, game: game) {
+            auditResultMessage = reason
+        } else {
+            auditResultMessage = "\(region.name) is now a Special Development Zone. Market rules apply for \(PilotZone.trialLength) turns — watch its progress here on the FISCAL desk."
+        }
+        showAuditAlert = true
+    }
+
+    @ViewBuilder
+    private var pilotZoneCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("SPECIAL DEVELOPMENT ZONE")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                if game.flags.contains(PilotZone.reformCreditFlag) {
+                    Text("REFORM CREDIT HELD")
+                        .font(.system(size: 8, weight: .heavy, design: .monospaced))
+                        .foregroundColor(theme.accentGold)
+                }
+            }
+
+            if let regionId = game.pilotZoneRegionId,
+               let region = game.regions.first(where: { $0.regionId == regionId }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(region.name.uppercased())
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .foregroundColor(theme.inkBlack)
+                        Text("TURN \(game.pilotZoneTurnsElapsed)/\(PilotZone.trialLength) — \(game.pilotZoneProgressLabel)")
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(game.pilotZoneProgressLabel == "STRUGGLING" ? theme.warningAmber : theme.inkGray)
+                    }
+                    Spacer()
+                    Button {
+                        EconomyService.shared.terminatePilotZone(game: game)
+                    } label: {
+                        Text("WIND DOWN")
+                            .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                            .tracking(1)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(theme.parchmentDark)
+                            .foregroundColor(theme.inkBlack)
+                            .overlay(Rectangle().stroke(theme.inkGray.opacity(0.4), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else if game.canDesignatePilotZone {
+                Text("Designate one region for a \(PilotZone.trialLength)-turn market experiment (\(PilotZone.designateAPCost) AP + \(PilotZone.designateTreasuryCost) treasury). Success discounts the next liberalizing Economic Constitution step by \(PilotZone.reformCreditDiscount) power; failure stays local.")
+                    .font(.system(size: 9, design: .serif))
+                    .foregroundColor(theme.inkGray)
+
+                AdvisorNote(text: "One province, eight turns, market rules. Success hands the reformers proof — the next liberalization comes \(PilotZone.reformCreditDiscount) power cheaper. Failure stays local; only your prestige travels. The old guard will dock you three points of loyalty just for signing — every experiment is heresy in miniature to them.")
+
+                ForEach(game.regions.filter { $0.status != .seceded }.sorted { $0.economicContribution > $1.economicContribution }, id: \.regionId) { region in
+                    HStack {
+                        Text(region.name.uppercased())
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(theme.inkBlack)
+                        Spacer()
+                        Button {
+                            if AdvisorGuidance.isEnabled {
+                                zoneCandidate = region
+                            } else {
+                                designateZone(region)
+                            }
+                        } label: {
+                            Text("DESIGNATE")
+                                .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                                .tracking(1)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(theme.inkBlack)
+                                .foregroundColor(theme.parchment)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            } else {
+                Text(game.currentEconomicSystem == .commandEconomy
+                     ? "Unavailable under a full command economy — there is nothing to pilot. Liberalize the Economic Constitution first."
+                     : "No zone active.")
+                    .font(.system(size: 9, design: .serif))
+                    .foregroundColor(theme.inkGray)
+            }
+        }
+        .padding(12)
+        .background(theme.parchment)
+        .overlay(Rectangle().stroke(theme.inkGray.opacity(0.35), lineWidth: 1))
+    }
+
+    // MARK: - Regional Returns (the Growth Tournament — see GrowthTournament.swift)
+
+    @ViewBuilder
+    private var regionalReturnsCard: some View {
+        let regions = game.regions
+            .filter { $0.status != .seceded }
+            .sorted { $0.economicContribution > $1.economicContribution }
+        if !regions.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("REGIONAL RETURNS — AS REPORTED")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+
+                Text("Figures as submitted by the governors' offices. The center audits; the center decides what to believe.")
+                    .font(.system(size: 9, design: .serif))
+                    .foregroundColor(theme.inkGray)
+
+                AdvisorNote(text: "These are the governors' numbers, Comrade Chairman — not necessarily yours. LOW reliability pads most, and everyone pads when the national index sags. An audit costs \(GrowthTournament.auditAPCost) action point and \(GrowthTournament.auditTreasuryCost) treasury; catching a lie early costs half what the empty warehouse will.")
+
+                ForEach(regions, id: \.regionId) { region in
+                    regionReturnRow(region)
+                }
+            }
+            .padding(12)
+            .background(theme.parchment)
+            .overlay(Rectangle().stroke(theme.inkGray.opacity(0.35), lineWidth: 1))
+            .alert("Audit Result", isPresented: $showAuditAlert) {
+                Button("Noted", role: .cancel) {}
+            } message: {
+                Text(auditResultMessage)
+            }
+        }
+    }
+
+    private func regionReturnRow(_ region: Region) -> some View {
+        let cooldown = game.auditCooldownRemaining(for: region.regionId)
+        let reliability = GrowthTournament.reliabilityLabel(for: region.governor)
+        return HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(region.name.uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(theme.inkBlack)
+                Text("RELIABILITY: \(reliability)")
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .foregroundColor(reliability == "LOW" ? theme.warningAmber : theme.inkGray)
+            }
+            Spacer()
+            Text("REPORTED: \(game.reportedContribution(for: region))%")
+                .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                .foregroundColor(theme.inkBlack)
+            Button {
+                let result = EconomyService.shared.auditRegion(region, game: game)
+                switch result {
+                case .booksClean:
+                    auditResultMessage = "\(region.name): the books are in order."
+                case .paddingFound(let distortion):
+                    auditResultMessage = "\(region.name): returns padded by \(distortion) points. Figures restated quietly; the governor has been put on notice."
+                case .cannotAfford(let reason):
+                    auditResultMessage = reason
+                }
+                showAuditAlert = true
+            } label: {
+                Text(cooldown > 0 ? "AUDITED" : "AUDIT")
+                    .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                    .tracking(1)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(cooldown > 0 ? theme.parchmentDark : theme.inkBlack)
+                    .foregroundColor(cooldown > 0 ? theme.inkLight : theme.parchment)
+            }
+            .buttonStyle(.plain)
+            .disabled(cooldown > 0)
+        }
+        .padding(.vertical, 2)
+    }
+
+    // MARK: - Credit Policy (the Credit Dial — see CreditPolicy.swift)
+
+    private var overheatingColor: Color {
+        switch game.creditBubble {
+        case 61...: return theme.stampRed
+        case 40...60: return theme.warningAmber
+        default: return theme.inkGray
+        }
+    }
+
+    private var creditPolicyCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("CREDIT POLICY")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundColor(theme.inkGray)
+                Spacer()
+                if game.creditStanceCooldownRemaining > 0 {
+                    Text("DIRECTIVE IN EFFECT — \(game.creditStanceCooldownRemaining) TURN\(game.creditStanceCooldownRemaining == 1 ? "" : "S")")
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
+                        .foregroundColor(theme.inkGray)
+                }
+            }
+
+            HStack(spacing: 8) {
+                ForEach(CreditStance.allCases, id: \.self) { stance in
+                    let isActive = game.creditStance == stance
+                    let locked = game.creditStanceCooldownRemaining > 0 && !isActive
+                    Button {
+                        game.setCreditStance(stance)
+                    } label: {
+                        Text(stance.displayName)
+                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                            .tracking(1)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .background(isActive ? theme.inkBlack : theme.parchmentDark)
+                            .foregroundColor(isActive ? theme.parchment : (locked ? theme.inkLight : theme.inkBlack))
+                            .overlay(Rectangle().stroke(theme.inkGray.opacity(0.4), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(locked)
+                }
+            }
+
+            Text(game.creditStance.effectCaption)
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundColor(theme.inkGray)
+
+            AdvisorNote(text: "Loose credit buys growth and the enterprise managers' affection — until the gauge crosses 60 and the crash odds printed above become real. Tightening cools it, but the elite pay first: one point of loyalty every turn. And while the price bureau holds full controls, inflation hides — the cost waits in the shortage queue, not the price tag.")
+
+            // OVERHEATING gauge — honest numbers: crash risk is (gauge − 50)%
+            // per turn once above 60.
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("OVERHEATING")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .tracking(1)
+                        .foregroundColor(overheatingColor)
+                    Spacer()
+                    Text(game.creditBubble > 60
+                         ? "\(game.creditBubble)/100 — CRASH RISK \(game.creditBubble - 50)%/TURN"
+                         : "\(game.creditBubble)/100")
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundColor(overheatingColor)
+                }
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(theme.parchmentDark)
+                        Rectangle()
+                            .fill(overheatingColor)
+                            .frame(width: geo.size.width * CGFloat(game.creditBubble) / 100)
+                    }
+                }
+                .frame(height: 6)
+                .overlay(Rectangle().stroke(theme.inkGray.opacity(0.3), lineWidth: 1))
+            }
+        }
+        .padding(12)
+        .background(theme.parchment)
+        .overlay(Rectangle().stroke(theme.inkGray.opacity(0.35), lineWidth: 1))
     }
 
     private var keyMetricsGrid: some View {
@@ -301,6 +586,9 @@ struct EconomicHubView: View {
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(1)
                 .foregroundColor(theme.inkGray)
+                .padding(.horizontal, 15)
+
+            AdvisorNote(text: "Every sector feeds something beyond itself: the farms feed the food supply, the mills feed industry and the army's patience, the power plants feed everyone's inputs. Open a sector and change its focus — I will bring you the full forecast before you sign anything.")
                 .padding(.horizontal, 15)
 
             ForEach(EconomicSector.allCases, id: \.self) { sector in

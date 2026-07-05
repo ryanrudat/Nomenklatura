@@ -17,10 +17,23 @@ struct LawProposalSheet: View {
     @State private var showingConfirmation = false
 
     private var availableStates: [LawState] {
-        // Filter out current state and determine available transitions
+        // Reform-axis laws move one rung at a time; ordinary laws offer any
+        // non-current state. Restoring .defaultState is proposable once a
+        // law has been changed (needed for reform reversals).
         LawState.allCases.filter { state in
-            state != law.lawCurrentState && state != .defaultState
+            guard state != law.lawCurrentState else { return false }
+            if ReformLaws.isReformLaw(law) {
+                return ReformLaws.isLegalTransition(law: law, to: state)
+            }
+            return state != .defaultState || law.lawCurrentState != .defaultState
         }
+    }
+
+    /// Structural precondition blocking this step (army acquiescence, elite
+    /// pact), if any — shown to the player and enforced in canSubmit.
+    private var structuralBlockReason: String? {
+        guard let state = selectedState else { return nil }
+        return ReformLaws.blockReason(law: law, to: state, game: game)
     }
 
     var body: some View {
@@ -61,6 +74,18 @@ struct LawProposalSheet: View {
                                 .padding(.horizontal, 15)
                         }
 
+                        // Structural precondition (reform-axis laws only)
+                        if let reason = structuralBlockReason {
+                            HStack(alignment: .top, spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 11))
+                                Text(reason)
+                                    .font(.system(size: 11, design: .serif))
+                            }
+                            .foregroundColor(theme.stampRed)
+                            .padding(.horizontal, 15)
+                        }
+
                         // Warning about consequences
                         ConsequenceWarning(law: law)
                             .padding(.horizontal, 15)
@@ -99,7 +124,7 @@ struct LawProposalSheet: View {
 
     private var canSubmit: Bool {
         guard let state = selectedState else { return false }
-        let requirements = LawChangeRequirement.requirements(for: law, toState: state)
+        let requirements = LawChangeRequirement.requirements(for: law, toState: state, game: game)
         guard game.powerConsolidationScore >= requirements.powerRequired else { return false }
 
         // Faction support is a hard requirement, not just advisory —
@@ -110,6 +135,8 @@ struct LawProposalSheet: View {
                 if currentStanding < requiredStanding { return false }
             }
         }
+        // Reform-axis structural preconditions (mirrors proposeLawChange's guard)
+        if structuralBlockReason != nil { return false }
         return true
     }
 
@@ -197,7 +224,7 @@ struct StateOptionRow: View {
     @Environment(\.theme) var theme
 
     private var requirements: LawChangeRequirement {
-        LawChangeRequirement.requirements(for: law, toState: state)
+        LawChangeRequirement.requirements(for: law, toState: state, game: game)
     }
 
     private var canAfford: Bool {
@@ -284,7 +311,7 @@ struct RequirementsCard: View {
     @Environment(\.theme) var theme
 
     private var requirements: LawChangeRequirement {
-        LawChangeRequirement.requirements(for: law, toState: toState)
+        LawChangeRequirement.requirements(for: law, toState: toState, game: game)
     }
 
     var body: some View {

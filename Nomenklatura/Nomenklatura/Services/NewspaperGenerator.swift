@@ -149,11 +149,54 @@ final class NewspaperGenerator {
         return nil
     }
 
-    /// State-press spin on a conspiracy resolution. "order_restored" = the
-    /// plot was crushed (arrests, triumphant tone); "state_of_emergency" =
-    /// the coup wounded the regime and the paper conspicuously minimizes.
+    /// State-press treatment of a staged domestic flash. Conspiracy kinds:
+    /// "order_restored" = the plot was crushed (triumphant tone);
+    /// "state_of_emergency" = the coup wounded the regime and the paper
+    /// conspicuously minimizes. Reform kinds announce the amended order.
     private func generateConspiracyAftermathHeadline(kind: String, game: Game) -> HeadlineStory {
         switch kind {
+        case "reform_political":
+            return HeadlineStory(
+                headline: "THE CONSTITUTION AMENDED",
+                subheadline: "Republic Enters a New Political Era: \(game.politicalOrder.displayName) Proclaimed",
+                body: "By solemn vote of the Standing Committee, the constitutional order of the Republic has been revised. The state now stands as \(game.politicalOrder.displayName.lowercased()). \(game.politicalOrder.blurb) Officials at every level are instructed to study the amended text and align their work accordingly.",
+                category: .political
+            )
+        case "pilot_success":
+            return HeadlineStory(
+                headline: "THE ZONE DELIVERS",
+                subheadline: "Special Development Zone Exceeds All Targets; Method Validated",
+                body: "The Special Development Zone experiment has concluded in triumph: production up, shelves stocked, workers' incomes rising. The Party declares the results a vindication of scientific policy-making — cautious experiment, rigorous measurement, disciplined expansion. Delegations from every region are already requesting instruction in the zone's methods.",
+                category: .economic
+            )
+        case "pilot_failure":
+            return HeadlineStory(
+                headline: "ZONE EXPERIMENT CONCLUDES",
+                subheadline: "Valuable Lessons Drawn from Special Development Zone Trial",
+                body: "The Special Development Zone trial has concluded on schedule. While certain targets were not achieved — owing to speculative excesses and the sabotage of elements hostile to disciplined experimentation — the Party affirms that the exercise has yielded valuable lessons. There are no plans for expansion at this time.",
+                category: .economic
+            )
+        case "statistics_scandal":
+            return HeadlineStory(
+                headline: "REPORTING DISCIPLINE RESTORED",
+                subheadline: "Isolated Irregularities in Regional Returns Corrected; Responsible Officials Reassigned",
+                body: "Following a routine review, certain irregularities in regional production returns have been identified and corrected. The Party emphasizes that these were the failures of individual officials, not of the planning system, whose scientific character remains beyond question. Revised figures will be published in due course.",
+                category: .economic
+            )
+        case "credit_crash":
+            return HeadlineStory(
+                headline: "FINANCIAL RECTIFICATION CAMPAIGN ANNOUNCED",
+                subheadline: "State Bank Moves Against Speculation; Discipline Returns to Enterprise Credit",
+                body: "The State Bank has announced a comprehensive rectification of enterprise credit, correcting distortions introduced by speculative elements and undisciplined managers. Citizens are assured that deposits remain secure and that the temporary adjustment in production schedules reflects prudent planning, not crisis. Those who spread rumors to the contrary will answer for them.",
+                category: .economic
+            )
+        case "reform_economic":
+            return HeadlineStory(
+                headline: "A NEW ECONOMIC COURSE",
+                subheadline: "Economic Constitution Revised; Republic Adopts \(game.currentEconomicSystem.displayName)",
+                body: "The Standing Committee has approved a revision of the Economic Constitution. The Republic's economy will henceforth operate under \(game.currentEconomicSystem.displayName.lowercased()). Ministries and enterprises are directed to implement the transition with discipline. The Party assures citizens that the change serves the long-term prosperity of all.",
+                category: .economic
+            )
         case "state_of_emergency":
             return HeadlineStory(
                 headline: "CALM RETURNS TO THE CAPITAL",

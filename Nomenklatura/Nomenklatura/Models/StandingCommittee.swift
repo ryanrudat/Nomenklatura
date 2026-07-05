@@ -700,6 +700,12 @@ final class StandingCommitteeService {
             return false
         }
 
+        // Reform-axis laws move one stage at a time and carry structural
+        // preconditions (army acquiescence, elite pact) beyond power gates.
+        if ReformLaws.blockReason(law: law, to: newState, game: game) != nil {
+            return false
+        }
+
         // Create agenda item for the law change
         var item = CommitteeAgendaItem(
             title: "Modify: \(law.name)",
@@ -751,6 +757,11 @@ final class StandingCommitteeService {
         game: Game
     ) {
         if passed {
+            // Reform-axis laws reshape the regime itself. Must run BEFORE
+            // law.modify — it reads the pre-modification state to determine
+            // the reform's direction.
+            ReformLaws.applyAxisChange(law: law, newState: newState, game: game)
+
             law.modify(
                 to: newState,
                 by: sponsorName,

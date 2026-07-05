@@ -1453,9 +1453,65 @@ class GameEngine {
     /// When an individual step needs to fail gracefully, change its closure
     /// to `throws` and wrap that one call site in do/try/catch using
     /// `logTurnStepFailure` — the helper below is still available.
+    // MARK: - Turn-pipeline interruption safety
+    //
+    // iOS can kill the app at any moment during the multi-second end-of-turn
+    // pipeline (backgrounding, a phone call), leaving a half-processed turn
+    // in the autosaved store. Every pipeline stage is counted, and the last
+    // completed index persists alongside that stage's own mutations (same
+    // ModelContext — they flush together, so any persisted prefix is a
+    // consistent prefix). variables["pipeline_in_flight"] stays set until
+    // the caller finishes post-pipeline bookkeeping (turn increment) via
+    // completeTurnPipeline; on relaunch, an orphaned sentinel means the
+    // pipeline re-runs with completed stages skipped. Caveat: an autosave
+    // can land mid-stage, so recovery can re-apply at most ONE stage's
+    // effects — bounded, versus an unbounded half turn.
+
+    private var pipelineStepCounter = 0
+    private var pipelineSkipThrough = 0
+    private var activePipelineGame: Game?
+
+    func hasInterruptedTurnPipeline(game: Game) -> Bool {
+        game.variables["pipeline_in_flight"] == "1"
+    }
+
+    private func beginTurnPipeline(game: Game) {
+        pipelineStepCounter = 0
+        pipelineSkipThrough = hasInterruptedTurnPipeline(game: game)
+            ? game.intVariable("pipeline_completed_steps") : 0
+        if pipelineSkipThrough > 0 {
+            gameLogger.info("Resuming interrupted turn pipeline: skipping \(self.pipelineSkipThrough) completed stages")
+        }
+        game.variables["pipeline_in_flight"] = "1"
+        activePipelineGame = game
+    }
+
+    /// Called by the turn orchestrator AFTER post-pipeline bookkeeping
+    /// (turn-number increment, phase reset), so a kill anywhere in between
+    /// remains recoverable on next launch.
+    func completeTurnPipeline(game: Game) {
+        game.variables["pipeline_in_flight"] = nil
+        game.setIntVariable("pipeline_completed_steps", 0)
+        activePipelineGame = nil
+        pipelineSkipThrough = 0
+        pipelineStepCounter = 0
+    }
+
     private func runStep(_ name: String, _ body: () -> Void) {
-        _ = name
+        // Standalone use (tests/previews) without a begun pipeline: run plain.
+        guard activePipelineGame != nil else { body(); return }
+        pipelineStepCounter += 1
+        if pipelineStepCounter <= pipelineSkipThrough { return }
         body()
+        activePipelineGame?.setIntVariable("pipeline_completed_steps", pipelineStepCounter)
+    }
+
+    private func runStepAsync(_ name: String, _ body: () async -> Void) async {
+        guard activePipelineGame != nil else { await body(); return }
+        pipelineStepCounter += 1
+        if pipelineStepCounter <= pipelineSkipThrough { return }
+        await body()
+        activePipelineGame?.setIntVariable("pipeline_completed_steps", pipelineStepCounter)
     }
 
     /// Log a turn-step failure both to the OS logger and as a `GameEvent` so the
@@ -1566,22 +1622,34 @@ class GameEngine {
     func endTurnUpdatesWithContext(game: Game, ladder: [LadderPosition], context: ModelContext) async {
         // Resolve multi-turn bureau operations first so diplomatic action
         // results are visible to turn processing (e.g. world event generation).
-        processBureauOperations(game: game, context: context)
+        beginTurnPipeline(game: game)
 
-        // Run standard end-of-turn updates
+        runStep("processBureauOperations") {
+            processBureauOperations(game: game, context: context)
+        }
+
+        // Run standard end-of-turn updates (each internal step shares the
+        // same pipeline counter)
         endTurnUpdates(game: game, ladder: ladder, recordHistory: false)
 
-        // Process consequences and generate Codex reactions
-        let firedConsequences = ConsequenceEngine.shared.processConsequences(game: game)
-        await processConsequenceCodexReactions(consequences: firedConsequences, game: game, context: context)
+        // Consequences + their Codex reactions are one stage: the reactions
+        // depend on the in-memory consequence list.
+        await runStepAsync("consequencesAndCodexReactions") {
+            let firedConsequences = ConsequenceEngine.shared.processConsequences(game: game)
+            await self.processConsequenceCodexReactions(consequences: firedConsequences, game: game, context: context)
+        }
 
         // Process event-driven Codex messages (relationship triggers, state thresholds, check-ins)
-        await CodexService.shared.processEventDrivenMessages(game: game, context: context)
+        await runStepAsync("codexEventMessages") {
+            await CodexService.shared.processEventDrivenMessages(game: game, context: context)
+        }
 
         // Record stat history once after all turn effects are applied.
-        game.recordAllStatHistory()
+        runStep("recordStatHistory") {
+            game.recordAllStatHistory()
+        }
 
-        gameLogger.info("End-of-turn Codex processing complete. \(firedConsequences.count) consequences fired.")
+        gameLogger.info("End-of-turn processing complete.")
     }
 
     private func processBureauOperations(game: Game, context: ModelContext) {
